@@ -19,8 +19,8 @@ A hangár bal oldalán hat összetett küldetés közül választhatsz, jobb old
 - **Gyakorlás – Civil gép elfogása:** felszállás, békés befogás, a civil távozása, majd leszállás. A civil bármilyen sérülése kudarc.
 - **Gyakorlás – Leszállás:** levegőből, a pályára állítva, 15% üzemanyaggal és fegyverzet nélkül. N: leszállási segéd.
 - **Kezdő – Konvoj megállítása:** rombold le a hidat, mielőtt a konvoj átjut. A konvoj megsemmisítése opcionális; a lerombolt híd előtt megáll. Végül szállj le.
-- **Haladó – Védd meg a repteret:** bombázó és két vadász támad; szövetséges bunker és rakétarendszer segít. A saját bázis maradjon épen, minden támadó pusztuljon el, majd szállj le.
-- **Haladó – Védd meg a szállítógépet:** levegőből indulsz a szállító mellett. Három vadász és két üteg támadja; kísérd ki a légtérből, majd szállj le. Minden ellenfél kiiktatása opcionális.
+- **Haladó – Védd meg a repteret:** bombázó és két vadász támad; szövetséges bunker, két rakétarendszer és egy baráti vadászgép segít. A saját bázis maradjon épen, minden támadó pusztuljon el, majd szállj le.
+- **Haladó – Védd meg a szállítógépet:** levegőből indulsz a szállító mellett. Egy vadászgép és egy üteg támadja; kísérd ki a légtérből, majd szállj le. Minden ellenfél kiiktatása opcionális.
 - **Top-gun – Bombázd le a repteret:** pusztítsd el a saját bázisodat támadó konvojt és az ellenséges repteret, majd szállj le. A célrepteret külön jelzavaró és rakétarendszer védi.
 
 A sikerhez biztonságos leszállás és 18 km/h alá lassítás szükséges. A Mission Control követi a célok állapotát. A saját reptér és a védendő szállító tényleges találatoktól sérülhet; az AI egységek egymást is támadják. A bombázó ballisztikus bombákat vet, a baráti rakétarendszer követő rakétákat indít. A kék jel szövetséges, a narancs ellenség, a világoskék civil.
@@ -184,7 +184,7 @@ A hangárban hat összetett küldetés szerepel kéthasábos kártyarácsban; a 
 
 A Civil feladat semleges, kék jelölésű, általános kétmotoros utasszállítót használ; ez saját felismerési modell, nem egy konkrét gyártmány másolata. Felszállás után a szokásos radaros befogás egyszer elindítja a visszafordulását. A forduló folyamatos, a befogás elvesztése vagy megismétlése nem indítja újra. A forduló után az indulási távolságnál 4 km-rel nagyobb sugarú feladatlégtér elhagyása jelenti az elfogási cél teljesítését. A civil cél sértetlenül, megsemmisítési pont nélkül tűnik el a térképről. A játékos közben hazafelé indulhat, a teljes küldetéshez továbbra is biztonságos leszállás és megállás kell. A civil gép bármilyen találata végleges küldetéskudarc; fegyverhasználatot a szimulátor nem varázspajzzsal tilt, hanem egyértelmű tűztilalmi figyelmeztetéssel és a szabály megszegésének következményével kezeli. A jelentés ilyenkor civilvédelmi kudarcot ír, nem a saját repülőgép elvesztését.
 
-A légvédelmi üteg a szállítókísérő küldetésben két külön támadható állásként jelenik meg. Az üteg robbanógránátokkal és alacsony célok ellen gépágyúval tüzel.
+A légvédelmi üteg a szállítókísérő küldetésben egy támadható állásként jelenik meg. Az üteg robbanógránátokkal és alacsony célok ellen gépágyúval tüzel.
 
 
 ## Ellenséges tűz és sérülési térkép

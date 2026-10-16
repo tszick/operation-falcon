@@ -65,3 +65,27 @@ test('the attacking convoy really damages the base, without charging its missed 
 test('flak aimed at the transport bursts near it and damages that aircraft rather than the player',()=>{
  const x=setup('escort-transport'),t=x.by('TRANSPORT'),flak=x.by('FLAK1');t.position=new Vec3(0,1700,3000);t.velocity=new Vec3(0,0,125);flak.position=new Vec3(0,300,1500);x.w.enemyCombat=null;const ai=new EnemyCombat();ai.launch('flak',flak,t,x.w,ai.unit(flak));for(let i=0;i<60*10&&!t.damage;i++){updateTargets([t],1/60);x.w.update(x.s,[flak,t],1/60);}assert.ok(t.damage>0&&t.damage<7);assert.equal(x.s.damage,0);
 });
+
+
+test('base defense adds two distinct friendly launchers and an armed wingman from the player side',()=>{
+ for(const player of aircraft){
+  const targets=createTargets(scenario('defend-base'),player,{rng:seeded(4)}),s=createMissionAircraft(player,scenario('defend-base'));
+  const sams=targets.filter(t=>t.team==='ally'&&t.type==='sam-system'),wingman=targets.find(t=>t.id==='ALLY-FIGHTER');
+  assert.equal(sams.length,2);assert.ok(sams[0].position.distance(sams[1].position)>1000);
+  assert.equal(wingman.team,'ally');assert.equal(wingman.faction,player.faction);assert.ok(wingman.position.y>1500);
+  assert.ok(wingman.velocity.dot(targets.find(t=>t.id==='BOMBER').position)>0);
+  const model=aircraft.find(a=>a.id===wingman.aircraftId);assert.equal(model.faction,player.faction);
+  const ai=new EnemyCombat(),target=ai.chooseTarget(wingman,s,targets);assert.equal(target.team,'enemy');assert.ok(ai.unit(wingman).missiles>0);
+  assert.equal(sensorTargets(s,targets).some(t=>t.id===wingman.id),false);
+ }
+});
+
+test('the friendly wingman turns on attackers and fires a missile that damages an enemy aircraft',()=>{
+ const x=setup('defend-base'),wingman=x.by('ALLY-FIGHTER'),enemy=x.by('FIGHTER1');
+ wingman.position=new Vec3(0,2000,0);wingman.velocity=new Vec3(0,0,210);wingman.heading=.2;
+ enemy.position=new Vec3(0,2000,4000);enemy.velocity=new Vec3(0,0,145);enemy.heading=0;
+ enemy.threats=[];x.s.onGround=true;x.s.airborne=false;
+ const units=[wingman,enemy],ai=x.w.enemyCombat;ai.activeTime=10;const heading=wingman.heading;
+ for(let i=0;i<120*35&&!enemy.damage;i++){updateTargets(units,1/120);x.w.update(x.s,units,1/120);}
+ assert.notEqual(wingman.heading,heading);assert.ok(ai.unit(wingman).missiles<8);assert.ok(enemy.damage>0);assert.equal(x.s.damage,0);
+});

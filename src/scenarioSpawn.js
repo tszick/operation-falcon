@@ -25,13 +25,19 @@ export function createBattleTargets(m,player,{rng=Math.random}={}){
   const a=anchor.clone().normalize(),side=new Vec3(a.z,0,-a.x);
   add('BOMBER','bomber','enemy',a.clone().scale(29000).add(new Vec3(0,1800,0)),{aiTargetId:home.id});
   for(let i=0;i<2;i++)add(`FIGHTER${i+1}`,'fighter','enemy',a.clone().scale(27500).add(side.clone().scale(i?2200:-2200)).add(new Vec3(0,2300+i*200,0)),{aiRole:'interceptor'});
-  add('ALLY-BUNKER','bunker','ally',new Vec3(-650,0,250));add('ALLY-SAM','sam-system','ally',new Vec3(650,0,-250));return units;
+  add('ALLY-BUNKER','bunker','ally',new Vec3(-650,0,250));
+  add('ALLY-SAM','sam-system','ally',new Vec3(650,0,-250));
+  add('ALLY-SAM2','sam-system','ally',new Vec3(-650,0,-250));
+  const wingman=add('ALLY-FIGHTER','fighter','ally',a.clone().scale(6500).add(side.clone().scale(900)).add(new Vec3(0,2400,0)),{aiRole:'interceptor'});
+  const friendly=player.faction==='west'?['f15','F-15 Eagle']:player.faction==='china'?['j10','Chengdu J-10C']:['su27','Su-27 Flanker'];
+  wingman.aircraftId=friendly[0];wingman.name=friendly[1];wingman.cruiseSpeed=210;wingman.heading=Math.atan2(a.x,a.z);wingman.velocity=new Vec3(a.x*210,0,a.z*210);
+  return units;
  }
  if(m.objective==='escort-transport'){
-  for(const [x,z]of [[-2300,6000],[1600,13500]])terrainWorld.peaks.push({x,z,height:850+rng()*350,radius:1500,platform:100});
+  for(const [x,z]of [[-2300,6000]])terrainWorld.peaks.push({x,z,height:850+rng()*350,radius:1500,platform:100});
   const transport=add('TRANSPORT','transport','ally',new Vec3(-700,1700,-8000),{aiRole:'escortee',exitZ:24000,heading:0});transport.heading=0;transport.velocity=new Vec3(0,0,transport.cruiseSpeed);
-  for(let i=0;i<3;i++)add(`FIGHTER${i+1}`,'fighter','enemy',new Vec3((i-1)*6500,2200+i*200,16500+i*2000),{aiTargetId:transport.id});
-  for(const [i,x,z]of [[1,-2300,6000],[2,1600,13500]])add(`FLAK${i}`,'sam','enemy',new Vec3(x,0,z),{aiTargetId:transport.id});return units;
+  add('FIGHTER1','fighter','enemy',new Vec3(-6500,2200,16500),{aiTargetId:transport.id});
+  for(const [i,x,z]of [[1,-2300,6000]])add(`FLAK${i}`,'sam','enemy',new Vec3(x,0,z),{aiTargetId:transport.id});return units;
  }
  if(m.objective==='airbase-strike'){
   const base=add('ENEMY-BASE','airbase','enemy',anchor),sam=add('ENEMY-SAM','sam-system','enemy',anchor.clone().add(new Vec3(280,0,220)));
