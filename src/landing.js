@@ -1,0 +1,86 @@
+import {attitude,DEG} from './math.js';
+import {onRunway,runway} from './terrain.js';
+import {approachSpeeds} from './performance.js';
+import {flapStatus} from './flaps.js';
+
+// Approach detection is independent of mission completion and works from both ends.
+export function evaluateApproach(s) {
+  const a=attitude(s.orientation);
+  const direction=Math.abs(s.position.z)>runway.halfLength?(s.position.z<0?1:-1):(s.velocity.z>=0?1:-1);
+  const desired=direction>0?0:Math.PI;
+  const headingError=Math.atan2(Math.sin(a.heading-desired),Math.cos(a.heading-desired))/DEG;
+  const distance=Math.max(0,-direction*(s.position.z+direction*runway.halfLength));
+  const lateral=Math.abs(s.position.x);
+  const height=s.position.y;
+  const sink=-s.velocity.y;
+  const horizontalSpeed=Math.hypot(s.velocity.x,s.velocity.z);
+  const angle=Math.atan2(sink,Math.max(1,horizontalSpeed))/DEG;
+  const idealHeight=2+distance*Math.tan(3*DEG);
+  const glideError=height-idealHeight;
+  const corridor=lateral<Math.min(650,100+distance*.10)&&Math.abs(headingError)<30;
+  const arriving=s.velocity.y<-.15||(s.approach?.active&&s.velocity.y<3)||(distance>300&&s.gear&&s.velocity.y<1.5);
+  const auto=s.airborne&&!s.onGround&&distance<7000&&height<650&&corridor&&s.velocity.z*direction>15&&arriving&&(distance>0||onRunway(s.position));
+  const active=!s.onGround&&!s.crashed&&!s.dying&&(s.landingMode==='on'||(s.landingMode!=='off'&&auto));
+  const near=distance<350&&height<35;
+  const speeds=approachSpeeds(s),targetSpeed=speeds.target;
+  const speed=s.ias*3.6;
+  const minSpeed=speeds.min,maxSpeed=speeds.max;
+  const sinkLimit=near?3:6;
+  const glideTolerance=Math.max(12,distance*.025);
+  const headingOK=Math.abs(headingError)<8;
+  const trackOK=lateral<Math.max(25,distance*.035);
+  const glideOK=Math.abs(glideError)<glideTolerance;
+  const bankOK=Math.abs(a.bank/DEG)<10;
+  const pitchOK=a.pitch/DEG>=-3&&a.pitch/DEG<15;
+  const speedOK=speed>=minSpeed&&speed<=maxSpeed;
+  const sinkOK=sink>=-.5&&sink<sinkLimit;
+  const flap=flapStatus(s),items=[
+    {label:'FUTÓMŰ',value:s.gear?'KINN':'G: ENGEDD KI',ok:s.gear},
+    {label:'FÉKSZÁRNY',value:s.flaps?flap.label:'X: ENGEDD KI',ok:flap.deployed},
+    {label:'LÉGFÉK',value:s.airbrake?'NYITVA':'ZÁRVA',ok:!s.airbrake||speed>targetSpeed+15},
+    {label:'SEBESSÉG',value:`${Math.round(speed)} / ${Math.round(targetSpeed)} KM/H`,ok:speedOK},
+    {label:'SÜLLYEDÉS',value:`${sink.toFixed(1)} M/S · <${sinkLimit}`,ok:sinkOK},
+    {label:'SIKLÓPÁLYA',value:`${glideError>=0?'+':''}${Math.round(glideError)} M`,ok:glideOK},
+    {label:'PÁLYAIRÁNY',value:`${direction>0?'000':'180'}° · ${Math.round(headingError)}°`,ok:headingOK},
+    {label:'TENGELY',value:`${Math.round(s.position.x)} M`,ok:trackOK},
+    {label:'BEDÖNTÉS',value:`${Math.round(a.bank/DEG)}°`,ok:bankOK},
+    {label:'BEÉRKEZÉS',value:`${angle.toFixed(1)}° / 3°`,ok:near?pitchOK:angle>=.5&&angle<5}
+  ];
+  let warning='';
+  if(active){
+    if(height<35&&(sink>5||Math.abs(headingError)>25||lateral>100))warning='ÁTSTARTOLÁS — GÁZ, ORR FEL!';
+    else if(!s.gear)warning='FUTÓMŰ NINCS KINN — G';
+    else if(!flap.deployed)warning=flap.jammed?'FÉKSZÁRNY BESZORULT':s.flaps?'FÉKSZÁRNY NYÍLIK — VÁRJ':'FÉKSZÁRNY NINCS KINN — X';
+    else if(sink>=sinkLimit)warning='TÚL NAGY SÜLLYEDÉS — FINOMAN ORR FEL';
+    else if(speed<minSpeed)warning=s.airbrake?'TÚL LASSÚ — B: FÉK BE, R: GÁZ':'TÚL LASSÚ — R: NÖVELD A GÁZT';
+    else if(speed>maxSpeed)warning=s.throttle>.02?'TÚL GYORS — F: GÁZ ALAPJÁRATRA':!s.airbrake?'TÚL GYORS — B: NYISD A LÉGFÉKET':'TÚL GYORS — ENYHÉBB SÜLLYEDÉS, VÁRJ A LASSULÁSRA';
+    else if(s.airbrake&&speed<targetSpeed+15)warning='CÉLSEBESSÉG ELÉRVE — B: LÉGFÉK BE';
+    else if(!headingOK)warning=`PÁLYAIRÁNY: ${direction>0?'000':'180'}° — IGAZODJ A PÁLYÁHOZ`;
+    else if(!trackOK)warning='PÁLYATENGELYTŐL ELTÉRÉS';
+    else if(!bankOK)warning='TÚL NAGY BEDÖNTÉS';
+    else if(!pitchOK)warning='HELYTELEN ORRHELYZET';
+    else if(!glideOK)warning=glideError>0?'SIKLÓPÁLYA FELETT — MAGASAN ÉRKEZEL':'SIKLÓPÁLYA ALATT — NÖVELD A GÁZT';
+    else if(!near&&angle>5)warning='TÚL MEREDEK BEÉRKEZÉS';
+  }
+  const protectedCorridor=active&&corridor&&lateral<Math.max(40,distance*.06)&&glideError>-Math.max(15,distance*.025)&&sink<sinkLimit;
+  return {active,direction,distance,height,sink,angle,glideError,headingError,items,warning,protectedCorridor,targetSpeed,minSpeed,maxSpeed,
+    runwayCorridor:active&&corridor&&distance<7000&&height<650,stage:near?'SZINTBE VÉTEL':'MEGKÖZELÍTÉS',
+    instruction:near?'Finoman emeld az orrot; földetérés <3 m/s.':`Tarts ${Math.round(targetSpeed)} km/h-t, kb. 3° süllyedést.`,
+    mode:s.landingMode||'auto'};
+}
+
+export function touchdownProblems(s,descent,speed) {
+  const a=attitude(s.orientation),problems=[];
+  if(!s.gear)problems.push('A futómű nem volt kiengedve (G).');
+  if(!onRunway(s.position))problems.push('A földetérés a pályán kívül történt.');
+  if(descent>=3)problems.push(`Túl nagy süllyedés: ${descent.toFixed(1)} m/s; 3 m/s alatt szükséges.`);
+  if(speed>=110)problems.push('Túl nagy sebességgel értél földet.');
+  if(speed<=30)problems.push('Túl kis sebességgel értél földet.');
+  if(Math.abs(a.bank)>=10*DEG)problems.push('A bedöntés meghaladta a 10 fokot.');
+  if(a.pitch<=-3*DEG||a.pitch>=15*DEG)problems.push('Az orrhelyzet nem volt megfelelő (-3 és +15 fok között kell lennie).');
+  if(Math.abs(Math.sin(a.heading))>=.13)problems.push('A gép nem a pályával párhuzamosan érkezett.');
+  return problems;
+}
+
+
+

@@ -1,0 +1,1 @@
+{"name":"vector-flight","version":"0.1.0","private":true,"type":"module","description":"Böngészős vadászrepülő-szimulátor","scripts":{"start":"node server.mjs","test":"node --test","check":"node --check src/main.js"},"engines":{"node":">=20"}}

@@ -1,0 +1,12 @@
+<!doctype html><html lang="hu"><meta charset="utf-8"><title>Vektoros gépmodellek – vizuális ellenőrzés</title><style>[hidden]{display:none!important}body{margin:0;padding:24px;background:#071211;color:#bbf475;font:13px monospace}h1{font-size:20px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}article{border:1px solid #34513a;padding:10px}h2{font:13px monospace;margin:0 0 4px}canvas{width:100%;height:220px;display:block}#scene{height:460px;border:1px solid #34513a;margin-bottom:24px}small{color:#83978b}</style><h1>Vektoros gépmodellek és égbolt</h1><canvas id="scene"></canvas><div class="grid" id="gallery"></div><script type="module">
+import {aircraft,missions} from '/src/aircraftSpec.js';
+import {renderAircraftPreview,Renderer} from '/src/renderer.js';
+import {createAircraft} from '/src/physics.js';
+import {Vec3,Quat} from '/src/math.js';
+import {createTargets,Targeting} from '/src/targeting.js';
+import {Weapons} from '/src/weapons.js';
+const extras=[{id:'tu95',name:'Tu-95 Bear'},{id:'b52',name:'B-52 Stratofortress'},{id:'il76',name:'Il-76 Candid'},{id:'c130',name:'C-130 Hercules'}];
+const modern=new URLSearchParams(location.search).has('modern');if(modern)document.getElementById('scene').hidden=true;
+for(const spec of modern?aircraft.filter(a=>['f22','f35','su35','su57','j10','j20'].includes(a.id)):[...aircraft,...extras]){const card=document.createElement('article');const title=document.createElement('h2');title.textContent=spec.name;card.append(title);const c=document.createElement('canvas');card.append(c);document.getElementById('gallery').append(card);renderAircraftPreview(c,spec,1.2);}
+const canvas=document.getElementById('scene'),renderer=new Renderer(canvas);renderer.w=1200;renderer.h=460;renderer.canvas.width=1200;renderer.canvas.height=460;renderer.ctx.setTransform(1,0,0,1,0,0);renderer.focal=460*.8;renderer.thirdPerson=true;const s=createAircraft(aircraft[0]);s.position=new Vec3(0,500,0);s.orientation=Quat.euler(0,.18,.2);s.velocity=new Vec3(0,0,180);s.speed=180;s.ias=175;s.agl=500;s.onGround=false;s.gear=false;s.flaps=false;renderer.render(s,createTargets(missions[1],s.spec),new Weapons(),new Targeting());
+</script></html>

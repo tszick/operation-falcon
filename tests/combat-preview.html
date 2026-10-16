@@ -1,0 +1,23 @@
+<!doctype html><html lang="hu"><head><meta charset="utf-8"><title>Harci kijelző ellenőrzése</title><link rel="stylesheet" href="/style.css"><style>#test-controls{position:fixed;bottom:48px;left:30%;z-index:10;background:#071211ed;padding:8px;border:1px solid #729553}#test-controls button{background:#1d331e;color:#c9ec9d;border:1px solid #729553;padding:6px;font:10px monospace;margin:2px}#test-result{display:block;color:#c9ec9d;font:10px monospace;margin:5px}</style></head><body><div id="test-controls"><button id="test-missile">Rakétatalálat</button><button id="test-flak">Repesztalálat</button><button id="test-gun">Gépágyúsorozat</button><button id="test-landing">Hibás leszállási helyzet</button><span id="test-result"></span></div><script type="module">
+import {aircraft,missions} from '/src/aircraftSpec.js';
+import {createAircraft,stepAircraft,STEP} from '/src/physics.js';
+import {Vec3,Quat,DEG} from '/src/math.js';
+import {createDamage} from '/src/damage.js';
+import {evaluateApproach} from '/src/landing.js';
+import {approachSpeeds} from '/src/performance.js';
+import {updateHUD} from '/src/hud.js';
+import {Renderer} from '/src/renderer.js';
+import {Weapons} from '/src/weapons.js';
+import {EnemyCombat} from '/src/enemyCombat.js';
+import {Targeting,createTargets} from '/src/targeting.js';
+import {Mission} from '/src/mission.js';
+const source=new DOMParser().parseFromString(await(await fetch('/')).text(),'text/html');for(const selector of ['#world','header','#flight-ui'])document.body.append(source.querySelector(selector));document.getElementById('flight-ui').hidden=false;document.getElementById('fuel-status').hidden=false;document.body.classList.add('flying');
+const renderer=new Renderer(document.getElementById('world')),aim=new Targeting();let s,w;
+function reset(){s=createAircraft(aircraft.find(a=>a.id==='f16'));s.condition=createDamage(1);s.onGround=false;s.airborne=true;s.gear=false;s.flaps=false;s.position=new Vec3(0,1200,0);s.velocity=new Vec3(0,0,160);s.orientation=Quat.euler(0,4*DEG,0);s.agl=1200;s.speed=s.ias=160;s.throttle=.65;s.landingMode='off';w=new Weapons();}
+function draw(){const m=new Mission(missions[1]);m.update(s,[],w,aim);updateHUD(s,[],w,aim,m,true);renderer.render(s,[],w,aim);document.getElementById('test-result').textContent=`Állapot ${Math.round(100-s.damage)}% · találat ${s.lastHit?.part||'nincs'} · saját lövés ${w.used} · saját találat ${w.hits}`;}
+document.getElementById('test-missile').onclick=()=>{reset();const ai=new EnemyCombat(),t=createTargets(missions[1],s.spec)[0];t.position=s.position.clone().add(new Vec3(0,0,-1800));t.velocity=new Vec3();ai.launch('missile',t,s,w,ai.unit(t));for(let i=0;i<120*20&&!s.lastHit;i++){stepAircraft(s,{},STEP);w.update(s,[],STEP);}draw();};
+document.getElementById('test-flak').onclick=()=>{reset();w.projectiles.push({owner:'enemy',type:'flak',position:s.position.clone().add(new Vec3(-14,0,20)),velocity:new Vec3(),age:0,fuse:.1,damage:7});for(let i=0;i<14;i++){stepAircraft(s,{},STEP);w.update(s,[],STEP);}draw();};
+document.getElementById('test-gun').onclick=()=>{reset();s.orientation=new Quat();for(let i=0;i<10;i++){w.projectiles.push({owner:'enemy',type:'gun',position:s.position.clone().add(new Vec3(-3,10,-1)),velocity:new Vec3(0,-2400,0),age:0,damage:1.8});w.update(s,[],STEP);}draw();};
+document.getElementById('test-landing').onclick=()=>{reset();s.position=new Vec3(45,107,-3600);s.orientation=Quat.euler(12*DEG,17*DEG,14*DEG);s.velocity=new Vec3(-14,-4,75);s.gear=s.flaps=true;s.ias=approachSpeeds(s).target/3.6;s.landingMode='on';s.approach=evaluateApproach(s);draw();};
+reset();draw();
+</script></body></html>

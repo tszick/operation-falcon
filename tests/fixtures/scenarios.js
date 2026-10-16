@@ -1,0 +1,15 @@
+// Isolated unit scenarios retained for physics regression tests. Not the game catalog.
+export const missions=[
+{id:'bomber',name:'Bombázó',icon:'✈',kind:'air',code:'SKY WATCH',description:'Fogd be és semmisítsd meg a közeledő bombázót, majd térj vissza a bázisra.',needs:['radar','aam'],speed:100},
+{id:'fighter',name:'Vadászgép',icon:'⌁',kind:'air',code:'AIR PATROL',description:'Fogd el az ellenséges vadászgépet. Közel érve rád fordul, rakétával és gépágyúval támadhat.',needs:['aam','agility'],speed:145},
+{id:'transport',name:'Szállítógép',icon:'⊹',kind:'air',code:'INTERCEPT',description:'Keresd meg és fogd el a szállítógépet, majd szállj le biztonságosan.',needs:['aam'],speed:85},
+{id:'convoy',name:'Konvoj',icon:'▰',kind:'ground',code:'DUST ROAD',description:'Állítsd meg az úton haladó konvojt földi rakétával, bombával vagy ágyúval.',needs:['cas','agm'],speed:0},
+{id:'bridge',name:'Híd',icon:'╫',kind:'ground',code:'BROKEN LINK',description:'Semmisítsd meg a hidat. Bombavetéshez használd a CCIP becsapódási pontot.',needs:['bomb'],speed:0},
+{id:'bunker',name:'Bunker',icon:'⌂',kind:'ground',code:'HARD SHELL',description:'Támadd a megerősített bunkert. Precíziós fegyverzetre alkalmas csapásmérő ajánlott.',needs:['precision','agm'],speed:0},
+{id:'radar',name:'Radarállomás',icon:'◉',kind:'ground',code:'SILENT ECHO',description:'Keresd meg és iktasd ki a radarállomást levegő-föld fegyverrel.',needs:['agm'],speed:0},
+{id:'airbase',name:'Repülőtér',icon:'╪',kind:'ground',code:'RUNWAY DENIAL',description:'Támadd a kijelölt kiszolgáló épületet, majd szállj le a saját bázison.',needs:['bomb','precision'],speed:0},
+{id:'civil',name:'Civil',icon:'✈',kind:'air',objective:'escort',code:'SAFE PASSAGE',description:'Fogd be a civil utasszállítót, de ne tüzelj rá! A befogás után visszafordul és elhagyja a légteret. Ezután térj haza és szállj le.',needs:['radar'],speed:120},
+{id:'sam',name:'Légvédelmi üteg',icon:'⌁',kind:'ground',code:'AIR SHIELD',description:'Semmisítsd meg a légvédelmi üteget. Magasabb célra robbanógránátokkal, alacsonyan gépágyúval tüzel.',needs:['agm','precision'],speed:0},
+{id:'sam-system',name:'Légvédelmi rakétarendszer',icon:'↗',kind:'ground',code:'MISSILE SHIELD',description:'Iktasd ki a követő rakétákkal és közeli gépágyúval védekező légvédelmi rakétarendszert, majd térj haza.',needs:['agm','precision'],speed:0},
+{id:'landing',name:'Leszállás',icon:'↘',kind:'training',objective:'landing',code:'FINAL APPROACH',description:'Gyakorold a leszállást! Kezdés a levegőben, 6 km-rel a pályaküszöb előtt, kb. 316 m-en, a pályára állva. 15% üzemanyag, fegyverzet nélkül. N: leszállási segéd bekapcsolása. Szállj le és állj meg.',needs:[],speed:0}
+];

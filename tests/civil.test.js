@@ -1,0 +1,21 @@
+import {missions as catalog} from '../src/missionCatalog.js';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {aircraft} from '../src/aircraftSpec.js';
+import {missions} from './fixtures/scenarios.js';
+import {createAircraft,STEP} from '../src/physics.js';
+import {Vec3} from '../src/math.js';
+import {createTargets,updateTargets,applyTargetHit,Targeting,targetingStatus} from '../src/targeting.js';
+import {Mission} from '../src/mission.js';
+import {Weapons} from '../src/weapons.js';
+import {civilAirspaceRadius} from '../src/civilFlight.js';
+import {phaseGuide} from '../src/phaseGuide.js';
+const spec=missions.find(m=>m.id==='civil');
+function setup(){const s=createAircraft(aircraft.find(a=>a.id==='f16'));s.airborne=true;s.onGround=false;s.position=new Vec3(0,1400,0);s.agl=1400;const targets=createTargets(spec,s.spec,{rng:()=>0}),m=new Mission(spec),aim=new Targeting(),w=new Weapons();return {s,targets,m,aim,w};}
+test('six composed missions replace the old target-type menu',()=>{assert.equal(catalog.length,6);assert.equal(catalog[0].id,'civil');assert.equal(catalog[1].id,'landing');assert.ok(catalog.every(m=>m.composition));assert.equal(catalog.some(m=>m.id==='radar'),false);});
+test('civil target is a neutral passenger aircraft and cannot be resolved by destroying it',()=>{const {s,targets,m,w}=setup();assert.equal(targets[0].faction,'neutral');assert.equal(targets[0].aircraftId,'airliner');applyTargetHit(targets[0],'aam');m.update(s,targets,w);assert.equal(m.failed,true);assert.equal(m.destroyed,false);assert.equal(m.complete,false);assert.match(m.failureReason,/civil/i);});
+test('a gun hit also fails civilian protection, and success cannot replace failure later',()=>{const {s,targets,m,w}=setup();applyTargetHit(targets[0],'gun');assert.equal(targets[0].alive,true);m.update(s,targets,w);targets[0].departedAirspace=true;s.onGround=true;s.speed=0;s.landing={success:true,descent:1,offset:0};m.update(s,targets,w);assert.equal(m.failed,true);assert.equal(m.complete,false);});
+test('civilian lock cannot start departure while the player is still on the ground',()=>{const {s,targets,m,aim,w}=setup();s.airborne=false;s.onGround=true;s.position.y=2;aim.id=targets[0].id;aim.locked=true;m.update(s,targets,w,aim);assert.equal(m.civilIntercepted,false);assert.equal(targets[0].withdrawing,undefined);});
+test('a radar lock starts one continuous U-turn; lost/repeated lock does not restart it',()=>{const {s,targets,m,aim,w}=setup();m.update(s,targets,w,aim);assert.equal(m.phaseId,'civil-intercept');aim.id=targets[0].id;aim.locked=true;m.update(s,targets,w,aim);const exit=targets[0].exitHeading,startHeading=targets[0].heading;assert.equal(m.civilIntercepted,true);assert.equal(m.phaseId,'civil-departure');assert.equal(m.objectiveComplete,false);for(let i=0;i<120;i++)updateTargets(targets,STEP);assert.ok(Math.abs(targets[0].heading-startHeading)>.03);aim.locked=false;m.update(s,targets,w,aim);aim.locked=true;m.update(s,targets,w,aim);assert.equal(targets[0].exitHeading,exit);assert.equal(targets[0].alive,true);});
+test('safe departure completes the objective, then a safe landing completes the mission',()=>{const {s,targets,m,aim,w}=setup();aim.id=targets[0].id;aim.locked=true;m.update(s,targets,w,aim);for(let i=0;i<120*240&&!targets[0].departedAirspace;i++)updateTargets(targets,STEP);assert.equal(targets[0].departedAirspace,true);assert.ok(Math.hypot(targets[0].position.x,targets[0].position.z)>civilAirspaceRadius);assert.equal(targets[0].flight,undefined);m.update(s,targets,w,aim);assert.equal(m.objectiveComplete,true);assert.equal(m.phaseId,'return');assert.equal(m.complete,false);assert.equal(m.destroyed,false);s.onGround=true;s.speed=0;s.landing={success:true,descent:1,offset:0};m.update(s,targets,w,aim);assert.equal(m.complete,true);assert.match(m.phaseHint,/civil/i);});
+test('civil targeting and phase help explicitly prohibit firing instead of suggesting a missile',()=>{const {s,targets,m,aim,w}=setup();aim.id=targets[0].id;aim.locked=true;assert.match(targetingStatus(s,targets,aim,w).label,/TŰZTILALOM/);aim.locked=false;m.update(s,targets,w,aim);const steps=phaseGuide(s,m,aim,w,targets);assert.ok(steps.some(step=>/TŰZTILALOM/.test(step.text)));assert.ok(!steps.some(step=>step.key==='2'));});
