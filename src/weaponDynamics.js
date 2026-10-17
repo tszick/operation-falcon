@@ -4,7 +4,7 @@ import {terrainHeight} from './terrain.js';
 
 // SI gameplay approximations. Public references constrain the families, not a
 // certified firing envelope. Motor, drag and seeker tuning are documented in README.
-const missile=(id,range,mass,thrust,burn,diameter,guidance='ir',extra={})=>({id,kind:'missile',maxRange:range,minRange:250,mass,dryMass:mass*.73,thrust,burn,area:Math.PI*(diameter/2)**2,cd:.3,liftArea:diameter*1.2,maxG:30,life:70,minGuideSpeed:180,terminalReserve:330,seeker:65*DEG,trackRate:70*DEG,guidance,armTime:.25,armDistance:120,fuseRadius:7,...extra});
+const missile=(id,range,mass,thrust,burn,diameter,guidance='ir',extra={})=>({id,kind:'missile',maxRange:range,minRange:250,mass,dryMass:mass*.73,thrust,burn,launchSpeed:35,area:Math.PI*(diameter/2)**2,cd:.3,liftArea:diameter*1.2,maxG:30,life:70,minGuideSpeed:180,terminalReserve:330,seeker:65*DEG,trackRate:70*DEG,guidance,armTime:.25,armDistance:120,fuseRadius:7,...extra});
 const gun=(id,speed,mass,diameter,dispersion,range)=>({id,kind:'gun',muzzleSpeed:speed,mass,area:Math.PI*(diameter/2)**2,cd:.28,dispersion,effectiveRange:range,life:5});
 export const weaponProfiles={
  aim9m:missile('aim9m',18000,86,9500,3.2,.127),
@@ -26,7 +26,7 @@ export const weaponProfiles={
  brimstone:missile('brimstone',22000,50,4200,4,.18,'active',{minRange:500,maxG:15,life:85,minGuideSpeed:100,terminalReserve:180,activeRange:10000}),
  kh29:missile('kh29',12000,660,40000,4,.38,'laser',{minRange:1000,maxG:10,life:65,minGuideSpeed:110,terminalReserve:180}),
  kh25:missile('kh25',10000,300,20000,3.5,.275,'laser',{minRange:800,maxG:12,life:60,minGuideSpeed:110,terminalReserve:180}),
- sam:missile('sam',24000,180,22500,6,.2,'active',{minRange:450,life:100,activeRange:12000}),
+ sam:missile('sam',24000,180,22500,6,.2,'active',{minRange:450,life:100,activeRange:12000,groundLaunchSpeed:260}),
  defense:missile('defense',14000,90,10000,3.4,.127),
  m61:gun('m61',1030,.10,.020,.002,1400),
  gau22:gun('gau22',1040,.18,.025,.0018,1600),
@@ -46,6 +46,7 @@ export const weaponProfiles={
 const names=[[/AIM-120C/,'aim120c'],[/AIM-120/,'aim120'],[/AIM-9M/,'aim9m'],[/AIM-9L/,'aim9l'],[/AIM-7M/,'aim7m'],[/AIM-7E/,'aim7e'],[/Magic/,'magic2'],[/MICA/,'mica'],[/R-60M/,'r60m'],[/R-73/,'r73'],[/R-40/,'r40'],[/R-33/,'r33'],[/R-77-1/,'r771'],[/RVV-SDM/,'rvvsdm'],[/PL-15/,'pl15'],[/AGM-65/,'maverick'],[/Brimstone/,'brimstone'],[/Kh-29/,'kh29'],[/Kh-25/,'kh25'],[/M61/,'m61'],[/GAU-22/,'gau22'],[/GAU-8/,'gau8'],[/GSh-6-30/,'gsh630'],[/GSh-6-23|Type 23/,'gsh23'],[/GSh-30|9A1/,'gsh30'],[/DEFA/,'defa'],[/30 M 791/,'giat'],[/BK-27/,'bk27'],[/Mk 82/,'mk82'],[/FAB-250/,'fab250']];
 export function weaponProfile(spec,type){const name=armament(spec).weapons[type]?.name;if(!name)return null;const match=names.find(([re])=>re.test(name));if(!match)throw new Error(`Missing weapon dynamics: ${name}`);return weaponProfiles[match[1]];}
 export function enemyProfile(t,type){return t.type==='fighter'?weaponProfile({id:t.aircraftId},type):type==='gun'?weaponProfiles.groundGun:t.kind==='ground'?weaponProfiles.sam:weaponProfiles.defense;}
+export function missileLaunchVelocity(carrier,direction,profile,{ground=false}={}){return carrier.clone().add(direction.clone().normalize().scale(ground?(profile.groundLaunchSpeed??profile.launchSpeed??35):(profile.launchSpeed??35)));}
 export const airDensity=h=>1.225*Math.exp(-Math.max(0,h)/8500);
 export function clearWeaponLine(a,b){const distance=a.distance(b),steps=Math.min(100,Math.max(6,Math.ceil(distance/250)));for(let i=1;i<steps;i++){const p=a.clone().add(b.clone().sub(a).scale(i/steps));if(p.y<terrainHeight(p.x,p.z)+2)return false;}return true;}
 export function spreadDirection(direction,sigma,rng=Math.random){const angle=2*Math.PI*rng(),radius=sigma*Math.sqrt(-2*Math.log(Math.max(1e-12,rng()))),side=(Math.abs(direction.y)>.95?new Vec3(1,0,0):new Vec3(0,1,0)).cross(direction).normalize(),vertical=direction.cross(side).normalize();return direction.clone().add(side.scale(Math.cos(angle)*radius)).add(vertical.scale(Math.sin(angle)*radius)).normalize();}
@@ -89,7 +90,7 @@ export function predictBombImpact(s){const p={profile:weaponProfile(s.spec,'bomb
 // It is a launch estimate against constant velocity, not a guaranteed kill zone.
 export function missileEnvelope(s,target,profile){
  const delta=target.position.clone().sub(s.position),distance=delta.length(),direction=delta.clone().normalize(),radial=target.velocity.dot(direction),cross=target.velocity.clone().sub(direction.clone().scale(radial)).length();
- let speed=Math.max(35,s.velocity.dot(direction)+35),height=s.position.y,travel=0,best=0,time=0;
+ let speed=Math.max(0,missileLaunchVelocity(s.velocity,direction,profile,{ground:!!s.ground}).dot(direction)),height=s.position.y,travel=0,best=0,time=0;
  for(let age=.25;age<=profile.life;age+=.25){const slope=(direction.y>0&&height>=target.position.y||direction.y<0&&height<=target.position.y)?0:direction.y,mass=profile.mass-(profile.mass-profile.dryMass)*clamp(age/profile.burn,0,1),acc=(age<profile.burn?profile.thrust/mass:0)-dragAcceleration(profile,speed,height,mass,9.81*Math.sqrt(Math.max(0,1-slope**2)))-9.81*slope;speed=Math.max(0,speed+acc*.25);if(age>profile.burn&&speed<Math.max(profile.minGuideSpeed,profile.terminalReserve))break;travel+=speed*.25;height=clamp(height+speed*slope*.25,Math.min(s.position.y,target.position.y),Math.max(s.position.y,target.position.y));const closure=travel-radial*age;if(closure>best){best=closure;time=age;}}
  const crossPenalty=1/Math.sqrt(1+(cross/650)**2),maxRange=Math.min(profile.maxRange,Math.max(0,best)*crossPenalty),effectiveRange=maxRange*.68;
  return {distance,maxRange,effectiveRange,minRange:profile.minRange,closing:-radial,time,cross};

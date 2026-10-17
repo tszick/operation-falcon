@@ -1,0 +1,11 @@
+// One current mission only. Chunks avoid rewriting the entire flight on each flush.
+let database;
+function open(){if(!database)database=new Promise((resolve,reject)=>{if(!globalThis.indexedDB){reject(new Error('A böngésző nem enged helyi naplómentést.'));return;}const request=indexedDB.open('operation-falcon-current-flight',1);request.onupgradeneeded=()=>request.result.createObjectStore('current',{keyPath:'key'});request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});return database;}
+export class FlightLogStorage{
+ constructor(onError=()=>{}){this.queue=Promise.resolve();this.onError=onError;this.index=0;}
+ enqueue(work){this.queue=this.queue.then(async()=>{const db=await open();await new Promise((resolve,reject)=>{const tx=db.transaction('current','readwrite');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('A naplómentés megszakadt.'));work(tx.objectStore('current'));});}).catch(error=>this.onError(error));return this.queue;}
+ reset(metadata){this.index=0;return this.enqueue(store=>{store.clear();store.put({key:'metadata',metadata});});}
+ append(metadata,entries){const key='chunk-'+String(this.index++).padStart(9,'0');return this.enqueue(store=>{const request=store.get('metadata');request.onsuccess=()=>{if(request.result?.metadata.id!==metadata.id)return;store.put({key:'metadata',metadata});store.put({key,sessionId:metadata.id,entries});};});}
+}
+export async function loadCurrentFlight(){const db=await open();return new Promise((resolve,reject)=>{const tx=db.transaction('current','readonly'),request=tx.objectStore('current').getAll();request.onerror=()=>reject(request.error);request.onsuccess=()=>{const metadata=request.result.find(r=>r.key==='metadata')?.metadata;if(!metadata){resolve(null);return;}resolve({metadata,entries:request.result.filter(r=>r.sessionId===metadata.id).sort((a,b)=>a.key.localeCompare(b.key)).flatMap(r=>r.entries)});};});}
+export function downloadFlightLog(log){const url=URL.createObjectURL(new Blob([JSON.stringify(log)],{type:'application/json'})),link=document.createElement('a');link.href=url;link.download='operation-falcon-aktualis-kuldetes.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}

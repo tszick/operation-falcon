@@ -10,7 +10,7 @@ import {jammerMissions,sensorTargets,navigationJammed} from './electronicWarfare
 import {enemyAircraft} from './enemies.js';
 import {weaponAvailable,weaponLabel,weaponKeys} from './armament.js';
 import {createAircraft,stepAircraft} from './physics.js';
-import {aircraft} from './aircraftSpec.js';
+import {aircraftFlightSpec} from './aiAircraftSpec.js';
 import {applyDamage} from './damage.js';
 import {updateCivilFlight} from './civilFlight.js';
 import {targetSpawn} from './spawning.js';
@@ -31,8 +31,8 @@ export function createTargets(m,playerSpec={faction:'west'},{rng=Math.random}={}
 export function applyTargetHit(target,weapon,{part=null,amount=null}={}){
  if(target.kind!=='air'){if(target.maxHealth){const damage=amount??(weapon==='gun'?18:100);target.health=Math.max(0,target.health-damage);target.damage=100*(1-target.health/target.maxHealth);if(target.health>0)return false;}target.alive=false;return true;}
  if(!target.flight){
-  const spec=aircraft.find(a=>a.id===target.aircraftId)||aircraft.find(a=>a.id==='f15');
-  target.flight=createAircraft(spec);const s=target.flight;s.position=target.position.clone();s.velocity=target.velocity.clone();s.orientation=Quat.euler(target.heading||Math.atan2(s.velocity.x,s.velocity.z),0,0);s.onGround=false;s.airborne=true;s.gear=false;s.flaps=false;s.flapPosition=0;s.throttle=.65;s.fuel=spec.fuelCapacity*.5;s.ammo={gun:0,aam:0,agm:0,bomb:0};s.landingMode='off';const air=atmosphere(s.position.y),q=.5*air.density*s.velocity.length()**2,alpha=clamp((mass(s)*9.81/Math.max(1,q*spec.wingArea)-.22)/spec.clSlope,0,spec.stallAlpha*.8);s.orientation=Quat.euler(target.heading||0,Math.atan2(s.velocity.y,Math.hypot(s.velocity.x,s.velocity.z))+alpha,target.bank||0);
+  const spec=aircraftFlightSpec(target.aircraftId||'mig29');
+  target.flight=createAircraft(spec,{ammo:{gun:0,aam:0,agm:0,bomb:0}});const s=target.flight;s.position=target.position.clone();s.velocity=target.velocity.clone();s.orientation=Quat.euler(target.heading||Math.atan2(s.velocity.x,s.velocity.z),0,0);s.onGround=false;s.airborne=true;s.gear=false;s.flaps=false;s.flapPosition=0;s.previousPosition=target.position.clone();s.throttle=.65;s.fuel=spec.fuelCapacity*.5;s.ammo={gun:0,aam:0,agm:0,bomb:0};s.landingMode='off';const air=atmosphere(s.position.y),q=.5*air.density*s.velocity.length()**2,alpha=clamp((mass(s)*9.81/Math.max(1,q*spec.wingArea)-.22)/spec.clSlope,0,spec.stallAlpha*.8);s.orientation=Quat.euler(target.heading||0,Math.atan2(s.velocity.y,Math.hypot(s.velocity.x,s.velocity.z))+alpha,target.bank||0);
  }
  applyDamage(target.flight,amount??(weapon==='gun'?18:100),{part,source:weapon==='gun'?'Gépágyútalálat':'Rakétatalálat'});
  target.damage=target.flight.damage;

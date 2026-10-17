@@ -301,3 +301,26 @@ A 7 km-es zavarási körön belül a jelenlegi játékszabály szerint nincs új
 A folyó többé nem szakad meg a saját bázis 4,5 km-es körénél: a meder és a minimap ugyanazt a bázist elkerülő kanyart követi. A repülőtéri cél sík területét is kikerüli, így a generált fennsík nem takarja le gátszerűen a vízfelületet. A Híd küldetés hídja továbbra is a folyón át vezet.
 
 A szomszédos vízszakaszok ugyanazokat a partpontokat használják, és a part a vízszint magasságához illeszkedik. A kamera közelében a sokszögek vágást kapnak teljes szakaszok eldobása helyett; ez az út felületére is érvényes. A folyó rajztávja nagyobb lett, finom távoli elhalványulással, a víz kitöltése és a nedves partsáv pedig elkülönül. A tereptakarás megmaradt. Új regressziós tesztek fedik a szakaszcsatlakozást, a part magasságát, a korábbi báziskivágást, a generált pályák folytonos medrét és a kamera közeli vágását.
+
+## Szimulációs javítások és fegyverlexikon
+
+Az azonos típusú, repülőgépről indított rakéták a hordozó sebességét és ugyanazt a 35 m/s indítási sebességet kapják, saját, ellenséges és baráti oldalon is. A földi SAM 260 m/s induló gyorsítófokozata külön profiladat; a lőtávbecslés is ezzel számol. Az elfogási idő az egyenlet lineárissá válását is kezeli, numerikusan stabil gyökökkel; elérhetetlen célra nem hoz létre hamis légvédelmi lövést.
+
+A C-130, Il-76, B-52, Tu-95 és a civil utasszállító külön fizikai adatsort használ sérülés után: tömeg, üzemanyag, szárnyfelület, hajtóműszám, tolóerő és terhelési határ. Nincs F-15 helyettesítés. A légcsavaros típusok továbbra is egyenértékű tolóerőt használnak az egyszerűsített erőmodellben; az aerodinamikai együtthatók játékmeneti közelítések. Viszonyítási források: [USAF C-130](https://www.af.mil/About-Us/Fact-Sheets/Display/Article/1555054/c-130-hercules/), [USAF B-52](https://www.af.mil/About-Us/Fact-Sheets/Display/Article/104465/b-52h-stratofortress/), [UAC Tu-95MS](https://www.uacrussia.ru/ru/aircraft/lineup/military/tu-95ms/), [Volga-Dnepr Il-76](https://volga-dnepr.com/fleet/IL-76/ts/). Ezek nem hitelesített repülési táblázatok.
+
+Az Egységtár fegyverszűrője az összes felszerelhető gépágyút, légiharc- és földi rakétát, bombát, valamint az infracsapdát és dipólköteget mutatja. A fegyverváltozatok közös dinamikai profilon belül együtt szerepelnek. Minden adatlapon külön szerepel a használható cél, az ajánlott helyzet, a tiltás, a kezelés, az elterelés és a hordozógépek; a lőtávok közvetlenül a játék profiljaiból jönnek. A 3D fegyverábrák sematikus felismerési modellek.
+
+## Aktuális küldetés repülési naplója
+
+A napló automatikusan indul és minden új küldetésnél / újraindításnál nullázódik. Nincs előzménylista. A szünetmenüben és a repülési jelentésben a **Repülési napló** nyitja meg a `/flight-log.html` elemzőt; a hangárból is elérhető. A **Napló letöltése** teljes JSON-fájlt ad, amely később visszaelemzéshez megosztható. A napló a böngészőben, helyben tárolódik; nem küldjük szerverre.
+
+- Saját gép: 10 Hz mintavétel, pozíció, sebességvektor, IAS/TAS, Mach, MSL/AGL, V/S, kvaternió és szögek, állásszög, G, tömeg, üzemanyag és fogyasztás, felhajtóerő/ellenállás/tolóerő, vezérlés, gépkonfiguráció, fegyverzet, részletes sérülés és leszállási műszerek.
+- Világ: 2 Hz, minden ellenséges, baráti és semleges egység helyzete, mozgása, állapota, AI-célja, befogása, lőszerkészlete és saját fizikai állapota; lövedékek és elterelők mozgása.
+- Események: a 120 Hz-es ciklusban észlelt fázisváltás, célbefogás, kezelői gomb, konfigurációváltás, figyelmeztetés, találat, indítás, egységvesztés, szünet és eredmény. A folyamatos számértékek mintavételezettek, nem minden fizikai lépés külön teljes állapotmentés.
+- Földetérés: külön, a sebesség nullázása előtti teljes kontaktpillanat, pontos hibák és alkalmazott határok. A zuhanás a becsapódásig és a jelentésig követhető.
+
+A tárhelyre kétmásodpercenként, valamint szünetben és a küldetés végén kerül új adatcsomag. Új küldetés törli a korábbi helyi csomagokat; a régi böngészőlap későbbi írása sem írhatja vissza őket. Rendellenes böngészőleálláskor az utolsó, még nem mentett csomag elveszhet. Ha a böngésző tiltja a tárolást, a szünetmenü jelzi; az aktuális lap memóriájából a JSON továbbra is letölthető.
+
+A visszanéző sebesség- és magassággörbét, időcsúszkát, fázisonkénti időt, eseményszűrőt és nyers állapotadatokat mutat. Ez diagnosztikai napló, nem teljes vizuális visszajátszás. A kimenet őrzi az induló terepet, fizikai és fegyverprofilokat, valamint a sérülési és AI-véletlenmagokat.
+
+A gyakorló és harci küldetések ugyanazt a leszállási fizikát használják. A gyakorlat alacsony üzemanyaggal, fegyverzet nélkül és beállított megközelítéssel indul; harci visszatéréskor a nagyobb tömeg és sérülés emelheti a szükséges sebességet. A földetérés IAS-határa ezért legalább 396 km/h, de követi a segéd által kiszámított felső sebességhatárt, ha az magasabb. A 3 m/s alatti süllyedés, futómű, pályán belüli helyzet és megfelelő géphelyzet követelménye megmaradt.

@@ -1,6 +1,6 @@
 import {attitude,DEG} from './math.js';
 import {onRunway,runway} from './terrain.js';
-import {approachSpeeds} from './performance.js';
+import {approachSpeeds,atmosphere} from './performance.js';
 import {flapStatus} from './flaps.js';
 
 // Approach detection is independent of mission completion and works from both ends.
@@ -69,13 +69,14 @@ export function evaluateApproach(s) {
     mode:s.landingMode||'auto'};
 }
 
+export function touchdownLimits(s){const speeds=approachSpeeds(s);return {maxIASKmh:Math.max(396,speeds.max),minIASKmh:108,maxSink:3,maxBankDeg:10,minPitchDeg:-3,maxPitchDeg:15,maxHeadingErrorDeg:Math.asin(.13)/DEG};}
 export function touchdownProblems(s,descent,speed) {
-  const a=attitude(s.orientation),problems=[];
+  const a=attitude(s.orientation),problems=[],limits=touchdownLimits(s),ias=speed*Math.sqrt(atmosphere(s.position.y).density/1.225)*3.6;
   if(!s.gear)problems.push('A futómű nem volt kiengedve (G).');
   if(!onRunway(s.position))problems.push('A földetérés a pályán kívül történt.');
   if(descent>=3)problems.push(`Túl nagy süllyedés: ${descent.toFixed(1)} m/s; 3 m/s alatt szükséges.`);
-  if(speed>=110)problems.push('Túl nagy sebességgel értél földet.');
-  if(speed<=30)problems.push('Túl kis sebességgel értél földet.');
+  if(ias>=limits.maxIASKmh)problems.push(`Túl nagy sebesség: ${ias.toFixed(0)} km/h IAS; ${limits.maxIASKmh.toFixed(0)} km/h alatt szükséges.`);
+  if(ias<=limits.minIASKmh)problems.push('Túl kis sebességgel értél földet.');
   if(Math.abs(a.bank)>=10*DEG)problems.push('A bedöntés meghaladta a 10 fokot.');
   if(a.pitch<=-3*DEG||a.pitch>=15*DEG)problems.push('Az orrhelyzet nem volt megfelelő (-3 és +15 fok között kell lennie).');
   if(Math.abs(Math.sin(a.heading))>=.13)problems.push('A gép nem a pályával párhuzamosan érkezett.');

@@ -1,0 +1,37 @@
+import {attitude,DEG} from './math.js';
+import {mass} from './performance.js';
+import {touchdownLimits} from './landing.js';
+import {terrainWorld} from './terrain.js';
+import {weaponProfiles} from './weaponDynamics.js';
+import {aircraftFlightSpec} from './aiAircraftSpec.js';
+import {navigationJammed} from './electronicWarfare.js';
+const copy=x=>x===undefined?null:JSON.parse(JSON.stringify(x)),round=x=>Number.isFinite(x)?Math.round(x*10000)/10000:null;
+const vec=v=>v?{x:round(v.x),y:round(v.y),z:round(v.z)}:null;
+const angles=q=>{const a=attitude(q);return {headingDeg:round(a.heading/DEG),pitchDeg:round(a.pitch/DEG),bankDeg:round(a.bank/DEG)};};
+function playerData(s,controls){return {position:vec(s.position),velocity:vec(s.velocity),orientation:{...s.orientation},...angles(s.orientation),tasKmh:round(s.velocity.length()*3.6),iasKmh:round(s.ias*3.6),mach:round(s.mach),aglM:round(s.agl),verticalSpeedMps:round(s.velocity.y),alphaDeg:round(s.alpha/DEG),g:round(s.g),massKg:round(mass(s)),fuelKg:round(s.fuel),fuelKgPerSecond:round(s.fuelFlow),throttle:round(s.throttle),afterburner:s.afterburner,gear:s.gear,flaps:s.flaps,flapPosition:round(s.flapPosition),airbrake:s.airbrake,assist:s.assist,controls:copy(controls),ammo:{...s.ammo},countermeasures:s.countermeasures?{flare:s.countermeasures.flare,chaff:s.countermeasures.chaff,used:s.countermeasures.used}:null,damage:round(s.damage),parts:{...s.condition?.parts},damageSource:s.condition?.source,damageRates:{...s.condition?.rates},forces:s.forces?{...s.forces}:null,warning:s.warning,threatWarning:s.threatWarning,onGround:s.onGround,airborne:s.airborne,dying:s.dying,crashed:s.crashed,landingMode:s.landingMode,landing:s.landing?copy(s.landing):null,approach:s.approach?copy(s.approach):null,touchdownLimits:touchdownLimits(s)};}
+function unitData(t,w){const ai=w.enemyCombat?.units.get(t.id);return {id:t.id,name:t.name,type:t.type,team:t.team,faction:t.faction,aircraftId:t.aircraftId,position:vec(t.position),velocity:vec(t.velocity),headingDeg:round(t.heading/DEG),pitchDeg:round((t.pitch||0)/DEG),bankDeg:round((t.bank||0)/DEG),alive:t.alive,damage:round(t.damage||0),health:t.health,maxHealth:t.maxHealth,exited:t.exited,departedAirspace:t.departedAirspace,stopped:t.stopped,crossedBridge:t.crossedBridge,role:t.aiRole,assignedTarget:t.aiTargetId,routeDistance:round(t.routeDistance),ai:ai?copy(ai):null,flight:t.flight?{spec:t.flight.spec.id,massKg:mass(t.flight),fuelKg:t.flight.fuel,orientation:{...t.flight.orientation},parts:{...t.flight.condition.parts},warning:t.flight.warning,dying:t.flight.dying,crashed:t.flight.crashed}:null};}
+export class FlightRecorder{
+ constructor({onBatch=()=>{},onReset=()=>{},now=()=>new Date().toISOString()}={}){this.onBatch=onBatch;this.onReset=onReset;this.now=now;this.metadata=null;this.entries=[];this.pending=[];}
+ start(s,mission,targets,w,aim){this.entries=[];this.pending=[];this.previous=new Map();this.unitPrevious=new Map();this.shots=new Set();this.nextSample=0;this.nextWorld=0;this.nextFlush=2;this.ended=false;this.time=0;this.metadata={format:'operation-falcon-flight-log',version:1,units:{position:'m',velocity:'m/s',time:'simulation seconds',angles:'degrees',forces:'N',mass:'kg'},weaponProfiles:copy(weaponProfiles),unitPhysics:targets.filter(t=>t.kind==='air').map(t=>copy(aircraftFlightSpec(t.aircraftId||'mig29'))),id:this.now()+'-'+Math.random().toString(36).slice(2),startedAt:this.now(),mission:copy(mission.spec),aircraft:copy(s.spec),physicsHz:120,playerHz:10,worldHz:2,terrain:copy(terrainWorld),initialUnits:targets.map(t=>({...unitData(t,w),combatSeed:t.combatSeed})),damageSeed:s.condition.seed};this.onReset(copy(this.metadata));this.event('mission-start',{mission:mission.spec.name,aircraft:s.spec.name});this.capture(s,mission,targets,w,aim,{},true);this.flush();}
+ event(kind,data={}){if(!this.metadata||this.ended)return;const e={seq:this.entries.length,t:round(this.time),kind,data:copy(data)};this.entries.push(e);this.pending.push(e);return e;}
+ change(key,value,kind,data=value){if(!this.metadata||this.ended)return;const serial=JSON.stringify(value);if(this.previous.get(key)!==serial){this.previous.set(key,serial);this.event(kind,data);}}
+ capture(s,m,targets,w,aim,controls={},force=false){if(!this.metadata||this.ended)return;this.time=s.elapsed;
+ this.change('phase',m.phaseId,'phase',{id:m.phaseId,label:m.phase,hint:m.phaseHint});
+ this.change('controls',controls,'controls');this.change('warning',s.warning,'warning');this.change('threat',s.threatWarning,'threat-warning');
+ this.change('configuration',[s.gear,s.flaps,s.airbrake,s.afterburner,s.assist,s.landingMode,w.selected],'configuration',{gear:s.gear,flaps:s.flaps,airbrake:s.airbrake,afterburner:s.afterburner,assist:s.assist,landingMode:s.landingMode,weapon:w.selected});
+ this.change('lock',[aim.id,aim.locked],'target-lock',{id:aim.id,locked:aim.locked,progress:aim.progress});
+ this.change('flight-state',[s.onGround,s.airborne,s.dying,s.crashed],'flight-state',{onGround:s.onGround,airborne:s.airborne,dying:s.dying,crashed:s.crashed});
+ this.change('objectives',m.objectives||[m.objectiveComplete],'objectives',m.objectives||{complete:m.objectiveComplete});
+ this.change('jam',navigationJammed(s,targets),'jamming');
+ if(s.lastTouchdown)this.change('touchdown',s.lastTouchdown.time,'touchdown',s.lastTouchdown);
+ for(const t of targets){const state=[t.alive,Math.floor(t.damage||0),t.health,t.exited,t.departedAirspace,t.stopped,t.crossedBridge],key=JSON.stringify(state);if(this.unitPrevious.get(t.id)!==key){this.unitPrevious.set(t.id,key);this.event('unit-state',unitData(t,w));}}
+ this.change('damage',[Math.floor(s.damage),s.condition.source],'damage',{damage:s.damage,source:s.condition.source,parts:s.condition.parts});
+ const ids=new Set(w.projectiles.map(p=>p.id));for(const p of w.projectiles)if(!this.shots.has(p.id))this.event('projectile-start',{id:p.id,owner:p.owner||'player',sourceId:p.sourceId||'PLAYER',targetId:p.targetEntityId||p.targetId||(p.targetPlayer?'PLAYER':null),type:p.type,profile:p.profile?.id,position:vec(p.position),velocity:vec(p.velocity),fuse:p.fuse});for(const id of this.shots)if(!ids.has(id))this.event('projectile-end',{id});this.shots=ids;
+ if(force||s.elapsed+1e-6>=this.nextSample){this.event('sample',{phase:m.phaseId,player:playerData(s,controls),target:{id:aim.id,locked:aim.locked,progress:aim.progress},stats:{used:w.used,hits:w.hits,misses:w.misses,alliedKills:w.alliedKills||0}});this.nextSample=s.elapsed+.1;}
+ if(force||s.elapsed+1e-6>=this.nextWorld){this.event('world',{units:targets.map(t=>unitData(t,w)),projectiles:w.projectiles.map(p=>({id:p.id,type:p.type,owner:p.owner||'player',sourceId:p.sourceId||'PLAYER',targetId:p.targetEntityId||p.targetId,position:vec(p.position),velocity:vec(p.velocity),age:round(p.age),armed:p.armed,seekerLost:p.seekerLost,lossReason:p.lossReason,decoyId:p.decoyId})),decoys:s.countermeasures?.decoys.map(d=>({id:d.id,type:d.type,position:vec(d.position),velocity:vec(d.velocity),age:round(d.age)}))||[]});this.nextWorld=s.elapsed+.5;}
+ if(s.elapsed>=this.nextFlush){this.flush();this.nextFlush=s.elapsed+2;}
+ }
+ finish(result){if(this.ended)return;this.event('mission-end',result);this.metadata.result=copy(result);this.metadata.durationSeconds=this.time;this.flush();this.ended=true;}
+ flush(){if(this.metadata&&this.pending.length){const batch=this.pending;this.pending=[];this.onBatch(copy(this.metadata),batch);}}
+ export(){return {metadata:copy(this.metadata),entries:copy(this.entries)};}
+}

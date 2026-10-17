@@ -1,14 +1,14 @@
 import {Vec3,Quat,clamp,forward,up,attitude,DEG} from './math.js';
 import {terrainHeight,onRunway} from './terrain.js';
 import {loadout} from './aircraftSpec.js';
-import {evaluateApproach,touchdownProblems} from './landing.js';
+import {evaluateApproach,touchdownProblems,touchdownLimits} from './landing.js';
 import {atmosphere,mass} from './performance.js';
 import {createDamage,syncDamage,damageResponse,damageMotion,updateDamage,damageWarnings,applyDamage,recordImpact,actuatorFault} from './damage.js';
 import {fuelFlow,consumeFuel} from './fuel.js';
 import {createCountermeasures} from './countermeasures.js';
 export {atmosphere,mass} from './performance.js';
 export const STEP=1/120;
-export function createAircraft(spec){return {spec,position:new Vec3(0,2,-1320),velocity:new Vec3(),orientation:new Quat(),fuel:spec.fuelCapacity,ammo:loadout(spec),throttle:0,afterburner:false,gear:true,flaps:true,flapPosition:1,countermeasures:createCountermeasures(spec),airbrake:false,assist:true,damage:0,condition:createDamage(Math.floor(Math.random()*0x100000000)),dying:false,crashElapsed:0,onGround:true,airborne:false,g:1,speed:0,ias:0,mach:0,agl:2,alpha:0,warning:'',crashed:false,landing:null,landingMode:'auto',approach:null,elapsed:0};}
+export function createAircraft(spec,{ammo=loadout(spec)}={}){return {spec,position:new Vec3(0,2,-1320),velocity:new Vec3(),orientation:new Quat(),fuel:spec.fuelCapacity,ammo:{...ammo},throttle:0,afterburner:false,gear:true,flaps:true,flapPosition:1,countermeasures:createCountermeasures(spec),airbrake:false,assist:true,damage:0,condition:createDamage(Math.floor(Math.random()*0x100000000)),dying:false,crashElapsed:0,onGround:true,airborne:false,g:1,speed:0,ias:0,mach:0,agl:2,alpha:0,warning:'',crashed:false,landing:null,landingMode:'auto',approach:null,elapsed:0};}
 export function stepAircraft(s,input,dt=STEP){
  if(s.crashed)return;
  s.previousPosition=s.position.clone();
@@ -36,11 +36,12 @@ export function stepAircraft(s,input,dt=STEP){
  consumeFuel(s,fuelFlow(s,{thrust,afterburner:isAB,mach:v/air.soundSpeed,density:air.density,engine:response.engine}),dt);
  const liftDir=u.clone().sub(velDir.clone().scale(u.dot(velDir))).normalize(),lift=q*spec.wingArea*cl*response.lift,drag=q*spec.wingArea*cd;
  const acc=f.clone().scale(thrust/m).add(velDir.clone().scale(-drag/m)).add(liftDir.scale(lift/m)).add(new Vec3(0,-9.81,0));
+ s.forces={massKg:m,dynamicPressurePa:q,liftN:lift,dragN:drag,thrustN:thrust};
  if(s.onGround){acc.add(velDir.clone().scale(-Math.min(input.brake&&!actuatorFault(s,'wheelBrake')?5.5:.15,v/dt)));if(acc.y<0)acc.y=0;}
  s.velocity.add(acc.scale(dt));if(s.onGround&&s.velocity.y>.3){s.onGround=false;s.airborne=true;}s.position.add(s.velocity.clone().scale(dt));
  const floor=terrainHeight(s.position.x,s.position.z)+2;
  if(s.dying&&s.onGround){s.position.y=floor;recordImpact(s,['A sérült szerkezet a földön összeomlott.']);return;}
- if(s.position.y<=floor){if(!s.onGround){const descent=-s.velocity.y,problems=touchdownProblems(s,descent,v);if(problems.length||s.dying){s.position.y=floor;recordImpact(s,problems);return;}s.landing={success:true,descent,offset:Math.abs(s.position.x),speed:v};s.onGround=true;}s.position.y=floor;s.velocity.y=0;if(!onRunway(s.position)&&v>35){recordImpact(s,['A gép a pályán kívüli terepnek ütközött.']);return;}}
+ if(s.position.y<=floor){if(!s.onGround){const descent=-s.velocity.y,touchSpeed=s.velocity.length(),problems=touchdownProblems(s,descent,touchSpeed);const contact=attitude(s.orientation);s.lastTouchdown={time:s.elapsed,position:{...s.position},velocity:{...s.velocity},speedKmh:touchSpeed*3.6,iasKmh:touchSpeed*Math.sqrt(atmosphere(s.position.y).density/1.225)*3.6,sinkMps:descent,pitchDeg:contact.pitch/DEG,bankDeg:contact.bank/DEG,headingDeg:contact.heading/DEG,trackDeg:Math.atan2(s.velocity.x,s.velocity.z)/DEG,massKg:mass(s),fuelKg:s.fuel,damage:s.damage,parts:{...s.condition.parts},gear:s.gear,flapPosition:s.flapPosition,throttle:s.throttle,afterburner:isAB,airbrake:s.airbrake,approach:s.approach?{...s.approach}:null,limits:touchdownLimits(s),problems:[...problems],success:!problems.length&&!s.dying};if(problems.length||s.dying){s.position.y=floor;recordImpact(s,problems);return;}s.landing={success:true,descent,offset:Math.abs(s.position.x),speed:touchSpeed};s.onGround=true;}s.position.y=floor;s.velocity.y=0;if(!onRunway(s.position)&&v>35){recordImpact(s,['A gép a pályán kívüli terepnek ütközött.']);return;}}
  if(s.onGround&&v<.3&&s.throttle<.01)s.velocity=new Vec3();
  s.speed=s.velocity.length();s.ias=s.speed*Math.sqrt(air.density/1.225);s.mach=s.speed/air.soundSpeed;s.alpha=alpha;s.agl=s.position.y-terrainHeight(s.position.x,s.position.z);s.g=s.onGround?1:lift/m/9.81;
  updateDamage(s,dt);

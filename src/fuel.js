@@ -2,6 +2,7 @@ import {clamp} from './math.js';
 // Approximate installed engine-family TSFC [kg / (N s)], not certified charts.
 // Thrust in aircraftSpec is the sum for all engines; never multiply it twice.
 const families={
+ c130:[.000011,0],il76:[.000021,0],b52:[.000022,0],tu95:[.000012,0],airliner:[.000017,0],
  f14:[.000025,.000064],f15:[.000021,.000056],f16:[.000021,.000057],fa18:[.000023,.000059],mirage:[.000026,.000062],
  rafale:[.000021,.000052],euro:[.000020,.000051],gripen:[.000021,.000055],f4:[.000031,.000073],f15e:[.000021,.000056],tornado:[.000023,.000060],a10:[.000011,0],
  mig25:[.000034,.000079],mig31:[.000024,.000061],su27:[.000025,.000064],mig29:[.000026,.000066],su24:[.000030,.000072],mig27:[.000028,.000069],su25:[.000029,0],
