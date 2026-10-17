@@ -1,3 +1,5 @@
+import {objectiveRows} from './missionProgress.js';
+import {advisedTarget} from './targetAdvice.js';
 import {battleObjectives} from './missionObjectives.js';
 import {isHostile} from './unitTypes.js';
 import {terrainHeight} from './terrain.js';
@@ -8,7 +10,7 @@ export class Mission {
   constructor(spec){
     this.spec=spec;
     this.destroyed=false;
-    this.complete=false;
+    this.complete=false;this.aborted=false;this.recovered=false;
     this.failed=false;this.failureReason='';this.objectiveComplete=false;this.civilIntercepted=false;
     this.departed=false;
     this.score=0;
@@ -17,12 +19,28 @@ export class Mission {
 
   setPhase(id,label,hint){this.phaseId=id;this.phase=label;this.phaseHint=hint;}
 
+  abortToReturn(s,targets,reason){
+    if(this.aborted)return;
+    this.aborted=true;this.abortReason=reason;this.abortTime=s.elapsed;
+    this.interruptedObjectives=objectiveRows(s,this,targets).map(o=>({...o,done:!!o.done,status:o.done?'done':'failed'}));
+    this.updateReturn(s);
+  }
+  updateReturn(s){
+    const landed=!!(s.onGround&&s.landing?.success&&s.speed<5);
+    this.objectives=[{id:'return',text:'Hazatérés',done:landed,status:landed?'done':'pending'},...this.interruptedObjectives];
+    this.objectiveComplete=false;
+    if(landed){this.recovered=true;this.setPhase('recovered','HAZATÉRÉS TELJESÍTVE','A megszakított küldetés után biztonságosan leszálltál.');}
+    else if(s.onGround&&s.landing?.success)this.setPhase('rollout','KIFUTÁS','Gáz le, Ctrl: kerékfék.');
+    else if(s.approach?.active)this.setPhase(s.approach.stage==='SZINTBE VÉTEL'?'flare':'landing',`LESZÁLLÁS · ${s.approach.stage}`,s.approach.instruction);
+    else this.setPhase('emergency','HAZATÉRÉS','Térj a BASE felé, majd szállj le.');
+  }
   update(s,targets,w,aim=null){
-    if(this.complete||this.failed)return;
+    if(this.complete||this.failed||this.recovered)return;
     const practice=this.spec.objective==='landing',civil=this.spec.objective==='escort'?targets.find(t=>t.civilian):null;
-    if(civil&&(civil.damage>0||civil.flight?.damage>0||(!civil.alive&&!civil.departedAirspace))){this.failed=true;this.failureReason='A civil repülőgép megsérült. Ebben a küldetésben tilos tüzelni rá.';this.setPhase('failed','KÜLDETÉS SIKERTELEN · CIVIL GÉP',this.failureReason);return;}
     if(s.crashed){this.setPhase('failed','KÜLDETÉS SIKERTELEN','A repülési jelentésben találod a részleteket.');return;}
     if(s.dying){this.setPhase('dying','IRÁNYÍTÁS ELVESZETT','Végzetes szerkezeti kár. A gép zuhanását külső nézetből követjük.');return;}
+    if(this.aborted){this.updateReturn(s);return;}
+    if(civil&&(civil.damage>0||civil.flight?.damage>0||(!civil.alive&&!civil.departedAirspace))){this.failed=true;this.failureReason='A civil repülőgép megsérült. Ebben a küldetésben tilos tüzelni rá.';this.setPhase('failed','KÜLDETÉS SIKERTELEN · CIVIL GÉP',this.failureReason);return;}
     if(!civil&&targets.filter(t=>isHostile(t,s)).length&&targets.filter(t=>isHostile(t,s)).every(t=>!t.alive))this.destroyed=true;
     const agl=s.position.y-terrainHeight(s.position.x,s.position.z);
     if(s.airborne&&(agl>=150||Math.hypot(s.position.x,s.position.z)>2300))this.departed=true;
@@ -30,6 +48,8 @@ export class Mission {
     this.objectiveComplete=practice?!!(s.onGround&&s.landing?.success):civil?!!civil.departedAirspace:this.destroyed;
     if(this.spec.composition&&!practice&&!civil){const report=battleObjectives(this,s,targets,w);this.objectives=report.rows;this.objectiveComplete=report.complete;this.destroyed=report.complete;if(report.failure){this.failed=true;this.failureReason=report.failure;this.setPhase('failed','KÜLDETÉS SIKERTELEN',report.failure);return;}}
 
+
+    if(!practice&&s.airborne&&!s.onGround&&(s.damage>=40||s.fuel<=0)){this.abortToReturn(s,targets,s.damage>=40?'Sérülés miatt megszakított küldetés.':'Üzemanyaghiány miatt megszakított küldetés.');return;}
 
     if(this.objectiveComplete&&s.airborne&&s.landing?.success&&s.onGround&&s.speed<5){
       this.complete=true;
@@ -64,10 +84,11 @@ export class Mission {
     if(civil){this.setPhase(this.civilIntercepted?'civil-departure':'civil-intercept',this.civilIntercepted?'CIVIL GÉP · VISSZAFORDULÁS / TÁVOZÁS':'CIVIL GÉP · BÉKÉS ELFOGÁS',this.civilIntercepted?'A befogás sikerült. A gép elhagyja a légteret; közben elindulhatsz haza.':'T: célbefogás. Tűzszünet, a civil gépet meg kell óvni.');return;}
     if(activeJammers(targets).some(t=>isHostile(t,s))&&targets.find(t=>t.id===aim?.id)?.type==='jammer'){this.setPhase('jammer-attack','JELZAVARÓ KIIKTATÁSA','Tab-bal bármely ellenséges célra válthatsz. A zavarási körön belül nincs befogás.');return;}
     const alive=sensorTargets(s,targets).filter(t=>t.alive&&t.position).sort((a,b)=>a.position.distance(s.position)-b.position.distance(s.position));
-    const distance=Math.min(...alive.map(t=>t.position.distance(s.position)));
+    const advised=advisedTarget(s,targets,aim,this.spec);
+    const distance=advised?advised.position.distance(s.position):Infinity;
     const locked=aim?.locked&&alive.some(t=>t.id===aim.id);
     const firing=w.projectiles?.some(p=>p.age<8);
-    if((alive.find(t=>t.id===aim?.id)||alive[0])?.kind==='air'||!alive.length&&this.spec.kind==='air'){
+    if(advised?.kind==='air'||!alive.length&&this.spec.kind==='air'){
       const close=distance<(this.phaseId==='air-combat'?7000:5000);
       if(close||locked||firing)this.setPhase('air-combat','LÉGIHARC','Célbefogás: Tab · Fegyverhasználat: Szóköz.');
       else this.setPhase(this.spec.objective==='escort-transport'?'escort-cover':'intercept',this.spec.objective==='escort-transport'?'SZÁLLÍTÓ KÍSÉRÉSE':'ELFOGÁS / CÉL MEGKÖZELÍTÉSE','Kövesd a céljelzést; a védendő szállítót kék jel mutatja.');

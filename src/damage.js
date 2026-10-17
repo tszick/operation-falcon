@@ -55,11 +55,15 @@ export function damageMotion(s,q,m,cl,engineDemand,dt){
  if(v<1&&!s.dying){r.roll*=.98;r.pitch*=.98;r.yaw*=.98;}
  return r;
 }
+export function structuralLoadLimits(s){
+ const p=s.condition?.parts,wing=Math.min(p?.leftWing??1,p?.rightWing??1);
+ return {positive:s.spec.maxG*(.65+.35*wing),negative:-s.spec.maxG*.4};
+}
 export function updateDamage(s,dt){
  const d=syncDamage(s),p=d.parts,response=damageResponse(s);
  if(!s.dying){
-  const limit=s.spec.maxG*(.65+.35*Math.min(p.leftWing,p.rightWing));
-  const overload=Math.max(0,s.g-limit, -s.g-s.spec.maxG*.4);
+  const limits=structuralLoadLimits(s);
+  const overload=Math.max(0,s.g-limits.positive,limits.negative-s.g);
   const maxIAS=Math.min(440,s.spec.maxMach*340*.85);
   const overspeed=Math.max(0,s.mach-s.spec.maxMach)*7+Math.max(0,s.ias/maxIAS-1)*4;
   const fire=(Math.min(p.engineLeft,p.engineRight)<.25&&s.fuel>0)?(.35+s.throttle*.6):0;
@@ -73,6 +77,6 @@ export function updateDamage(s,dt){
 export function recordImpact(s,reasons=[]){
  if(s.crashed)return;s.crashed=true;s.dying=false;s.damage=100;s.crashElapsed=0;s.impactPending=true;s.afterburner=false;
  s.landing={success:false,descent:Math.max(0,-s.velocity.y),reasons:reasons.length?reasons:[ensureDamage(s).source||'A sérült repülőgép a földnek csapódott.']};
- s.position.y=Math.max(0,s.position.y);s.velocity=new Vec3();s.speed=0;s.enginePower=0;s.onGround=true;s.warning='BECSAPÓDÁS';
+ s.position.y=Math.max(0,s.position.y);s.velocity=new Vec3();s.speed=0;s.ias=0;s.mach=0;s.enginePower=0;s.onGround=true;s.warning='BECSAPÓDÁS';
 }
 export function advanceCrashSequence(s,dt){if(!s.crashed)return false;s.crashElapsed=(s.crashElapsed||0)+dt;return s.crashElapsed>=5;}

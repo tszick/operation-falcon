@@ -1,3 +1,4 @@
+import {advisedTarget} from './targetAdvice.js';
 import {firingStatus} from './firingStatus.js';
 import {attitude,DEG} from './math.js';
 import {approachSpeeds,approachSpeedAction} from './performance.js';
@@ -8,14 +9,14 @@ import {sensorTargets,navigationJammed} from './electronicWarfare.js';
 // Short, ordered cockpit reminders. Detailed instructions remain in H.
 export function phaseGuide(s,mission,aim,weapons,targets){
   const step=(key,text,done=false)=>({key,text,done});
-  const preferred=targets.find(t=>t.alive&&t.id===aim.id)||sensorTargets(s,targets).sort((a,b)=>a.position.distance(s.position)-b.position.distance(s.position))[0];
+  const preferred=advisedTarget(s,targets,aim,mission.spec);
   const airTarget=preferred?preferred.kind==='air':mission.spec.kind==='air';
   const choices=(airTarget?['aam','gun']:['agm','bomb','gun']).filter(type=>weaponAvailable(s,type));
   const suggested=choices.includes(weapons.selected)?weapons.selected:choices[0];
   const weaponStep=()=>step(suggested?weaponKeys[suggested]:'—',suggested?weaponLabel(s,suggested):'Nincs megfelelő lőszer: térj haza',weapons.selected===suggested);
   if(navigationJammed(s,targets))return [step('V','Szemmel keresd az antennás zavarókocsit'),step('1 / 4','Ágyú vagy bomba: kézzel célozz'),step('A / D','Vagy repülj ki a zavarási körből'),step('T','Odakint újra befoghatod a zavarót')].map((item,i)=>({...item,active:i===0}));
   targets=sensorTargets(s,targets);
-  const target=targets.find(t=>t.alive&&t.id===aim.id)||targets.filter(t=>t.alive).sort((a,b)=>a.position.distance(s.position)-b.position.distance(s.position))[0];
+  const target=preferred;
   const bearing=target?(Math.atan2(target.position.x-s.position.x,target.position.z-s.position.z)*180/Math.PI+360)%360:0;
   const attitudeNow=attitude(s.orientation);
   const flap=flapStatus(s);

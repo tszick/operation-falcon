@@ -324,3 +324,49 @@ A tárhelyre kétmásodpercenként, valamint szünetben és a küldetés végén
 A visszanéző sebesség- és magassággörbét, időcsúszkát, fázisonkénti időt, eseményszűrőt és nyers állapotadatokat mutat. Ez diagnosztikai napló, nem teljes vizuális visszajátszás. A kimenet őrzi az induló terepet, fizikai és fegyverprofilokat, valamint a sérülési és AI-véletlenmagokat.
 
 A gyakorló és harci küldetések ugyanazt a leszállási fizikát használják. A gyakorlat alacsony üzemanyaggal, fegyverzet nélkül és beállított megközelítéssel indul; harci visszatéréskor a nagyobb tömeg és sérülés emelheti a szükséges sebességet. A földetérés IAS-határa ezért legalább 396 km/h, de követi a segéd által kiszámított felső sebességhatárt, ha az magasabb. A 3 m/s alatti süllyedés, futómű, pályán belüli helyzet és megfelelő géphelyzet követelménye megmaradt.
+
+## Pilótakézikönyv a wikiben
+
+Az Egységtár 13 részletes, géptípustól független pilótafejezetet tartalmaz: műszerek és alapkezelés, felszállás, elfogás, civil elfogás, célzás és indítási engedély, légiharc, földi objektum támadása, földi egység támadása, hazatérés, landolás, átstartolás, sérülés és jelzavarás. Minden fejezet sorrendbe rendezett kezelési lépéseket, figyelendő kijelzőket és gyakori hibákat ad. A légiharc külön kitér az elhaladó ellenfél utáni visszafordulásra; a földi egységek fejezete a mozgó konvoj célzására; a hazatérés a pályatengelyre állásra.
+
+Öt külön baráti adatlap ismerteti a saját repteret, vadászgépet, bunkert, rakétarendszert és védendő szállítót, a szerepükkel, korlátaikkal és a küldetéseikben kiosztott számukkal. Az adatlapok egymásra és a felszerelhető fegyverekre hivatkoznak. Közvetlen link például `/encyclopedia.html#guide-landing` vagy `/encyclopedia.html#friendly-transport`; a címben szereplő fejezet újratöltés után is megmarad. A hangár Egységtár hivatkozása és a H súgó is elvezet a kézikönyvhöz. A korábbi `/tutorial.html` folyamatos, nyomtatható útmutató megmaradt.
+
+## Egérrel körbenézés és leszállási segédív
+
+Belső nézetben az egér relatív mozgása a pilóta kameráját fordítja. A játékbeli komfortkorlát oldalra ±100°, felfelé 65°, lefelé 45°; ezek nem orvosi mozgástartomány-adatok. A mozgás simított és szögsebesség-korlátos. 0,18 s egércsend után a nézet simán előre tér vissza. A repülő tájolása, a radar látókúpja és a fegyverek iránya változatlan. A HUD a gép orrához kötve mozdul ki a látótérből; oldalra nézve nincs hamis, előre tüzelő középső célkereszt. Külső nézetben, zuhanásnál, szünetben és a felületi gombok/műszerpanelek kezelésekor nincs aktív fejforgatás.
+
+Leszállási módban az **I** vagy az **I SEGÉDÍV** gomb kapcsolja a kékes-lila útvonalat. A térkép és a terep ugyanazt a pontsort rajzolja, irányjelöléssel és a végső egyenes kapuival. A kapcsoló megmarad a következő repülésre. Az útvonal nem irányítja a gépet; a pilóta a sebességet, süllyedést és géphelyzetet továbbra is a műszerek alapján állítja. Jelzavarásban az ív sem látszik.
+
+A ráfordulás Dubins-pályákból választ, érintőleges állandó sugarú fordulókkal és egyenesekkel. A sugár a vízszintes sebességből, közel 30°-os bedöntéshez készül, 700–12000 m játékmeneti határokkal. A tervet a játék nem számolja újra minden képkockában: jelentős, 2 km feletti letérés után vagy a segéd újrakapcsolásakor újratervez. A kész egyenes a pálya választott küszöbéhez vezet, körülbelül 3° siklópályán; a távolabbi szakaszok a terep fölé emelhetők. A világ és a minimap közös útvonalat használ, nem két külön becslést.
+
+A repülési napló mintáiban a fej két szöge és a segédív kapcsolóállása is szerepel.
+
+
+### Fegyverzettervezés és küldetésértékelés
+
+A hangárban minden modellezett függesztési hely külön állítható; az üres hely is választható. A beépített ágyúnál a lőszer felvétele kapcsolható. Csak a meglévő, név szerint meghatározott gépváltozat fegyverei érhetők el: nincs általános NATO/orosz/kínai fegyvercsere. A külső földi fegyverhelyek ugyanazon változat légiharc-fegyverére is átállíthatók, a dedikált légiharc- és belső helyek konzervatívan megtartják a saját kategóriájukat. Nincs többes függesztő vagy még nem modellezett fegyverintegráció. A helyek száma és a felület kifejezetten játékbeli engedélyezett terhelése korlátoz: az utóbbi géptípusonként megadott, kerekített játékérték, a belső fegyvertereknél konzervatív korláttal. A modellezett állomások száma hamarabb is elfogyhat, mint a teljes fegyverterhelési keret. A valós gépek összes függesztőjét, többes tartóját és integrált fegyverét nem modellezzük. A kiválasztás a lőszermennyiséget, a fegyverek tömegét, a kezdő fegyvert és a fedélzeti fegyverrajzot is módosítja. A leszállási gyakorlat továbbra is fegyvertelen.
+
+A 3 m/s süllyedés leszállási minőségi cél, nem azonnali megsemmisülési határ. Futóval 3–8 m/s között a függőleges ütközési energia többletével (a süllyedési sebesség négyzetével) nő a törzs/hidraulika sérülése. 8 m/s-tól, futó nélküli legalább 5 m/s-os érkezésnél, nagy szárny-/orrleérésnél, oldalirányú vagy pályán kívüli ütközésnél továbbra is végzetes lehet az érkezés. A korábbi sérülések miatt a kemény földetérés is összeroppanthatja a szerkezetet. A kifutó fölötti szintbe vételnél a segéd nem kéri többé a küszöbre számolt 3°-os siklópálya követését.
+
+A jelentés és a naplónézet ugyanazzal a szabályalapú elemzővel értékeli az aktuális naplót. Fázisonként megjelenik a végrehajtás állapota, a tartós eltérések mért időtartama, a találatok, a tüzelési akadályok, a földetérési adatok és a rögzített küldetésvégi ok. A biztonsági eltérések hiánya nem jelent automatikusan harcászati sikert. Nincs külső szolgáltatás, mesterséges pontszám vagy előzménytár.
+
+A terhelési adatok támpontjai: [Dassault Rafale](https://www.dassault-aviation.com/en/defense/rafale/specifications-and-performance-data/), [USAF A-10](https://www.af.mil/About-Us/Fact-Sheets/Display/Article/104490/a-10c-thunderbolt-ii/), [Saab Gripen C](https://www.saab.com/products/gripen-c-series). A játékadatok kerekítettek, nem tanúsított függesztési táblázatok.
+
+
+### Induló üzemanyag és tömeg
+
+A hangár üzemanyagcsúszkája 0–100% között állítható, és a kiválasztott gép tartálykapacitása alapján kilogrammban is kijelzi a tankolást. A kiválasztás gépenként megmarad a hangárban töltött munkameneten belül; a leszállási gyakorlás külön, alapból 15%-os beállítást kap. Minden indulási mód a kiválasztott üzemanyagot használja, az induló légsebességhez szükséges állásszög számítását megelőzően.
+
+A hangár tömegbontása és a fizika ugyanazt a `massBreakdown` függvényt használja: üres gép + aktuális üzemanyag + rakéták + bombák + gépágyúlőszer. Az üres fegyverhely nem ad fegyvertömeget; a beépített ágyú és az alapvető szerelvények az üres gép tömegében maradnak. A gépágyúprofil lövedéktömegéből 2,2-es szorzó becsüli a teljes lőszert (lövedék, hüvely, hajítótöltet); ez egyszerűsítés, nem típusonkénti hüvelyvisszatartás-szimuláció. Az elfogyasztott üzemanyag, kilőtt lőszer és kioldott fegyver a repülés közben is csökkenti a tömeget. A napló `metadata.departure` mezője megőrzi az induló tankolást és tömegbontást.
+
+
+### Repülési oldalpanelek
+
+A bal oldali gépállapot-panel fogja össze az üzemanyagot, a pillanatnyi repülésből becsült hátralévő hatótávot, a futóművet, fékszárnyat, légféket, kerékféket, gázt/utánégetőt és a terheléskorlátozást. A leszállási helyzetrajz és a megközelítési ellenőrzések is itt jelennek meg. A fegyverzet/sérülésrajz lenyitható; leszálláskor automatikusan összecsukódik, hogy a műszerek kapjanak helyet.
+
+A jobb oldali, 240×300-as radar azonos méter/pixel skálát használ a két tengelyen, így a nyújtott nézet nem torzítja a terepet vagy az irányokat. Alatta a küldetés neve, szimulációs ideje, fázisa és elsődleges/opcionális céljainak állapota látható. A nem gyakorló küldetés 40% sérülésnél vagy a levegőben kifogyó üzemanyagnál megszakad: a már teljesített célok megmaradnak, minden hátralévő eredeti cél elbukik, és új Hazatérés feladat kerül előre. A sikeres leszállás ekkor külön hazatérési jelentéssel zárul, nem harcászati győzelemmel vagy rekordponttal. A Mission Control továbbra is bezárható.
+
+A hatótáv `üzemanyag / pillanatnyi fogyasztás × vízszintes sebesség`: tartalék és siklótáv nélkül, nem optimális elméleti maximális hatótáv. Álló gépnél vagy értékelhető fogyasztási adat nélkül nincs kitalált hatótáv; üres tanknál a hajtóműves hatótáv nulla.
+
+
+A szintjelző körében nagy százalékérték és kisebb becsült hatótáv jelenik meg; a kitöltés inline dash-offsetet kap, hogy ne írja felül a korábbi stílus. A kapcsolók állapota semleges/sárga/piros, és képernyőolvasó számára szövegesen is jelzett. A veszélyjelzés az aktuális helyzethez igazodik (például leszállásnál hiányzó futó/fékszárny, nyitott légfék kis sebességnél, aktív utánégető). N/P/H gombkártya nincs a játéktéren; a billentyűk működnek. A céljegyzékben a kör a hátralévő, a zöld pipa az elvégzett, a piros X az elbukott célt jelöli, ismétlődő kísérőszöveg nélkül.

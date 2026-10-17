@@ -32,7 +32,7 @@ export const armaments={
  su25:preset('Su-25','GSh-30-2 · 30 mm',250,'R-60M',mixed([6.5,-1],[4.5,0],2.5,0),'Kh-25ML','FAB-250')
 };
 export const weaponKeys={gun:'1',aam:'2',agm:'3',bomb:'4'};
-export function armament(spec){const p=armaments[spec.id];if(!p)throw new Error(`Missing armament: ${spec.id}`);return p;}
+export function armament(spec){const p=spec.configuredArmament||armaments[spec.id];if(!p)throw new Error(`Missing armament: ${spec.id}`);return p;}
 export function weaponAvailable(s,type){return !!armament(s.spec).weapons[type]&&s.ammo[type]>0;}
 export function weaponLabel(s,type){return armament(s.spec).weapons[type]?.name||'NINCS FELSZERELVE';}
 export function loadedStations(s){const p=armament(s.spec),used={};return p.stations.map((station,index)=>{const spent=p.weapons[station.type].quantity-s.ammo[station.type];const ordinal=used[station.type]||0;used[station.type]=ordinal+1;return {...station,index,loaded:ordinal>=spent};});}

@@ -1,7 +1,7 @@
 import {Vec3,Quat,clamp,forward,up,attitude,DEG} from './math.js';
 import {terrainHeight,onRunway} from './terrain.js';
 import {loadout} from './aircraftSpec.js';
-import {evaluateApproach,touchdownProblems,touchdownLimits} from './landing.js';
+import {evaluateApproach,assessTouchdown,touchdownLimits} from './landing.js';
 import {atmosphere,mass} from './performance.js';
 import {createDamage,syncDamage,damageResponse,damageMotion,updateDamage,damageWarnings,applyDamage,recordImpact,actuatorFault} from './damage.js';
 import {fuelFlow,consumeFuel} from './fuel.js';
@@ -12,7 +12,7 @@ export function createAircraft(spec,{ammo=loadout(spec)}={}){return {spec,positi
 export function stepAircraft(s,input,dt=STEP){
  if(s.crashed)return;
  s.previousPosition=s.position.clone();
- const spec=s.spec;s.elapsed+=dt;syncDamage(s);const response=damageResponse(s);if(s.dying)input={};s.throttle=clamp(s.throttle+(input.throttle||0)*.32*dt,0,1);
+ const spec=s.spec;s.elapsed+=dt;syncDamage(s);const response=damageResponse(s);if(s.dying)input={};s.wheelBrakeActive=!!(s.onGround&&input.brake&&!actuatorFault(s,'wheelBrake'));s.throttle=clamp(s.throttle+(input.throttle||0)*.32*dt,0,1);
  const flapTarget=s.flaps?1:0;s.flapPosition??=flapTarget;if(!actuatorFault(s,'flaps'))s.flapPosition+=clamp(flapTarget-s.flapPosition,-dt*.6,dt*.6);
  const v=s.velocity.length(),m=mass(s),air=atmosphere(s.position.y),q=.5*air.density*v*v;
  let a=attitude(s.orientation),f=forward(s.orientation),u=up(s.orientation);
@@ -37,18 +37,18 @@ export function stepAircraft(s,input,dt=STEP){
  const liftDir=u.clone().sub(velDir.clone().scale(u.dot(velDir))).normalize(),lift=q*spec.wingArea*cl*response.lift,drag=q*spec.wingArea*cd;
  const acc=f.clone().scale(thrust/m).add(velDir.clone().scale(-drag/m)).add(liftDir.scale(lift/m)).add(new Vec3(0,-9.81,0));
  s.forces={massKg:m,dynamicPressurePa:q,liftN:lift,dragN:drag,thrustN:thrust};
- if(s.onGround){acc.add(velDir.clone().scale(-Math.min(input.brake&&!actuatorFault(s,'wheelBrake')?5.5:.15,v/dt)));if(acc.y<0)acc.y=0;}
+ if(s.onGround){acc.add(velDir.clone().scale(-Math.min(input.brake&&!actuatorFault(s,'wheelBrake')?5.5:s.gear?.15:3.5,v/dt)));if(acc.y<0)acc.y=0;}
  s.velocity.add(acc.scale(dt));if(s.onGround&&s.velocity.y>.3){s.onGround=false;s.airborne=true;}s.position.add(s.velocity.clone().scale(dt));
  const floor=terrainHeight(s.position.x,s.position.z)+2;
  if(s.dying&&s.onGround){s.position.y=floor;recordImpact(s,['A sérült szerkezet a földön összeomlott.']);return;}
- if(s.position.y<=floor){if(!s.onGround){const descent=-s.velocity.y,touchSpeed=s.velocity.length(),problems=touchdownProblems(s,descent,touchSpeed);const contact=attitude(s.orientation);s.lastTouchdown={time:s.elapsed,position:{...s.position},velocity:{...s.velocity},speedKmh:touchSpeed*3.6,iasKmh:touchSpeed*Math.sqrt(atmosphere(s.position.y).density/1.225)*3.6,sinkMps:descent,pitchDeg:contact.pitch/DEG,bankDeg:contact.bank/DEG,headingDeg:contact.heading/DEG,trackDeg:Math.atan2(s.velocity.x,s.velocity.z)/DEG,massKg:mass(s),fuelKg:s.fuel,damage:s.damage,parts:{...s.condition.parts},gear:s.gear,flapPosition:s.flapPosition,throttle:s.throttle,afterburner:isAB,airbrake:s.airbrake,approach:s.approach?{...s.approach}:null,limits:touchdownLimits(s),problems:[...problems],success:!problems.length&&!s.dying};if(problems.length||s.dying){s.position.y=floor;recordImpact(s,problems);return;}s.landing={success:true,descent,offset:Math.abs(s.position.x),speed:touchSpeed};s.onGround=true;}s.position.y=floor;s.velocity.y=0;if(!onRunway(s.position)&&v>35){recordImpact(s,['A gép a pályán kívüli terepnek ütközött.']);return;}}
+ if(s.position.y<=floor){if(!s.onGround){const descent=-s.velocity.y,touchSpeed=s.velocity.length(),contactResult=assessTouchdown(s,descent,touchSpeed),problems=contactResult.problems;const contact=attitude(s.orientation);s.lastTouchdown={time:s.elapsed,position:{...s.position},velocity:{...s.velocity},speedKmh:touchSpeed*3.6,iasKmh:touchSpeed*Math.sqrt(atmosphere(s.position.y).density/1.225)*3.6,sinkMps:descent,pitchDeg:contact.pitch/DEG,bankDeg:contact.bank/DEG,headingDeg:contact.heading/DEG,trackDeg:Math.atan2(s.velocity.x,s.velocity.z)/DEG,massKg:mass(s),fuelKg:s.fuel,damage:s.damage,parts:{...s.condition.parts},gear:s.gear,flapPosition:s.flapPosition,throttle:s.throttle,afterburner:isAB,airbrake:s.airbrake,approach:s.approach?{...s.approach}:null,limits:touchdownLimits(s),problems:[...problems],success:!contactResult.fatal,grade:contactResult.grade,impactDamage:contactResult.damage};if(contactResult.fatal){s.position.y=floor;recordImpact(s,problems);return;}if(contactResult.damage>0){applyDamage(s,contactResult.damage*.65,{part:'fuselage',source:'Kemény földetérés'});applyDamage(s,contactResult.damage*.35,{part:'hydraulics',source:'Futómű terhelése'});}if(s.dying){s.lastTouchdown.success=false;s.lastTouchdown.grade='crash';s.lastTouchdown.problems.push('A korábban sérült szerkezet nem bírta a földetérést.');s.position.y=floor;recordImpact(s,s.lastTouchdown.problems);return;}s.landing={success:true,descent,offset:Math.abs(s.position.x),speed:touchSpeed,grade:contactResult.grade,impactDamage:contactResult.damage,reasons:problems};s.onGround=true;}s.position.y=floor;s.velocity.y=0;if(!onRunway(s.position)&&v>35){recordImpact(s,['A gép a pályán kívüli terepnek ütközött.']);return;}}
  if(s.onGround&&v<.3&&s.throttle<.01)s.velocity=new Vec3();
  s.speed=s.velocity.length();s.ias=s.speed*Math.sqrt(air.density/1.225);s.mach=s.speed/air.soundSpeed;s.alpha=alpha;s.agl=s.position.y-terrainHeight(s.position.x,s.position.z);s.g=s.onGround?1:lift/m/9.81;
  updateDamage(s,dt);
  s.approach=evaluateApproach(s);
  const low=s.agl<Math.max(35,-s.velocity.y*5)&&!s.onGround&&!s.approach.protectedCorridor;
  s.warning=low&&!s.approach.runwayCorridor?'TALAJKÖZELSÉG — EMELKEDJ!':stall&&!s.onGround?'ÁTESÉS':s.approach.active&&s.approach.warning?s.approach.warning:s.g>spec.maxG?'TÚLTERHELÉS':s.damage>50?'SZERKEZETI KÁR':s.mach>spec.maxMach?'TÚL NAGY SEBESSÉG':s.position.y>spec.ceiling?'CSÚCSMAGASSÁG FELETT':s.fuel<=0?'HAJTÓMŰ LEÁLLT':s.fuel<spec.fuelCapacity*.1?'KRITIKUS ÜZEMANYAG':s.fuel<spec.fuelCapacity*.25?'BINGO FUEL':s.onGround&&!s.landing?.success&&v>spec.approachSpeed?'ROTATE — EMELD AZ ORROT':!s.onGround&&s.gear&&v>140?'HÚZD BE A FUTÓMŰVET':!s.onGround&&s.agl<200&&s.velocity.y<-4?'TÚL NAGY SÜLLYEDÉS':'';
- if(s.dying)s.warning='IRÁNYÍTÁS ELVESZETT — VÉGZETES SZERKEZETI KÁR';else if(!s.warning&&s.damage>=15)s.warning=damageWarnings(s)[0]||'SZERKEZETI KÁR — TÉRJ HAZA';
+ if(s.dying)s.warning='IRÁNYÍTÁS ELVESZETT — VÉGZETES SZERKEZETI KÁR';else if(!s.warning&&s.damage>=15)s.warning=damageWarnings(s)[0]||'SÉRÜLT SZERKEZET · FINOM MANŐVEREK';
 }
 
 

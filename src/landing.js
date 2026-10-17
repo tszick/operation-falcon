@@ -29,7 +29,7 @@ export function evaluateApproach(s) {
   const glideTolerance=Math.max(12,distance*.025);
   const headingOK=Math.abs(headingError)<8;
   const trackOK=lateral<Math.max(25,distance*.035);
-  const glideOK=Math.abs(glideError)<glideTolerance;
+  const glideOK=near||Math.abs(glideError)<glideTolerance;
   const bankOK=Math.abs(a.bank/DEG)<10;
   const pitchOK=a.pitch/DEG>=-3&&a.pitch/DEG<15;
   const speedOK=speed>=minSpeed&&speed<=maxSpeed;
@@ -40,11 +40,11 @@ export function evaluateApproach(s) {
     {label:'LÉGFÉK',value:s.airbrake?'NYITVA':'ZÁRVA',ok:!s.airbrake||speed>targetSpeed+15},
     {label:'SEBESSÉG',value:`${Math.round(speed)} / ${Math.round(targetSpeed)} KM/H`,ok:speedOK},
     {label:'SÜLLYEDÉS',value:`${sink.toFixed(1)} M/S · <${sinkLimit}`,ok:sinkOK},
-    {label:'SIKLÓPÁLYA',value:`${glideError>=0?'+':''}${Math.round(glideError)} M`,ok:glideOK},
+    {label:'SIKLÓPÁLYA',value:near?'SZINTBE VÉTEL':`${glideError>=0?'+':''}${Math.round(glideError)} M`,ok:glideOK},
     {label:'PÁLYAIRÁNY',value:`${direction>0?'000':'180'}° · ${Math.round(headingError)}°`,ok:headingOK},
     {label:'TENGELY',value:`${Math.round(s.position.x)} M`,ok:trackOK},
     {label:'BEDÖNTÉS',value:`${Math.round(a.bank/DEG)}°`,ok:bankOK},
-    {label:'BEÉRKEZÉS',value:`${angle.toFixed(1)}° / 3°`,ok:near?pitchOK:angle>=.5&&angle<5}
+    {label:near?'ORRHELYZET':'BEÉRKEZÉS',value:near?`${(a.pitch/DEG).toFixed(1)}°`:`${angle.toFixed(1)}° / 3°`,ok:near?pitchOK:angle>=.5&&angle<5}
   ];
   let warning='';
   if(active){
@@ -69,7 +69,7 @@ export function evaluateApproach(s) {
     mode:s.landingMode||'auto'};
 }
 
-export function touchdownLimits(s){const speeds=approachSpeeds(s);return {maxIASKmh:Math.max(396,speeds.max),minIASKmh:108,maxSink:3,maxBankDeg:10,minPitchDeg:-3,maxPitchDeg:15,maxHeadingErrorDeg:Math.asin(.13)/DEG};}
+export function touchdownLimits(s){const speeds=approachSpeeds(s);return {maxIASKmh:Math.max(396,speeds.max),minIASKmh:108,maxSink:3,maxBankDeg:10,minPitchDeg:-3,maxPitchDeg:15,maxHeadingErrorDeg:Math.asin(.13)/DEG,hardSink:3,severeSink:5,criticalSink:8};}
 export function touchdownProblems(s,descent,speed) {
   const a=attitude(s.orientation),problems=[],limits=touchdownLimits(s),ias=speed*Math.sqrt(atmosphere(s.position.y).density/1.225)*3.6;
   if(!s.gear)problems.push('A futómű nem volt kiengedve (G).');
@@ -85,3 +85,18 @@ export function touchdownProblems(s,descent,speed) {
 
 
 
+
+// Contact energy grows with sink speed squared. The old 3 m/s boundary is
+// a quality threshold; only catastrophic contacts stop the simulation.
+export function assessTouchdown(s,descent,speed){
+ const a=attitude(s.orientation),limits=touchdownLimits(s),ias=speed*Math.sqrt(atmosphere(s.position.y).density/1.225)*3.6;
+ const problems=touchdownProblems(s,descent,speed),sink=Math.max(0,descent),bank=Math.abs(a.bank/DEG),pitch=a.pitch/DEG;
+ const track=Math.abs(Math.atan2(Math.sin(Math.atan2(s.velocity.x,s.velocity.z)-a.heading),Math.cos(Math.atan2(s.velocity.x,s.velocity.z)-a.heading))/DEG);
+ const runwayAngle=Math.asin(Math.abs(Math.sin(a.heading)))/DEG;
+ const fatal=s.dying||(!s.gear&&sink>=5)||runwayAngle>=35||!onRunway(s.position)||sink>=limits.criticalSink||bank>=25||pitch<=-12||pitch>=25||ias>=limits.maxIASKmh*1.3||track>=35;
+ if(track>8)problems.push(`Oldalazó földetérés: ${track.toFixed(1)}°.`);
+ if(fatal)return {fatal:true,grade:'crash',damage:100,problems};
+ const energy=Math.max(0,sink*sink-9),gearPenalty=s.gear?0:25;
+ const damage=Math.min(75,(sink>=3?.5:0)+energy*1.6+gearPenalty+Math.max(0,bank-10)*1.4+Math.max(0,-pitch-3)*2+Math.max(0,pitch-15)*2+Math.max(0,ias-limits.maxIASKmh)*.2+Math.max(0,limits.minIASKmh-ias)*.12+Math.max(0,track-8)*.7+Math.max(0,runwayAngle-8)*.7);
+ return {fatal:false,grade:damage>=25?'severe':damage>0?'hard':'smooth',damage,problems};
+}

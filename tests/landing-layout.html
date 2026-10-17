@@ -1,17 +1,31 @@
-<!doctype html><html lang="hu"><head><meta charset="utf-8"><title>Leszállási kijelző ellenőrzése</title><link rel="stylesheet" href="/style.css"></head><body><script type="module">
+<!doctype html><html lang="hu"><head><meta charset="utf-8"><title>Leszállási kijelző ellenőrzése</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/flight.css"></head><body><script type="module">
 import {aircraft,missions} from '/src/aircraftSpec.js';
-import {createAircraft} from '/src/physics.js';
+import {createMissionAircraft} from '/src/missionStart.js';
 import {Vec3,Quat,DEG} from '/src/math.js';
 import {approachSpeeds} from '/src/performance.js';
 import {evaluateApproach} from '/src/landing.js';
 import {updateHUD} from '/src/hud.js';
 import {Renderer} from '/src/renderer.js';
 import {Weapons} from '/src/weapons.js';
-import {Targeting} from '/src/targeting.js';
+import {Targeting,createTargets} from '/src/targeting.js';
 import {Mission} from '/src/mission.js';
+import {applyDamage} from '/src/damage.js';
+const params=new URLSearchParams(location.search),viewport=params.get('viewport');
+if(viewport){
+ const [width,height]=viewport.split('x').map(Number),frame=document.createElement('iframe');
+ document.body.style.margin='0';frame.style.cssText=`width:${width}px;height:${height}px;border:0`;frame.src=`/tests/landing-layout.html?mode=${params.get('mode')||'landing'}`;frame.title='Repülési kijelző méretpróba';document.body.append(frame);
+ const report=document.createElement('output');report.id='layout-report';report.style.cssText='position:fixed;bottom:0;left:25%;background:#071510;color:white;font:11px monospace;z-index:20';document.body.append(report);
+ addEventListener('message',event=>{if(event.origin===location.origin&&event.source===frame.contentWindow&&event.data?.type==='layout-report')report.textContent=JSON.stringify(event.data.panels);});
+}else{
 const source=new DOMParser().parseFromString(await(await fetch('/')).text(),'text/html');
 for(const selector of ['#world','header','#flight-ui'])document.body.append(source.querySelector(selector));
 document.getElementById('flight-ui').hidden=false;document.getElementById('fuel-status').hidden=false;document.body.classList.add('flying','guide-open');
-const s=createAircraft(aircraft.find(a=>a.id==='f16'));s.onGround=false;s.airborne=true;s.position=new Vec3(15,107,-3600);s.orientation=Quat.euler(0,3*DEG,0);s.ias=approachSpeeds(s).target/3.6;s.speed=s.ias;s.velocity=new Vec3(0,-s.ias*Math.tan(3*DEG),s.ias);s.agl=107;s.approach=evaluateApproach(s);s.throttle=.25;
-const w=new Weapons(),aim=new Targeting(),m=new Mission(missions[1]);m.destroyed=true;m.update(s,[],w,aim);updateHUD(s,[],w,aim,m,true);const r=new Renderer(document.getElementById('world'));r.render(s,[],w,aim);
+const damaged=params.get('mode')==='damaged',cruise=params.get('mode')==='cruise',scenario=missions.find(m=>m.id===(damaged?'defend-base':cruise?'airbase':'landing')),spec=aircraft.find(a=>a.id==='f16'),targets=createTargets(scenario,spec,{rng:()=>.2}),s=createMissionAircraft(spec,scenario,{fuelFraction:.26});
+s.onGround=false;s.airborne=true;s.position=new Vec3(15,107,-3600);s.orientation=Quat.euler(0,3*DEG,0);s.gear=!damaged;s.flaps=!damaged;s.flapPosition=damaged?0:1;s.afterburner=damaged;s.landingMode=cruise?'off':'on';s.elapsed=118;
+if(damaged)applyDamage(s,45,{part:'weapons'});
+s.ias=approachSpeeds(s).target/3.6;s.speed=s.ias;s.velocity=new Vec3(0,-s.ias*Math.tan(3*DEG),s.ias);s.agl=107;s.approach=evaluateApproach(s);s.throttle=.25;s.fuelFlow=2;
+const w=new Weapons(),aim=new Targeting(),m=new Mission(scenario);m.update(s,targets,w,aim);updateHUD(s,targets,w,aim,m,true);const r=new Renderer(document.getElementById('world'));r.render(s,targets,w,aim);
+await document.fonts.ready;
+requestAnimationFrame(()=>{const panels=[...document.querySelectorAll('#aircraft-status,.flight-side,#phase-guide')].map(e=>({id:e.id||e.className,height:e.clientHeight,scroll:e.scrollHeight,bottom:Math.round(e.getBoundingClientRect().bottom),contentBottom:Math.round([...e.children].filter(c=>c.getBoundingClientRect().height>0).at(-1)?.getBoundingClientRect().bottom||0)}));if(parent!==window)parent.postMessage({type:'layout-report',panels},location.origin);});
+}
 </script></body></html>
