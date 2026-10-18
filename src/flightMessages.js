@@ -1,3 +1,4 @@
+import {damageWarnings} from './damage.js';
 export class FlightMessages {
  constructor(){this.reset();}
  reset(){this.items=[];this.sequence=0;this.channels=new Map();}
@@ -9,6 +10,7 @@ export class FlightMessages {
   if(!current){current={id:++this.sequence,channel,key,shownAt:null,count:1};this.items.push(current);}
   Object.assign(current,{text,detail,level,active:true,expires:null});this.channels.set(channel,current);
  }
+ clearStatus(channel,now){const current=this.channels.get(channel);if(!current)return;current.active=false;current.expires=current.shownAt===null?now:Math.max(current.shownAt+4,now+2.5);this.channels.delete(channel);}
  event(text,now,duration=4,{detail='',level='normal'}={}){
   if(!text)return;let item=this.items.findLast(item=>!item.channel&&item.text===text&&item.detail===detail&&now-item.last<1);
   if(item){item.count++;item.last=now;if(item.expires!==null)item.expires=now+Math.max(4,duration);return;}
@@ -24,15 +26,22 @@ export class FlightMessages {
   return visible.sort((a,b)=>b.shownAt-a.shownAt||b.id-a.id).map(item=>({...item,fading:!item.active&&item.expires-now<1.4}));
  }
 }
-const feed=new FlightMessages();let stateOwner=null;const nodes=new Map();
-export function resetFlightMessages(){feed.reset();stateOwner=null;nodes.clear();document.getElementById('flight-message-feed')?.replaceChildren();}
+const feed=new FlightMessages(),radioFeed=new FlightMessages();let stateOwner=null;const nodes=new Map(),radioNodes=new Map();
+export function resetFlightMessages(){feed.reset();radioFeed.reset();stateOwner=null;nodes.clear();radioNodes.clear();for(const id of ['flight-message-feed','radio-message-feed'])document.getElementById(id)?.replaceChildren();}
 export function postFlightMessage(text,now,duration){feed.event(text,now,duration);}
-export function postRadioMessage(line,now){feed.event(({control:'CONTROL',pilot:'FALCON ONE',wingman:'FALCON TWO',civilian:'CIVILIAN'})[line.speaker],now,line.duration+1.6,{detail:line.text,level:'radio'});}
+export function postRadioMessage(line,now){radioFeed.event(({control:'CONTROL',pilot:'FALCON ONE',wingman:'FALCON TWO',civilian:'CIVILIAN'})[line.speaker],now,line.duration+1.6,{detail:line.text,level:'radio'});}
 export function updateFlightMessages(s,lock,aim,weapons){
  if(stateOwner!==s){if(stateOwner)resetFlightMessages();stateOwner=s;}
- let host=document.getElementById('flight-message-feed');if(!host){host=document.createElement('section');host.id='flight-message-feed';host.setAttribute('role','log');host.setAttribute('aria-label','Repülési üzenetek');host.setAttribute('aria-live','polite');document.getElementById('combat-messages').prepend(host);}
+ const host=messageHost('flight-message-feed','Repülési üzenetek'),radioHost=messageHost('radio-message-feed','Rádióbeszélgetések');
  const now=s.elapsed||0,key=`${aim.id||'scan'}:${lock.state}:${weapons.selected}:${lock.solution?.status||''}`;
- feed.setStatus('target',key,lock.label,lock.hint,now,['jammed','range','outside'].includes(lock.state)||lock.solution?.canLaunch===false?'warning':'normal');
+ feed.setStatus('target',key,lock.state==='acquiring'?'CÉL BEFOGÁSA':lock.label,lock.hint,now,['jammed','range','outside'].includes(lock.state)||lock.solution?.canLaunch===false?'warning':'normal');
+ const faults=s.condition&&(s.damage>=15||s.condition.parts.weapons<=.35)&&!s.crashed?damageWarnings(s):[];
+ if(!faults.length&&s.damage>=15&&!s.dying&&!s.crashed)faults.push('SÉRÜLT SZERKEZET · FINOM MANŐVEREK');
+ if(faults.length)feed.setStatus('systems',faults.join('|'),'FEDÉLZETI RENDSZERHIBA',faults.join(' · '),now,'warning');else feed.clearStatus('systems',now);
+ renderMessages(host,feed,nodes,now);renderMessages(radioHost,radioFeed,radioNodes,now);
+}
+function messageHost(id,label){let host=document.getElementById(id);if(!host){host=document.createElement('section');host.id=id;host.setAttribute('role','log');host.setAttribute('aria-label',label);host.setAttribute('aria-live','polite');(document.getElementById(id==='radio-message-feed'?'flight-ui':'combat-messages')||document.body).prepend(host);}return host;}
+function renderMessages(host,feed,nodes,now){
  const capacity=Math.max(2,Math.min(6,Math.floor((host.clientHeight-15)/90))),items=feed.view(now,capacity),ids=new Set(items.map(i=>i.id));
  for(const [id,node]of nodes)if(!ids.has(id)){node.remove();nodes.delete(id);}
  const positioned=[];

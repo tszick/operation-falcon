@@ -75,7 +75,7 @@ export function targetingStatus(s,targets,aim,weapons){
  const progress=aim.locked?100:Math.round(aim.progress/s.spec.lockTime*100);
  if(contact.distance>=s.spec.radarRange)return {state:'range',label:'CÉL RADARHATÓTÁVON KÍVÜL',hint:`${direction} · KÖZELÍTS A CÉLHOZ`,progress:0};
  if(!contact.visible)return {state:'outside',label:'CÉL A RADARKÚPON KÍVÜL',hint:`${direction} · A/D: BEDÖNTÉS ÉS FORDULÁS`,progress:0};
- if(!chosen)return {state:'search',label:'CÉL ÉSZLELVE — T VAGY TAB',hint:'Nyomd meg egyszer a T-t, vagy kattints a Célbefogás gombra.',progress:0};
+ if(!chosen)return {state:'search',label:'CÉL ÉSZLELVE — T VAGY TAB',hint:'Nyomd meg egyszer a T-t, vagy a Tab-bal válassz célt.',progress:0};
  if(!aim.locked)return {state:'acquiring',label:`BEFOGÁS ${progress}%`,hint:'Tartsd a célt a gép előtt 2 másodpercig. Nem kell nyomva tartani a T-t.',progress};
  if(contact.target.civilian)return {state:'locked',label:'CIVIL GÉP BEFOGVA · TŰZTILALOM',hint:'Ne tüzelj! A civil gép visszafordul és elhagyja a légteret.',progress};
  const weapon=weapons.selected;

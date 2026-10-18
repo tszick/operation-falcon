@@ -15,3 +15,8 @@ test('repeated events coalesce and a returning status reverses fading without du
 test('spoken radio captions are admitted immediately without duplication even when transient events are queued',()=>{
  const feed=new FlightMessages();feed.setStatus('target','locked','LOCKED','',0);for(let i=0;i<8;i++)feed.event(`EVENT ${i}`,0);feed.view(0,3);feed.event('CONTROL',.1,7,{detail:'Welcome home, pilot.',level:'radio'});const visible=feed.view(.1,3);assert.ok(visible.some(i=>i.level==='radio'));assert.equal(new Set(visible.map(i=>i.id)).size,visible.length);assert.ok(visible.some(i=>i.active));
 });
+
+test('resolved system warnings fade independently while other statuses remain active',()=>{
+ const feed=new FlightMessages();feed.setStatus('target','locked','LOCKED','',0);feed.setStatus('systems','failure','WEAPONS FAILED','',0);feed.view(0);feed.clearStatus('systems',2);feed.clearStatus('systems',3);
+ assert.ok(feed.view(3).find(i=>i.text==='LOCKED').active);assert.equal(feed.view(3).find(i=>i.text==='WEAPONS FAILED').active,false);assert.ok(!feed.view(5).some(i=>i.text==='WEAPONS FAILED'));
+});

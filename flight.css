@@ -161,3 +161,16 @@ body.flying.external-view #combat-messages{bottom:24px}
 
 body.flying .flight-message[data-level=radio] strong{color:#a6dce5;letter-spacing:.5px}
 body.flying .flight-message[data-level=radio] p{color:#e0ead7;font-size:12px}
+
+/* Radio dialogue has its own left-hand stream; operational messages stay right. */
+body.flying #radio-message-feed{position:absolute;left:18px;top:90px;bottom:calc(var(--cockpit-height) + 12px);width:clamp(240px,28vw,370px);overflow:hidden;pointer-events:none}
+body.flying #radio-message-feed .flight-message{text-align:left;left:0;right:auto}
+body.flying #flight-message-feed{bottom:0}
+body.flying.external-view #radio-message-feed{bottom:24px}
+body.flying #combat-messages #targeting-panel,body.flying #cockpit-annunciator{display:none!important}
+#cockpit #target-data{right:3px;left:3px;bottom:12px;max-width:none;text-align:left}
+#cockpit #radar{height:calc(100% - 36px)}
+#cockpit #target-data[data-lock=acquiring]{color:#f5cf86;animation:radar-acquiring .8s ease-in-out infinite}
+#cockpit #target-data[data-lock=locked]{color:#baf37d}
+@keyframes radar-acquiring{0%,100%{opacity:1}50%{opacity:.35}}
+@media(prefers-reduced-motion:reduce){#cockpit #target-data[data-lock=acquiring]{animation:none;text-decoration:underline}}
