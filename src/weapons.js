@@ -1,3 +1,5 @@
+import {combatSource} from './unitCombat.js';
+import {ballisticHit} from './ballisticFlight.js';
 import {teamOf} from './unitTypes.js';
 import {firingStatus} from './firingStatus.js';
 import {groundHit} from './groundModels.js';
@@ -57,7 +59,7 @@ export class Weapons {
   for(const p of this.projectiles){
    p.previous=p.position.clone();p.age+=dt;
    const hostile=p.owner==='enemy',ai=!!p.sourceId,entityShot=ai&&!!p.targetEntityId,missile=p.type==='aam'||p.type==='agm',target=entityShot?targets.find(t=>t.id===p.targetEntityId&&t.alive):hostile?(!s.crashed?s:null):targets.find(t=>t.id===p.targetId&&t.alive);
-   if(missile){const source=ai?targets.find(t=>t.id===p.sourceId):s,launcher=ai&&source?{...source,orientation:source.kind==='ground'?null:source.flight?.orientation||Quat.euler(source.heading||0,source.pitch||0,source.bank||0)}:source,guidanceTarget=hostile&&!entityShot&&target?countermeasureTarget(p,s,dt,this.random):target;stepMissile(p,guidanceTarget,!ai&&navigationJammed(s,targets)&&['sarh','active'].includes(p.profile.guidance)?null:launcher,dt);}
+   if(missile){const source=ai?targets.find(t=>t.id===p.sourceId):s,launcher=ai&&source?combatSource(source,s):source,guidanceTarget=hostile&&!entityShot&&target?countermeasureTarget(p,s,dt,this.random):target;stepMissile(p,guidanceTarget,launcher&&navigationJammed(launcher,targets)&&['sarh','active'].includes(p.profile.guidance)?null:launcher,dt);}
    if(p.type==='bomb'||p.type==='gun')stepBallistic(p,dt);else if(p.type==='flak')p.velocity.y-=9.81*dt;
    p.position.add(p.velocity.clone().scale(dt));
    if(missile&&p.age<p.profile.burn){
@@ -81,6 +83,7 @@ export class Weapons {
    let hitTarget=null,hitInfo=null;
    for(const t of targets){
     if(!t.alive||!canHit(t))continue;
+    if(t.type==='ballistic'){hitInfo=ballisticHit(t,p.previous,p.position,missile&&p.armed?p.profile.fuseRadius:p.type==='gun'?.15:1);if(hitInfo){hitTarget=t;break;}continue;}
     const segment=p.position.clone().sub(p.previous),length2=segment.dot(segment),fraction=clamp(t.position.clone().sub(p.previous).dot(segment)/Math.max(1,length2),0,1),nearest=p.previous.clone().add(segment.scale(fraction));
     if(t.kind==='ground'?groundHit(t,p.previous,p.position,p.type==='bomb'?38:p.type==='gun'?.2:12):nearest.distance(t.position)<t.radius+(p.type==='bomb'?38:p.type==='gun'?2:12)){
      if(t.kind==='air'){hitInfo=aircraftHit({spec:{id:t.aircraftId||'mig29'},position:t.position,previousPosition:t.previousPosition||t.position,orientation:t.flight?.orientation||Quat.euler(t.heading||0,t.pitch||0,t.bank||0),mach:0},p.previous,p.position,{radius:missile&&p.armed?p.profile.fuseRadius:p.type==='gun'?.15:1});if(!hitInfo)continue;}

@@ -370,3 +370,37 @@ A hatótáv `üzemanyag / pillanatnyi fogyasztás × vízszintes sebesség`: tar
 
 
 A szintjelző körében nagy százalékérték és kisebb becsült hatótáv jelenik meg; a kitöltés inline dash-offsetet kap, hogy ne írja felül a korábbi stílus. A kapcsolók állapota semleges/sárga/piros, és képernyőolvasó számára szövegesen is jelzett. A veszélyjelzés az aktuális helyzethez igazodik (például leszállásnál hiányzó futó/fékszárny, nyitott légfék kis sebességnél, aktív utánégető). N/P/H gombkártya nincs a játéktéren; a billentyűk működnek. A céljegyzékben a kör a hátralévő, a zöld pipa az elvégzett, a piros X az elbukott célt jelöli, ismétlődő kísérőszöveg nélkül.
+
+
+## Story #1 and intermediate servicing
+
+The hangar groups landing/civil practice separately from six numbered story missions. City defense has 25 individually destructible buildings, a 20-building survival threshold, two runway-departing allies, and 4+3 enemy waves. Wave two activates when wave one has been defeated or at 240 seconds. Bombs already in flight must resolve before victory. Transport escort starts at z=-22 km (player -23 km).
+
+The intercontinental missile mission launches at 300 simulation seconds if its silo survives. The missile is a separate air entity with swept relative-motion interception, a compressed 3-second powered arc and gravity-only coast. Launch speed is 3300 m/s; the shortened path and boost duration are gameplay approximations for this map, not a certified missile model. Air-to-air launch eligibility is limited to a very close, rapidly closing encounter. Destroying the silo after launch does not remove the missile. General flight phase reference: https://www.mda.mil/system/elements.html
+
+A safe intermediate stop replaces the player aircraft with full configured stores, fuel and countermeasures, and clears damage while preserving mission time, objectives, opponents and in-flight weapons. A real mandatory-objective failure cannot be reversed. Completing primary goals still requires the final landing; landing practice finishes normally. The flight log records service counts, wave activation, silo launch and missile state.
+
+
+## City rendering and shared combat limits
+
+City buildings use near/medium/far meshes based on distance and projected height: facade lines below 1.8 km, solid blocks/roofs at medium range, and a single opaque box beyond 6 km or at subpixel detail sizes. Collision always uses the detailed physical bounds. Shared mesh vertices, cached static ground instances, world bounding rejection, per-frame vertical visibility reuse, and a screen-space face index reduce work without allowing terrain/model transparency. `tests/city-performance.html` measures a repeatable near/far city battle; renderer timings are CPU measurements, not a guaranteed FPS.
+
+`guidedLaunchStatus` is shared by player and AI. Radar range/cone, weapon minimum and nominal/dynamic maximum range, angle, terrain and seeker/support constraints apply to both teams. AI cannon range uses the same altitude correction as the player's gun, without the previous extra multiplier. AI launchers retain their real aircraft/ground radar profile throughout missile support, and opposing jammers affect both sides. Ground radar, missile, cannon and flak ranges in the encyclopedia come from the same definitions used in combat. Different weapons and aircraft can still have different ranges.
+
+Cockpit configuration labels are short, borderless text without printed key names. Green/yellow/red state colors remain; shortcuts stay in accessible labels and tooltips.
+
+### Kanyongyakorlat
+
+A gyakorlás sorrendje: 1. Leszállás, 2. A kanyon, 3. Civil gép elfogása. A kanyon fegyvertelen légi indulást, alapból 50% üzemanyagot, öt alacsony (40–350 m AGL), majd három gerinc-/kijárati kaput kapott. A kapuk sorrendben, előre irányuló, térben interpolált áthaladással teljesülnek; kihagyott kapu újra megközelíthető. A záró gerinc 1450 m magas, a kijárat a túloldalon van; sikerhez nem szükséges leszállás. A kapuk, fázisok és állapotok az aktuális repülési naplóban követhetők. A türkiz segédkapuk nem ellenséges célpontok.
+
+### Interkontinentális rakétasiló és rakéta az egységtárban
+
+Az interkontinentális rakétasiló és az önálló interkontinentális rakéta külön, forgó modelles adatlapot és részletes játékleírást kapott. A küldetéscím, célnevek, riasztások és fenyegetésikonok az új nevet használják. A régi belső azonosítók megmaradtak a naplók és hivatkozások kompatibilitásához. Az ICBM a ballisztikus rakéták hatótáv szerinti alkategóriája; a wiki külön jelzi a rövidített játékmodell eltéréseit. Az általános bombaballisztika elnevezése változatlan. Forrás a valós osztályozáshoz: https://www.gao.gov/assets/a278947.html
+
+### Pályaszéli tűrés kifutás közben
+
+Sikeres, pályán történt földetérés után, kiengedett futóművel, a kifutó mindkét oldalán 25 méter türelmi sáv használható. A gép itt azonnali becsapódás helyett tovább gurul, kissé nagyobb gördülési ellenállással; Ctrl-lal fékezhető és visszakormányozható. Ez nem engedélyez pályán kívüli földetérést vagy a pályavégen túli nagy sebességű kifutást. A három hazai hangár közös megjelenítési/ütközési dobozokat használ, így a valódi akadálynak gurulás továbbra is becsapódást okoz.
+
+### Több baráti pilóta rádióhívójele
+
+A baráti vadászok stabil, gépenkénti hívójele Falcon Two, Falcon Three, Falcon Four stb. A készenléti, támadás alatti és zuhanási jelzés külön géphez és külön ismétlési korláthoz kötött. Egy gép elvesztése csak a saját elavult üzeneteit törli. A bemondott hívójel és a bal oldali felirat azonos; a további számokat helyben előállított angol beszédrészletekből állítja össze a játék. A játékos Falcon One marad.

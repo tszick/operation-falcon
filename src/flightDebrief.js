@@ -50,7 +50,7 @@ export function evaluateFlight(log){
   for(const reason of reasons)if(reason&&!last.findings.includes(reason))last.findings.push(reason);
  }
  const objectives=entries.findLast(e=>e.kind==='objectives')?.data;
- const summary=result?.result==='success'?'Az elsődleges feladatok és a leszállás teljesültek.':result?.result==='aborted'?'A küldetés megszakadt, de a gép sikeresen hazatért.':result?.result==='crash'?'A küldetés a gép elvesztésével zárult.':result?.result==='failure'?'A küldetés egyik kötelező feltétele nem teljesült.':result?.result==='abandoned'?'A küldetést befejezés előtt megszakítottad.':'A küldetés még nincs lezárva.';
+ const summary=result?.result==='success'?(log?.metadata?.mission?.objective==='canyon'?'A kanyon kapui és a gerinc feletti kijutás teljesültek.':'Az elsődleges feladatok és a leszállás teljesültek.'):result?.result==='aborted'?'A küldetés megszakadt, de a gép sikeresen hazatért.':result?.result==='crash'?'A küldetés a gép elvesztésével zárult.':result?.result==='failure'?'A küldetés egyik kötelező feltétele nem teljesült.':result?.result==='abandoned'?'A küldetést befejezés előtt megszakítottad.':'A küldetés még nincs lezárva.';
  return {summary,phases,objectives,result};
 }
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

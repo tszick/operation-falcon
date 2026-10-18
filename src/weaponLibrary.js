@@ -24,7 +24,7 @@ export const countermeasureEntries=[
 ];
 export function weaponLibraryRows(e){
  const rows=[['Használható ellene',e.usable],['Különösen jó választás',e.excellent],['Mire nem használható',e.cannot],['Kezelés',e.operation],['Elterelés / védekezés',e.counter]];
- if(e.profile){const p=e.profile;rows.push(['Felszerelhető gépek',e.carriers.join(' · ')]);if(e.aliases.length>1)rows.push(['Játékbeli változatok',e.aliases.join(' · ')]);
+ if(e.profile){const p=e.profile;if(['missile','gun'].includes(p.kind))rows.push(['Egységes szabályok','Játékos, ellenség és szövetséges azonos fegyverprofillal, radar- és lőtávkorlátokkal működik. A nagyobb névleges lőtáv nem garantált találat.']);rows.push(['Felszerelhető gépek',e.carriers.join(' · ')]);if(e.aliases.length>1)rows.push(['Játékbeli változatok',e.aliases.join(' · ')]);
  if(p.kind==='missile')rows.push(['Rávezetés',guidance[p.guidance]],['Indítási távolság',`${(p.minRange/1000).toFixed(2)} km minimum · ${(p.maxRange/1000).toFixed(0)} km névleges felső határ. A HUD sebesség, magasság és célmozgás alapján számol.`],['Manőverezési felső határ',`${p.maxG} G; a sebesség és a légsűrűség korlátozza.`]);
  if(p.kind==='gun')rows.push(['Hatásos távolság',`Kb. ${(p.effectiveRange/1000).toFixed(1)} km; a magasság és a cél mozgása módosítja.`],['Torkolati sebesség',`${p.muzzleSpeed} m/s`]);
  if(p.kind==='bomb')rows.push(['Bomba tömege',`${p.mass} kg`]);

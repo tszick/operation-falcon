@@ -1,5 +1,5 @@
 import {attitude,DEG} from './math.js';
-import {onRunway,runway} from './terrain.js';
+import {onRunway,runway,homeHangars} from './terrain.js';
 import {approachSpeeds,atmosphere} from './performance.js';
 import {flapStatus} from './flaps.js';
 
@@ -99,4 +99,28 @@ export function assessTouchdown(s,descent,speed){
  const energy=Math.max(0,sink*sink-9),gearPenalty=s.gear?0:25;
  const damage=Math.min(75,(sink>=3?.5:0)+energy*1.6+gearPenalty+Math.max(0,bank-10)*1.4+Math.max(0,-pitch-3)*2+Math.max(0,pitch-15)*2+Math.max(0,ias-limits.maxIASKmh)*.2+Math.max(0,limits.minIASKmh-ias)*.12+Math.max(0,track-8)*.7+Math.max(0,runwayAngle-8)*.7);
  return {fatal:false,grade:damage>=25?'severe':damage>0?'hard':'smooth',damage,problems};
+}
+
+// A shoulder is available only after a surviving runway touchdown, not for off-field landing.
+export const rolloutLateralTolerance=25;
+export function rolloutSurface(s){
+ const lateral=Math.abs(s.position.x),along=Math.abs(s.position.z)<=runway.halfLength;
+ const shoulder=!!(s.onGround&&s.landing?.success&&s.gear&&along&&lateral>=runway.halfWidth&&lateral<=runway.halfWidth+rolloutLateralTolerance);
+ return {shoulder,allowed:onRunway(s.position)||shoulder};
+}
+export function rolloutObstacle(s,from=s.previousPosition||s.position,to=s.position){
+ if(!s.onGround)return null;
+ // A conservative footprint includes the wings while keeping the clear shoulder free.
+ const radius=Math.max(5,Math.min(15,Math.sqrt(s.spec.wingArea*3.5)/2));
+ for(const h of homeHangars){
+  if(Math.min(from.y,to.y)>h.height+2)continue;
+  let enter=0,exit=1;
+  for(const [axis,center,half] of [['x',h.x,h.halfWidth],['z',h.z,h.halfLength]]){
+   const d=to[axis]-from[axis],lo=center-half-radius,hi=center+half+radius;
+   if(Math.abs(d)<1e-9){if(from[axis]<lo||from[axis]>hi){enter=2;break;}}
+   else{let a=(lo-from[axis])/d,b=(hi-from[axis])/d;if(a>b)[a,b]=[b,a];enter=Math.max(enter,a);exit=Math.min(exit,b);}
+  }
+  if(enter<=exit&&exit>=0&&enter<=1)return 'A gép a hangárnak ütközött.';
+ }
+ return null;
 }

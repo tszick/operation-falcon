@@ -1,3 +1,4 @@
+import {wingmanLine,numberWords} from '../src/wingmanRadio.js';
 import test from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';
 import {RadioDirector} from '../src/radioDirector.js';import {RadioComms} from '../src/radioComms.js';import {radioLines} from '../src/radioLines.js';import {AudioSystem} from '../src/audio.js';import {Vec3} from '../src/math.js';
 function scene(){return {s:{elapsed:0,onGround:true,airborne:false,speed:0,damage:0,condition:{parts:{weapons:1}},position:new Vec3(),velocity:new Vec3(),spec:{faction:'nato'}},m:{spec:{objective:'battle'},phaseId:'preflight',objectiveComplete:false},targets:[]};}
@@ -58,4 +59,34 @@ test('severe control failure announces loss before descent or fatal state, with 
  d.observe(s,m,targets);s.elapsed=1;d.observe(s,m,targets);assert.ok(has(d,'controlLost'));const cue=d.take(1);d.completed(cue,1);s.elapsed=2;d.observe(s,m,targets);assert.ok(!has(d,'controlLost'));
  s.condition.parts.hydraulics=1;s.elapsed=3;d.observe(s,m,targets);s.condition.parts.hydraulics=0;s.elapsed=4;d.observe(s,m,targets);s.elapsed=5;d.observe(s,m,targets);assert.ok(!has(d,'controlLost'));
  s.elapsed=47;d.observe(s,m,targets);assert.ok(has(d,'controlLost'));s.onGround=true;s.elapsed=48;d.observe(s,m,targets);assert.ok(!has(d,'controlLost'));
+});
+
+test('intermediate servicing welcomes and clears for another sortie, resetting damage-return announcements',()=>{
+ const {s,m,targets}=scene(),d=new RadioDirector();s.airborne=true;s.onGround=false;s.damage=45;d.observe(s,m,targets);assert.ok(has(d,'damage'));m.serviceCount=1;s.onGround=true;s.airborne=false;s.damage=0;s.elapsed=10;d.observe(s,m,targets);assert.ok(!has(d,'damage'));assert.ok(has(d,'welcome'));assert.ok(has(d,'clearance'));assert.ok(!d.seen.has('damaged-return'));s.elapsed=11;d.observe(s,m,targets);assert.equal(d.queue.filter(c=>c.line.group==='welcome').length,1);s.onGround=false;s.airborne=true;s.damage=45;s.elapsed=12;d.observe(s,m,targets);assert.ok(has(d,'damage'));
+});
+
+function friendly(id){return {id,type:'fighter',kind:'air',team:'ally',alive:true,position:new Vec3(1000,500,0),velocity:new Vec3(),flight:{damage:0}};}
+test('all wingmen get stable sequential callsigns and individual ready messages, including late arrivals',()=>{
+ const {s,m,targets}=scene(),d=new RadioDirector();targets.push(friendly('A'),friendly('B'),friendly('C'));d.start(s,m,targets);
+ const ready=d.queue.filter(c=>c.line.group==='wingmanReady');assert.deepEqual(ready.map(c=>c.line.callSign),['Falcon Two','Falcon Three','Falcon Four']);assert.equal(new Set(ready.map(c=>c.key)).size,3);assert.ok(ready.every(c=>c.line.text.includes(c.line.callSign)));assert.deepEqual(ready.map(c=>c.ready),[6,10,14]);
+ targets.reverse();s.elapsed=2;d.observe(s,m,targets);assert.equal(d.wingmen.get('A').number,2);assert.equal(d.wingmen.get('C').number,4);
+ targets.push(friendly('D'));s.elapsed=3;d.observe(s,m,targets);assert.equal(d.wingmen.get('D').number,5);assert.ok(d.queue.some(c=>c.line.callSign==='Falcon Five'&&c.line.group==='wingmanReady'));
+});
+test('attack cooldowns and down messages are per aircraft; one loss preserves another pilot traffic',()=>{
+ const {s,m,targets}=scene(),d=new RadioDirector();targets.push(friendly('A'),friendly('B'));d.start(s,m,targets);
+ for(const id of ['A','B'])d.event({type:'missile-launch',owner:'enemy',targetId:id},s,targets);
+ assert.equal(d.queue.filter(c=>c.line.group==='wingmanAttack').length,2);targets[0].flight.dying=true;s.elapsed=1;d.observe(s,m,targets);
+ assert.ok(d.queue.some(c=>c.line.group==='wingmanAttack'&&c.line.unitId==='B'));assert.ok(d.queue.some(c=>c.line.group==='wingmanReady'&&c.line.unitId==='B'));assert.ok(!d.queue.some(c=>c.line.unitId==='A'&&c.line.group!=='wingmanDown'));
+ targets[1].flight.dying=true;s.elapsed=2;d.observe(s,m,targets);s.elapsed=3;d.observe(s,m,targets);
+ const losses=d.queue.filter(c=>c.line.group==='wingmanDown');assert.equal(losses.length,2);assert.deepEqual(losses.map(c=>c.line.callSign),['Falcon Two','Falcon Three']);
+});
+test('generated callsign audio covers additional wingmen without a fixed small squadron limit',()=>{
+ for(const n of [3,4,9,10,12,21,104,1000,12003,1000000]){const line=wingmanLine('wingmanAttack',n,'ALLY-'+n);assert.ok(line.text.startsWith(line.callSign));assert.ok(line.duration>0);assert.ok(line.clips.every(id=>radioLines.some(c=>c.id===id)));}
+ assert.deepEqual(numberWords(23),['twenty','three']);assert.equal(wingmanLine('wingmanReady',2,'A').url,'/assets/radio/wingman-ready-1.wav');
+});
+test('numbered wingman speech joins real PCM clips and caches the matching audible line',async()=>{
+ const radio=new RadioComms(),line=wingmanLine('wingmanDown',3,'ALLY3');let created=0,total=0;
+ for(const id of line.clips){const part=radioLines.find(l=>l.id===id),bytes=await readFile(new URL('..'+part.url,import.meta.url)),rate=bytes.readUInt32LE(24),length=(bytes.length-44)/2,data=new Float32Array(length);for(let i=0;i<length;i++)data[i]=bytes.readInt16LE(44+i*2)/32768;radio.buffers.set(id,{sampleRate:rate,length,getChannelData:()=>data});total+=length;}
+ radio.ctx={createBuffer(ch,length,rate){created++;const data=new Float32Array(length);return {sampleRate:rate,length,getChannelData:()=>data};}};
+ const buffer=radio.lineBuffer(line);assert.ok(buffer.length>total);assert.ok(Math.abs(buffer.length/buffer.sampleRate-line.duration)<.01);assert.ok(buffer.getChannelData(0).some(v=>Math.abs(v)>.1));assert.equal(radio.lineBuffer(line),buffer);assert.equal(created,1);assert.equal(line.callSign,'Falcon Three');assert.match(line.text,/Mayday/);
 });

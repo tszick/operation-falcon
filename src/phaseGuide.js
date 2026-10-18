@@ -28,6 +28,10 @@ export function phaseGuide(s,mission,aim,weapons,targets){
   const solution=target&&suggested===weapons.selected?fireSolution(s,target,weapons.selected,{heat:weapons.gunHeat||0}):null;
   let steps=[];
   switch(mission.phaseId){
+    case 'canyon-run':
+      steps=[step('A / D','Finom bedöntéssel kövesd a völgyet'),step('W / S','Türkiz kapuk sorban; 40–350 m AGL'),step('R / F','Őrizd a sebességet; ne fékezz túl'),step('—',mission.phaseHint)];break;
+    case 'canyon-climb':
+      steps=[step('R','Felhúzás előtt gyűjts sebességet'),step('S','Időben, fokozatosan húzd fel az orrot'),step('—','Figyeld az IAS-t, az AGL-t és a G-t'),step('W','Gerinc után finoman vedd vissza az orrot')];break;
     case 'landing-setup':
       steps=[step('N','Leszállási segéd bekapcsolása'),step('G','Futómű kiengedése',s.gear),step('X','Fékszárny kiengedése',flap.deployed),step('R / F',`Tarts kb. ${speed} km/h-t; V/S és AGL`)];break;
     case 'civil-intercept':

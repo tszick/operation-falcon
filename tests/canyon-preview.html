@@ -1,0 +1,17 @@
+<!doctype html><html lang="hu"><head><meta charset="utf-8"><title>Kanyongyakorlat ellenőrzése</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/flight.css"></head><body><script type="module">
+import {aircraft,missions} from '/src/aircraftSpec.js';
+import {createTargets,Targeting} from '/src/targeting.js';
+import {createMissionAircraft} from '/src/missionStart.js';
+import {Mission} from '/src/mission.js';
+import {Weapons} from '/src/weapons.js';
+import {Renderer} from '/src/renderer.js';
+import {updateHUD} from '/src/hud.js';
+import {canyonPoint} from '/src/canyonTraining.js';
+import {terrainHeight} from '/src/terrain.js';
+import {Quat,Vec3} from '/src/math.js';
+const doc=new DOMParser().parseFromString(await(await fetch('/')).text(),'text/html');for(const sel of ['#world','header','#flight-ui'])document.body.append(doc.querySelector(sel));
+document.body.classList.add('flying','guide-open');document.getElementById('flight-ui').hidden=false;
+const spec=aircraft.find(a=>a.id==='f16'),mission=missions.find(m=>m.id==='canyon'),targets=createTargets(mission,spec),s=createMissionAircraft(spec,mission),w=new Weapons(),aim=new Targeting(),m=new Mission(mission);
+const gate=Number(new URLSearchParams(location.search).get('gate')||0);if(gate){s.canyonTraining.index=gate;const p=canyonPoint(gate===5?11000:14000);s.position=new Vec3(p.x,gate===5?450:1350,p.z);s.previousPosition=s.position.clone();s.orientation=Quat.euler(0,.12,0);s.agl=s.position.y-terrainHeight(p.x,p.z);}
+m.update(s,targets,w,aim);updateHUD(s,targets,w,aim,m,true);new Renderer(document.getElementById('world')).render(s,targets,w,aim);
+</script></body></html>

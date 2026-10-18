@@ -29,7 +29,7 @@ export class FlightMessages {
 const feed=new FlightMessages(),radioFeed=new FlightMessages();let stateOwner=null;const nodes=new Map(),radioNodes=new Map();
 export function resetFlightMessages(){feed.reset();radioFeed.reset();stateOwner=null;nodes.clear();radioNodes.clear();for(const id of ['flight-message-feed','radio-message-feed'])document.getElementById(id)?.replaceChildren();}
 export function postFlightMessage(text,now,duration){feed.event(text,now,duration);}
-export function postRadioMessage(line,now){radioFeed.event(({control:'CONTROL',pilot:'FALCON ONE',wingman:'FALCON TWO',civilian:'CIVILIAN'})[line.speaker],now,line.duration+1.6,{detail:line.text,level:'radio'});}
+export function postRadioMessage(line,now){radioFeed.event(line.callSign?.toUpperCase()||({control:'CONTROL',pilot:'FALCON ONE',wingman:'FALCON TWO',civilian:'CIVILIAN'})[line.speaker],now,line.duration+1.6,{detail:line.text,level:'radio'});}
 export function updateFlightMessages(s,lock,aim,weapons){
  if(stateOwner!==s){if(stateOwner)resetFlightMessages();stateOwner=s;}
  const host=messageHost('flight-message-feed','Repülési üzenetek'),radioHost=messageHost('radio-message-feed','Rádióbeszélgetések');

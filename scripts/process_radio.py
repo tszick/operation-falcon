@@ -3,13 +3,15 @@ import sys, json, wave, math, random, array
 from pathlib import Path
 root=Path(__file__).resolve().parent.parent
 rows=json.loads((root/'assets/radio/script.json').read_text(encoding='utf-8'))
+selected=set(sys.argv[2:])
 for index,row in enumerate(rows):
+ if selected and row['id'] not in selected: continue
  with wave.open(str(Path(sys.argv[1])/(row['id']+'.wav')),'rb') as f:
   rate=f.getframerate(); assert f.getnchannels()==1 and f.getsampwidth()==2
   pcm=array.array('h',f.readframes(f.getnframes()))
  data=[v/32768 for v in pcm]; peak=max(map(abs,data),default=0); assert peak>.005
  significant=[i for i,v in enumerate(data) if abs(v)>peak*.018]
- data=data[max(0,significant[0]-int(rate*.04)):min(len(data),significant[-1]+int(rate*.12))]
+ data=data[max(0,significant[0]-int(rate*(.015 if row.get('joinable') else .04))):min(len(data),significant[-1]+int(rate*(.03 if row.get('joinable') else .12)))]
  pilot=row['speaker']=='pilot'; hp=430 if pilot else 310; lp=2350 if pilot else 3150
  ah=math.exp(-2*math.pi*hp/rate); al=1-math.exp(-2*math.pi*lp/rate)
  rng=random.Random(5903+index); previous=high=low=low2=envelope=0; filtered=[]
@@ -21,7 +23,7 @@ for index,row in enumerate(rows):
   fade=.78 if (i+index*791)%int(rate*.73)<int(rate*.008) else 1
   filtered.append(speech*fade+grit)
  rms=math.sqrt(sum(v*v for v in filtered)/max(1,len(filtered))); gain=min(.82/max(map(abs,filtered)),.16/max(.001,rms))
- before=int(rate*.08); after=int(rate*.18); out=[]
+ before=0 if row.get('joinable') else int(rate*.08); after=0 if row.get('joinable') else int(rate*.18); out=[]
  for i in range(before):out.append((rng.random()*2-1)*.023*math.sin(math.pi*i/before)**2)
  for i,v in enumerate(filtered):
   edge=min(1,i/(rate*.008),(len(filtered)-i-1)/(rate*.012));out.append(v*gain*max(0,edge))

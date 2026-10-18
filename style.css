@@ -127,3 +127,9 @@ body.approaching #approach-checks>div{font-size:10px;line-height:1.5;padding:2px
 .debrief-status.failed{color:#ff9e80}.debrief-status.attention,.debrief-status.incomplete{color:#edc17a}.debrief-status.unknown{color:var(--muted)}
 
 #departure-planner{border-top:1px solid var(--line);margin-top:15px;padding-top:12px}#departure-planner h3{font:12px var(--mono);color:var(--green)}#start-fuel-value{display:block;color:var(--green);margin:5px 0}#start-fuel{width:100%;accent-color:var(--green);margin:8px 0 14px}#departure-mass{margin:0}#departure-mass>div,.departure-total{display:flex;justify-content:space-between;gap:12px}#departure-mass dd{margin:0;color:var(--text);white-space:nowrap}.departure-total{border-top:1px solid var(--line);margin-top:10px;padding-top:10px;align-items:center}.departure-total strong{font:23px var(--display);white-space:nowrap}#departure-delta{color:var(--green)}#departure-warning{color:#ffb16e}.departure-note{font:10px/1.7 var(--mono)}
+
+#missions{display:block}
+.mission-group{margin:0 0 18px}
+.mission-group>h3{font:600 15px var(--mono);color:var(--green,#baf37d);margin:0 0 10px}
+.mission-group-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.mission-group-cards .mission-card strong{font-size:13px}

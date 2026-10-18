@@ -15,6 +15,15 @@ export function battleObjectives(m,s,targets,w){
  }else if(m.spec.objective==='escort-transport'){
   const transport=by('TRANSPORT');if(dead(transport)&&!transport.exited)failure='A védendő szállítógép megsemmisült.';
   complete=!!transport?.exited;rows=[row('transport',complete?'Szállítógép kijutott':`Szállító: ${Math.max(0,Math.round(100-(transport?.damage||0)))}% · kijárat ${Math.max(0,(transport?.exitZ-transport?.position.z)/1000).toFixed(1)} km`,complete),row('enemies',`Összes ellenfél: ${enemies.filter(t=>!t.alive).length} / ${enemies.length}`,enemies.every(t=>!t.alive),true)];
+ }else if(m.spec.objective==='defend-city'){
+  const city=targets.filter(t=>t.city),intact=city.filter(t=>t.alive).length,required=Math.ceil(city.length*.8),allDead=enemies.length>0&&enemies.every(t=>!t.alive&&!t.pending),pending=w.projectiles?.some(p=>p.owner==='enemy'&&targets.some(t=>t.city&&t.id===p.targetEntityId));
+  if(intact<required)failure='A város több mint 20%-a megsemmisült.';
+  complete=allDead&&!pending&&!failure;rows=[row('city',`Város: ${Math.round(intact/city.length*100)}% · minimum 80%`,intact>=required),row('waves',`Hullám: ${m.wave||1}/2 · támadók ${enemies.filter(t=>!t.alive&&!t.pending).length}/${enemies.length}`,allDead),...(pending?[row('incoming','Beérkező bombák elhárítása',false)]:[])];
+ }else if(m.spec.objective==='ballistic-strike'){
+  const silo=by('SILO'),missile=by('BALLISTIC');if(dead(base))failure='A interkontinentális csapás megsemmisítette a saját repteret.';
+  complete=(!silo?.launched&&dead(silo)||!!missile&&!missile.alive)&&base?.alive;
+  const left=Math.max(0,Math.ceil((silo?.launchAt||300)-s.elapsed)),clock=`${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`;
+  rows=[row('ballistic',complete?'Interkontinentális fenyegetés elhárítva':silo?.launched?'Rakéta a levegőben · elfogás szükséges':`Indítósiló · kilövésig ${clock}`,complete),row('base',`Saját reptér: ${Math.round((base?.health||0)/(base?.maxHealth||1)*100)}%`,base?.alive)];
  }else if(m.spec.objective==='airbase-strike'){
   if(dead(base))failure='A támadó konvoj megsemmisítette a saját repülőteret.';
   const convoy=by('ATTACK-CONVOY'),enemyBase=by('ENEMY-BASE');complete=dead(convoy)&&dead(enemyBase);rows=[row('convoy','Támadó konvoj megsemmisítve',dead(convoy)),row('enemyBase','Ellenséges reptér megsemmisítve',dead(enemyBase)),row('base',`Saját reptér: ${Math.round((base?.health||0)/(base?.maxHealth||1)*100)}%`,base?.alive)];

@@ -1,3 +1,4 @@
+import {renderCanyonCourse} from './canyonTraining.js';
 import {silhouetteIndices} from './modelDetail.js';
 import {visibleMeshEdges} from './hiddenLines.js';
 import {cockpitHudFooterY} from './cockpitGeometry.js';
@@ -8,7 +9,7 @@ import {projectFeaturePolygon,terrainFeatureVisible,renderTerrainFeatures} from 
 import {renderGroundTarget,groundMesh} from './groundModels.js';
 import {navigationJammed,targetMasked} from './electronicWarfare.js';
 import {Vec3,Quat,forward,up,right,attitude,DEG,clamp} from './math.js';
-import {terrainHeight} from './terrain.js';
+import {terrainHeight,terrainWorld,homeHangars} from './terrain.js';
 import {radarContacts,bombImpact} from './targeting.js';
 import {aircraftMesh} from './airframes.js';
 import {createStars,projectStar,starOccluded} from './sky.js';
@@ -20,7 +21,7 @@ export {aircraftMesh} from './airframes.js';
 export class Renderer {
  constructor(canvas){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.camera=new Vec3();this.q=new Quat();this.thirdPerson=false;this.stars=createStars();this.resize();}
  resize(){const d=Math.min(devicePixelRatio||1,2);this.w=innerWidth;this.h=innerHeight;this.canvas.width=this.w*d;this.canvas.height=this.h*d;this.ctx.setTransform(d,0,0,d,0,0);this.focal=this.h*.8;}
- setup(position,q){this.camera=position;this.q=q;this.f=forward(q);this.u=up(q);this.r=right(q);}
+ setup(position,q){this.visibilityColumns=new Map();this.visibilityRevision=terrainWorld.revision;this.camera=position;this.q=q;this.f=forward(q);this.u=up(q);this.r=right(q);}
  local(p){const d=p.clone().sub(this.camera);return new Vec3(d.dot(this.r),d.dot(this.u),d.dot(this.f));}
  project(p){const v=this.local(p);if(v.z<1)return null;return {x:this.w*.5+v.x*this.focal/v.z,y:this.h*.53-v.y*this.focal/v.z,depth:v.z};}
  line(a,b){
@@ -50,10 +51,11 @@ export class Renderer {
    let modelFaces=mesh.faces||[],modelDetails=mesh.faces?mesh.details||[]:mesh.edges||[];
    if(center.z-radius>1&&radius*this.focal/center.z<6){const projected=pts.map(p=>this.project(p)),hull=silhouetteIndices(projected);modelFaces=hull.length>=3?[hull]:[];modelDetails=[];}
    const used=new Set([...modelFaces.flat(),...modelDetails.flat()]),visible=new Map();for(const i of used)visible.set(i,!this.worldOcclusion||this.worldVisible(pts[i]));
+   const projectionCache=new Map();
    for(const original of modelFaces){if(original.some(i=>!visible.get(i)))continue;
     // Clip to the near plane; never drop a whole wall when one corner passes
     // behind the pilot. This matters for hangars and other large nearby units.
-    const polygon=projectFeaturePolygon(this,original.map(i=>pts[i]));if(polygon.length<3||polygon.every(p=>p.x<0)||polygon.every(p=>p.x>this.w)||polygon.every(p=>p.y<0)||polygon.every(p=>p.y>this.h))continue;
+    const polygon=projectFeaturePolygon(this,original.map(i=>pts[i]),projectionCache);if(polygon.length<3||polygon.every(p=>p.x<0)||polygon.every(p=>p.x>this.w)||polygon.every(p=>p.y<0)||polygon.every(p=>p.y>this.h))continue;
     const ids=polygon.map(p=>screen.push({...p,color})-1);faces.push(ids);fills.push({ids,depth:polygon.reduce((sum,p)=>sum+p.depth,0)/polygon.length,color:mesh.flapFaces?.includes(original)&&mesh.flapFraction>.02?'#40522b':'#101c16'});
    }
    for(const [a,b]of modelDetails){if(!visible.get(a)||!visible.get(b))continue;let v=this.local(pts[a]),w=this.local(pts[b]);if(v.z<1&&w.z<1)continue;
@@ -61,6 +63,7 @@ export class Renderer {
     const pair=[v,w].map(p=>screen.push({x:this.w*.5+p.x*this.focal/p.z,y:this.h*.53-p.y*this.focal/p.z,depth:p.z,color})-1);details.push(pair);
    }
   }
+  if(this.debugMetrics)this.modelMetrics={entries:entries.length,faces:faces.length,details:details.length,vertices:screen.length,largest:entries.map(e=>({faces:e.mesh.faces?.length||0,points:e.mesh.points.length,distance:Math.round(e.position.distance(this.camera)),pixels:Math.round((e.mesh.radius||0)*this.focal/Math.max(1,this.local(e.position).z))})).sort((a,b)=>b.faces-a.faces).slice(0,4)};
   fills.sort((a,b)=>b.depth-a.depth);for(const face of fills){c.beginPath();face.ids.forEach((i,j)=>j?c.lineTo(screen[i].x,screen[i].y):c.moveTo(screen[i].x,screen[i].y));c.closePath();c.fillStyle=face.color;c.fill();}
   const strokes=new Map();for(const [a,b]of visibleMeshEdges(screen,faces,details,{minLength:.65})){const color=a.color||'#b9ed8c';if(!strokes.has(color))strokes.set(color,[]);strokes.get(color).push([a,b]);}
   c.lineWidth=.8;for(const [color,segments]of strokes){c.strokeStyle=color;c.beginPath();for(const[a,b]of segments){c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);}c.stroke();}
@@ -79,10 +82,10 @@ export class Renderer {
   if(cuts.length===2){c.strokeStyle='#6f866055';c.beginPath();c.moveTo(cuts[0].x,cuts[0].y);c.lineTo(cuts[1].x,cuts[1].y);c.stroke();}
  }
  terrain(){renderTerrainSurface(this);}
- worldVisible(p){return terrainFeatureVisible(this.camera,p);}
+ worldVisible(p){if(!this.visibilityColumns||this.visibilityRevision!==terrainWorld.revision){this.visibilityColumns=new Map();this.visibilityRevision=terrainWorld.revision;}const key=p.x+':'+p.z;let column=this.visibilityColumns.get(key);if(column){if(p.y>=column.visible)return true;if(p.y<=column.hidden)return false;}else{column={visible:Infinity,hidden:-Infinity};this.visibilityColumns.set(key,column);}const visible=terrainFeatureVisible(this.camera,p);if(visible)column.visible=Math.min(column.visible,p.y);else column.hidden=Math.max(column.hidden,p.y);return visible;}
  projectWorld(p){return this.worldVisible(p)?this.project(p):null;}
  runway(jammed=false){const c=this.ctx;c.strokeStyle='#c8e4aa';c.lineWidth=1.5;c.beginPath();this.line(new Vec3(-45,.8,-1600),new Vec3(-45,.8,1600));this.line(new Vec3(45,.8,-1600),new Vec3(45,.8,1600));this.line(new Vec3(-45,.8,-1600),new Vec3(45,.8,-1600));this.line(new Vec3(-45,.8,1600),new Vec3(45,.8,1600));for(let z=-1500;z<1600;z+=130)this.line(new Vec3(0,1,z),new Vec3(0,1,z+55));for(let z=-1500;z<1600;z+=140){for(const x of[-48,48]){this.line(new Vec3(x,2,z),new Vec3(x,5,z));}}for(const z of[-1450,1450])for(let x=-35;x<=35;x+=14)this.line(new Vec3(x,1,z),new Vec3(x,1,z+60));c.stroke();
- for(const [x,z]of[[190,-900],[190,-650],[190,-400]])this.box(new Vec3(x,0,z),60,22,100,'#64735f');
+ for(const h of homeHangars)this.box(new Vec3(h.x,0,h.z),h.halfWidth,h.height,h.halfLength,'#64735f');
  // Two approach gates on the three-degree glide path.
  if(jammed)return;
  c.strokeStyle='#89af6955';c.beginPath();for(const z of[-2600,-3600]){const y=(-z-1600)*Math.tan(3*DEG)+3;this.line(new Vec3(-60,y-12,z),new Vec3(-60,y+12,z));this.line(new Vec3(-60,y+12,z),new Vec3(60,y+12,z));this.line(new Vec3(60,y+12,z),new Vec3(60,y-12,z));}c.stroke();}
@@ -104,11 +107,12 @@ export class Renderer {
  }if(!wreck&&!this.thirdPerson&&this.headLook)cameraQ=this.headLook.orientation(s.orientation);this.setup(camera,cameraQ);
  const sky=c.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#081619');sky.addColorStop(.48,'#23392d');sky.addColorStop(1,'#07100c');c.fillStyle=sky;c.fillRect(0,0,w,h);
  this.worldOcclusion=false;this.skyStars();this.groundHorizon();
- this.terrain();renderTerrainFeatures(this);const jammed=navigationJammed(s,targets);this.worldOcclusion=true;this.meshQueue=[];this.runway(jammed);this.worldOcclusion=false;renderLandingRoute(this,getLandingRoute(s,{jammed}));this.worldOcclusion=true;const contacts=radarContacts(s,targets);
- for(const t of targets.filter(t=>!t.home&&(t.alive||t.falling)).sort((a,b)=>this.local(b.position).z-this.local(a.position).z)){if(t.kind==='air'){if(t.flight)renderDamageSmoke(this,t.flight);this.mesh(aircraftMesh(t.aircraftId||'mig29'),t.position,t.flight?.orientation||Quat.euler(t.heading,t.pitch||0,t.bank||0),1,t.team==='ally'?'#8ccbe3':t.civilian?'#a6dce5':t.flight?.damage>40?'#e0a270':'#c39a78',t.flight?.condition);}else renderGroundTarget(this,t);}
+ this.terrain();renderTerrainFeatures(this);const jammed=navigationJammed(s,targets);this.worldOcclusion=true;this.meshQueue=[];this.runway(jammed);this.worldOcclusion=false;renderLandingRoute(this,getLandingRoute(s,{jammed}));this.worldOcclusion=true;renderCanyonCourse(this,s);const contacts=radarContacts(s,targets);
+ for(const t of targets.filter(t=>!t.home&&(t.alive||t.falling||t.city)).sort((a,b)=>this.local(b.position).z-this.local(a.position).z)){if(t.type==='ballistic'){this.mesh(groundMesh('ballistic'),t.position,Quat.euler(t.heading,t.pitch||0,0),1,'#ffc48b');}else if(t.kind==='air'){if(t.flight)renderDamageSmoke(this,t.flight);this.mesh(aircraftMesh(t.aircraftId||'mig29'),t.position,t.flight?.orientation||Quat.euler(t.heading,t.pitch||0,t.bank||0),1,t.team==='ally'?'#8ccbe3':t.civilian?'#a6dce5':t.flight?.damage>40?'#e0a270':'#c39a78',t.flight?.condition);}else renderGroundTarget(this,t);}
  if((this.thirdPerson||wreck)&&!s.crashed)this.mesh(aircraftMesh(s.spec.id,s.mach>.5?Math.min(1,(s.mach-.5)/.9):0,s.flapPosition??(s.flaps?1:0)),s.position,s.orientation,1,s.damage>40?'#e0a270':'#c7efa2',s.condition);
  this.flushMeshes();
- for(const t of targets){if(!t.home&&t.alive&&!jammed&&!targetMasked(t,targets)){const contact=contacts.find(x=>x.target===t);this.marker(t.position,`${t.team==='ally'?'SZÖV. ':''}${t.name.toUpperCase()} ${(t.position.distance(s.position)/1000).toFixed(1)} KM`,t.team==='ally'?'#8ccbe3':aim.id===t.id?(aim.locked?'#baf37d':'#ffda83'):contact?.visible?'#f0b78d':'#92a08a',aim.id===t.id&&aim.locked);}}
+ for(const t of targets){if(!t.home&&!t.city&&t.alive&&!jammed&&!targetMasked(t,targets)){const contact=contacts.find(x=>x.target===t);this.marker(t.position,`${t.team==='ally'?'SZÖV. ':''}${t.name.toUpperCase()} ${(t.position.distance(s.position)/1000).toFixed(1)} KM`,t.team==='ally'?'#8ccbe3':aim.id===t.id?(aim.locked?'#baf37d':'#ffda83'):contact?.visible?'#f0b78d':'#92a08a',aim.id===t.id&&aim.locked);}}
+ const city=targets.filter(t=>t.city);if(city.length&&!jammed){const center=city.reduce((p,t)=>p.add(t.position),new Vec3()).scale(1/city.length);this.marker(center,`VÁROS ${Math.round(city.filter(t=>t.alive).length/city.length*100)}%`,'#8ccbe3');}
  if(!jammed&&(targets.every(t=>!t.alive)||targets.some(t=>t.civilian&&t.withdrawing)||s.position.length()>3500))this.marker(new Vec3(0,10,-1000),`BASE ${(s.position.distance(new Vec3(0,0,0))/1000).toFixed(1)} KM`,'#baf37d');
  renderWeapons(this,s,weapons);
  renderCountermeasures(this,s);
@@ -149,4 +153,4 @@ export function renderAircraftPreview(canvas,spec,time,model=null){
 
 
 
-export function renderTargetPreview(canvas,mission,player,time){const mesh=mission.kind==='air'?aircraftMesh(enemyAircraft(mission,player).id):mission.objective==='landing'?groundMesh('airbase'):groundMesh(mission.id);renderAircraftPreview(canvas,mission,time,mesh);}
+export function renderTargetPreview(canvas,mission,player,time){const mesh=mission.id==='ballistic'?groundMesh('ballistic'):mission.id==='city-building'?groundMesh('city-building',80):mission.kind==='air'?aircraftMesh(enemyAircraft(mission,player).id):mission.objective==='landing'?groundMesh('airbase'):groundMesh(mission.id);renderAircraftPreview(canvas,mission,time,mesh);}

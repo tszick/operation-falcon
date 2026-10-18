@@ -1,3 +1,6 @@
+import {updateCanyonCourse} from './canyonTraining.js';
+import {updateMissionRuntime} from './missionRuntime.js';
+import {serviceAircraft} from './missionStart.js';
 import {objectiveRows} from './missionProgress.js';
 import {advisedTarget} from './targetAdvice.js';
 import {battleObjectives} from './missionObjectives.js';
@@ -34,12 +37,15 @@ export class Mission {
     else if(s.approach?.active)this.setPhase(s.approach.stage==='SZINTBE VÉTEL'?'flare':'landing',`LESZÁLLÁS · ${s.approach.stage}`,s.approach.instruction);
     else this.setPhase('emergency','HAZATÉRÉS','Térj a BASE felé, majd szállj le.');
   }
+  service(s){this.lastServiceLanding=s.lastTouchdown||s.landing;this.serviceCount=(this.serviceCount||0)+1;serviceAircraft(s);this.departed=false;this.setPhase('preflight','ÚJRA FELKÉSZÍTVE','Új gép, teljes üzemanyag és fegyverzet. R: indulhatsz újra.');}
   update(s,targets,w,aim=null){
     if(this.complete||this.failed||this.recovered)return;
     const practice=this.spec.objective==='landing',civil=this.spec.objective==='escort'?targets.find(t=>t.civilian):null;
     if(s.crashed){this.setPhase('failed','KÜLDETÉS SIKERTELEN','A repülési jelentésben találod a részleteket.');return;}
     if(s.dying){this.setPhase('dying','IRÁNYÍTÁS ELVESZETT','Végzetes szerkezeti kár. A gép zuhanását külső nézetből követjük.');return;}
-    if(this.aborted){this.updateReturn(s);return;}
+    updateMissionRuntime(s,this,targets,w);
+    if(this.aborted){const report=this.spec.composition?battleObjectives(this,s,targets,w):{failure:''};if(s.onGround&&s.landing?.success&&s.speed<5&&!report.failure&&!this.failed){this.aborted=false;this.interruptedObjectives=[];this.recovered=false;this.abortReason='';this.objectives=undefined;}else{if(report.failure){this.failed=true;this.failureReason=report.failure;this.setPhase('failed','KÜLDETÉS SIKERTELEN',report.failure);return;}this.updateReturn(s);return;}}
+    if(this.spec.objective==='canyon'){updateCanyonCourse(s,this,w);return;}
     if(civil&&(civil.damage>0||civil.flight?.damage>0||(!civil.alive&&!civil.departedAirspace))){this.failed=true;this.failureReason='A civil repülőgép megsérült. Ebben a küldetésben tilos tüzelni rá.';this.setPhase('failed','KÜLDETÉS SIKERTELEN · CIVIL GÉP',this.failureReason);return;}
     if(!civil&&targets.filter(t=>isHostile(t,s)).length&&targets.filter(t=>isHostile(t,s)).every(t=>!t.alive))this.destroyed=true;
     const agl=s.position.y-terrainHeight(s.position.x,s.position.z);
@@ -57,6 +63,7 @@ export class Mission {
       this.score=Math.max(0,Math.round(1000+s.fuel/s.spec.fuelCapacity*500+(100-s.damage)*5+Math.max(0,3-s.landing.descent)*100+Math.max(0,45-s.landing.offset)*3-w.used*5-w.misses*20-s.elapsed*.2+(this.objectives?.filter(o=>o.optional&&o.done).length||0)*300));
       return;
     }
+    if(!this.objectiveComplete&&s.onGround&&s.landing?.success&&s.speed<5&&!practice){this.service(s);return;}
     if(s.onGround&&s.landing?.success){
       this.setPhase('rollout','KIFUTÁS','Gáz le, Ctrl: kerékfék.');
       return;

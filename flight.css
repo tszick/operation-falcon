@@ -42,9 +42,9 @@ body.flying #approach-button,body.flying #pause-button,body.flying #flight-help{
 #cockpit #flight-config{height:100%}#cockpit #flight-config>div{height:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:3px 6px}
 #cockpit #config-engine{display:none}
 /* Text controls keep the existing green / yellow / red state logic. */
-#cockpit #flight-config>div>button{min-width:0;position:relative;padding:2px 1px;border:1px solid #62904838;background:#0a181066;text-align:center;color:#baf37d;font:10px/1.05 var(--mono);white-space:nowrap;touch-action:none}
-#cockpit #flight-config>div>button[data-state=active]{color:#f5d984;border-color:#d8bd7166;background:#66532238;text-shadow:0 0 4px #c3ab5555}
-#cockpit #flight-config>div>button[data-state=danger]{color:#ff9989;border-color:#e66c6266;background:#7e272542}
+#cockpit #flight-config>div>button{min-width:0;position:relative;padding:0;border:0;background:none;text-align:center;color:#baf37d;font:10px/1.05 var(--mono);white-space:nowrap;touch-action:none}
+#cockpit #flight-config>div>button[data-state=active]{color:#f5d984;text-shadow:0 0 4px #c3ab5555}
+#cockpit #flight-config>div>button[data-state=danger]{color:#ff9989;text-shadow:0 0 4px #8e252566}
 #cockpit #config-flaps[data-moving=true]{color:#efbd74}
 #cockpit #cockpit-mission{padding:2px 4px}
 #cockpit #mission-card{display:flex;flex-direction:column;height:100%;font:10px/1.12 var(--mono)}
@@ -138,11 +138,18 @@ body.flying #combat-messages{width:min(280px,38vw)}
 #cockpit #config-afterburner{grid-area:2/2}
 #cockpit #config-wheel-brake{grid-area:2/3}
 
-/* Small MFDs show the current instruction and the next action; H keeps the full guide. */
-#cockpit.compact-cockpit #guide-steps{display:block}
-#cockpit.compact-cockpit #guide-steps li{display:none;margin-bottom:2px}
-#cockpit.compact-cockpit #guide-steps li.current,#cockpit.compact-cockpit #guide-steps li.current+li{display:flex}
-@media(max-width:1050px){#cockpit.compact-cockpit #guide-steps li.current+li{display:none}}
+/* Show only pending instructions that fit the actual perspective screen well. */
+#cockpit #cockpit-guide{display:block;overflow:hidden}
+#cockpit #phase-guide:not([hidden]){position:relative;height:100%;overflow:hidden}
+#cockpit #phase-guide .guide-heading{position:absolute;top:0;right:0;width:13px;height:13px;margin:0;z-index:1}
+#cockpit #phase-guide .guide-heading>span{display:none}
+#cockpit #close-guide{width:13px;height:13px;padding:0}
+#cockpit #guide-steps,#cockpit.compact-cockpit #guide-steps{position:relative;display:block;width:calc(100% - 16px);height:100%;overflow:hidden}
+#cockpit #guide-steps li,#cockpit.compact-cockpit #guide-steps li{display:flex;gap:4px;margin:0;padding:0 0 1px;font:10px/12px var(--mono)}
+#cockpit #guide-steps li[hidden]{display:none!important}
+#cockpit #guide-steps kbd{flex:none;line-height:12px}
+#cockpit #guide-steps li>span{min-width:0;overflow:hidden;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:var(--guide-lines,2)}
+
 
 /* Independent message lifetimes; no framed panel over the central flight view. */
 body.flying #combat-messages{left:auto;right:18px;top:90px;bottom:calc(var(--cockpit-height) + 12px);width:clamp(240px,28vw,370px);transform:none;pointer-events:none}
@@ -174,3 +181,11 @@ body.flying #combat-messages #targeting-panel,body.flying #cockpit-annunciator{d
 #cockpit #target-data[data-lock=locked]{color:#baf37d}
 @keyframes radar-acquiring{0%,100%{opacity:1}50%{opacity:.35}}
 @media(prefers-reduced-motion:reduce){#cockpit #target-data[data-lock=acquiring]{animation:none;text-decoration:underline}}
+
+#cockpit #flight-config>div>button:focus-visible{outline:none;text-decoration:underline;text-underline-offset:3px}
+
+/* Only luminous lettering overlays the physical switch plates; no console tint. */
+#cockpit #cockpit-controls{padding:0;border:0;background:transparent;box-shadow:none;pointer-events:none}
+#cockpit #flight-config>div{display:block;position:static;gap:0;background:none;border:0;box-shadow:none}
+#cockpit #flight-config>div>button{position:absolute;left:0;top:0;display:flex;align-items:center;justify-content:center;transform-origin:0 0;pointer-events:auto;border:0!important;background:transparent!important;box-shadow:none!important;outline:none}
+#cockpit #flight-config>div>button::before,#cockpit #flight-config>div>button::after{display:none}

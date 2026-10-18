@@ -1,6 +1,12 @@
 import {missions} from './missionCatalog.js';
 const guide=(id,name,description,steps,watch,pitfalls,related=[],sections=[])=>({id:'guide-'+id,name,description,kind:'guide',category:'Repülési fázis / pilótaútmutató',steps,watch,pitfalls,related,sections});
 export const pilotEntries=[
+ guide('canyon','A kanyon · gyakorlórepülés','Fegyvertelen, levegőből induló gyakorlat. Öt alacsony kapu után három kapu vezet át a záró gerincen. Nincs időlimit; a kijárati kapunál a gyakorlat sikeresen véget ér.',[
+ ['A / D','Kis bedöntésekkel kövesd a völgyet. Az ellenkező gombbal hozd vissza a szárnyakat; a bedöntés nem áll vissza magától.'],
+ ['W / S','Repülj sorban a türkiz kapukon: a völgyben 40–350 méter AGL a cél. Ha kihagysz egy kaput, biztonságos magasságban térj vissza, és az eredeti haladási irányban repülj át rajta.'],
+ ['R / S','A gerinc előtt gyűjts sebességet, majd időben kezdd meg a fokozatos felhúzást. Kövesd a magas kapukat. Szükség esetén használj utánégetőt, ha a gépen van.'],
+ ['W','A gerinc túloldalán finoman engedd vissza az orrot, és repülj át a kijáraton. Nem kell leszállni a gyakorlat befejezéséhez.']
+ ],['AGL: a talaj a gerinc előtt gyorsan emelkedik.','IAS: a felhúzás sebességet fogyaszt; ne várd meg az átesést.','G: fokozatosan húzz, ne rántsd fel az orrot.','A radaron a türkiz útvonal és az aktuális kapu jelölése segít.'],['A dugóhúzó áteséses állapot, nem kötelező akadálykerülő manőver. Kis magasságon ne provokáld.','A kapuk sorrendje és haladási iránya számít; fölöttük elrepülve nem teljesülnek.'],['guide-instruments','guide-maneuvers']),
  guide('instruments','Alapkezelés és műszerek','Először tudd, mit állítasz, és mit jelez a kijelző. Az útmutató minden gépen ugyanarra a kezelési rendre épül.',[
  ['R / F','A gázállást növeled vagy csökkented. Elengedéskor a beállítás megmarad, de a sebesség tovább változhat az emelkedés, süllyedés és légellenállás miatt.'],
  ['A / D','A gépet döntöd. A bedöntés megmarad, ezért a gép tovább fordul. Az ellenkező gombbal hozd vissza vízszintbe.'],
@@ -9,6 +15,22 @@ export const pilotEntries=[
  ['EGÉR','Belső nézetben a pilóta fejét fordítod, a gép iránya és a fegyverek nem fordulnak vele. Az egér megállása után a nézet visszatér előre; a következő mozdulat innen indul, a kurzor helyétől függetlenül. Alt: kurzor a műszerfalhoz; kattintás a tájra: nézelődés folytatása. Oldalra és fel/le korlátozottan nézhetsz; a V külső nézetben nincs egérrel fejforgatás.'],
  ['H / P','H: részletes súgó. P vagy Esc: szünet. A Mission Control a következő teendőket mutatja.']
  ],['IAS: manőverezésnél és leszállásnál a kijelzett sebességet figyeld.','MSL: tengerszint feletti magasság. AGL: terep feletti magasság, ez mutatja a talaj közelségét.','V/S: pozitív érték emelkedés, negatív süllyedés. A horizont a bedöntést, a G a terhelést mutatja.','FUEL TOT: maradék üzemanyag, ezer kilogrammban. 3,20 = 3200 kg. A műszer fölött az egérrel fogyasztási becslést is láthatsz.'],['A gáz megtartása nem sebességtartó automatika.','A gép nem szintez ki automatikusan.'],['guide-takeoff','guide-aiming','guide-landing'],[{title:'A három különböző célzójel',paragraphs:['A sebességirány-jel azt mutatja, merre haladsz ténylegesen, ami eltérhet az orr irányától. Nem ezt kell mindenáron középre kormányozni.','A gépágyú előretartási köre egy kijelölt mozgó célhoz becsül célzási irányt. A CCIP-kör pedig a bomba várható talajbecsapódását jelzi. Ezek eltérő feladatot látnak el.']}]),
+ guide('rearm','Köztes leszállás és újraindulás','Ha a küldetés még teljesíthető, biztonságos leszállás és megállás után új, kijavított gépet kapsz teljes üzemanyaggal és az induláskor választott fegyverzettel.',[
+ ['LESZÁLLÁS','Térj a saját bázisra, szállj le biztonságosan, gáz alapjáratra, Ctrl: állj meg. Nem elég csak hozzáérni a pályához.'],
+ ['ELLÁTÁS','A sérülések megszűnnek, a tank, a lőszer, a rakéták és az elterelők feltöltődnek. A hangárban választott fegyver-összeállítás marad.'],
+ ['R','A gép újra a kifutón áll, felszállásra készen. R-rel növelheted a gázt.'],
+ ['KÜLDETÉS','Az idő és az ellenfelek nem indulnak újra. A következő hullám vagy a siló visszaszámlálása ellátás közben is folytatódik.'],
+ ['CÉLOK','Ha az elsődleges cél már teljesült, a leszállás lezárja a küldetést. Elbukott kötelező cél vagy megsemmisült gép nem javítható vissza ezzel.']
+ ],['A sikeres ellátás és a támadó hullámok a küldetésnaplóba is bekerülnek.'],['A leszállás és újabb kirepülés ideje alatt a védendő cél továbbra is veszélyben lehet.'],['guide-landing','guide-takeoff']),
+ guide('maneuvers','Orsó, átfordulás és dugóhúzó','A játék térbeli fizikája kezeli a háton repülést, a bukfencet és az átesésből kialakuló dugóhúzót. A sebesség, tömeg, sérülés és magasság ténylegesen befolyásolja a sikerüket.',[
+ ['ELŐKÉSZÍTÉS','A játékban nagy terep feletti magassággal gyakorolj. Futó, fékszárny és légfék behúzva; könnyebb fegyverzet és kevesebb üzemanyag több tartalékot hagy.'],
+ ['A / D','Orsó: a hossztengely körül fordítod a gépet. Ez önmagában nem 180 fokos irányváltás; közben a repülési pálya és a magasság is változhat.'],
+ ['S','Bukfenc: elegendő kezdősebességgel finoman húzd végig. Fent lassulsz, lefelé gyorsulsz; figyeld az IAS-t, AGL-t és G-t. L: a rásegítés a G mellett a túl nagy állásszöget is korlátozza.'],
+ ['A / D → S','Split-S: félorsóval a hátára fordítod a gépet, majd pozitív húzással fél bukfencet repülsz lefelé. Visszafordít, de sok magasságot fogyaszt.'],
+ ['S → A / D','Immelmann: felfelé végzett fél bukfenc, majd félorsóval vissza vízszintesbe. Emelkedés közben energiát veszítesz; kevés sebességgel ne erőltesd.'],
+ ['W + Q / E','Dugóhúzóból kijövetel a játékban: engedd el a húzást és az orsózást, csökkentsd a gázt, orr le, a forgással ellentétes oldalkormány. Amint a forgás megszűnt, oldalkormány középre; gyorsulás után finoman vedd fel.'],
+ ['KANYON','Kövesd a völgy vonalát, a fordulót időben kezdd. Az AGL és a tényleges sebességirány a fontos; a terep fölé rajzolt navigációs jel nem szabad repülési folyosó.']
+ ],['A dugóhúzó áteséshez társuló önforgás; nem azonos az irányított orsóval.','Nehéz gépnél és nagy G-nél több sebesség kell ugyanahhoz a manőverhez.','A szimuláció egyszerűsített: nem egyes valódi típusok kiképzési eljárása.'],['A tartós teljes húzás rásegítés nélkül átesést okozhat.','A Split-S talaj közelében akkor is veszélyes, ha a gép még jól kormányozható.'],['guide-instruments','guide-air-combat']),
  guide('takeoff','Felszállás és emelkedés','Gyorsíts a pályán, emelkedj el, majd tisztítsd le a gépet a további repüléshez.',[
  ['R','Növeld a gázt. Ha a gép rendelkezik utánégetővel és szükség van rá, Shift-tel kapcsolhatod be.'],
  ['Q / E','Maradj a pálya középvonalán; csak apró gurulási korrekciókat adj.'],

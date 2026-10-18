@@ -1,3 +1,4 @@
+import {radarContact} from './sensors.js';
 import {Vec3,forward,clamp,DEG} from './math.js';
 import {armament} from './armament.js';
 import {terrainHeight} from './terrain.js';
@@ -64,7 +65,7 @@ export function stepMissile(p,target,launcher,dt){
   const los=target.position.clone().sub(p.position),distance=los.length(),unit=los.clone().normalize(),offAxis=Math.acos(clamp(direction.dot(unit),-1,1)),rel=target.velocity.clone().sub(p.velocity),losRate=los.cross(rel).scale(1/Math.max(1,los.dot(los))),closing=Math.max(0,-unit.dot(rel));
   const launchLOS=launcher?target.position.clone().sub(launcher.position):null;
   const needsSupport=profile.guidance==='sarh'||profile.guidance==='laser'||profile.guidance==='active'&&distance>(profile.activeRange||15000);
-  const support=!!launcher&&!launcher.crashed&&!launcher.dying&&launcher.alive!==false&&(!launcher.orientation||forward(launcher.orientation).dot(launchLOS.clone().normalize())>Math.cos((launcher.spec?.radarCone||60)*DEG))&&launchLOS.length()<(launcher.spec?.radarRange||150000)&&clearWeaponLine(launcher.position,target.position);
+  const support=!!launcher&&!launcher.crashed&&!launcher.dying&&launcher.alive!==false&&(!launcher.orientation||forward(launcher.orientation).dot(launchLOS.clone().normalize())>Math.cos((launcher.spec?.radarCone??60)*DEG))&&launchLOS.length()<(launcher.spec?.radarRange??150000)&&clearWeaponLine(launcher.position,target.position);
   if(p.age>.15&&(offAxis>profile.seeker||p.age>profile.burn&&speed<profile.minGuideSpeed||!clearWeaponLine(p.position,target.position))||needsSupport&&!support){p.seekerLost=true;p.lossReason=needsSupport&&!support?'TÁMOGATÁS MEGSZŰNT':'CÉL ELVESZETT';}
   else{
    lateral=losRate.cross(direction).scale(3.5*closing);
@@ -92,8 +93,16 @@ export function missileEnvelope(s,target,profile){
  const delta=target.position.clone().sub(s.position),distance=delta.length(),direction=delta.clone().normalize(),radial=target.velocity.dot(direction),cross=target.velocity.clone().sub(direction.clone().scale(radial)).length();
  let speed=Math.max(0,missileLaunchVelocity(s.velocity,direction,profile,{ground:!!s.ground}).dot(direction)),height=s.position.y,travel=0,best=0,time=0;
  for(let age=.25;age<=profile.life;age+=.25){const slope=(direction.y>0&&height>=target.position.y||direction.y<0&&height<=target.position.y)?0:direction.y,mass=profile.mass-(profile.mass-profile.dryMass)*clamp(age/profile.burn,0,1),acc=(age<profile.burn?profile.thrust/mass:0)-dragAcceleration(profile,speed,height,mass,9.81*Math.sqrt(Math.max(0,1-slope**2)))-9.81*slope;speed=Math.max(0,speed+acc*.25);if(age>profile.burn&&speed<Math.max(profile.minGuideSpeed,profile.terminalReserve))break;travel+=speed*.25;height=clamp(height+speed*slope*.25,Math.min(s.position.y,target.position.y),Math.max(s.position.y,target.position.y));const closure=travel-radial*age;if(closure>best){best=closure;time=age;}}
- const crossPenalty=1/Math.sqrt(1+(cross/650)**2),maxRange=Math.min(profile.maxRange,Math.max(0,best)*crossPenalty),effectiveRange=maxRange*.68;
+ const crossPenalty=1/Math.sqrt(1+(cross/650)**2),nominalRange=Math.min(profile.maxRange,Math.max(0,best)*crossPenalty),maxRange=target.type==='ballistic'?Math.min(nominalRange,radial<-1500?-radial*1.1:0):nominalRange,effectiveRange=maxRange*.68;
  return {distance,maxRange,effectiveRange,minRange:profile.minRange,closing:-radial,time,cross};
+}
+export const gunEffectiveRange=(source,profile)=>profile.effectiveRange*clamp(Math.sqrt(1.225/airDensity(source.position.y)),1,1.5);
+export function guidedLaunchStatus(s,target,profile,{envelope=null}={}){
+ const distance=target.position.distance(s.position),direction=target.position.clone().sub(s.position).normalize(),offAxis=s.orientation?Math.acos(clamp(forward(s.orientation).dot(direction),-1,1)):0;
+ if(!radarContact(s,target))return {distance,maxRange:Math.min(profile.maxRange,s.spec?.radarRange||0),status:'radar',label:'CÉL A RADAR LÁTÓMEZEJÉN KÍVÜL',detail:'RADARTÁV ÉS LÁTÓKÚP IS KELL A BEFOGÁSHOZ',canLaunch:false};
+ const rawReach=envelope||missileEnvelope(s,target,profile),reach={...rawReach,maxRange:Math.min(rawReach.maxRange,profile.maxRange,s.spec.radarRange),effectiveRange:Math.min(rawReach.effectiveRange,s.spec.radarRange)},near=distance<profile.minRange,far=distance>Math.min(profile.maxRange,reach.maxRange),angle=offAxis>Math.min(profile.seeker,50*DEG),terrain=!clearWeaponLine(s.position,target.position),marginal=distance>reach.effectiveRange;
+ const status=near?'near':far?'range':angle?'angle':terrain?'terrain':marginal?'marginal':'good';
+ return {profile,...reach,distance,status,label:near?'CÉL TÚL KÖZEL':far?'LŐTÁVON KÍVÜL':angle?'INDÍTÁSI SZÖG TÚL NAGY':terrain?'TEREP TAKARJA A CÉLT':marginal?'INDÍTHATÓ · HATÁRESET':'TŰZKÉSZ · KEDVEZŐ',detail:`BECSÜLT LŐTÁV ${(profile.minRange/1000).toFixed(1)}–${(reach.maxRange/1000).toFixed(1)} KM · ${near?'TÚL KÖZEL · NÖVELD A TÁVOLSÁGOT':far?'KÖZELÍTS A LŐTÁVIG':angle?'FORDÍTSD AZ ORROT A CÉL FELÉ':terrain?'EMELKEDJ VAGY KERÜLD MEG A TAKARÁST':profile.guidance==='sarh'||profile.guidance==='laser'?'TARTSD A CÉLON':marginal?'KÖZELÍTS A BIZTOSABB HELYZETHEZ':'SZÓKÖZ: INDÍTÁS'}`,canLaunch:!near&&!far&&!angle&&!terrain};
 }
 export function gunLead(s,target,profile){
  const origin=s.muzzlePosition?.clone()||s.position.clone().add(forward(s.orientation).scale(15)),delta=target.position.clone().sub(origin);let time=delta.length()/profile.muzzleSpeed,direction=delta.clone().normalize(),miss=Infinity;
@@ -112,11 +121,9 @@ export function fireSolution(s,target,type,{heat=0}={}){
  if((type==='aam'&&target.kind!=='air')||(['agm','bomb'].includes(type)&&target.kind!=='ground'))return {profile,distance,status:'wrong-type',label:'VÁLTS FEGYVERT',detail:'NEM EHHEZ A CÉLHOZ VALÓ',canLaunch:false};
  if(type==='bomb'){const impact=predictBombImpact(s),error=impact.distance(target.position),onTarget=error<Math.max(35,(target.radius||35));return {profile,distance,status:onTarget?'good':'aim',label:onTarget?'CCIP A CÉLON':'IGAZÍTSD A CCIP-JELET',detail:`BECSAPÓDÁSI ELTÉRÉS ${Math.round(error)} M`,canLaunch:true,impact};}
  if(type==='gun'){
-  const k=.5*airDensity(s.position.y)*profile.cd*profile.area/profile.mass,sigma=gunDispersion(s,profile,heat),energy=Math.exp(-2*k*distance),effectiveRange=profile.effectiveRange*clamp(Math.sqrt(1.225/airDensity(s.position.y)),1,1.5),lead=gunLead(s,target,profile),aimAngle=Math.acos(clamp(nose.dot(lead.direction),-1,1)),inRange=distance<=effectiveRange&&lead.reachable,aimed=aimAngle<.012;
+  const k=.5*airDensity(s.position.y)*profile.cd*profile.area/profile.mass,sigma=gunDispersion(s,profile,heat),energy=Math.exp(-2*k*distance),effectiveRange=gunEffectiveRange(s,profile),lead=gunLead(s,target,profile),aimAngle=Math.acos(clamp(nose.dot(lead.direction),-1,1)),inRange=distance<=effectiveRange&&lead.reachable,aimed=aimAngle<.012;
   const status=!inRange?'range':!aimed?'aim':energy<.35?'marginal':'good';
   return {profile,distance,effectiveRange,maxRange:effectiveRange,minRange:0,energy,spreadRadius:1.794*sigma*distance,time:lead.time,lead,status,label:!inRange?'GÉPÁGYÚHOZ TÁVOL':!aimed?'IGAZÍTS AZ ELŐRETARTÁSRA':status==='good'?'TŰZKÉSZ · KEDVEZŐ':'TŰZKÉSZ · GYENGÜLŐ LÖVEDÉK',detail:`HATÁSOS ~${(effectiveRange/1000).toFixed(1)} KM · SZÓRÁSKÖR R≈${(1.794*sigma*distance).toFixed(1)} M`,canLaunch:true};
  }
- const envelope=missileEnvelope(s,target,profile),near=distance<profile.minRange,far=distance>envelope.maxRange,angle=offAxis>Math.min(profile.seeker,50*DEG),terrain=!clearWeaponLine(s.position,target.position),marginal=distance>envelope.effectiveRange;
- const status=near?'near':far?'range':angle?'angle':terrain?'terrain':marginal?'marginal':'good';
- return {profile,...envelope,status,label:near?'CÉL TÚL KÖZEL':far?'LŐTÁVON KÍVÜL':angle?'INDÍTÁSI SZÖG TÚL NAGY':terrain?'TEREP TAKARJA A CÉLT':marginal?'INDÍTHATÓ · HATÁRESET':'TŰZKÉSZ · KEDVEZŐ',detail:`BECSÜLT LŐTÁV ${(profile.minRange/1000).toFixed(1)}–${(envelope.maxRange/1000).toFixed(1)} KM · ${near?'TÚL KÖZEL · NÖVELD A TÁVOLSÁGOT':far?'KÖZELÍTS A LŐTÁVIG':angle?'FORDÍTSD AZ ORROT A CÉL FELÉ':terrain?'EMELKEDJ VAGY KERÜLD MEG A TAKARÁST':profile.guidance==='sarh'||profile.guidance==='laser'?'TARTSD A CÉLON':marginal?'KÖZELÍTS A BIZTOSABB HELYZETHEZ':'SZÓKÖZ: INDÍTÁS'}`,canLaunch:!near&&!far&&!angle&&!terrain};
+ return guidedLaunchStatus(s,target,profile);
 }

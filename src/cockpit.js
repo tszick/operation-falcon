@@ -1,4 +1,4 @@
-import {FRAME,screenWells,cockpitHeight,wellQuad,homography,matrix3d} from './cockpitGeometry.js';
+import {FRAME,screenWells,controlWells,cockpitHeight,wellQuad,homography,matrix3d} from './cockpitGeometry.js';
 let layoutKey='';
 export function mountCockpit(){
  if(document.getElementById('cockpit'))return;
@@ -24,7 +24,14 @@ export function layoutCockpit(){
  for(const name of Object.keys(screenWells)){
   const q=wellQuad(name,w,deck),length=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
   const width=(length(q[0],q[1])+length(q[3],q[2]))/2,height=(length(q[0],q[3])+length(q[1],q[2]))/2,element=document.getElementById(`cockpit-${name}`);
-  element.style.width=`${width}px`;element.style.height=`${height}px`;element.style.transform=`matrix3d(${matrix3d(homography(width,height,q)).join(',')})`;
+  if(name==='controls'){
+   element.style.width=`${w}px`;element.style.height=`${deck}px`;element.style.transform='none';
+   for(const [id,corners]of Object.entries(controlWells)){
+    const quad=corners.map(([x,y])=>[x/FRAME.width*w,(y-FRAME.top)/(FRAME.height-FRAME.top)*deck]),bw=(length(quad[0],quad[1])+length(quad[3],quad[2]))/2,bh=(length(quad[0],quad[3])+length(quad[1],quad[2]))/2,button=document.getElementById(id);
+    button.style.width=`${bw}px`;button.style.height=`${bh}px`;button.style.transform=`matrix3d(${matrix3d(homography(bw,bh,quad)).join(',')})`;
+   }
+  }else{element.style.width=`${width}px`;element.style.height=`${height}px`;element.style.transform=`matrix3d(${matrix3d(homography(width,height,q)).join(',')})`;}
+
   if(name==='radar'){const radar=document.getElementById('radar');radar.width=Math.max(80,Math.round(width));radar.height=Math.max(60,Math.round(height-25));}
  }
 }

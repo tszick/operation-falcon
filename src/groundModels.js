@@ -9,11 +9,14 @@ class Builder {
  wheel(x,y,z){const start=this.points.length;for(const dx of [-.35,.35])for(let i=0;i<10;i++){const a=i/10*Math.PI*2;this.points.push(new Vec3(x+dx,y+Math.cos(a)*.85,z+Math.sin(a)*.85));}this.faces.push(Array.from({length:10},(_,i)=>start+i),Array.from({length:10},(_,i)=>start+19-i));for(let i=0;i<10;i++)this.faces.push([start+i,start+(i+1)%10,start+10+(i+1)%10,start+10+i]);}
  truck(x=0,z=0,covered=true){this.box(x,1,z,1.5,1,5.6);this.box(x,2,z+3.7,1.55,2.7,1.7);this.face([[x-1.3,3.4,z+5.42],[x+1.3,3.4,z+5.42],[x+1.3,4.4,z+5.42],[x-1.3,4.4,z+5.42]]);this.box(x,2,z-1.8,1.6,covered?3.3:1.3,3.6);for(const dx of [-1.65,1.65])for(const dz of [-4,-1.8,3.5])this.wheel(x+dx,1,z+dz);}
  dish(x,y,z){this.line([x,0,z],[x,y,z]);const n=16,r=6;for(let i=0;i<n;i++){const a=i/n*Math.PI*2,b=(i+1)/n*Math.PI*2;this.face([[x,y,z+1],[x+Math.cos(a)*r,y+Math.sin(a)*r,z-1],[x+Math.cos(b)*r,y+Math.sin(b)*r,z-1]]);}this.line([x,y,z+1],[x,y,z-5]);for(const dx of [-5,5])this.line([x+dx,y,z-1],[x,y,z-5]);}
- finish(){const bounds={};for(const axis of ['x','y','z']){const v=this.points.map(p=>p[axis]);bounds[axis]=[Math.min(...v),Math.max(...v)];}return {points:this.points,faces:this.faces,details:this.details,bounds,radius:Math.max(...this.points.map(p=>p.length()))};}
+ finish(){const unique=[],lookup=new Map(),remap=this.points.map(p=>{const key=`${p.x},${p.y},${p.z}`;if(!lookup.has(key)){lookup.set(key,unique.length);unique.push(p);}return lookup.get(key);});this.points=unique;this.faces=this.faces.map(f=>f.map(i=>remap[i]));this.details=this.details.map(e=>e.map(i=>remap[i]));const bounds={};for(const axis of ['x','y','z']){const v=this.points.map(p=>p[axis]);bounds[axis]=[Math.min(...v),Math.max(...v)];}return {points:this.points,faces:this.faces,details:this.details,bounds,radius:Math.max(...this.points.map(p=>p.length()))};}
 }
 const cache=new Map();
-export function groundMesh(type,span=220){const key=type+':'+Math.round(span);if(cache.has(key))return cache.get(key);const b=new Builder();
- if(type==='convoy'){for(let i=-2;i<=2;i++)b.truck(0,i*30);}
+export function groundMesh(type,span=220,dimensions={}){const key=type+':'+Math.round(span)+':'+(dimensions.width||0)+':'+(dimensions.depth||0)+':'+(dimensions.detail||'near');if(cache.has(key))return cache.get(key);const b=new Builder();
+ if(type==='city-building'){const w=dimensions.width||24,d=dimensions.depth||30,h=span;b.box(0,0,0,w,dimensions.detail==='far'?h+2:h,d);if(dimensions.detail!=='far')b.box(0,h,0,w*.55,2,d*.55);if(!dimensions.detail||dimensions.detail==='near')for(let y=8;y<h;y+=10){b.line([-w,y,d+.05],[w,y,d+.05]);b.line([w+.05,y,-d],[w+.05,y,d]);}}
+ else if(type==='ballistic-silo'){b.box(0,0,0,30,4,30);b.rings(0,0,[[4,14],[6,14],[7,12]],24);b.box(38,0,5,12,9,18);b.box(-26,0,-32,10,5,8);b.line([-13,7,0],[13,7,0]);b.line([0,7,-13],[0,7,13]);for(const x of [-40,60])b.line([x,0,-40],[x,3,-40]);}
+ else if(type==='ballistic'){b.rings(0,0,[[0,1.2],[12,1.2],[16,0]],12);for(const x of [-1,1]){b.face([[0,0,0],[x*3,0,0],[0,4,0]]);b.face([[0,0,0],[0,0,x*3],[0,4,0]]);}b.points=b.points.map(p=>new Vec3(p.x,-p.z,p.y-7));}
+ else if(type==='convoy'){for(let i=-2;i<=2;i++)b.truck(0,i*30);}
  else if(type==='truck')b.truck();
  else if(type==='bunker'){b.rings(0,0,[[0,27],[5,29],[6,37],[9,35],[13,25],[15,8]],24);b.box(0,0,27,7,5,5);b.box(0,6,29,13,.7,1);for(let a=0;a<6;a++){const q=a*Math.PI/3;b.line([Math.cos(q)*29,6,Math.sin(q)*29],[Math.cos(q)*32,8,Math.sin(q)*32]);}}
  else if(type==='jammer'){b.truck(0,0);for(const x of [-2,2]){b.line([x,2,-3],[x,24,-3]);for(let y=10;y<24;y+=3)b.line([x-3,y,-3],[x+3,y,-3]);}b.box(0,7,-3,4,5,1);b.dish(7,13,-5);b.box(-7,0,-7,2.5,3,3);}
@@ -24,17 +27,21 @@ export function groundMesh(type,span=220){const key=type+':'+Math.round(span);if
  else b.box(0,0,0,15,10,15);
  const mesh=b.finish();cache.set(key,mesh);return mesh;
 }
-export function groundInstances(t){
- if(t.type==='convoy')return [-2,-1,0,1,2].map(i=>({...convoyPose(t,i*30),mesh:groundMesh('truck')}));
- const mesh=groundMesh(t.type,t.type==='bridge'?(terrainWorld.river?.width||180)+70:220),position=t.position.clone();
- if(t.type!=='bridge')position.y=terrainHeight(position.x,position.z)+.5;
- return [{position,heading:t.heading||0,mesh}];
+const instanceCache=new WeakMap();
+function preparedInstance(position,heading,mesh){const rotation=Quat.euler(heading,0,0),inverse=Quat.euler(-heading,0,0),bounds=mesh.bounds,c=Math.cos(heading),s=Math.sin(heading),xs=[],zs=[];for(const x of bounds.x)for(const z of bounds.z){xs.push(position.x+x*c+z*s);zs.push(position.z-x*s+z*c);}return {position,heading,mesh,rotation,inverse,worldBounds:{x:[Math.min(...xs),Math.max(...xs)],y:bounds.y.map(y=>position.y+y),z:[Math.min(...zs),Math.max(...zs)]}};}
+export function groundInstances(t,{detail='near'}={}){
+ const key=[terrainWorld.revision,t.type,t.position.x,t.position.y,t.position.z,t.heading,t.routeDistance,t.routeDirection,t.alive,t.buildingHeight,t.buildingWidth,t.buildingDepth,terrainWorld.river?.width].join(':');let cached=instanceCache.get(t);if(!cached||cached.key!==key){cached={key,levels:new Map()};instanceCache.set(t,cached);}if(cached.levels.has(detail))return cached.levels.get(detail);
+ let result;if(t.type==='convoy')result=[-2,-1,0,1,2].map(i=>{const pose=convoyPose(t,i*30);return preparedInstance(pose.position,pose.heading,groundMesh('truck'));});
+ else{const mesh=groundMesh(t.type,t.city?(t.alive?t.buildingHeight:2):t.type==='bridge'?(terrainWorld.river?.width||180)+70:220,{width:t.buildingWidth,depth:t.buildingDepth,detail}),position=t.position.clone();if(t.type!=='bridge')position.y=terrainHeight(position.x,position.z)+.5;result=[preparedInstance(position,t.heading||0,mesh)];}
+ cached.levels.set(detail,result);return result;
 }
-export function renderGroundTarget(renderer,t){for(const instance of groundInstances(t).sort((a,b)=>renderer.local(b.position).z-renderer.local(a.position).z))renderer.mesh(instance.mesh,instance.position,Quat.euler(instance.heading,0,0),1,t.team==='ally'?'#8dbed4':t.type==='jammer'?'#e7c994':'#c4aa88');}
+export function buildingDetail(t,camera,focal=600){const distance=t.position.distance(camera),pixels=(t.buildingHeight||20)*focal/Math.max(1,distance);return distance<1800&&pixels>=12?'near':distance<6000&&pixels>=6?'medium':'far';}
+export function renderGroundTarget(renderer,t){const detail=t.city?buildingDetail(t,renderer.camera,renderer.focal):'near';for(const instance of groundInstances(t,{detail}))renderer.mesh(instance.mesh,instance.position,instance.rotation,1,t.alive===false?'#56645b':t.team==='ally'?'#8dbed4':t.type==='jammer'?'#e7c994':'#c4aa88');}
 export function groundHit(t,from,to,padding=0){
  // Swept local boxes follow the exact rendered instances, including each truck.
- for(const {position,heading,mesh}of groundInstances(t)){
-  const inverse=Quat.euler(-heading,0,0),a=inverse.rotate(from.clone().sub(position)),b=inverse.rotate(to.clone().sub(position)),d=b.clone().sub(a);let enter=0,exit=1;
+ for(const {position,inverse,mesh,worldBounds}of groundInstances(t)){
+  if(['x','y','z'].some(axis=>Math.max(from[axis],to[axis])<worldBounds[axis][0]-padding||Math.min(from[axis],to[axis])>worldBounds[axis][1]+padding))continue;
+  const a=inverse.rotate(from.clone().sub(position)),b=inverse.rotate(to.clone().sub(position)),d=b.clone().sub(a);let enter=0,exit=1;
   for(const axis of ['x','y','z']){const lo=mesh.bounds[axis][0]-padding,hi=mesh.bounds[axis][1]+padding;if(Math.abs(d[axis])<1e-9){if(a[axis]<lo||a[axis]>hi){enter=2;break;}}else{let p=(lo-a[axis])/d[axis],q=(hi-a[axis])/d[axis];if(p>q)[p,q]=[q,p];enter=Math.max(enter,p);exit=Math.min(exit,q);}}
   if(enter<=exit&&enter<=1&&exit>=0)return true;
  }return false;

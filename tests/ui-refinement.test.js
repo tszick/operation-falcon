@@ -16,11 +16,11 @@ const spec=aircraft.find(a=>a.id==='f16');
 function flight(id='defend-base'){
  const mission=missions.find(m=>m.id===id),s=createMissionAircraft(spec,mission),targets=createTargets(mission,spec,{rng:()=>.2}),m=new Mission(mission),w=new Weapons(),aim=new Targeting();s.onGround=false;s.airborne=true;s.position=new Vec3(0,1500,-8000);s.velocity=new Vec3(0,0,150);s.ias=150;s.speed=150;s.gear=false;s.flaps=false;s.flapPosition=0;s.elapsed=5;return {s,targets,m,w,aim};
 }
-test('damage interrupts once, preserves completed goals and permanently fails remaining goals while return comes first',()=>{
- const {s,targets,m,w,aim}=flight();applyDamage(s,45,{part:'weapons'});m.update(s,targets,w,aim);assert.equal(m.aborted,true);assert.equal(m.complete,false);let card=missionCardState(s,m,targets);assert.equal(card.rows[0].id,'return');assert.equal(card.rows[0].status,'pending');assert.equal(card.rows.find(r=>r.id==='base').status,'done');assert.equal(card.rows.find(r=>r.id==='attackers').status,'failed');assert.equal(card.rows.find(r=>r.id==='landing').status,'failed');
- targets.forEach(t=>t.alive=false);s.elapsed=20;m.update(s,targets,w,aim);card=missionCardState(s,m,targets);assert.equal(card.rows.find(r=>r.id==='base').status,'done');assert.equal(card.rows.find(r=>r.id==='attackers').status,'failed');assert.equal(m.abortTime,5);
- s.onGround=true;s.speed=0;s.landing={success:true,descent:1};m.update(s,targets,w,aim);assert.equal(m.recovered,true);assert.equal(m.complete,false);assert.equal(m.score,0);assert.equal(missionCardState(s,m,targets).rows[0].status,'done');
+test('damage requests return, then a safe landing services the aircraft and restores feasible objectives',()=>{
+ const {s,targets,m,w,aim}=flight();applyDamage(s,45,{part:'weapons'});m.update(s,targets,w,aim);assert.equal(m.aborted,true);assert.equal(m.complete,false);let card=missionCardState(s,m,targets);assert.equal(card.rows[0].id,'return');assert.equal(card.rows.find(r=>r.id==='base').status,'done');
+ s.elapsed=20;s.onGround=true;s.speed=0;s.landing={success:true,descent:1};m.update(s,targets,w,aim);assert.equal(m.aborted,false);assert.equal(m.recovered,false);assert.equal(m.complete,false);assert.equal(m.serviceCount,1);assert.equal(s.damage,0);assert.equal(s.fuel,s.spec.fuelCapacity);assert.equal(missionCardState(s,m,targets).rows.find(r=>r.id==='attackers').status,'pending');
 });
+
 test('a fatal crash after interruption does not award recovery; practice keeps its landing-only objective',()=>{
  const x=flight();x.s.damage=45;x.m.update(x.s,x.targets,x.w,x.aim);x.s.crashed=true;x.m.update(x.s,x.targets,x.w,x.aim);assert.equal(x.m.recovered,false);assert.equal(missionCardState(x.s,x.m,x.targets).rows[0].status,'failed');
  const y=flight('landing');y.s.damage=45;y.m.update(y.s,y.targets,y.w,y.aim);assert.equal(y.m.aborted,false);assert.equal(missionCardState(y.s,y.m,y.targets).rows.length,1);
@@ -36,8 +36,8 @@ test('configuration lights report inactive, active and unsafe states for every s
 test('compact goal list contains only icons and labels, with pending white-circle semantics',()=>{
  const {s,m}=flight('landing'),html=missionGoalsMarkup(missionCardState(s,m));assert.ok(html.includes('○'));assert.ok(!html.includes('<small>'));assert.ok(!html.includes('Folyamatban'));assert.ok(!html.includes('Teljesült'));
 });
-test('interruption and successful return are logged and analysed as recovered, not tactical victory or crash',()=>{
- const {s,targets,m,w,aim}=flight(),rec=new FlightRecorder();m.update(s,targets,w,aim);rec.start(s,m,targets,w,aim);s.damage=45;s.elapsed=6;m.update(s,targets,w,aim);rec.capture(s,m,targets,w,aim,{},true);s.onGround=true;s.speed=0;s.landing={success:true,descent:1};s.elapsed=7;m.update(s,targets,w,aim);rec.capture(s,m,targets,w,aim,{},true);rec.finish({result:'aborted',recovered:m.recovered,reason:m.abortReason});const log=rec.export();assert.ok(log.entries.some(e=>e.kind==='mission-status'&&e.data.aborted));assert.ok(log.entries.some(e=>e.kind==='mission-status'&&e.data.recovered));assert.match(evaluateFlight(log).summary,/sikeresen hazatért/);assert.equal(log.entries.findLast(e=>e.kind==='objectives').data[0].done,true);
+test('interruption and intermediate servicing are logged without finishing the mission or resetting its clock',()=>{
+ const {s,targets,m,w,aim}=flight(),rec=new FlightRecorder();m.update(s,targets,w,aim);rec.start(s,m,targets,w,aim);s.damage=45;s.elapsed=6;m.update(s,targets,w,aim);rec.capture(s,m,targets,w,aim,{},true);s.onGround=true;s.speed=0;s.landing={success:true,descent:1};s.elapsed=7;m.update(s,targets,w,aim);rec.capture(s,m,targets,w,aim,{},true);const log=rec.export();assert.ok(log.entries.some(e=>e.kind==='mission-status'&&e.data.aborted));assert.ok(log.entries.some(e=>e.kind==='ground-service'&&e.data.count===1));assert.equal(s.elapsed,7);assert.equal(rec.ended,false);assert.equal(m.complete,false);assert.equal(m.aborted,false);
 });
 
 test('minor structural damage warns about gentle manoeuvres without requesting return or aborting the mission',()=>{

@@ -2,7 +2,7 @@
 import {teamOf} from './unitTypes.js';
 export const jammerMissions=new Set(['airbase']);
 export const activeJammers=targets=>targets.filter(t=>t.alive&&t.type==='jammer');
-export function navigationJammed(s,targets){return activeJammers(targets).some(t=>teamOf(t,s)==='enemy'&&t.position.distance(s.position)<t.jamRadius);}
+export function navigationJammed(s,targets){return activeJammers(targets).some(t=>(s.team&&t.team?t.team!==s.team&&t.team!=='neutral':teamOf(t,s)==='enemy')&&t.position.distance(s.position)<t.jamRadius);}
 // Outside denial zones every hostile object is selectable; the player chooses the order.
 export function targetMasked(){return false;}
 export function visibleTargets(s,targets){return navigationJammed(s,targets)?[]:targets.filter(t=>t.alive);}

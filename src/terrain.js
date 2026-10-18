@@ -1,10 +1,13 @@
 import {Vec3,clamp} from './math.js';
 export const runway={halfWidth:45,halfLength:1600,heading:0};
+// The runway renderer and ground collision use these same physical hangar boxes.
+export const homeHangars=[-900,-650,-400].map(z=>({x:190,z,halfWidth:60,height:22,halfLength:100}));
 let revision=0;
 export let terrainWorld={revision:0,river:null,road:null,canyon:null,peaks:[]};
 const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
 function corridor(anchor,rng){return {x:anchor.x,z:anchor.z,angle:rng()*Math.PI*2,bend:250+rng()*650,phase:rng()*6.28};}
 export function configureTerrain(m,anchor=new Vec3(22000,0,0),rng=Math.random){
+ if(m.id==='canyon'){terrainWorld={revision:++revision,river:null,road:null,canyon:{x:12000,z:-12000,angle:Math.PI/2,bend:650,phase:0,width:550,depth:750,training:true},peaks:[{x:11611,z:3000,height:1450,radius:2600,platform:0}]};return terrainWorld;}
  const river=m.id==='bridge'||rng()<.55?{...corridor(m.id==='bridge'?anchor:{x:anchor.x+5500,z:anchor.z+4000},rng),width:70+rng()*230,level:25+rng()*35}:null;
  if(river&&['bunker','sam'].includes(m.id)&&Math.abs(pathCoordinates(river,anchor.x,anchor.z).across)<2500){river.x+=Math.sin(river.angle)*6000;river.z-=Math.cos(river.angle)*6000;}
  const road=m.id==='convoy'||m.id==='bridge'||rng()<.65?{...corridor(anchor,rng),width:14}:null;
@@ -26,13 +29,13 @@ export function configureTerrain(m,anchor=new Vec3(22000,0,0),rng=Math.random){
  }
  terrainWorld={revision:++revision,river,road,canyon,peaks,bridge:m.id==='bridge'?{span:river.width+70}:null,site:m.id==='airbase'?{x:anchor.x,z:anchor.z,height:180}:null};return terrainWorld;
 }
-function pathOffset(path,t){let offset=path.bend*(Math.sin(t/6000+path.phase)-Math.sin(path.phase));for(const d of path.detours||[])offset+=d.offset*(Math.exp(-(((t-d.along)/d.spread)**2))-(path.keepAnchor?Math.exp(-((d.along/d.spread)**2))*Math.exp(-((t/4500)**2)):0));return offset;}
+function pathOffset(path,t){let offset=path.bend*(Math.sin(t/6000+path.phase)-Math.sin(path.phase));if(path.training)offset+=420*Math.sin(t/1400)*smooth((t+1800)/1800)*(1-smooth((t-7500)/3000));for(const d of path.detours||[])offset+=d.offset*(Math.exp(-(((t-d.along)/d.spread)**2))-(path.keepAnchor?Math.exp(-((d.along/d.spread)**2))*Math.exp(-((t/4500)**2)):0));return offset;}
 export function pathPoint(path,t){const offset=pathOffset(path,t),c=Math.cos(path.angle),s=Math.sin(path.angle);return new Vec3(path.x+c*t-s*offset,0,path.z+s*t+c*offset);}
 export function pathCoordinates(path,x,z){const dx=x-path.x,dz=z-path.z,c=Math.cos(path.angle),s=Math.sin(path.angle),along=dx*c+dz*s;return {along,across:-dx*s+dz*c-pathOffset(path,along)};}
 export function pathHeading(path,t){const a=pathPoint(path,t),b=pathPoint(path,t+2);return Math.atan2(b.x-a.x,b.z-a.z);}
 function landscape(x,z){
  const distance=Math.hypot(x,z),flatten=clamp((distance-2100)/2200,0,1),waves=Math.sin(x*.00043+1.4)*Math.cos(z*.00036)+.4*Math.sin(x*.0011-z*.0006)+.16*Math.sin(z*.002+x*.0019);let h=Math.max(0,180+waves*240);
- const canyon=terrainWorld.canyon;if(canyon){const d=Math.abs(pathCoordinates(canyon,x,z).across);h-=canyon.depth*(1-smooth((d-canyon.width*.25)/canyon.width));}
+ const canyon=terrainWorld.canyon;if(canyon){const {along,across}=pathCoordinates(canyon,x,z),d=Math.abs(across);if(canyon.training){const blend=smooth((along+3500)/1500)*(1-smooth((along-19000)/2000)),floor=80+25*Math.sin(along/2600),profile=floor+(850+80*Math.sin(along/1800)-floor)*smooth((d-400)/700);h=h*(1-blend)+profile*blend;}else h-=canyon.depth*(1-smooth((d-canyon.width*.25)/canyon.width));}
  for(const p of terrainWorld.peaks){const d=Math.max(0,Math.hypot(x-p.x,z-p.z)-p.platform);h=Math.max(h,p.height*Math.exp(-2.8*(d/p.radius)**2));}
  const river=terrainWorld.river;if(river){const d=Math.abs(pathCoordinates(river,x,z).across),half=river.width*.5,blend=1-smooth((d-half-12)/300),bed=river.level+8-16*(1-smooth((d-half+12)/24));h=h*(1-blend)+bed*blend;}
  const site=terrainWorld.site;if(site){const blend=1-smooth((Math.hypot(x-site.x,z-site.z)-850)/650);h=h*(1-blend)+site.height*blend;}return Math.max(0,h)*flatten;

@@ -1,3 +1,4 @@
+import {moveBallistic} from './ballisticFlight.js';
 import {mass,atmosphere} from './performance.js';
 import {escortFlightInput} from './battleMovement.js';
 import {createBattleTargets} from './scenarioSpawn.js';
@@ -29,6 +30,7 @@ export function createTargets(m,playerSpec={faction:'west'},{rng=Math.random}={}
  return result;
 }
 export function applyTargetHit(target,weapon,{part=null,amount=null}={}){
+ if(target.type==='ballistic'){target.health=Math.max(0,target.health-(amount??(weapon==='gun'?18:50)));target.damage=100*(1-target.health/target.maxHealth);if(target.health<=0){target.alive=false;target.intercepted=true;}return !target.alive;}
  if(target.kind!=='air'){if(target.maxHealth){const damage=amount??(weapon==='gun'?18:100);target.health=Math.max(0,target.health-damage);target.damage=100*(1-target.health/target.maxHealth);if(target.health>0)return false;}target.alive=false;return true;}
  if(!target.flight){
   const spec=aircraftFlightSpec(target.aircraftId||'mig29');
@@ -38,8 +40,14 @@ export function applyTargetHit(target,weapon,{part=null,amount=null}={}){
  target.damage=target.flight.damage;
  if(target.flight.dying){target.alive=false;target.falling=true;return true;}return false;
 }
+const staticPoseCache=new WeakMap();
 export function updateTargets(targets,dt){for(const t of targets){
+ if(t.pending)continue;
+ if(t.kind==='ground'&&t.type!=='convoy'){const p=staticPoseCache.get(t);if(!p||p.revision!==terrainWorld.revision||p.x!==t.position.x||p.y!==t.position.y||p.z!==t.position.z){t.previousPosition=t.position.clone();t.agl=t.position.y-terrainHeight(t.position.x,t.position.z);staticPoseCache.set(t,{revision:terrainWorld.revision,x:t.position.x,y:t.position.y,z:t.position.z});}continue;}
  t.previousPosition=t.position.clone();t.agl=t.position.y-terrainHeight(t.position.x,t.position.z);
+ if(t.pending)continue;
+ if(t.type==='ballistic'){if(t.alive)moveBallistic(t,dt);continue;}
+ if(t.aiRole==='takeoff'&&t.alive){t.takeoffClock+=dt;if(t.takeoffClock>=0){t.velocity.z=Math.min(t.cruiseSpeed,t.velocity.z+6*dt);if(t.velocity.z>65){t.velocity.y=Math.min(35,t.velocity.y+8*dt);t.pitch=.15;}t.position.add(t.velocity.clone().scale(dt));if(t.position.y>900)t.aiRole='interceptor';}continue;}
  if(t.flight&&!t.flight.crashed){stepAircraft(t.flight,t.aiRole==='escortee'?escortFlightInput(t):{},dt);t.position=t.flight.position.clone();t.velocity=t.flight.velocity.clone();t.heading=attitude(t.flight.orientation).heading;t.damage=t.flight.damage;
   if(t.flight.dying){t.alive=false;t.falling=true;}
   if(t.flight.crashed){t.alive=false;t.falling=false;t.impactReady=true;}
@@ -67,6 +75,7 @@ export function targetingStatus(s,targets,aim,weapons){
  const contacts=radarContacts(s,targets).filter(c=>c.selectable);
  const chosen=contacts.find(c=>c.target.id===aim.id);
  const contact=chosen||contacts.slice().sort((a,b)=>a.distance-b.distance)[0];
+ if(!contact&&s.canyonTraining)return {state:'clear',label:`KANYONGYAKORLAT · ${s.canyonTraining.index}/${s.canyonTraining.gates.length} KAPU`,hint:'Kövesd sorban a türkiz kapukat és a Mission Control útmutatását.',progress:0};
  if(!contact)return {state:'clear',label:'NINCS AKTÍV CÉL',hint:targets.some(t=>t.alive&&t.aiRole==='escortee')?'Kísérd a kék jelű szállítót a kijáratig.':'Kövesd a Mission Control feladatát és a BASE jelzést.',progress:0};
  const d=contact.target.position.clone().sub(s.position),a=attitude(s.orientation);
  const bearing=(Math.atan2(d.x,d.z)/DEG+360)%360;
