@@ -1,119 +1,163 @@
-/* In-flight layout: aircraft left, tactical picture and mission right. */
-body.flying{--rail-width:clamp(216px,20vw,280px);--rail-gap:18px;--rail-top:100px}
-body.flying header{height:48px;padding:0 20px;background:#071211aa}body.flying .brand{font-size:22px;gap:12px}body.flying .brand>span:last-child{font-size:16px;letter-spacing:.5px}body.flying .brand small,body.flying .header-right{display:none}
-body.flying .flight-top,body.flying.guide-open .flight-top{top:53px;left:auto;right:18px;gap:6px;align-items:center;z-index:3}body.flying .flight-top>button{margin:0;padding:8px 10px;font:10px var(--mono)}body.flying .flight-top>#flight-name,body.flying .phase-status,body.flying .flight-bottom{display:none}
-body.flying #aircraft-status,body.flying .flight-side,body.flying.guide-open .flight-side,body.flying.approaching .flight-side,body.flying.guide-open.approaching .flight-side{position:absolute;top:var(--rail-top);bottom:28px;width:var(--rail-width);max-height:none;overflow:auto;scrollbar-width:thin;scrollbar-color:#39533d transparent;border:1px solid #83ad6544;background:#071510e8;padding:12px;z-index:2;display:block}
-body.flying #aircraft-status{left:var(--rail-gap)}body.flying .flight-side{right:var(--rail-gap)}.rail-heading{font:10px var(--mono);letter-spacing:1.6px;color:#9ac27f;border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:10px}
-body.flying #aircraft-status #fuel-status{position:relative;inset:auto;width:100%;min-width:0;padding:4px 0 9px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;display:grid;grid-template-columns:74px 1fr;grid-template-rows:auto auto auto;align-items:center;column-gap:12px}
-#aircraft-status #fuel-status svg{grid-column:1;grid-row:1/4;height:60px;margin:0}#aircraft-status #fuel-label{grid-column:2;grid-row:1;font-size:10px;letter-spacing:1px}#aircraft-status #fuel-value{position:static;inset:auto;grid-column:2;grid-row:2;width:auto;font:22px var(--display)}#aircraft-status #fuel-status>small{grid-column:2;grid-row:3;font-size:10px;margin:0}#aircraft-status #fuel-meter{display:none}
-#aircraft-status .fuel-extra{grid-column:1/3;display:grid;grid-template-columns:1fr auto;gap:4px 8px;margin-top:6px;font:10px var(--mono)}#fuel-range{font-size:12px}#aircraft-status .fuel-extra small{grid-column:2;grid-row:2;font:10px var(--mono);color:var(--muted);letter-spacing:.6px}#fuel-quantity{grid-row:1/3;align-self:center}
-body.flying #aircraft-status #flight-config{position:static;inset:auto;width:100%;font:10px/1.5 var(--mono);margin:9px 0}#aircraft-status #flight-config>div{display:grid;grid-template-columns:1fr 1fr;gap:5px}#aircraft-status #flight-config>div>*{padding:6px 4px;border:1px solid #40563755;background:#91ba6310;min-width:0;font:10px/1.5 var(--mono);color:#bddc9d;text-align:center}#aircraft-status #flight-config button[aria-pressed=true]{border-color:#9bbd6e88;background:#a6d1701d}#aircraft-status #flight-config>#config-countermeasures{margin-top:7px;width:100%;font:10px var(--mono);text-align:left;padding:5px 0}
-body.flying #aircraft-status #landing-attitude,body.flying #aircraft-status #damage-status{position:static;inset:auto;width:100%;max-height:none;margin:10px 0;padding:8px;overflow:visible}body.flying.approaching #aircraft-status #damage-status{display:block!important}body.flying #aircraft-status #damage-status[hidden]{display:none!important}
-#aircraft-status #landing-attitude{border-color:#9da5e066;color:#c5c8f7;background:#181c2933}#aircraft-status .landing-angles svg{height:49px;width:57px}#aircraft-status .landing-pitch svg{height:29px}#aircraft-status .landing-bank{font-size:10px}
-body.flying #aircraft-status #landing-guidance{margin:9px 0;border-top:1px solid var(--line);padding-top:8px}#aircraft-status #landing-guidance .eyebrow{display:none}#aircraft-status #approach-stage{display:block;margin:4px 0 6px;color:#b6bcf1;font:10px var(--mono)}#aircraft-status #approach-checks>div,body.flying.approaching #approach-checks>div{display:flex;justify-content:space-between;gap:6px;font:10px/1.6 var(--mono);padding:2px 0}#aircraft-status #approach-checks b{float:none;font-weight:400;text-align:right}#aircraft-status #approach-instruction,body.flying.approaching #approach-instruction{font:10px/1.6 var(--mono);margin:6px 0;color:#c8d9b6}#aircraft-status #landing-guidance>small{display:none}
-#weapon-bay{border-top:1px solid var(--line);padding-top:8px;margin-top:10px}#weapon-bay>summary{font:10px var(--mono);color:#a9c88d;cursor:pointer;letter-spacing:.5px}body.flying #aircraft-status #stores-display{position:static;inset:auto;width:100%;padding:8px 0 0;background:none;border:0}#aircraft-status #stores-display svg,body.flying.approaching #aircraft-status #stores-display svg{height:78px}#aircraft-status .store-option{font-size:10px;padding:4px 2px}#aircraft-status .stores-heading{display:none}
-body.flying .flight-side>#map-heading{display:flex!important;order:initial;font-size:10px;margin-bottom:8px}body.flying .flight-side>#map-heading span{display:inline}body.flying .flight-side>#radar,body.flying.approaching .flight-side>#radar{display:block!important;order:initial;width:100%;height:auto;aspect-ratio:4/5;align-self:auto;margin:0;border:1px solid #55713e44}
-body.flying .flight-side>#target-data{display:block!important;min-height:0;font:10px/1.6 var(--mono);padding:7px 0;color:#b7cba1}body.flying .flight-side>#mission-card{display:block!important;order:initial;border-top:1px solid var(--line);padding-top:12px;margin-top:3px}.mission-card-heading{display:flex;justify-content:space-between;gap:8px;font:10px var(--mono);color:var(--muted)}#mission-time{color:#cee0b6;font:12px var(--mono)}#mission-card-name{font:22px/1.15 var(--display);color:#e1e9d9;margin:7px 0}#mission-card-phase{display:block;font:10px/1.6 var(--mono);color:#baf37d}#mission-priority{font:10px/1.6 var(--mono);border-left:2px solid #e8b774;background:#9a6c2c16;padding:7px;color:#e8c78f}
-body.flying #mission-objectives{font:10px/1.6 var(--mono);margin-top:9px;padding-top:0;border:0}.mission-goal-group h4{display:flex;justify-content:space-between;gap:8px;font:10px var(--mono);letter-spacing:.6px;color:#99ad8f;margin:12px 0 7px}.mission-goal-group ul{list-style:none;padding:0;margin:0}.mission-goal-group li{display:flex;gap:8px;margin:8px 0;color:#c1c9b7;font:10px/1.5 var(--mono)}.mission-goal-group li>span:first-child{font-size:11px}.mission-goal-group small{display:block;font-size:10px;color:#7f9378;margin-top:2px}.mission-goal-group .goal-done,.mission-goal-group .goal-done small{color:#a8d97c}.mission-goal-group .goal-failed,.mission-goal-group .goal-failed small{color:#f49b7d}.mission-goal-group .goal-unfulfilled{color:#9eaa95}
-body.flying .flight-side>#phase-guide:not([hidden]),body.flying.approaching .flight-side>#phase-guide:not([hidden]){display:block!important;position:static;inset:auto;width:100%;max-height:190px;margin-top:16px;padding:9px 0 0;overflow:auto;border:0;border-top:1px solid var(--line);background:none}body.flying .flight-side>#open-guide:not([hidden]),body.flying.approaching .flight-side>#open-guide:not([hidden]){display:block!important;position:static;inset:auto;width:100%;margin-top:12px;padding:9px;background:none;border:1px solid var(--line);font:10px var(--mono)}#phase-guide #guide-title{font-size:10px}#phase-guide #guide-steps li{font-size:10px;padding:5px 0}#phase-guide #guide-steps kbd{font-size:10px}
-body.flying #warning{top:105px;max-width:calc(100vw - 2 * var(--rail-width) - 70px);font-size:15px;text-align:center}body.flying #head-view-status{top:82px}body.flying #combat-messages{width:min(440px,calc(100vw - 2 * var(--rail-width) - 70px));left:50%;bottom:28px}body.flying #combat-messages #flight-toast{font-size:10px}
-body.flying.wreck-view #aircraft-status,body.flying.wreck-view .flight-side{display:none!important}
-@media(max-width:1000px){body.flying{--rail-width:190px;--rail-gap:10px}body.flying #aircraft-status,body.flying .flight-side{padding:9px}#aircraft-status #flight-config>div>*{font-size:10px}#mission-card-name{font-size:20px}}
-@media(max-height:720px){body.flying{--rail-top:92px}body.flying #aircraft-status,body.flying .flight-side{bottom:12px}#aircraft-status #fuel-status svg{height:48px}#aircraft-status #stores-display svg{height:62px}#aircraft-status #flight-config>div>*{padding:4px 2px}}
-@media(max-width:650px){body.flying{--rail-width:144px;--rail-gap:5px;--rail-top:93px}body.flying header{padding:0 10px}body.flying .brand>span:last-child{font-size:13px}body.flying #aircraft-status,body.flying .flight-side{padding:6px}body.flying .flight-top{right:5px;gap:4px}body.flying .flight-top>button{font-size:10px;padding:7px 5px}#aircraft-status #flight-config>div{grid-template-columns:1fr}#aircraft-status #fuel-status{grid-template-columns:48px 1fr;column-gap:5px}#aircraft-status #fuel-value{font-size:18px}#aircraft-status .fuel-extra{font-size:10px}#fuel-range{font-size:10px}.mission-goal-group li{font-size:10px}#mission-card-name{font-size:18px}body.flying #combat-messages{width:max(130px,calc(100vw - 2 * var(--rail-width) - 24px))}body.flying #warning{font-size:10px;max-width:calc(100vw - 2 * var(--rail-width) - 20px)}}
-
-body.flying #overlay{inset:48px 0 0}#aircraft-status #config-flaps[data-moving=true]{color:#f4c47b;border-color:#b48b55}
-
-@media(min-width:1001px){#aircraft-status #flight-config>div>*{font-size:10px}#aircraft-status .fuel-extra{font-size:10px}#fuel-range{font-size:14px}.mission-goal-group li{font-size:10px}.mission-goal-group small{font-size:10px}.mission-goal-group h4{font-size:10px}#mission-card-phase,#mission-priority{font-size:10px}#phase-guide #guide-steps li{font-size:10px}}
-
-/* Compact circular fuel instrument and colour-coded configuration switches. */
-body.flying #aircraft-status #fuel-status{display:block;text-align:center;padding:0 0 10px;background:none}
-body.flying #aircraft-status #fuel-status #fuel-label{font:10px var(--mono);margin:0;letter-spacing:1.2px}
-body.flying #aircraft-status #fuel-status svg{display:block;width:min(100%,190px);height:auto;max-height:none;margin:0 auto;overflow:visible}
-body.flying #aircraft-status #fuel-value{position:static;inset:auto;font:700 36px var(--mono);fill:currentColor;letter-spacing:-1px}
-body.flying #aircraft-status #fuel-range{font:14px var(--mono);fill:currentColor;letter-spacing:.4px}
-body.flying #aircraft-status #fuel-status .fuel-range-caption{font:10px var(--mono);fill:#9eac94;letter-spacing:1px}
-body.flying #aircraft-status #fuel-status .fuel-endpoint{font:10px var(--mono);fill:currentColor}
-body.flying #aircraft-status #fuel-status .fuel-scale{stroke:#344433;stroke-width:6;fill:none}
-body.flying #aircraft-status #fuel-status #fuel-fill{stroke:currentColor;stroke-width:5;stroke-linecap:round;stroke-dasharray:100;fill:none;display:inline}
-body.flying #aircraft-status #fuel-status .fuel-ticks{stroke:#78906288;stroke-width:1;fill:none}
-body.flying #aircraft-status #fuel-quantity{display:block;font:10px var(--mono);color:#9eac94;margin-top:0}
-body.flying #aircraft-status #flight-config>div>*{background:#0b1710;border-color:#53624755;color:#9eac94;box-shadow:none}
-body.flying #aircraft-status #flight-config>div>*[data-state=active]{background:#b8983430;border-color:#e3c56c88;color:#f5d984;box-shadow:inset 0 0 12px #d2aa2810}
-body.flying #aircraft-status #flight-config>div>*[data-state=danger]{background:#a6312b40;border-color:#f0705eaa;color:#ffb0a3;box-shadow:inset 0 0 15px #ce35252a}
-body.flying #mission-card-phase,body.flying #mission-priority{display:none!important}
-body.flying .mission-goal-group .goal-pending{color:#f1f3ed}
-body.flying .mission-goal-group .goal-pending>span:first-child{color:#fff;font-size:13px}
-body.flying .mission-goal-group .goal-failed{color:#f49b7d}
+/* A single physical cockpit, with live instruments registered to the recessed screen wells. */
+body.flying{--cockpit-height:25vh}
+body.flying header{height:40px;padding:0 18px;background:#07121190}
+body.flying .brand{font-size:22px;gap:12px}body.flying .brand>span:last-child{font-size:16px;letter-spacing:.5px}
+body.flying .brand small,body.flying .header-right,body.flying .flight-bottom,body.flying .phase-status,body.flying #flight-name,body.flying #aircraft-status,body.flying .flight-side{display:none!important}
+body.flying .flight-top{top:48px;right:12px;left:auto}
 body.flying #approach-button,body.flying #pause-button,body.flying #flight-help{display:none!important}
+#cockpit{position:fixed;bottom:0;left:0;width:100%;height:var(--cockpit-height);z-index:2;pointer-events:none;color:#baf37d;font:11px/1.2 var(--mono)}
+#cockpit-frame{position:absolute;inset:0;background-image:url('/assets/cockpit/two-row-frame.png');background-size:100% var(--frame-scale);background-position:center bottom;background-repeat:no-repeat;pointer-events:none}
+#cockpit .cockpit-screen{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:auto;min-width:0;display:flex;flex-direction:column;padding:2px 3px;background:#04100980;color:#baf37d}
+#cockpit button{font:inherit;cursor:pointer}#cockpit button:focus-visible{outline:2px solid #cef897;outline-offset:1px}
+#cockpit :is(#stores-display,#landing-guidance,#landing-attitude,#fuel-status,#flight-config,#phase-guide,#open-guide,#mission-card,#damage-status){position:static;inset:auto;width:100%;max-height:none;margin:0;padding:0;border:0;background:none;overflow:visible;transform:none}
+#cockpit [hidden]{display:none!important}
+#cockpit #stores-display{height:100%;display:grid;grid-template-columns:30% minmax(0,1fr);grid-template-rows:15px minmax(0,1fr);gap:0 5px;color:#9bd47e}
+#cockpit .stores-heading{grid-column:1/-1;grid-row:1;display:flex;justify-content:space-between;font:10px/1 var(--mono);letter-spacing:0;padding-right:32px}
+#cockpit .stores-heading span{color:#baf37d}#cockpit .stores-heading small{font:inherit}
+#cockpit #stores-display svg{grid-row:2;grid-column:1;width:100%;height:100%;min-height:0}
+#cockpit .stores-health{position:absolute;top:1px;right:4px;font:11px/1 var(--mono);margin:0;border:0;padding:0}
+#cockpit .stores-health span{display:none}#cockpit .stores-health b{font:inherit}
+#cockpit .store-options{grid-row:2;grid-column:2;display:grid;grid-auto-rows:minmax(0,1fr);gap:1px;min-height:0}
+#cockpit .store-option{font:11px/1.05 var(--mono);padding:1px 3px;gap:4px;min-height:0;white-space:nowrap}
+#cockpit .store-option span{overflow:hidden;text-overflow:ellipsis}#cockpit .store-option kbd{font:10px/1 var(--mono);padding:1px 3px;margin:0}
+#cockpit #map-heading{display:flex;font:10px/1 var(--mono);letter-spacing:0;margin:0 0 2px;flex-shrink:0}
+#cockpit #radar{display:block;width:100%;height:calc(100% - 25px);min-height:0;flex:1;object-fit:fill;border:0;margin:0;align-self:stretch}
+#cockpit #target-data{font:10px/1 var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:1px 0;color:#a3bd91;flex-shrink:0}
+#cockpit #config-countermeasures{position:absolute;left:4px;bottom:1px;max-width:85%;font:10px/1 var(--mono);background:#07180d;border:0;padding:1px 0;color:#baf37d;display:none}
+#cockpit #cockpit-radar:hover #config-countermeasures,#cockpit #config-countermeasures:focus-visible{display:block}
+#cockpit #fuel-status{font:11px/1.1 var(--mono);color:#baf37d;display:flex;flex-direction:column;height:100%;gap:2px;text-align:left}
+#cockpit #fuel-gauge{display:grid;grid-template-columns:1fr auto;gap:1px 4px}
+#cockpit #fuel-label{font:inherit;letter-spacing:0;display:block!important}
+#cockpit #fuel-value{font:inherit;position:static;display:block;white-space:nowrap}
+#cockpit #fuel-meter{display:block;grid-column:1/-1;height:4px;background:#42673455;margin:0}
+#cockpit #fuel-fill{display:block;height:100%;background:currentColor}
+#cockpit .cockpit-range{display:flex;justify-content:space-between;gap:3px;font-size:10px}
+#cockpit #fuel-range{font:inherit}#cockpit #fuel-quantity{display:none}
+#cockpit #fuel-status[data-level=low]{color:#f5d984}#cockpit #fuel-status:is([data-level=critical],[data-level=empty]){color:#ff9d88}
+#cockpit #g-load{display:flex;gap:9px;align-items:center;color:#baf37d}#cockpit #g-value{font:inherit}
+#cockpit #g-load[data-level=warning]{color:#f5d984}#cockpit #g-load[data-level=danger]{color:#ff8270}
+#cockpit #throttle-status{display:flex;gap:5px;align-items:center;flex-wrap:nowrap;color:#baf37d}
+#cockpit #throttle-value{font:inherit}#cockpit .throttle-track{height:4px;flex:1;background:#42673455;border:0}
+#cockpit #throttle-fill{display:block;height:100%!important;background:#baf37d}
+#cockpit #flight-config{height:100%}#cockpit #flight-config>div{height:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:3px 6px}
+#cockpit #config-engine{display:none}
+/* Text controls keep the existing green / yellow / red state logic. */
+#cockpit #flight-config>div>button{min-width:0;position:relative;padding:2px 1px;border:1px solid #62904838;background:#0a181066;text-align:center;color:#baf37d;font:10px/1.05 var(--mono);white-space:nowrap;touch-action:none}
+#cockpit #flight-config>div>button[data-state=active]{color:#f5d984;border-color:#d8bd7166;background:#66532238;text-shadow:0 0 4px #c3ab5555}
+#cockpit #flight-config>div>button[data-state=danger]{color:#ff9989;border-color:#e66c6266;background:#7e272542}
+#cockpit #config-flaps[data-moving=true]{color:#efbd74}
+#cockpit #cockpit-mission{padding:2px 4px}
+#cockpit #mission-card{display:flex;flex-direction:column;height:100%;font:10px/1.12 var(--mono)}
+#cockpit .mission-card-heading{display:flex;justify-content:space-between;gap:4px;font:10px/1 var(--mono);margin-bottom:2px}
+#cockpit .mission-card-heading small{font:inherit}#cockpit #mission-time{color:#c3eda1;font:inherit}
+#cockpit #mission-card-name{font:11px/1.05 var(--mono);color:#d6e7c6;margin:0 0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#cockpit #mission-card-phase,#cockpit #mission-priority{display:none!important}
+#cockpit #mission-objectives{margin:0;padding:0;border:0;min-height:0;font:inherit}
+#cockpit .mission-goal-group h4{display:none}#cockpit .mission-goal-group ul{padding:0;margin:0;list-style:none}
+#cockpit .mission-goal-group li{display:flex;gap:4px;font:10px/1.12 var(--mono);margin:1px 0;color:#edf2e7}
+#cockpit .mission-goal-group .goal-done{color:#baf37d}#cockpit .mission-goal-group .goal-failed{color:#f09580}
+#cockpit .mission-goal-group li>span:first-child{font:inherit}
+#cockpit .mission-goal-group li>span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#cockpit.compact-cockpit #mission-card-name{display:none}
+#cockpit.compact-cockpit #mission-objectives{display:flex;flex-wrap:wrap;column-gap:5px}
+#cockpit.compact-cockpit .mission-goal-group{flex:1;min-width:0}
+#cockpit.compact-cockpit .mission-goal-group ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 4px}
+#cockpit #phase-guide:not([hidden]){display:block!important;height:100%;font:10px/1.1 var(--mono);color:#baf37d}
+#cockpit #phase-guide .guide-heading{display:flex;align-items:center;justify-content:space-between;margin:0 0 2px;font:10px/1 var(--mono);letter-spacing:0}
+#cockpit #close-guide{font:12px/1 var(--mono);padding:0 2px;border:0;background:none;color:#bad794}
+#cockpit #guide-title{display:none}
+#cockpit #guide-steps{display:grid;grid-template-rows:repeat(4,minmax(0,1fr));list-style:none;margin:0;padding:0}
+#cockpit #guide-steps li{display:flex;align-items:start;gap:4px;font:10px/1.1 var(--mono);padding:0;margin:0;border:0}
+#cockpit #guide-steps li::before{display:none}#cockpit #guide-steps i{display:none}
+#cockpit #guide-steps kbd{font:10px/1 var(--mono);margin:0;padding:0;white-space:nowrap;border:0;color:#d0eab2;background:none}
+#cockpit #open-guide:not([hidden]){display:block!important;font:11px var(--mono);text-align:center;padding:6px;color:#baf37d}
+#cockpit #cockpit-annunciator{position:absolute;left:2%;top:10%;max-width:26%;pointer-events:auto}
+#cockpit #damage-status:not([hidden]){display:block!important;color:#edbb80;font:10px/1.1 var(--mono);text-shadow:0 1px #000}
+#cockpit #damage-title,#cockpit #damage-integrity,#cockpit .damage-track{display:none}
+#cockpit #damage-faults{font:10px/1.1 var(--mono);margin:0;padding:2px 4px;background:#15100cd9}
+#cockpit #landing-guidance{height:100%;color:#cad0f7}
+#cockpit #landing-guidance .eyebrow,#cockpit #landing-guidance>small{display:none}
+#cockpit #approach-stage{font:10px/1 var(--mono);margin:0 0 3px;display:block}
+#cockpit #approach-checks{display:grid;grid-template-columns:1fr 1fr;gap:3px 8px}
+#cockpit #approach-checks>div{display:flex;justify-content:space-between;gap:3px;padding:0;font:10px/1.1 var(--mono)}
+#cockpit #approach-checks b{font-weight:400;float:none;text-align:right;white-space:nowrap}
+#cockpit #approach-instruction{font:10px/1.15 var(--mono);margin:3px 0 0;color:#d6ddca}
+#cockpit #landing-attitude{display:none;color:#c9cff2;font:10px/1.1 var(--mono)}
+#cockpit.cockpit-landing #stores-display{display:none}#cockpit.cockpit-landing #cockpit-radar{display:grid;grid-template-columns:44% minmax(0,1fr);grid-template-rows:12px minmax(0,1fr) 10px;gap:1px 4px}
+#cockpit.cockpit-landing #map-heading{grid-row:1;grid-column:1/-1}
+#cockpit.cockpit-landing #radar{grid-row:2;grid-column:1;width:100%;height:100%;min-height:0}
+#cockpit.cockpit-landing #target-data{grid-row:3;grid-column:1/-1}
+#cockpit.cockpit-landing #landing-attitude:not([hidden]){display:flex;grid-row:2;grid-column:2;flex-direction:column;justify-content:space-around;gap:2px}
+#cockpit #landing-attitude>strong{display:none}#cockpit .landing-angles,#cockpit .landing-pitch{display:flex;align-items:center;gap:4px}
+#cockpit .landing-angles svg{width:30px;height:29px;flex-shrink:0}#cockpit .landing-pitch svg{width:36px;height:23px;flex-shrink:0}
+#cockpit .landing-angles b,#cockpit .landing-angles small,#cockpit .landing-pitch small{font:10px/1.1 var(--mono);margin:0;display:block}
+#cockpit .landing-angles span{display:none}#cockpit .landing-pitch{border:0;padding:0}
+#cockpit .landing-pitch b{font:10px/1 var(--mono)}#cockpit .landing-bank{display:flex;flex-wrap:wrap;font:10px/1 var(--mono);gap:2px;padding:0}
+#cockpit #landing-route-button{position:absolute;bottom:0;right:3px;max-width:75px;font:10px/1 var(--mono);padding:1px 2px;border:1px solid #767ca155;background:#11172b;color:#c6baff;z-index:3}
+body.flying #combat-messages{position:absolute;left:50%;bottom:calc(var(--cockpit-height) + 13px);width:min(440px,46vw);z-index:3}
+body.flying #combat-messages #targeting-panel{position:static;transform:none;width:100%;padding:6px 9px;margin:0}
+body.flying #flight-toast{position:static;transform:none;width:100%;padding:6px 9px;font:11px/1.3 var(--mono);margin:0 0 5px}
+body.flying #lock-hint{margin-top:4px;font-size:10px}body.flying #lock-button{font-size:10px}
+body.flying #warning{top:100px;max-width:75%;font-size:15px;text-align:center;z-index:3}
+body.flying #head-view-status{top:70px}body.flying #overlay{inset:40px 0 0}
+body.flying.wreck-view #cockpit,body.flying.external-view #cockpit{display:none!important}
+body.flying.external-view #combat-messages{bottom:24px}
+#cockpit.compact-cockpit #stores-display,#cockpit.compact-cockpit .store-option,#cockpit.compact-cockpit #fuel-status{font-size:10px}
+@media(max-width:1050px){#cockpit #guide-steps li,#cockpit #guide-steps kbd{font-size:10px}#cockpit #flight-config>div>button{font-size:9px}#cockpit #cockpit-engine{padding:1px}#cockpit #fuel-status{gap:1px}#cockpit .stores-heading small{display:none}#cockpit #approach-instruction{display:none}}
 
-/* Fit the flight instruments to the viewport without nested scrolling. */
-body.flying{--instrument-size:clamp(112px,18vh,150px);--radar-height:clamp(150px,27vh,260px)}
-body.flying #aircraft-status,body.flying .flight-side,body.flying.guide-open .flight-side,body.flying.approaching .flight-side,body.flying.guide-open.approaching .flight-side{overflow:visible;padding:9px}
-body.flying .rail-heading{padding-bottom:5px;margin-bottom:5px}
-body.flying #aircraft-status #fuel-status{padding-bottom:5px}
-body.flying #aircraft-status #fuel-status svg{width:var(--instrument-size);max-width:100%}
-body.flying #aircraft-status #flight-config{margin:6px 0}
-body.flying #aircraft-status #flight-config>div{grid-template-columns:1fr 1fr;gap:3px}
-body.flying #aircraft-status #flight-config>div>*{padding:3px 2px;line-height:1.4}
-body.flying #aircraft-status #flight-config>#config-countermeasures{margin-top:3px;padding:3px 0}
-body.flying #aircraft-status #landing-attitude,body.flying #aircraft-status #damage-status{margin:6px 0;padding:6px}
-body.flying #aircraft-status #landing-attitude{display:grid;grid-template-columns:1fr 1fr;gap:3px 6px}
-body.flying #aircraft-status #landing-attitude>strong,body.flying #aircraft-status .landing-bank{grid-column:1/-1}
-body.flying #aircraft-status .landing-angles,body.flying #aircraft-status .landing-pitch{flex-wrap:wrap;gap:2px;align-content:start}
-body.flying #aircraft-status .landing-angles svg{width:39px;height:35px}
-body.flying #aircraft-status .landing-pitch{border:0;padding:0}
-body.flying #aircraft-status .landing-pitch svg{width:56px;height:35px}
-body.flying #aircraft-status .landing-angles>div,body.flying #aircraft-status .landing-pitch>div{width:100%}
-body.flying #aircraft-status .landing-angles b,body.flying #aircraft-status .landing-angles small,body.flying #aircraft-status .landing-pitch small{margin-top:1px;font-size:10px}
-body.flying #aircraft-status #landing-guidance{margin:6px 0;padding-top:5px}
-body.flying #aircraft-status #approach-stage{margin:2px 0 4px}
-body.flying #aircraft-status #approach-checks>div{padding:1px 0;line-height:1.4}
-body.flying #aircraft-status #approach-instruction{margin:4px 0;line-height:1.4}
-body.flying #weapon-bay{margin-top:6px;padding-top:5px}
-body.flying #aircraft-status #stores-display{padding-top:4px}
-body.flying #aircraft-status #stores-display svg{height:58px}
-body.flying #aircraft-status .stores-health{margin:3px 0;padding-bottom:3px}
-body.flying #aircraft-status .store-option{padding:2px}
-body.flying .flight-side>#map-heading{margin-bottom:5px}
-body.flying .flight-side>#radar,body.flying.approaching .flight-side>#radar{height:var(--radar-height);width:auto;max-width:100%;margin:0 auto;aspect-ratio:4/5}
-body.flying .flight-side>#target-data{padding:4px 0;line-height:1.4}
-body.flying .flight-side>#mission-card{padding-top:6px;margin-top:0}
-body.flying #mission-card-name{font-size:20px;margin:4px 0}
-body.flying #mission-objectives{margin-top:4px}
-body.flying .mission-goal-group h4{margin:6px 0 4px}
-body.flying .mission-goal-group li{margin:4px 0;line-height:1.35;gap:6px}
-body.flying .flight-side>#phase-guide:not([hidden]),body.flying.approaching .flight-side>#phase-guide:not([hidden]){max-height:none;overflow:visible;margin-top:8px;padding-top:6px}
-body.flying #phase-guide #guide-title{margin:4px 0}
-body.flying #phase-guide #guide-steps li{padding:3px 0;line-height:1.4;gap:4px}
-body.flying #phase-guide #guide-steps kbd{padding:1px 3px}
-body.flying .flight-side>#open-guide:not([hidden]){margin-top:6px;padding:5px}
-@media(max-height:820px){body.flying{--rail-top:88px;--instrument-size:112px;--radar-height:200px}body.flying #aircraft-status,body.flying .flight-side{bottom:10px}body.flying #mission-card-name{font-size:18px}body.flying #phase-guide #guide-steps li{font-size:10px}}
+/* Compact screen typography: one physical row per reading, no nested scroll areas. */
+#cockpit #cockpit-radar{display:block}
+#cockpit #radar{flex:none;height:calc(100% - 24px)}
+#cockpit #target-data{position:absolute;right:3px;bottom:0;min-height:0;height:11px;max-width:55%;padding:0;white-space:nowrap;text-align:right}
+#cockpit #config-countermeasures{display:block;left:3px;bottom:0;max-width:52%;font-size:10px;background:none;padding:0;height:11px}
+#cockpit #fuel-status{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto;gap:1px 3px;font:10px/1 var(--mono)}
+#cockpit #fuel-gauge{grid-column:1/-1;grid-row:1;gap:1px 4px}
+#cockpit .cockpit-range{grid-column:1;grid-row:2;font:10px/1 var(--mono)}
+#cockpit #g-load{grid-column:2;grid-row:2;gap:4px;font:10px/1 var(--mono)}
+#cockpit #throttle-status{grid-column:1/-1;grid-row:3;font:10px/1 var(--mono)}
+#cockpit #fuel-meter{height:3px}
+#cockpit #cockpit-controls{padding:0 1px}
 
-/* Engine power and signed load flank the fuel dial without adding height. */
-body.flying #aircraft-status #fuel-status{display:grid;grid-template-columns:32px minmax(0,1fr) 38px;grid-template-rows:auto auto auto;column-gap:4px;align-items:center}
-body.flying #aircraft-status #fuel-status #fuel-label{grid-column:2;grid-row:1}
-body.flying #aircraft-status #fuel-status svg{grid-column:2;grid-row:2}
-body.flying #aircraft-status #fuel-quantity{grid-column:2;grid-row:3}
-body.flying #aircraft-status .engine-instrument{grid-row:1/4;display:flex;flex-direction:column;align-items:center;gap:6px;font:10px var(--mono);color:#baf37d;letter-spacing:0}
-body.flying #aircraft-status #throttle-status{grid-column:1}
-body.flying #aircraft-status #g-load{grid-column:3}
-body.flying #aircraft-status .engine-instrument b{font:10px var(--mono)}
-body.flying #aircraft-status #g-value{font:bold 16px var(--mono);letter-spacing:-1px}
-body.flying #aircraft-status #g-load[data-level=warning]{color:#f5d984}
-body.flying #aircraft-status #g-load[data-level=danger]{color:#ff8270}
-.throttle-track{position:relative;width:12px;height:clamp(54px,9vh,76px);border:1px solid #83ad6577;background:repeating-linear-gradient(to top,transparent 0,transparent calc(25% - 1px),#83ad6544 calc(25% - 1px),#83ad6544 25%)}
-#throttle-fill{position:absolute;bottom:0;left:0;right:0;background:#baf37d88;transition:height .1s linear}
-body.flying #aircraft-status #flight-config #config-engine{display:none}
+#cockpit #cockpit-guide{padding:2px 4px}
+#cockpit #phase-guide .guide-heading{margin-bottom:0;height:12px}
+#cockpit.cockpit-landing #cockpit-radar{display:grid}
+#cockpit.cockpit-landing #target-data{display:none}
+body.flying #combat-messages{width:min(280px,38vw)}
 
-/* Small labels remain readable alongside the full-size flight instruments. */
-body.flying #aircraft-status #fuel-range{font-size:20px}
-body.flying #aircraft-status #fuel-status .fuel-range-caption{font-size:16px;letter-spacing:0}
-body.flying #aircraft-status #fuel-status .fuel-endpoint{font-size:16px}
-@media(min-width:1001px){body.flying{--rail-width:clamp(236px,22vw,300px)}}
+#cockpit .mission-card-heading>small{display:none}
+#cockpit #mission-card-name,#cockpit.compact-cockpit #mission-card-name{display:block;flex:1;min-width:0;font:10px/1 var(--mono);margin:0}
+#cockpit #mission-time{flex-shrink:0}
+#cockpit.compact-cockpit .landing-pitch small,#cockpit.compact-cockpit .landing-bank>span:last-child{display:none}
+#cockpit.compact-cockpit .landing-angles svg{height:26px}
 
-@media(max-height:820px){
- body.flying{--rail-top:82px}
- body.flying #aircraft-status,body.flying .flight-side,body.flying.guide-open .flight-side,body.flying.approaching .flight-side,body.flying.guide-open.approaching .flight-side{padding:7px;bottom:10px}
- body.flying #aircraft-status .landing-angles svg,body.flying #aircraft-status .landing-pitch svg{height:30px}
-}
+/* Match the approved two-row physical switch plate. */
+#cockpit #config-gear{grid-area:1/1}
+#cockpit #config-flaps{grid-area:1/2}
+#cockpit #config-airbrake{grid-area:1/3}
+#cockpit #config-assist{grid-area:2/1}
+#cockpit #config-afterburner{grid-area:2/2}
+#cockpit #config-wheel-brake{grid-area:2/3}
+
+/* Small MFDs show the current instruction and the next action; H keeps the full guide. */
+#cockpit.compact-cockpit #guide-steps{display:block}
+#cockpit.compact-cockpit #guide-steps li{display:none;margin-bottom:2px}
+#cockpit.compact-cockpit #guide-steps li.current,#cockpit.compact-cockpit #guide-steps li.current+li{display:flex}
+@media(max-width:1050px){#cockpit.compact-cockpit #guide-steps li.current+li{display:none}}
+
+/* Independent message lifetimes; no framed panel over the central flight view. */
+body.flying #combat-messages{left:auto;right:18px;top:90px;bottom:calc(var(--cockpit-height) + 12px);width:clamp(240px,28vw,370px);transform:none;pointer-events:none}
+body.flying #flight-message-feed{position:absolute;inset:0 0 48px;overflow:hidden;pointer-events:none}
+body.flying .flight-message{position:absolute;top:0;right:0;width:100%;margin:0;padding:0;border:0;background:none;text-align:right;text-shadow:0 1px 3px #000,0 0 7px #06100a;color:#c7efa2;font:12px/1.4 var(--mono);transition:transform 1.15s ease-out,opacity 1.3s ease-out;will-change:transform,opacity}
+body.flying .flight-message strong{font:600 12px/1.4 var(--mono)}
+body.flying .flight-message p{margin:4px 0 0;color:#acbea2;font:11px/1.4 var(--mono)}
+body.flying .flight-message[data-level=warning]{color:#f5cf86}
+body.flying #flight-toast,body.flying #lock-label,body.flying #lock-hint,body.flying #weapon-solution{display:none!important}
+body.flying #combat-messages #targeting-panel{position:absolute;right:0;bottom:0;width:100%;padding:0;margin:0;background:none;border:0;box-shadow:none}
+body.flying #targeting-panel .targeting-row{justify-content:flex-end}
+body.flying #lock-button{pointer-events:auto;background:none;border:0;padding:3px 0;color:#baf37d;font:11px var(--mono)}
+body.flying #lock-progress{height:2px;width:100%;background:#72955322;margin:4px 0 0;border:0}
+body.flying.external-view #combat-messages{bottom:24px}
+@media(prefers-reduced-motion:reduce){body.flying .flight-message{transition:opacity .25s}}
+
+body.flying .flight-message[data-level=radio] strong{color:#a6dce5;letter-spacing:.5px}
+body.flying .flight-message[data-level=radio] p{color:#e0ead7;font-size:12px}

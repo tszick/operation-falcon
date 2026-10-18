@@ -40,7 +40,7 @@ class MeshBuilder{
  point(p){this.points.push(new Vec3(...p));return this.points.length-1;}
  face(coords){const ids=coords.map(p=>this.point(p));this.faces.push(ids);for(let i=0;i<ids.length;i++)this.edges.push([ids[i],ids[(i+1)%ids.length]]);return ids;}
  line(a,b){const edge=[this.point(a),this.point(b)];this.edges.push(edge);this.details.push(edge);}
- tube(stations,segments=8){const rings=stations.map(([z,rx,ry,cy=0,cx=0])=>Array.from({length:segments},(_,i)=>this.point([cx+Math.cos(i/segments*Math.PI*2)*rx,cy+Math.sin(i/segments*Math.PI*2)*ry,z])));for(let j=0;j<rings.length-1;j++)for(let i=0;i<segments;i++){const k=(i+1)%segments,a=rings[j][i],b=rings[j][k],c=rings[j+1][k],d=rings[j+1][i];this.faces.push([a,b,c,d]);this.edges.push([a,b],[a,d]);}this.faces.push([...rings.at(-1)].reverse());for(let i=0;i<segments;i++)this.edges.push([rings.at(-1)[i],rings.at(-1)[(i+1)%segments]]);}
+ tube(stations,segments=8){const rings=stations.map(([z,rx,ry,cy=0,cx=0])=>Array.from({length:segments},(_,i)=>this.point([cx+Math.cos(i/segments*Math.PI*2)*rx,cy+Math.sin(i/segments*Math.PI*2)*ry,z])));this.faces.push(rings[0]);for(let j=0;j<rings.length-1;j++)for(let i=0;i<segments;i++){const k=(i+1)%segments,a=rings[j][i],b=rings[j][k],c=rings[j+1][k],d=rings[j+1][i];this.faces.push([a,b,c,d]);this.edges.push([a,b],[a,d]);}this.faces.push([...rings.at(-1)].reverse());for(let i=0;i<segments;i++)this.edges.push([rings.at(-1)[i],rings.at(-1)[(i+1)%segments]]);}
  surface(outline,y=0,rise=0){const sides=[];for(const sign of[-1,1]){const max=Math.max(...outline.map(p=>p[0]));sides.push(this.face(outline.map(([x,z])=>[x*sign,y+rise*(x/max)**3,z])));}return sides;}
 }
 const cache=new Map();

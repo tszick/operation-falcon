@@ -1,0 +1,7 @@
+# Cockpit frame asset
+
+`assets/cockpit/two-row-frame.png` is a generated, alpha-background, empty graphite cockpit shell based on `selected-two-row.png`. Generated with the built-in image generation tool on 2026-10-18; no external stock assets.
+
+Generation prompt: Production game asset extraction/redesign from the approved cockpit concept. Keep only the shallow foreground graphite fighter-cockpit shell, full width, preserving physical depth, metallic materials, fasteners, thick recessed bezels, outward-angled side consoles and central face. Genuine alpha transparency outside the shell. No landscape, HUD, text, numbers, diagrams, needles, radar symbols, controls or lit indicators. All screen wells empty nearly black glass. Left cheek: weapons/airframe well. Central face: large radar well on the left; two stacked fuel and mission wells on the right. Right cheek: empty 2×3 switch-mounting plate above Mission Control well. No A-pillars. No baked-in UI. Maintain a full widescreen canvas. The game crops the alpha padding and scales the foreground to its viewport height budget.
+
+All readouts, damage, goals, radar and switch states are rendered live by the simulation; the image supplies only the physical frame. Screen coordinates are registered in `src/cockpitGeometry.js`; `src/cockpit.js` projects the real DOM controls into these quadrilaterals. The radar keeps equal map scale on both axes and is resized to its live screen.

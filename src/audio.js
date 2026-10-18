@@ -1,9 +1,10 @@
+import {RadioComms} from './radioComms.js';
 import {CockpitAlerts} from './cockpitAlerts.js';
 import {right,clamp} from './math.js';
 // Filtered broadband airflow plus a quiet turbine whine; no piston-like sawtooth.
 export const ENGINE_VOLUME=.009;
 export class AudioSystem {
-  constructor(){this.ctx=null;this.muted=false;this.alerts=new CockpitAlerts();this.sources=new Set();}
+  constructor(){this.ctx=null;this.muted=false;this.alerts=new CockpitAlerts();this.radio=new RadioComms();this.sources=new Set();}
   start(){
     try{
       if(!this.ctx){
@@ -21,7 +22,7 @@ export class AudioSystem {
         this.engine=this.ctx.createOscillator();this.engine.type='sine';this.engine.frequency.value=850;
         this.engineGain=this.ctx.createGain();this.engineGain.gain.value=0;this.engine.connect(this.engineGain).connect(this.gain);this.engine.start();this.createEffectsBus();
       }
-      this.ctx.resume().catch(()=>{});
+      this.radio.attach(this.ctx);this.ctx.resume().catch(()=>{});
     }catch{this.ctx=null;}
   }
   createEffectsBus(){
@@ -37,7 +38,7 @@ export class AudioSystem {
     if(this.sources.size>=48){source.disconnect();return false;}
     this.sources.add(source);source.onended=()=>{this.sources.delete(source);source._cleanup?.();source.disconnect();};return true;
   }
-  clearEffects(){this.alerts.reset();for(const source of this.sources){try{source.stop();}catch{}source._cleanup?.();source.disconnect();}this.sources.clear();}
+  clearEffects(){this.radio.reset();this.alerts.reset();for(const source of this.sources){try{source.stop();}catch{}source._cleanup?.();source.disconnect();}this.sources.clear();}
   noise({when=this.ctx.currentTime,duration=.1,volume=.2,frequency=1800,endFrequency=frequency,highpass=80,pan=0,attack=.002}){
     const c=this.ctx,source=c.createBufferSource(),hp=c.createBiquadFilter(),lp=c.createBiquadFilter(),gain=c.createGain(),stereo=c.createStereoPanner();
     if(!this.track(source))return;
@@ -55,7 +56,8 @@ export class AudioSystem {
     gain.gain.setValueAtTime(.0001,when);gain.gain.exponentialRampToValueAtTime(Math.max(.0001,volume),when+.003);gain.gain.exponentialRampToValueAtTime(.0001,when+duration);
     stereo.pan.value=clamp(pan,-1,1);source.connect(gain).connect(stereo).connect(this.fxLimiter);source.start(when);source.stop(when+duration+.01);
   }
-  playEvent(event,s){
+  playEvent(event,s,targets=[]){
+    this.radio.event(event,s,targets,this.muted);
     if(!this.ctx||this.muted||!this.fxOutput)return;
     const delta=event.position?.clone().sub(s.position),distance=delta?.length()||0;
     const pan=delta?clamp(delta.dot(right(s.orientation))/Math.max(10,distance),-.9,.9):0;
@@ -87,7 +89,8 @@ export class AudioSystem {
     }
   }
   tone(freq=440,duration=.12,type='sine',volume=.012){if(!this.ctx||this.muted)return;const o=this.ctx.createOscillator(),g=this.ctx.createGain(),t=this.ctx.currentTime;if(!this.track(o))return;o._cleanup=()=>g.disconnect();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(volume,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+duration);o.connect(g).connect(this.warningGain);o.start(t);o.stop(t+duration);}
-  update(s,aim,active){
+  update(s,aim,active,mission=null,targets=[]){
+    if(mission)this.radio.update(s,mission,targets,{muted:this.muted,active:active||!!((mission.complete||mission.recovered)&&s.onGround&&s.landing?.success)});
     if(!this.ctx)return;
     const t=this.ctx.currentTime;this.fxOutput?.gain.setTargetAtTime(this.muted||!active?0:.24,t,.025);const ab=s.afterburner&&s.spec.hasAB&&s.throttle>.8&&s.fuel>0;
     this.gain.gain.setTargetAtTime(this.muted||!active?0:ENGINE_VOLUME,t,.12);
@@ -100,8 +103,8 @@ export class AudioSystem {
     // Flight time freezes the burst during pause; no scheduled catch-up beeps.
     const alert=this.alerts.next(s,aim);if(alert)this.tone(alert.frequency,alert.duration,alert.type,alert.volume);
   }
-  mute(){this.muted=!this.muted;if(this.ctx)this.warningGain?.gain.setTargetAtTime(this.muted?0:1,this.ctx.currentTime,.015);if(this.ctx)this.fxOutput?.gain.setTargetAtTime(this.muted?0:.24,this.ctx.currentTime,.02);}
-  suspend(){if(this.ctx){this.gain.gain.setTargetAtTime(0,this.ctx.currentTime,.05);this.ctx.suspend().catch(()=>{});}}
+  mute(){this.muted=!this.muted;this.radio.setMuted(this.muted);if(this.ctx)this.warningGain?.gain.setTargetAtTime(this.muted?0:1,this.ctx.currentTime,.015);if(this.ctx)this.fxOutput?.gain.setTargetAtTime(this.muted?0:.24,this.ctx.currentTime,.02);}
+  suspend({radio=false}={}){if(this.ctx){this.gain.gain.setTargetAtTime(0,this.ctx.currentTime,.05);this.warningGain?.gain.setTargetAtTime(0,this.ctx.currentTime,.02);this.fxOutput?.gain.setTargetAtTime(0,this.ctx.currentTime,.02);if(radio)this.ctx.resume().catch(()=>{});else this.ctx.suspend().catch(()=>{});}}
 }
 
 

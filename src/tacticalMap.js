@@ -36,7 +36,7 @@ function glyph(c,p,heading,color,air=true){c.save();c.translate(p.x,p.y);c.rotat
  c.beginPath();if(air){c.moveTo(0,-7);c.lineTo(4.5,5);c.lineTo(0,2);c.lineTo(-4.5,5);c.closePath();c.fill();c.beginPath();c.moveTo(0,-7);c.lineTo(0,-14);c.stroke();}else{c.strokeRect(-3,-3,6,6);c.beginPath();c.moveTo(0,-3);c.lineTo(0,-12);c.lineTo(-3,-8);c.moveTo(0,-12);c.lineTo(3,-8);c.stroke();}c.restore();}
 export function renderTacticalMap(canvas,s,targets,aim){
  const width=canvas.width||240,height=canvas.height||240,map=tacticalMapState(s,targets,{width,height}),c=canvas.getContext('2d'),cx=map.centerX,cy=map.centerY;c.clearRect(0,0,width,height);if(map.jammed){renderRadarNoise(c,s.elapsed,{width,height});return map;}c.fillStyle='#0a1712';c.fillRect(0,0,width,height);c.drawImage(contours(map),0,0);renderMapRoutes(c,map);
- c.save();c.beginPath();c.rect(7,7,width-14,height-14);c.clip();c.strokeStyle='#497144';c.lineWidth=.7;for(const radius of[36,72,108]){c.beginPath();c.arc(cx,cy,radius,0,Math.PI*2);c.stroke();}
+ c.save();c.beginPath();c.rect(7,7,width-14,height-14);c.clip();c.strokeStyle='#497144';c.lineWidth=.7;for(const radius of[1/3,2/3,1].map(f=>f*(Math.min(width,height)/2-12))){c.beginPath();c.arc(cx,cy,radius,0,Math.PI*2);c.stroke();}
  c.beginPath();c.moveTo(cx,0);c.lineTo(cx,height);c.moveTo(0,cy);c.lineTo(width,cy);c.stroke();
  c.strokeStyle='#9fc37388';c.setLineDash([3,4]);c.beginPath();const approach=13000*map.scale;c.moveTo(cx,cy-approach);c.lineTo(cx,cy+approach);c.stroke();c.setLineDash([]);
  c.strokeStyle='#d1efa8';c.strokeRect(cx-1.5,cy-runway.halfLength*map.scale,3,runway.halfLength*2*map.scale);

@@ -1,10 +1,15 @@
 import {Vec3,clamp} from './math.js';
 import {terrainWorld,terrainHeight,pathCoordinates,pathPoint} from './terrain.js';
 export function terrainFeatureVisible(camera,point){
- const delta=point.clone().sub(camera),horizontal=Math.hypot(delta.x,delta.z),steps=Math.min(80,Math.ceil(horizontal/100));
- for(let i=1;i<steps;i++){const t=i/steps,p=camera.clone().add(delta.clone().scale(t));if(terrainHeight(p.x,p.z)>p.y+1.5)return false;}
+ const dx=point.x-camera.x,dy=point.y-camera.y,dz=point.z-camera.z,steps=Math.min(80,Math.ceil(Math.hypot(dx,dz)/100));
+ // landscape waves cannot exceed 180 + 240*(1+.4+.16); other features
+ // blend with that surface or lower it. Above this bound no ray sample can hit.
+ const ceiling=Math.max(555,...terrainWorld.peaks.map(p=>p.height),terrainWorld.site?.height||0,(terrainWorld.river?.level||0)+8);
+ if(Math.min(camera.y,point.y)+1.5>=ceiling)return true;
+ for(let i=1;i<steps;i++){const t=i/steps,y=camera.y+dy*t;if(y+1.5>=ceiling)continue;if(terrainHeight(camera.x+dx*t,camera.z+dz*t)>y+1.5)return false;}
  return true;
 }
+
 export function roadSurface(path,p,x=0,z=0){const ground=terrainHeight(p.x+x,p.z+z)+.8;if(!terrainWorld.bridge)return ground;const t=Math.abs(pathCoordinates(path,p.x,p.z).along),half=terrainWorld.bridge.span*.5,blend=clamp((half+220-t)/220,0,1);return ground*(1-blend)+(terrainWorld.river.level+16.1)*blend;}
 function roadWet(path,t){if(!terrainWorld.river||terrainWorld.bridge)return false;const p=pathPoint(path,t);return Math.abs(pathCoordinates(terrainWorld.river,p.x,p.z).across)<terrainWorld.river.width*.5+15;}
 export function roadSection(path,t,length,width=path.width){
@@ -17,19 +22,26 @@ export function riverSection(path,t,length,width=path.width){
  const nx=-Math.sin(path.angle)*width*.5,nz=Math.cos(path.angle)*width*.5;
  return [[t,1],[t,-1],[t+length,-1],[t+length,1]].map(([along,side])=>{const p=pathPoint(path,along);return new Vec3(p.x+nx*side,path.level,p.z+nz*side);});
 }
-export function projectFeaturePolygon(r,points){
+export function projectFeaturePolygon(r,points,localCache=null){
  // Clip polygons crossing the camera plane instead of discarding the whole tile.
- const input=points.map(p=>r.local(p)),clipped=[];
+ const input=points.map(p=>{if(!localCache)return r.local(p);if(!localCache.has(p))localCache.set(p,r.local(p));return localCache.get(p);}),clipped=[];
  for(let i=0;i<input.length;i++){const a=input[i],b=input[(i+1)%input.length],insideA=a.z>=1,insideB=b.z>=1;if(insideA)clipped.push(a);if(insideA!==insideB)clipped.push(a.clone().add(b.clone().sub(a).scale((1-a.z)/(b.z-a.z))));}
  return clipped.map(p=>({x:r.w*.5+p.x*r.focal/p.z,y:r.h*.53-p.y*r.focal/p.z,depth:p.z}));
 }
 function fill(c,screen,color){c.fillStyle=color;c.beginPath();screen.forEach((p,i)=>i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y));c.closePath();c.fill();}
 export function renderTerrainFeatures(r){
  const c=r.ctx,patches=[];
- for(const kind of ['river','road']){const path=terrainWorld[kind];if(!path)continue;const center=pathCoordinates(path,r.camera.x,r.camera.z).along,step=kind==='river'?100:30,extent=kind==='river'?36000:10000;
-  for(let t=Math.floor((center-extent)/step)*step;t<center+extent;t+=step){const a=pathPoint(path,t);if(kind==='road'&&(path.min!==undefined?t<path.min||t>path.max:Math.hypot(a.x,a.z)<4500))continue;
-   let pts;if(kind==='road'){if(roadWet(path,t)||roadWet(path,t+step))continue;pts=roadSection(path,t,step,path.width+5);}
-   else pts=riverSection(path,t,step);
+ if(r.terrainFeatureCache?.revision!==terrainWorld.revision||r.terrainFeatureCache.tiles.size>4000)r.terrainFeatureCache={revision:terrainWorld.revision,tiles:new Map()};
+ const tiles=r.terrainFeatureCache.tiles,high=r.camera.y-terrainHeight(r.camera.x,r.camera.z)>4000;
+ for(const kind of ['river','road']){const path=terrainWorld[kind];if(!path)continue;const center=pathCoordinates(path,r.camera.x,r.camera.z).along,step=kind==='river'?(high?200:100):(high?90:30),extent=kind==='river'?36000:10000;
+  for(let t=Math.floor((center-extent)/step)*step;t<center+extent;t+=step){
+   const key=`${kind}:${step}:${t}`;
+   if(!tiles.has(key)){const a=pathPoint(path,t);let pts=null;
+    if(kind==='river')pts=riverSection(path,t,step);
+    else if(!(path.min!==undefined?t<path.min||t>path.max:Math.hypot(a.x,a.z)<4500)&&!roadWet(path,t)&&!roadWet(path,t+step))pts=roadSection(path,t,step,path.width+5);
+    tiles.set(key,pts);
+   }
+   const pts=tiles.get(key);if(!pts)continue;
    const screen=projectFeaturePolygon(r,pts);if(screen.length<3)continue;
    if(screen.every(p=>p.x<0)||screen.every(p=>p.x>r.w)||screen.every(p=>p.y<0)||screen.every(p=>p.y>r.h))continue;
    const midpoint=pts.reduce((p,v)=>p.add(v),new Vec3()).scale(.25);if(!terrainFeatureVisible(r.camera,midpoint))continue;

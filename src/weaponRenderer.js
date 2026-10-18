@@ -1,5 +1,6 @@
 import {Vec3,forward,right,up,clamp} from './math.js';
 import {terrainHeight} from './terrain.js';
+const project=(r,p)=>r.projectWorld?r.projectWorld(p):r.project(p);
 
 function glow(c,p,radius,alpha=1){
  const r=Math.max(1,radius),gradient=c.createRadialGradient(p.x,p.y,0,p.x,p.y,r);
@@ -21,7 +22,7 @@ export function renderWeapons(renderer,s,weapons){
  for(const p of weapons.projectiles){
   const direction=p.velocity.clone().normalize();
   if(p.type==='flak'){c.strokeStyle='#efa878';c.lineWidth=1.2;c.beginPath();r.line(p.position.clone().sub(direction.clone().scale(10)),p.position);c.stroke();continue;}
-  if(p.owner==='enemy'&&(p.type==='aam'||p.type==='agm')){const point=r.project(p.position);if(point){c.strokeStyle='#ff9c69';c.strokeRect(point.x-5,point.y-5,10,10);}}
+  if(p.owner==='enemy'&&(p.type==='aam'||p.type==='agm')){const point=project(r,p.position);if(point){c.strokeStyle='#ff9c69';c.strokeRect(point.x-5,point.y-5,10,10);}}
   if(p.type==='gun'){
    const tail=p.position.clone().sub(direction.clone().scale(65));
    c.strokeStyle='rgba(251,166,73,.25)';c.lineWidth=4;c.beginPath();r.line(tail,p.position);c.stroke();
@@ -32,7 +33,7 @@ export function renderWeapons(renderer,s,weapons){
     const tail=p.position.clone().sub(direction.clone().scale(3)),end=tail.clone().sub(direction.clone().scale(9+Math.sin(p.age*130)*2));
     c.strokeStyle='rgba(255,142,46,.65)';c.lineWidth=3;c.beginPath();r.line(tail,end);c.stroke();
     c.strokeStyle='#fff6d2';c.lineWidth=1;c.beginPath();r.line(tail,end.clone().add(direction.clone().scale(3)));c.stroke();
-    const screen=r.project(tail);if(screen)glow(c,screen,clamp(5*r.focal/screen.depth,1,18),.5);
+    const screen=project(r,tail);if(screen)glow(c,screen,clamp(5*r.focal/screen.depth,1,18),.5);
    }
   }else{
    c.strokeStyle='#bdc4ac';c.lineWidth=2;c.beginPath();r.line(p.position.clone().sub(direction.clone().scale(1)),p.position.clone().add(direction.clone().scale(1)));c.stroke();
@@ -41,7 +42,7 @@ export function renderWeapons(renderer,s,weapons){
  for(const e of weapons.effects){
   const age=e.age||0;
   if(e.kind==='muzzle'){
-   const position=s.position.clone().add(forward(s.orientation).scale(12)).add(right(s.orientation).scale(-1)).add(up(s.orientation).scale(-.6)),p=r.project(position);
+   const position=s.position.clone().add(forward(s.orientation).scale(12)).add(right(s.orientation).scale(-1)).add(up(s.orientation).scale(-.6)),p=project(r,position);
    if(p){const fade=e.life/e.maxLife;glow(c,p,20*fade,.5*fade);c.strokeStyle=`rgba(255,233,167,${fade})`;c.lineWidth=1;c.beginPath();for(let i=0;i<5;i++){const a=i*Math.PI*2/5;c.moveTo(p.x,p.y);c.lineTo(p.x+Math.cos(a)*15*fade,p.y+Math.sin(a)*15*fade);}c.stroke();}
    continue;
   }
@@ -50,7 +51,7 @@ export function renderWeapons(renderer,s,weapons){
    for(let i=0;i<8;i++){const a=i*.785,offset=new Vec3(Math.cos(a)*age*16,Math.max(0,age*14-4.9*age*age),Math.sin(a)*age*16),p=e.position.clone().add(offset);r.line(p,p.clone().sub(offset.clone().scale(.22)));}c.stroke();continue;
   }
   if(e.kind!=='explosion')continue;
-  const centre=e.position.clone().add(e.velocity.clone().scale(age*.25)),screen=r.project(centre),scale=e.scale||1;
+  const centre=e.position.clone().add(e.velocity.clone().scale(age*.25)),screen=project(r,centre),scale=e.scale||1;
   if(screen&&age<.65){
    const radius=clamp((4+Math.sin(Math.min(1,age/.4)*Math.PI/2)*25)*scale*r.focal/screen.depth,2,150),fade=clamp(1-age/.65,0,1);
    glow(c,screen,radius*(age<.12?1.8:1),fade*.9);
@@ -69,7 +70,7 @@ export function renderWeapons(renderer,s,weapons){
   }
   // Slow, irregular smoke outlines outlive the flash; no persistent expanding target ring.
   if(age>.08)for(const puff of e.smoke||[]){
-   const position=centre.clone().add(puff.offset.clone().scale(.6+age*.4)).add(new Vec3(age*2,age*(e.ground?7:4),0)),p=r.project(position);if(!p)continue;
+   const position=centre.clone().add(puff.offset.clone().scale(.6+age*.4)).add(new Vec3(age*2,age*(e.ground?7:4),0)),p=project(r,position);if(!p)continue;
    const radius=clamp((puff.size+age*12)*scale*r.focal/p.depth,.5,120),fade=clamp((1-age/e.maxLife)*Math.min(1,age*3),0,1);
    contour(c,p,radius,puff.phase,age*.35);c.fillStyle=`rgba(35,42,33,${fade*.10})`;c.strokeStyle=`rgba(139,150,129,${fade*.30})`;c.lineWidth=.8;c.fill();c.stroke();
   }

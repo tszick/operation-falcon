@@ -26,6 +26,6 @@ if(damaged)applyDamage(s,45,{part:'weapons'});
 s.ias=approachSpeeds(s).target/3.6;s.speed=s.ias;s.velocity=new Vec3(0,-s.ias*Math.tan(3*DEG),s.ias);s.agl=107;s.approach=evaluateApproach(s);s.throttle=.25;s.fuelFlow=2;
 const w=new Weapons(),aim=new Targeting(),m=new Mission(scenario);m.update(s,targets,w,aim);updateHUD(s,targets,w,aim,m,true);const r=new Renderer(document.getElementById('world'));r.render(s,targets,w,aim);
 await document.fonts.ready;
-requestAnimationFrame(()=>{const panels=[...document.querySelectorAll('#aircraft-status,.flight-side,#phase-guide')].map(e=>({id:e.id||e.className,height:e.clientHeight,scroll:e.scrollHeight,bottom:Math.round(e.getBoundingClientRect().bottom),contentBottom:Math.round([...e.children].filter(c=>c.getBoundingClientRect().height>0).at(-1)?.getBoundingClientRect().bottom||0)}));if(parent!==window)parent.postMessage({type:'layout-report',panels},location.origin);});
+requestAnimationFrame(()=>{const panels=[...document.querySelectorAll('#cockpit,.cockpit-screen')].map(e=>({id:e.id||e.className,height:e.clientHeight,scroll:e.scrollHeight,bottom:Math.round(e.getBoundingClientRect().bottom),contentBottom:Math.round([...e.children].filter(c=>c.getBoundingClientRect().height>0).at(-1)?.getBoundingClientRect().bottom||0)}));if(parent!==window)parent.postMessage({type:'layout-report',panels},location.origin);});
 }
 </script></body></html>
