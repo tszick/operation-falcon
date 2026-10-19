@@ -66,17 +66,17 @@ test('intermediate servicing welcomes and clears for another sortie, resetting d
 });
 
 function friendly(id){return {id,type:'fighter',kind:'air',team:'ally',alive:true,position:new Vec3(1000,500,0),velocity:new Vec3(),flight:{damage:0}};}
-test('all wingmen get stable sequential callsigns and individual ready messages, including late arrivals',()=>{
+test('legacy wingmen keep stable callsigns but only one representative reports ready, including late arrivals',()=>{
  const {s,m,targets}=scene(),d=new RadioDirector();targets.push(friendly('A'),friendly('B'),friendly('C'));d.start(s,m,targets);
- const ready=d.queue.filter(c=>c.line.group==='wingmanReady');assert.deepEqual(ready.map(c=>c.line.callSign),['Falcon Two','Falcon Three','Falcon Four']);assert.equal(new Set(ready.map(c=>c.key)).size,3);assert.ok(ready.every(c=>c.line.text.includes(c.line.callSign)));assert.deepEqual(ready.map(c=>c.ready),[6,10,14]);
+ const ready=d.queue.filter(c=>c.line.group==='wingmanReady');assert.deepEqual(ready.map(c=>c.line.callSign),['Falcon Two']);assert.equal(new Set(ready.map(c=>c.key)).size,1);assert.ok(ready.every(c=>c.line.text.includes(c.line.callSign)));assert.deepEqual(ready.map(c=>c.ready),[6]);
  targets.reverse();s.elapsed=2;d.observe(s,m,targets);assert.equal(d.wingmen.get('A').number,2);assert.equal(d.wingmen.get('C').number,4);
- targets.push(friendly('D'));s.elapsed=3;d.observe(s,m,targets);assert.equal(d.wingmen.get('D').number,5);assert.ok(d.queue.some(c=>c.line.callSign==='Falcon Five'&&c.line.group==='wingmanReady'));
+ targets.push(friendly('D'));s.elapsed=3;d.observe(s,m,targets);assert.equal(d.wingmen.get('D').number,5);assert.ok(!d.queue.some(c=>c.line.callSign==='Falcon Five'&&c.line.group==='wingmanReady'));
 });
 test('attack cooldowns and down messages are per aircraft; one loss preserves another pilot traffic',()=>{
  const {s,m,targets}=scene(),d=new RadioDirector();targets.push(friendly('A'),friendly('B'));d.start(s,m,targets);
  for(const id of ['A','B'])d.event({type:'missile-launch',owner:'enemy',targetId:id},s,targets);
  assert.equal(d.queue.filter(c=>c.line.group==='wingmanAttack').length,2);targets[0].flight.dying=true;s.elapsed=1;d.observe(s,m,targets);
- assert.ok(d.queue.some(c=>c.line.group==='wingmanAttack'&&c.line.unitId==='B'));assert.ok(d.queue.some(c=>c.line.group==='wingmanReady'&&c.line.unitId==='B'));assert.ok(!d.queue.some(c=>c.line.unitId==='A'&&c.line.group!=='wingmanDown'));
+ assert.ok(d.queue.some(c=>c.line.group==='wingmanAttack'&&c.line.unitId==='B'));assert.ok(!d.queue.some(c=>c.line.group==='wingmanReady'&&c.line.unitId==='B'));assert.ok(!d.queue.some(c=>c.line.unitId==='A'&&c.line.group!=='wingmanDown'));
  targets[1].flight.dying=true;s.elapsed=2;d.observe(s,m,targets);s.elapsed=3;d.observe(s,m,targets);
  const losses=d.queue.filter(c=>c.line.group==='wingmanDown');assert.equal(losses.length,2);assert.deepEqual(losses.map(c=>c.line.callSign),['Falcon Two','Falcon Three']);
 });
@@ -89,4 +89,16 @@ test('numbered wingman speech joins real PCM clips and caches the matching audib
  for(const id of line.clips){const part=radioLines.find(l=>l.id===id),bytes=await readFile(new URL('..'+part.url,import.meta.url)),rate=bytes.readUInt32LE(24),length=(bytes.length-44)/2,data=new Float32Array(length);for(let i=0;i<length;i++)data[i]=bytes.readInt16LE(44+i*2)/32768;radio.buffers.set(id,{sampleRate:rate,length,getChannelData:()=>data});total+=length;}
  radio.ctx={createBuffer(ch,length,rate){created++;const data=new Float32Array(length);return {sampleRate:rate,length,getChannelData:()=>data};}};
  const buffer=radio.lineBuffer(line);assert.ok(buffer.length>total);assert.ok(Math.abs(buffer.length/buffer.sampleRate-line.duration)<.01);assert.ok(buffer.getChannelData(0).some(v=>Math.abs(v)>.1));assert.equal(radio.lineBuffer(line),buffer);assert.equal(created,1);assert.equal(line.callSign,'Falcon Three');assert.match(line.text,/Mayday/);
+});
+
+
+test('radio startup limits concurrent clip decoding, caches the results and keeps asset requests local',async()=>{
+ const originalFetch=globalThis.fetch;let active=0,peak=0,requests=0;const radio=new RadioComms(),ctx={destination:{},createGain(){return {gain:{},connect(){}};},async decodeAudioData(){active++;peak=Math.max(peak,active);await new Promise(resolve=>setImmediate(resolve));active--;return {};}};
+ globalThis.fetch=async url=>{assert.ok(url.startsWith('/assets/radio/'));requests++;return {ok:true,arrayBuffer:async()=>new ArrayBuffer(0)};};
+ try{radio.attach(ctx);await radio.loading;assert.equal(requests,radioLines.length);assert.equal(radio.buffers.size,radioLines.length);assert.ok(peak<=2);assert.equal(active,0);radio.attach(ctx);assert.equal(requests,radioLines.length);}finally{globalThis.fetch=originalFetch;}
+});
+
+test('a friendly aircraft safely withdrawing from combat is not announced as shot down',()=>{
+ const {s,m,targets}=scene(),d=new RadioDirector(),ally={id:'RETIRING',type:'fighter',kind:'air',team:'ally',alive:true,position:new Vec3(1000,2000,0),flight:{damage:40}};targets.push(ally);d.start(s,m,targets);
+ ally.retired=true;ally.exited=true;ally.alive=false;s.elapsed=1;d.observe(s,m,targets);assert.ok(!has(d,'wingmanDown'));
 });

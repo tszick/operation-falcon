@@ -1,19 +1,35 @@
+import {spawnIronVeil} from './ironVeil.js';
+import {superiorityPlan,formatCallSign} from './airSuperiority.js';
 import {Vec3} from './math.js';
 import {configureTerrain,terrainWorld,terrainHeight,pathHeading,convoyPose} from './terrain.js';
 import {unitDefinition} from './unitTypes.js';
 import {enemyAircraft} from './enemies.js';
 export function createBattleTargets(m,player,{rng=Math.random}={}){
- const bearing=rng()*Math.PI*2,radius=22000+rng()*6000,anchor=new Vec3(Math.sin(bearing)*radius,0,Math.cos(bearing)*radius),enemies=player.faction==='west'?'east':'west';
- configureTerrain({id:m.objective==='bridge-block'?'bridge':m.id},anchor,rng);
+ const airBattle=m.objective==='air-superiority'?superiorityPlan(player,rng):null;
+ const bearing=rng()*Math.PI*2,radius=22000+rng()*6000,anchor=m.objective==='iron-veil'?new Vec3((rng()-.5)*3000,0,26000+rng()*2500):airBattle?.enemyBase||new Vec3(Math.sin(bearing)*radius,0,Math.cos(bearing)*radius),enemies=player.faction==='west'?'east':'west';
+ configureTerrain({id:['bridge-block','iron-veil'].includes(m.objective)?'bridge':m.id},anchor,rng);
+ if(airBattle)terrainWorld.airBattle=airBattle;
  const units=[];
  function add(id,type,team,position,extra={}){
   const def=unitDefinition(type),opponent=enemyAircraft({id:type},team==='ally'?{...player,faction:enemies}:player),air=def.kind==='air';position=position.clone();if(!air)position.y=terrainHeight(position.x,position.z)+3;
   const t={id,type,team,name:def.name,role:def.role,kind:def.kind,threats:def.weapons.filter(w=>w!=='jammer'),faction:team==='neutral'?'neutral':team==='ally'?player.faction:enemies,alive:true,position,previousPosition:position.clone(),velocity:new Vec3(),heading:0,radius:air?28:60,health:def.health||100,maxHealth:def.health||100,combatSeed:Math.floor(rng()*0xffffffff),...extra};
   if(air){t.aircraftId=type==='civil'?'airliner':opponent.id;t.cruiseSpeed=def.speed||145;t.heading=Math.atan2(-position.x,-position.z);t.velocity=new Vec3(Math.sin(t.heading)*t.cruiseSpeed,0,Math.cos(t.heading)*t.cruiseSpeed);if(type==='fighter'||type==='bomber'||type==='transport')t.name=opponent.name;}
-  units.push(t);return t;
+  if(t.aiRole==='escortee')t.routeX=t.position.x;units.push(t);return t;
  }
  if(['landing','canyon'].includes(m.objective))return [];
  const home=add('BASE','airbase','ally',new Vec3(),{home:true,health:320,maxHealth:320});
+ if(m.objective==='iron-veil'){spawnIronVeil(add,anchor,player,rng);return units;}
+ if(airBattle){
+  const base=add('ENEMY-BASE','airbase','enemy',anchor,{health:320,maxHealth:320});
+  const side=new Vec3(Math.cos(airBattle.playerStart.heading),0,-Math.sin(airBattle.playerStart.heading));
+  add('ALLY-SAM','sam-system','ally',side.clone().scale(650));add('ENEMY-SAM','sam-system','enemy',anchor.clone().add(side.clone().scale(650)));
+  for(const row of airBattle.units){
+   const faction=row.team==='ally'?player.faction:enemies,bomber=row.type==='bomber',id=faction==='west'?(bomber?'b52':'f15'):faction==='china'?'j10':bomber?'tu95':'su27',names={b52:'B-52 Stratofortress',f15:'F-15 Eagle',tu95:'Tu-95 Bear',su27:'Su-27 Flanker',j10:'Chengdu J-10C'};
+   const t=add(row.id,row.type,row.team,row.position,{squad:row.squad,formationSlot:row.slot,radioCallSign:row.radioCallSign,aiTargetId:bomber?(row.team==='ally'?base.id:home.id):undefined,aiRole:bomber?undefined:'interceptor',cruiseSpeed:row.speed});
+   t.aircraftId=id;t.name=formatCallSign(row.radioCallSign)+' · '+names[id];t.heading=row.heading;t.velocity=new Vec3(Math.sin(t.heading)*row.speed,0,Math.cos(t.heading)*row.speed);t.pitch=0;
+  }
+  return units;
+ }
  if(m.objective==='escort'){
   const t=add('CIVIL','civil','neutral',new Vec3(anchor.x,2400,anchor.z),{civilian:true,airspaceRadius:radius+4000});return [t,home];
  }

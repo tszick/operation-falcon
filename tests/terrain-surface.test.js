@@ -4,6 +4,7 @@ import {Vec3,Quat} from '../src/math.js';
 import {configureTerrain,terrainWorld} from '../src/terrain.js';
 import {buildTerrainSurface,renderTerrainSurface} from '../src/terrainSurface.js';
 import {Renderer} from '../src/renderer.js';
+import {terrainBuffers} from '../src/gpuTerrain.js';
 
 test('terrain uses a connected opaque triangle surface with shared edges and slope shading',()=>{
  const faces=buildTerrainSurface(0,0,(x,z)=>Math.max(0,1500-Math.hypot(x-3000,z-3000)*.5));
@@ -36,4 +37,20 @@ test('world edges are clipped at a ridge instead of drawing the hidden end of a 
  const r=Object.create(Renderer.prototype),parts=[];r.worldOcclusion=true;r.worldVisible=p=>p.x<=0;r.rawLine=(a,b)=>parts.push([a,b]);
  r.line(new Vec3(-1000,20,0),new Vec3(1000,20,0));
  assert.ok(parts.length>0);assert.ok(parts.every(([a,b])=>a.x<=0&&b.x<=0));assert.ok(parts.at(-1)[1].x> -2);
+});
+
+
+test('GPU terrain retains every shaded face and each unique grid edge without changing physical heights',()=>{
+ const faces=buildTerrainSurface(0,0,(x,z)=>200+100*Math.sin(x/1000)*Math.cos(z/1000)),data=terrainBuffers(faces);
+ assert.equal(data.fills.length,faces.length*3*6);assert.equal(data.lines.length/6,(faces.length*3+56*4)/2);
+ assert.ok([...data.fills,...data.lines].every(Number.isFinite));
+ for(let i=0;i<faces.length;i++)for(let j=0;j<3;j++){const p=faces[i].points[j],offset=(i*3+j)*6;assert.equal(data.fills[offset],p.x);assert.ok(Math.abs(data.fills[offset+1]-p.y)<.0001);assert.equal(data.fills[offset+2],p.z);for(let c=3;c<6;c++)assert.ok(data.fills[offset+c]>=0&&data.fills[offset+c]<=1);}
+});
+
+test('GPU terrain uses the cached mission surface, and unavailability falls back to opaque Canvas drawing',()=>{
+ configureTerrain({id:'none'},new Vec3(22000,0,0),()=>.99);
+ const r=Object.create(Renderer.prototype);r.w=1200;r.h=800;r.focal=640;r.setup(new Vec3(0,600,0),Quat.euler(0,-.1,0));let calls=0,fills=0;
+ r.gpuModels={renderTerrain(renderer){calls++;assert.ok(renderer.terrainSurface.length>0);return true;}};renderTerrainSurface(r);const first=r.terrainSurface;renderTerrainSurface(r);assert.equal(r.terrainSurface,first);assert.equal(calls,2);
+ configureTerrain({id:'none'},new Vec3(22000,0,0),()=>.99);renderTerrainSurface(r);assert.notEqual(r.terrainSurface,first);
+ r.gpuModels.renderTerrain=()=>false;r.ctx={save(){},restore(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},fill(){fills++;},stroke(){}};renderTerrainSurface(r);assert.ok(fills>0);
 });

@@ -1,0 +1,8 @@
+{
+  "asset": "horizon-mountains.png",
+  "generator": "built-in image_gen",
+  "transparent_background": true,
+  "prompt": "Create a production game background asset, a seamless horizontally tiling 360 degree distant mountain panorama strip, landscape aspect ratio as wide as possible (ideally 4096 x 1024). TRANSPARENT SKY above the mountain skyline, no stars, no sky paint, no lettering. Mountains occupy the lower half to lower two thirds. Bottom edge entirely filled opaque dark muted grey-green mountain foothills, a continuous base without holes, absolutely no transparency within mountains. An understated distant alpine range for a night-time military vector flight simulator: several overlapping atmospheric layers of charcoal slate gray, desaturated grey-green, smoky steel grey, with occasional subtle pale grey snow caps on the highest peaks. Low contrast, moody, restrained, dim, never bright white. Sharp natural varied silhouettes, faceted craggy mountain faces with broad muted flat shading, subtle ridge detail, no glowing outlines, no city, no trees, no foreground, no cockpit. Straight-on view from a distant aircraft, uniform elevation baseline, no lens distortion or perspective vanishing point. The left and right edges must join seamlessly with identical mountain height and base colors; one continuous circular mountain range. Upper half predominantly truly transparent. This will be wrapped on a cylindrical horizon behind existing wireframe terrain, so mountain silhouettes must be immediately readable but background detail discreet.",
+  "mapping": "Mirrored wrap for continuous circular sampling. Fixed world bearings; altitude depression uses a decorative 120 km horizon.",
+  "role": "Visual background only; no physics, radar or collision."
+}

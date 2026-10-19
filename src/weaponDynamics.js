@@ -1,3 +1,5 @@
+import {aircraftFlightSpec} from './aiAircraftSpec.js';
+import {terrainSightCeiling} from './terrainSight.js';
 import {radarContact} from './sensors.js';
 import {Vec3,forward,clamp,DEG} from './math.js';
 import {armament} from './armament.js';
@@ -46,10 +48,14 @@ export const weaponProfiles={
 // fail validation instead of silently acquiring generic missile performance.
 const names=[[/AIM-120C/,'aim120c'],[/AIM-120/,'aim120'],[/AIM-9M/,'aim9m'],[/AIM-9L/,'aim9l'],[/AIM-7M/,'aim7m'],[/AIM-7E/,'aim7e'],[/Magic/,'magic2'],[/MICA/,'mica'],[/R-60M/,'r60m'],[/R-73/,'r73'],[/R-40/,'r40'],[/R-33/,'r33'],[/R-77-1/,'r771'],[/RVV-SDM/,'rvvsdm'],[/PL-15/,'pl15'],[/AGM-65/,'maverick'],[/Brimstone/,'brimstone'],[/Kh-29/,'kh29'],[/Kh-25/,'kh25'],[/M61/,'m61'],[/GAU-22/,'gau22'],[/GAU-8/,'gau8'],[/GSh-6-30/,'gsh630'],[/GSh-6-23|Type 23/,'gsh23'],[/GSh-30|9A1/,'gsh30'],[/DEFA/,'defa'],[/30 M 791/,'giat'],[/BK-27/,'bk27'],[/Mk 82/,'mk82'],[/FAB-250/,'fab250']];
 export function weaponProfile(spec,type){const name=armament(spec).weapons[type]?.name;if(!name)return null;const match=names.find(([re])=>re.test(name));if(!match)throw new Error(`Missing weapon dynamics: ${name}`);return weaponProfiles[match[1]];}
-export function enemyProfile(t,type){return t.type==='fighter'?weaponProfile({id:t.aircraftId},type):type==='gun'?weaponProfiles.groundGun:t.kind==='ground'?weaponProfiles.sam:weaponProfiles.defense;}
+export function enemyProfile(t,type){if(t.type==='bomber'&&type==='gun')return weaponProfiles[aircraftFlightSpec(t.aircraftId||'tu95').defensiveGun?.profile]||null;return t.type==='fighter'?weaponProfile({id:t.aircraftId},type):type==='gun'?weaponProfiles.groundGun:t.kind==='ground'?weaponProfiles.sam:weaponProfiles.defense;}
 export function missileLaunchVelocity(carrier,direction,profile,{ground=false}={}){return carrier.clone().add(direction.clone().normalize().scale(ground?(profile.groundLaunchSpeed??profile.launchSpeed??35):(profile.launchSpeed??35)));}
 export const airDensity=h=>1.225*Math.exp(-Math.max(0,h)/8500);
-export function clearWeaponLine(a,b){const distance=a.distance(b),steps=Math.min(100,Math.max(6,Math.ceil(distance/250)));for(let i=1;i<steps;i++){const p=a.clone().add(b.clone().sub(a).scale(i/steps));if(p.y<terrainHeight(p.x,p.z)+2)return false;}return true;}
+export function clearWeaponLine(a,b){
+ const ceiling=terrainSightCeiling(a,b)+2;if(Math.min(a.y,b.y)>=ceiling)return true;
+ const dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,distance=Math.hypot(dx,dy,dz),steps=Math.min(100,Math.max(6,Math.ceil(distance/250)));
+ for(let i=1;i<steps;i++){const t=i/steps,y=a.y+dy*t;if(y>=ceiling)continue;if(y<terrainHeight(a.x+dx*t,a.z+dz*t)+2)return false;}return true;
+}
 export function spreadDirection(direction,sigma,rng=Math.random){const angle=2*Math.PI*rng(),radius=sigma*Math.sqrt(-2*Math.log(Math.max(1e-12,rng()))),side=(Math.abs(direction.y)>.95?new Vec3(1,0,0):new Vec3(0,1,0)).cross(direction).normalize(),vertical=direction.cross(side).normalize();return direction.clone().add(side.scale(Math.cos(angle)*radius)).add(vertical.scale(Math.sin(angle)*radius)).normalize();}
 export const gunDispersion=(s,p,heat=0)=>p.dispersion*(1+heat*.25+(s.damage||0)*.006+Math.max(0,Math.abs(s.g||1)-1)*.1);
 export function stepBallistic(p,dt){
@@ -65,7 +71,7 @@ export function stepMissile(p,target,launcher,dt){
   const los=target.position.clone().sub(p.position),distance=los.length(),unit=los.clone().normalize(),offAxis=Math.acos(clamp(direction.dot(unit),-1,1)),rel=target.velocity.clone().sub(p.velocity),losRate=los.cross(rel).scale(1/Math.max(1,los.dot(los))),closing=Math.max(0,-unit.dot(rel));
   const launchLOS=launcher?target.position.clone().sub(launcher.position):null;
   const needsSupport=profile.guidance==='sarh'||profile.guidance==='laser'||profile.guidance==='active'&&distance>(profile.activeRange||15000);
-  const support=!!launcher&&!launcher.crashed&&!launcher.dying&&launcher.alive!==false&&(!launcher.orientation||forward(launcher.orientation).dot(launchLOS.clone().normalize())>Math.cos((launcher.spec?.radarCone??60)*DEG))&&launchLOS.length()<(launcher.spec?.radarRange??150000)&&clearWeaponLine(launcher.position,target.position);
+  const support=!needsSupport||!!launcher&&!launcher.crashed&&!launcher.dying&&launcher.alive!==false&&(!launcher.orientation||forward(launcher.orientation).dot(launchLOS.clone().normalize())>Math.cos((launcher.spec?.radarCone??60)*DEG))&&launchLOS.length()<(launcher.spec?.radarRange??150000)&&clearWeaponLine(launcher.position,target.position);
   if(p.age>.15&&(offAxis>profile.seeker||p.age>profile.burn&&speed<profile.minGuideSpeed||!clearWeaponLine(p.position,target.position))||needsSupport&&!support){p.seekerLost=true;p.lossReason=needsSupport&&!support?'TÁMOGATÁS MEGSZŰNT':'CÉL ELVESZETT';}
   else{
    lateral=losRate.cross(direction).scale(3.5*closing);

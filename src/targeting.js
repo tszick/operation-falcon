@@ -1,3 +1,5 @@
+import {retreatFlightInput,combatFlightInput} from './aiDefense.js';
+import {TargetCycle} from './targetCycle.js';
 import {moveBallistic} from './ballisticFlight.js';
 import {mass,atmosphere} from './performance.js';
 import {escortFlightInput} from './battleMovement.js';
@@ -29,26 +31,26 @@ export function createTargets(m,playerSpec={faction:'west'},{rng=Math.random}={}
  if(jammerMissions.has(m.id)){const t=result[0],angle=rng()*Math.PI*2;t.protectedBy='J01';const position=t.position.clone().add(new Vec3(Math.sin(angle)*1800,0,Math.cos(angle)*1800));position.y=terrainHeight(position.x,position.z)+3;result.push({id:'J01',name:'Jelzavaróállomás',role:'Radar / GPS zavaró',type:'jammer',kind:'ground',faction:t.faction,position,velocity:new Vec3(),heading:angle,alive:true,radius:35,jamRadius:7000,threats:[]});}
  return result;
 }
-export function applyTargetHit(target,weapon,{part=null,amount=null}={}){
+export function applyTargetHit(target,weapon,{part=null,engineIndex=null,amount=null}={}){
  if(target.type==='ballistic'){target.health=Math.max(0,target.health-(amount??(weapon==='gun'?18:50)));target.damage=100*(1-target.health/target.maxHealth);if(target.health<=0){target.alive=false;target.intercepted=true;}return !target.alive;}
  if(target.kind!=='air'){if(target.maxHealth){const damage=amount??(weapon==='gun'?18:100);target.health=Math.max(0,target.health-damage);target.damage=100*(1-target.health/target.maxHealth);if(target.health>0)return false;}target.alive=false;return true;}
  if(!target.flight){
   const spec=aircraftFlightSpec(target.aircraftId||'mig29');
   target.flight=createAircraft(spec,{ammo:{gun:0,aam:0,agm:0,bomb:0}});const s=target.flight;s.position=target.position.clone();s.velocity=target.velocity.clone();s.orientation=Quat.euler(target.heading||Math.atan2(s.velocity.x,s.velocity.z),0,0);s.onGround=false;s.airborne=true;s.gear=false;s.flaps=false;s.flapPosition=0;s.previousPosition=target.position.clone();s.throttle=.65;s.fuel=spec.fuelCapacity*.5;s.ammo={gun:0,aam:0,agm:0,bomb:0};s.landingMode='off';const air=atmosphere(s.position.y),q=.5*air.density*s.velocity.length()**2,alpha=clamp((mass(s)*9.81/Math.max(1,q*spec.wingArea)-.22)/spec.clSlope,0,spec.stallAlpha*.8);s.orientation=Quat.euler(target.heading||0,Math.atan2(s.velocity.y,Math.hypot(s.velocity.x,s.velocity.z))+alpha,target.bank||0);
  }
- applyDamage(target.flight,amount??(weapon==='gun'?18:100),{part,source:weapon==='gun'?'Gépágyútalálat':'Rakétatalálat'});
+ applyDamage(target.flight,amount??(weapon==='gun'?18:100),{part,engineIndex,source:weapon==='gun'?'Gépágyútalálat':'Rakétatalálat'});
  target.damage=target.flight.damage;
  if(target.flight.dying){target.alive=false;target.falling=true;return true;}return false;
 }
 const staticPoseCache=new WeakMap();
 export function updateTargets(targets,dt){for(const t of targets){
- if(t.pending)continue;
+ if(t.pending||t.exited)continue;
  if(t.kind==='ground'&&t.type!=='convoy'){const p=staticPoseCache.get(t);if(!p||p.revision!==terrainWorld.revision||p.x!==t.position.x||p.y!==t.position.y||p.z!==t.position.z){t.previousPosition=t.position.clone();t.agl=t.position.y-terrainHeight(t.position.x,t.position.z);staticPoseCache.set(t,{revision:terrainWorld.revision,x:t.position.x,y:t.position.y,z:t.position.z});}continue;}
  t.previousPosition=t.position.clone();t.agl=t.position.y-terrainHeight(t.position.x,t.position.z);
  if(t.pending)continue;
  if(t.type==='ballistic'){if(t.alive)moveBallistic(t,dt);continue;}
  if(t.aiRole==='takeoff'&&t.alive){t.takeoffClock+=dt;if(t.takeoffClock>=0){t.velocity.z=Math.min(t.cruiseSpeed,t.velocity.z+6*dt);if(t.velocity.z>65){t.velocity.y=Math.min(35,t.velocity.y+8*dt);t.pitch=.15;}t.position.add(t.velocity.clone().scale(dt));if(t.position.y>900)t.aiRole='interceptor';}continue;}
- if(t.flight&&!t.flight.crashed){stepAircraft(t.flight,t.aiRole==='escortee'?escortFlightInput(t):{},dt);t.position=t.flight.position.clone();t.velocity=t.flight.velocity.clone();t.heading=attitude(t.flight.orientation).heading;t.damage=t.flight.damage;
+ if(t.flight&&!t.flight.crashed){stepAircraft(t.flight,t.retreat?retreatFlightInput(t,dt):t.aiRole==='escortee'?escortFlightInput(t):combatFlightInput(t),dt);t.position=t.flight.position.clone();t.velocity=t.flight.velocity.clone();t.heading=attitude(t.flight.orientation).heading;t.damage=t.flight.damage;
   if(t.flight.dying){t.alive=false;t.falling=true;}
   if(t.flight.crashed){t.alive=false;t.falling=false;t.impactReady=true;}
  }else if(t.alive){if(t.civilian)updateCivilFlight(t,dt);else if(t.aiRole==='escortee')moveEscort(t,dt);else if(t.type==='convoy')moveConvoy(t,targets,dt);else t.position.add(t.velocity.clone().scale(dt));}
@@ -56,17 +58,16 @@ export function updateTargets(targets,dt){for(const t of targets){
 }}
 export function radarContacts(s,targets){const f=forward(s.orientation);return visibleTargets(s,targets).map(t=>{const d=t.position.clone().sub(s.position),distance=d.length(),angle=Math.acos(clamp(f.dot(d.clone().normalize()),-1,1));return {target:t,distance,angle,selectable:targetSelectable(t,s,targets),visible:distance<s.spec.radarRange&&angle<s.spec.radarCone*DEG};});}
 export class Targeting {
- constructor(){this.id=null;this.progress=0;this.locked=false;}
+ constructor(){this.id=null;this.progress=0;this.locked=false;this.selector=new TargetCycle();}
  cycle(s,targets){
-  const available=radarContacts(s,targets).filter(c=>c.visible&&c.selectable).sort((a,b)=>a.distance-b.distance);
-  if(!available.length){this.id=null;this.progress=0;this.locked=false;return null;}
-  const index=available.findIndex(c=>c.target.id===this.id);
-  const next=available[(index+1)%available.length].target.id;
+  const available=radarContacts(s,targets).filter(c=>c.visible&&c.selectable);
+  const next=this.selector.choose(available,s.orientation,this.id);
+  if(!next){this.id=null;this.progress=0;this.locked=false;return null;}
   // Pressing select again must not restart acquisition of the only contact.
   if(next!==this.id){this.id=next;this.progress=0;this.locked=false;}
   return this.id;
  }
- update(s,targets,dt){const c=radarContacts(s,targets).find(c=>c.target.id===this.id);if(!c||!c.visible||!c.selectable){this.id=null;this.progress=0;this.locked=false;return;}this.progress=Math.min(s.spec.lockTime,this.progress+dt);this.locked=this.progress>=s.spec.lockTime;}
+ update(s,targets,dt){const c=radarContacts(s,targets).find(c=>c.target.id===this.id);if(!c||!c.visible||!c.selectable){this.selector.reset();this.id=null;this.progress=0;this.locked=false;return;}this.progress=Math.min(s.spec.lockTime,this.progress+dt);this.locked=this.progress>=s.spec.lockTime;}
 }
 export const bombImpact=predictBombImpact;
 

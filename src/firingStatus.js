@@ -1,9 +1,11 @@
+import {tailGunStatus} from './tailGunnery.js';
 import {armament} from './armament.js';
 import {damageResponse} from './damage.js';
 import {navigationJammed,sensorTargets} from './electronicWarfare.js';
 import {fireSolution} from './weaponDynamics.js';
 // The cockpit and trigger use the same permission decision, not just the range.
 export function firingStatus(s,targets,aim,weapons){
+ if(s.rearView){const status=tailGunStatus(s);return weapons.tailCooldown>0&&status.canFire?{...status,canFire:false,status:'cooldown',label:'FAROKGÉPÁGYÚ ELŐKÉSZÍTÉSE'}:status;}
  const type=weapons.selected,guided=type==='aam'||type==='agm';
  const blocked=(status,label,solution=null)=>({canFire:false,status,label,solution});
  if(s.training)return blocked('training','LESZÁLLÁSI GYAKORLAT — FEGYVERZET NÉLKÜL');

@@ -1,3 +1,4 @@
+import {aiAircraft} from './heavyAircraftData.js';
 // Approximate gameplay data in SI units; not certified aircraft performance.
 import {armament} from './armament.js';
 const rows=[
@@ -31,7 +32,8 @@ export const hangarGroups=[{id:'nato-classic',name:'NATO klasszikus gépek'},{id
 const modernNato=new Set(['rafale','euro','gripen','f22','f35']);
 const handling={f22:{thrust:232000,cd0:.020,pitchRate:40},f35:{thrust:125000,cd0:.025,pitchRate:35},su35:{thrust:173000,pitchRate:42},su57:{thrust:176000,cd0:.021,pitchRate:42},j10:{thrust:89000,pitchRate:39},j20:{thrust:176000,cd0:.022,pitchRate:35}};
 export const aircraft=rows.map(([id,name,faction,role,emptyMass,fuelCapacity,abThrust,wingArea,maxG,maxMach,ceiling,radarRange,tags,shape])=>({id,name,engineCount:['f16','mirage','gripen','mig27','f35','j10'].includes(id)?1:2,faction,group:faction==='china'?'china-modern':faction==='west'?(modernNato.has(id)?'nato-modern':'nato-classic'):['su35','su57'].includes(id)?'russia-modern':'soviet',role,emptyMass,fuelCapacity,abThrust,wingArea,maxG,maxMach,ceiling,radarRange,tags,shape,thrust:abThrust*(shape==='straight'?1:.66),hasAB:shape!=='straight',cd0:.023,inducedDrag:.075,clSlope:4.8,maxCL:1.55,stallAlpha:19*Math.PI/180,pitchRate:38,rollRate:85,radarCone:60,lockTime:2,gunAmmo:armament({id}).weapons.gun?.quantity||0,approachSpeed:shape==='straight'?65:72,...handling[id]}));
+aircraft.push(...aiAircraft.filter(a=>['b52','tu95'].includes(a.id)).map(a=>({...a,group:a.faction==='west'?'nato-classic':'soviet',tags:['bomb'],shape:'straight',gunAmmo:0,maxWeaponPayloadKg:a.id==='b52'?31500:15000})));
 export {missions} from './missionCatalog.js';
 export function suitability(s,m){if(m.objective==='escort'||m.objective==='landing')return 'good';if(m.objective==='escort-transport'||m.objective==='defend-base'||m.objective==='defend-city'){const a=armament(s).weapons.aam;return a?.quantity>=4?'good':a?'ok':'bad';}const p=armament(s);const n=m.needs.filter(t=>['gun','aam','agm','bomb'].includes(t)?!!p.weapons[t]:t==='radar'?s.radarRange>0:s.tags.includes(t)).length;return n===m.needs.length?'good':n>0?'ok':'bad';}
-export function loadout(s){const p=armament(s);return Object.fromEntries(['gun','aam','agm','bomb'].map(type=>[type,p.weapons[type]?.quantity||0]));}
+export function loadout(s){const p=armament(s);return {...Object.fromEntries(['gun','aam','agm','bomb'].map(type=>[type,p.weapons[type]?.quantity||0])),...(p.tailGun?{tailGun:p.tailGun.quantity}: {})};}
 

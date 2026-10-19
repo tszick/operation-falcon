@@ -1,3 +1,4 @@
+import {ironVeilStages} from './ironVeil.js';
 import {updateCanyonCourse} from './canyonTraining.js';
 import {updateMissionRuntime} from './missionRuntime.js';
 import {serviceAircraft} from './missionStart.js';
@@ -88,6 +89,7 @@ export class Mission {
       this.setPhase('climb','FELSZÁLLÁS · EMELKEDÉS','Emelkedj 150 m fölé; húzd be a futóművet.');
       return;
     }
+    if(this.spec.objective==='iron-veil'){const stage=this.ironVeil?.stage||'breach',[label,hint]=ironVeilStages[stage];this.setPhase('iron-'+stage,label,hint);return;}
     if(civil){this.setPhase(this.civilIntercepted?'civil-departure':'civil-intercept',this.civilIntercepted?'CIVIL GÉP · VISSZAFORDULÁS / TÁVOZÁS':'CIVIL GÉP · BÉKÉS ELFOGÁS',this.civilIntercepted?'A befogás sikerült. A gép elhagyja a légteret; közben elindulhatsz haza.':'T: célbefogás. Tűzszünet, a civil gépet meg kell óvni.');return;}
     if(activeJammers(targets).some(t=>isHostile(t,s))&&targets.find(t=>t.id===aim?.id)?.type==='jammer'){this.setPhase('jammer-attack','JELZAVARÓ KIIKTATÁSA','Tab-bal bármely ellenséges célra válthatsz. A zavarási körön belül nincs befogás.');return;}
     const alive=sensorTargets(s,targets).filter(t=>t.alive&&t.position).sort((a,b)=>a.position.distance(s.position)-b.position.distance(s.position));

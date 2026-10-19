@@ -1,9 +1,11 @@
+import {ironVeilObjectives} from './ironVeil.js';
 import {isHostile} from './unitTypes.js';
 const row=(id,text,done,optional=false)=>({id,text,done:!!done,optional});
 export function battleObjectives(m,s,targets,w){
  const by=id=>targets.find(t=>t.id===id),base=by('BASE'),enemies=targets.filter(t=>isHostile(t,s)),dead=t=>!!t&&!t.alive;
  let rows=[],complete=false,failure='';
- if(m.spec.objective==='bridge-block'){
+ if(m.spec.objective==='iron-veil'){const report=ironVeilObjectives(m,s,targets,w);rows=report.rows;complete=report.complete;failure=report.failure;
+ }else if(m.spec.objective==='bridge-block'){
   const bridge=by('BRIDGE'),convoy=by('CONVOY');
   if(convoy?.crossedBridge&&!m.bridgeSecured)failure='A konvoj átjutott a hídon. Az átkelőt előbb kellett volna lerombolni.';
   if(dead(bridge)&&!convoy?.crossedBridge)m.bridgeSecured=true;
@@ -11,14 +13,19 @@ export function battleObjectives(m,s,targets,w){
  }else if(m.spec.objective==='defend-base'){
   if(dead(base))failure='A saját repülőtér megsemmisült.';
   const allDead=enemies.length>0&&enemies.every(t=>!t.alive),pending=w.projectiles?.some(p=>p.owner==='enemy'&&p.targetEntityId==='BASE');complete=allDead&&!pending;
-  rows=[row('base',`Saját reptér: ${Math.round((base?.health||0)/(base?.maxHealth||1)*100)}%`,base?.alive),row('attackers',`Támadók: ${enemies.filter(t=>!t.alive).length} / ${enemies.length}`,allDead),...(pending?[row('incoming','Beérkező fegyverek elhárítása',false)]:[])];
+  rows=[row('base',`Saját reptér: ${Math.round((base?.health||0)/(base?.maxHealth||1)*100)}%`,base?.alive),row('attackers',`Támadók leküzdve: ${enemies.filter(t=>!t.alive).length} / ${enemies.length}`,allDead),...(pending?[row('incoming','Beérkező fegyverek elhárítása',false)]:[])];
  }else if(m.spec.objective==='escort-transport'){
   const transport=by('TRANSPORT');if(dead(transport)&&!transport.exited)failure='A védendő szállítógép megsemmisült.';
-  complete=!!transport?.exited;rows=[row('transport',complete?'Szállítógép kijutott':`Szállító: ${Math.max(0,Math.round(100-(transport?.damage||0)))}% · kijárat ${Math.max(0,(transport?.exitZ-transport?.position.z)/1000).toFixed(1)} km`,complete),row('enemies',`Összes ellenfél: ${enemies.filter(t=>!t.alive).length} / ${enemies.length}`,enemies.every(t=>!t.alive),true)];
+  complete=!!transport?.exited;rows=[row('transport',complete?'Szállítógép kijutott':`Szállító: ${Math.max(0,Math.round(100-(transport?.damage||0)))}% · kijárat ${Math.max(0,(transport?.exitZ-transport?.position.z)/1000).toFixed(1)} km`,complete),row('enemies',`Ellenfelek leküzdve: ${enemies.filter(t=>!t.alive).length} / ${enemies.length}`,enemies.every(t=>!t.alive),true)];
  }else if(m.spec.objective==='defend-city'){
   const city=targets.filter(t=>t.city),intact=city.filter(t=>t.alive).length,required=Math.ceil(city.length*.8),allDead=enemies.length>0&&enemies.every(t=>!t.alive&&!t.pending),pending=w.projectiles?.some(p=>p.owner==='enemy'&&targets.some(t=>t.city&&t.id===p.targetEntityId));
   if(intact<required)failure='A város több mint 20%-a megsemmisült.';
   complete=allDead&&!pending&&!failure;rows=[row('city',`Város: ${Math.round(intact/city.length*100)}% · minimum 80%`,intact>=required),row('waves',`Hullám: ${m.wave||1}/2 · támadók ${enemies.filter(t=>!t.alive&&!t.pending).length}/${enemies.length}`,allDead),...(pending?[row('incoming','Beérkező bombák elhárítása',false)]:[])];
+ }else if(m.spec.objective==='air-superiority'){
+  const air=enemies.filter(t=>t.kind==='air'),expected=m.spec.roster.filter(r=>r.team==='enemy'&&['fighter','bomber'].includes(r.type)).reduce((sum,r)=>sum+r.count,0),allDead=air.length===expected&&air.every(t=>!t.alive),enemyBase=by('ENEMY-BASE'),sam=by('ENEMY-SAM'),pending=w.projectiles?.some(p=>p.owner==='enemy'&&p.targetEntityId==='BASE');
+  if(dead(base))failure='A saját repülőtér megsemmisült.';
+  complete=allDead&&dead(enemyBase)&&!pending;
+  rows=[row('attackers',`Támadók leküzdve: ${air.filter(t=>!t.alive).length}/${expected}`,allDead),row('enemyBase','Ellenséges reptér megsemmisítve',dead(enemyBase)),row('base',`Saját reptér: ${Math.round((base?.health||0)/(base?.maxHealth||1)*100)}%`,base?.alive),row('enemySam','Rakétavédelem megsemmisítve',dead(sam),true),...(pending?[row('incoming','Beérkező fegyverek elhárítása',false)]:[])];
  }else if(m.spec.objective==='ballistic-strike'){
   const silo=by('SILO'),missile=by('BALLISTIC');if(dead(base))failure='A interkontinentális csapás megsemmisítette a saját repteret.';
   complete=(!silo?.launched&&dead(silo)||!!missile&&!missile.alive)&&base?.alive;

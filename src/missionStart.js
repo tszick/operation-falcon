@@ -1,3 +1,4 @@
+import {superiorityPlan} from './airSuperiority.js';
 import {createCanyonCourse,canyonPoint} from './canyonTraining.js';
 import {createAircraft} from './physics.js';
 import {Vec3,Quat,DEG,clamp} from './math.js';
@@ -5,9 +6,9 @@ import {runway,terrainHeight,terrainWorld,configureTerrain} from './terrain.js';
 import {mass,atmosphere,approachSpeeds} from './performance.js';
 import {evaluateApproach} from './landing.js';
 export const landingStart={distance:6000,glide:3,fuelFraction:.15};
-export function defaultMissionFuel(mission){return mission.objective==='landing'?landingStart.fuelFraction:mission.objective==='canyon'?.5:1;}
-export function createMissionAircraft(spec,mission,{fuelFraction=defaultMissionFuel(mission)}={}){
- const s=createAircraft(spec);s.fuel=spec.fuelCapacity*(Number.isFinite(fuelFraction)?clamp(fuelFraction,0,1):defaultMissionFuel(mission));s.enginePower=s.fuel>0?1:0;if(mission.objective==='canyon'){if(!terrainWorld.canyon?.training)configureTerrain(mission);s.training=true;s.ammo={gun:0,aam:0,agm:0,bomb:0};s.canyonTraining=createCanyonCourse();}if(mission.airStart){s.onGround=false;s.airborne=true;s.gear=false;s.flaps=false;s.flapPosition=0;s.landingMode='off';s.position=new Vec3(0,1700,mission.objective==='escort-transport'?-23000:-9000);if(s.canyonTraining){const p=canyonPoint(-1600);s.position=new Vec3(p.x,terrainHeight(p.x,p.z)+220,p.z);}const air=atmosphere(s.position.y),v=165;s.velocity=new Vec3(0,0,v);const q=.5*air.density*v*v,alpha=clamp((mass(s)*9.81/(q*spec.wingArea)-.22)/spec.clSlope,0,.2);s.orientation=Quat.euler(0,alpha,0);s.throttle=.65;s.speed=v;s.ias=v*Math.sqrt(air.density/1.225);s.mach=v/air.soundSpeed;s.agl=s.position.y-terrainHeight(s.position.x,s.position.z);s.previousPosition=s.position.clone();return s;}if(mission.objective!=='landing')return s;
+export function defaultMissionFuel(mission,spec=null){return mission.objective==='landing'?landingStart.fuelFraction:mission.objective==='canyon'?.5:spec?.id==='b52'?.9:1;}
+export function createMissionAircraft(spec,mission,{fuelFraction=defaultMissionFuel(mission,spec)}={}){
+ const s=createAircraft(spec);s.fuel=spec.fuelCapacity*(Number.isFinite(fuelFraction)?clamp(fuelFraction,0,1):defaultMissionFuel(mission));s.enginePower=s.fuel>0?1:0;if(mission.objective==='canyon'){if(!terrainWorld.canyon?.training)configureTerrain(mission);s.training=true;s.ammo={gun:0,aam:0,agm:0,bomb:0};s.canyonTraining=createCanyonCourse();}if(mission.airStart){s.onGround=false;s.airborne=true;s.gear=false;s.flaps=false;s.flapPosition=0;s.landingMode='off';s.position=new Vec3(0,1700,mission.objective==='escort-transport'?-23000:-9000);if(s.canyonTraining){const p=canyonPoint(-1600);s.position=new Vec3(p.x,terrainHeight(p.x,p.z)+220,p.z);}const formation=mission.objective==='air-superiority'?(terrainWorld.airBattle?.playerStart||superiorityPlan(spec).playerStart):null;if(formation){s.position=formation.position.clone();s.squad=formation.squad;s.formationSlot=formation.slot;s.formationRole=formation.role;s.radioCallSign=formation.radioCallSign;}const heading=formation?.heading||0,air=atmosphere(s.position.y),v=165;s.velocity=new Vec3(Math.sin(heading)*v,0,Math.cos(heading)*v);const q=.5*air.density*v*v,alpha=clamp((mass(s)*9.81/(q*spec.wingArea)-.22)/spec.clSlope,0,.2);s.orientation=Quat.euler(heading,alpha,0);s.throttle=.65;s.speed=v;s.ias=v*Math.sqrt(air.density/1.225);s.mach=v/air.soundSpeed;s.agl=s.position.y-terrainHeight(s.position.x,s.position.z);s.previousPosition=s.position.clone();return s;}if(mission.objective!=='landing')return s;
  s.training=true;s.ammo={gun:0,aam:0,agm:0,bomb:0};
  s.onGround=false;s.airborne=true;s.gear=false;s.flaps=false;s.flapPosition=0;s.afterburner=false;s.landingMode='off';
  const glide=landingStart.glide*DEG,height=2+landingStart.distance*Math.tan(glide),air=atmosphere(height),ias=(approachSpeeds(s).target+25)/3.6,v=ias/Math.sqrt(air.density/1.225),q=.5*air.density*v*v,m=mass(s),cl=m*9.81*Math.cos(glide)/(q*spec.wingArea),alpha=clamp((cl-.22)/spec.clSlope,0,spec.stallAlpha*.85);
@@ -17,6 +18,6 @@ export function createMissionAircraft(spec,mission,{fuelFraction=defaultMissionF
 }
 
 export function serviceAircraft(s){
- const fresh=createAircraft(s.spec),keep={elapsed:s.elapsed,lastTouchdown:s.lastTouchdown,landingRouteEnabled:s.landingRouteEnabled,headLook:s.headLook};
+ const fresh=createAircraft(s.spec),keep={elapsed:s.elapsed,lastTouchdown:s.lastTouchdown,landingRouteEnabled:s.landingRouteEnabled,headLook:s.headLook,mapZoom:s.mapZoom,squad:s.squad,formationSlot:s.formationSlot,formationRole:s.formationRole,radioCallSign:s.radioCallSign};
  for(const key of Object.keys(s))delete s[key];Object.assign(s,fresh,keep);return s;
 }

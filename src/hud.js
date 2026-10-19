@@ -1,3 +1,6 @@
+import {ironVeilVisibleRows} from './ironVeil.js';
+import {tailGunStatus} from './tailGunnery.js';
+import {afterburnerStatus} from './engineState.js';
 import {updateFlightMessages} from './flightMessages.js';
 import {mountCockpit,updateCockpit} from './cockpit.js';
 import {compactObjective} from './cockpitGeometry.js';
@@ -18,13 +21,13 @@ export function updateHUD(s,targets,weapons,aim,mission,muted){
  updateStores(s,weapons,{compact:true});
  const flap=flapStatus(s),cm=s.countermeasures;
  const indicators=configurationIndicators(s),labels={gear:'G · FUTÓMŰ',flaps:'X · FÉKSZÁRNY',airbrake:'B · LÉGFÉK',engine:`GÁZ ${Math.round(s.throttle*100)}%`,afterburner:'SHIFT · AB',assist:'L · G-LIMIT',wheelBrake:'CTRL · KERÉKFÉK'},ids={gear:'config-gear',flaps:'config-flaps',airbrake:'config-airbrake',engine:'config-engine',afterburner:'config-afterburner',assist:'config-assist',wheelBrake:'config-wheel-brake'};
- const shortLabels={gear:'FUTÓ',flaps:'FÉKSZ.',airbrake:'LÉGFÉK',afterburner:'UTÁNÉG.',assist:'G-LIM',wheelBrake:'KERÉKFÉK'};
+ const shortLabels={gear:'FUTÓ',flaps:'FÉKSZ.',airbrake:'LÉGFÉK',afterburner:afterburnerStatus(s).label,assist:'G-LIM',wheelBrake:'KERÉKFÉK'};
  for(const [key,indicator] of Object.entries(indicators)){const element=$(ids[key]);element.textContent=shortLabels[key]||labels[key];if(element.tagName==='BUTTON'&&element.clientWidth>0)element.style.fontSize=`${Math.max(7,Math.min(innerWidth<=1050?9:10,(element.clientWidth-2)/(element.textContent.length*.62)))}px`;element.dataset.state=indicator.state;element.setAttribute('aria-label',`${labels[key]} · ${indicator.active?'aktív':'inaktív'}${indicator.state==='danger'?' · veszélyes állás':''}`);if(element.tagName==='BUTTON')element.setAttribute('aria-pressed',String(indicator.active));}
- $('config-afterburner').hidden=!s.spec.hasAB;$('config-flaps').dataset.moving=String(flap.moving);$('config-flaps').title=flap.label;
+ $('config-afterburner').hidden=!s.spec.hasAB;$('config-afterburner').title=afterburnerStatus(s).message;$('config-afterburner').setAttribute('aria-label','SHIFT · '+afterburnerStatus(s).message);$('config-flaps').dataset.moving=String(flap.moving);$('config-flaps').title=flap.label;
  $('config-countermeasures').textContent=`C · IR ${cm?.flare||0} / R ${cm?.chaff||0}`;
- const damaged=s.damage>=15,damagePanel=$('damage-status'),stage=damageStage(s);damagePanel.hidden=!damaged||s.dying||s.crashed;
+ const damaged=s.damage>=15||s.condition?.engines?.some(v=>v<.5),damagePanel=$('damage-status'),stage=damageStage(s);damagePanel.hidden=!damaged||s.dying||s.crashed;
  if(damaged){damagePanel.dataset.stage=stage.id;$('damage-title').textContent=stage.label;$('damage-integrity').textContent=`SZERKEZET ${Math.max(0,Math.round(100-s.damage))}%`;$('damage-bar').style.width=`${Math.max(0,100-s.damage)}%`;const faults=damageWarnings(s);$('damage-faults').textContent=faults.slice(0,2).join(' · ')||'SÉRÜLT SZERKEZET · FINOM MANŐVEREK';damagePanel.title=faults.join('\n');}
- const lock=targetingStatus(s,targets,aim,weapons);
+ const lock=s.rearView?{state:'rear',label:tailGunStatus(s).label,hint:'EGÉR: CÉLZÁS · SZÓKÖZ: TŰZ · V: PILÓTAFÜLKE',progress:0}:targetingStatus(s,targets,aim,weapons);
  $('targeting-panel').dataset.state=lock.state;
  $('lock-label').textContent=lock.label;
  $('lock-hint').textContent=lock.hint;
@@ -37,8 +40,8 @@ export function updateHUD(s,targets,weapons,aim,mission,muted){
  $('flight-name').textContent=s.spec.name.toUpperCase();$('mission-phase').textContent=mission.phase;
  $('phase-hint').textContent=mission.phaseHint;
  $('guide-title').textContent=mission.phase;
- const card=missionCardState(s,mission,targets);$('mission-card-name').textContent=card.name;$('mission-time').textContent=card.elapsed;$('mission-time').title='Eltelt küldetésidő';$('mission-card-phase').textContent=card.phase;
- $('mission-priority').hidden=true;$('mission-priority').textContent=card.priority;$('mission-objectives').innerHTML=missionGoalsMarkup({...card,rows:card.rows.map(row=>({...row,text:compactObjective(row),fullText:row.text}))});$('mission-card').title=card.name+' · '+card.phase;
+ const card=missionCardState(s,mission,targets);$('mission-card').dataset.operation=mission.spec.objective;$('mission-card-name').textContent=card.name;$('mission-time').textContent=card.elapsed;$('mission-time').title='Eltelt küldetésidő';$('mission-card-phase').textContent=card.phase;
+ $('mission-priority').hidden=true;$('mission-priority').textContent=card.priority;$('mission-objectives').innerHTML=missionGoalsMarkup({...card,rows:(mission.spec.objective==='iron-veil'?ironVeilVisibleRows(mission,card.rows):card.rows).map(row=>({...row,text:compactObjective(row),fullText:row.text}))});$('mission-card').title=card.name+' · '+card.phase;
  const guideSteps=phaseGuide(s,mission,aim,weapons,targets);
  fitPhaseGuide(guideSteps);
  const engine=engineInstruments(s),gauge=$('g-load');
@@ -60,7 +63,7 @@ export function updateHUD(s,targets,weapons,aim,mission,muted){
  const contacts=radarContacts(s,targets),selected=contacts.find(x=>x.target.id===aim.id);$('target-data').textContent=jammed?'JELZAVARÁS · NAVIGÁCIÓ NEM ELÉRHETŐ':s.training?'LESZÁLLÁSI GYAKORLAT · BASE':selected?.visible?`${selected.target.name.toUpperCase()} · ${(selected.distance/1000).toFixed(1)} KM · ${aim.locked?'BEFOGVA':lock.state==='acquiring'?'BEFOGÁS':'KIJELÖLVE'}`:mission.spec.objective==='escort'&&mission.objectiveComplete?'CIVIL TÁVOZOTT · RTB':mission.civilIntercepted?'CIVIL VISSZAFORDUL · TŰZTILALOM':mission.destroyed?'CÉL MEGSEMMISÍTVE · RTB':`${contacts.filter(c=>c.visible&&c.selectable).length} CÉL · ${contacts.filter(c=>c.visible&&c.target.team==='ally'&&!c.target.home&&!c.target.city).length} SZÖVETSÉGES · TAB: VÁLTÁS`;
  $('target-data').dataset.lock=jammed||!selected?.visible?'idle':aim.locked?'locked':lock.state==='acquiring'?'acquiring':'idle';
  $('target-data').title=$('target-data').textContent;if(!selected?.visible)$('target-data').textContent=jammed?'JELZAVARÁS':s.training?'BASE / N':`${contacts.filter(c=>c.visible&&c.selectable).length} CÉL · ${contacts.filter(c=>c.visible&&c.target.team==='ally'&&!c.target.home&&!c.target.city).length} BARÁT`;
- const map=renderTacticalMap($('radar'),s,targets,aim);$('map-range').textContent=jammed?'NINCS JEL':`${map.halfExtent*2/1000} KM`;
+ const map=renderTacticalMap($('radar'),s,targets,aim);$('map-range').textContent=jammed?'NINCS JEL':`${map.halfExtent*2/1000} KM · ${map.zoomFactor}×`;
  const approach=s.approach,landing=!!approach?.active&&!s.onGround&&!s.crashed&&!jammed;
  const wasLanding=document.body.classList.contains('approaching');document.body.classList.toggle('approaching',landing);if(landing!==wasLanding)$('weapon-bay').open=!landing;
  $('landing-guidance').hidden=!landing;

@@ -1,3 +1,4 @@
+import {damagedVertex,modelFacePresent} from './modelDamage.js';
 import {Vec3,Quat,clamp} from './math.js';
 import {aircraftMesh} from './airframes.js';
 export function faceDamagePart(mesh,index){
@@ -24,16 +25,16 @@ export function aircraftHit(s,from,to,{radius=.35,moving=true}={}){
  const a=inverse.rotate(from.clone().sub(moving?(s.previousPosition||s.position):s.position)),b=inverse.rotate(to.clone().sub(s.position)),direction=b.clone().sub(a),length2=direction.dot(direction);
  const mid=a.clone().add(direction.clone().scale(clamp(-a.dot(direction)/Math.max(1e-12,length2),0,1)));if(mid.length()>mesh.radius+radius)return null;
  let best=null;
- for(let i=0;i<mesh.faces.length;i++){const face=mesh.faces[i];for(let k=1;k<face.length-1;k++){
-  const v0=mesh.points[face[0]],v1=mesh.points[face[k]],v2=mesh.points[face[k+1]],hit=rayTriangle(a,direction,v0,v1,v2);
+ for(let i=0;i<mesh.faces.length;i++){const face=mesh.faces[i];if(!modelFacePresent(mesh,face,s.condition))continue;for(let k=1;k<face.length-1;k++){
+  const v0=damagedVertex(mesh,face[0],s.condition),v1=damagedVertex(mesh,face[k],s.condition),v2=damagedVertex(mesh,face[k+1],s.condition),hit=rayTriangle(a,direction,v0,v1,v2);
   let fraction=hit,point;
   if(hit!==null)point=a.clone().add(direction.clone().scale(hit));
   else if(radius>0){const centre=v0.clone().add(v1).add(v2).scale(1/3);let t=clamp(centre.clone().sub(a).dot(direction)/Math.max(1e-12,length2),0,1);for(let pass=0;pass<3;pass++){point=closestTriangle(a.clone().add(direction.clone().scale(t)),v0,v1,v2);t=clamp(point.clone().sub(a).dot(direction)/Math.max(1e-12,length2),0,1);}if(point.distance(a.clone().add(direction.clone().scale(t)))<=radius)fraction=t;}
-  if(fraction!==null&&(!best||fraction<best.fraction))best={fraction,localPoint:point,part:faceDamagePart(mesh,i),point:s.orientation.rotate(point).add(s.position)};
+  if(fraction!==null&&(!best||fraction<best.fraction))best={fraction,localPoint:point,part:faceDamagePart(mesh,i),engineIndex:mesh.faceEngines?.[i]??null,point:s.orientation.rotate(point).add(s.position)};
  }}return best;
 }
 export function closestAircraftSurface(s,position){
  const mesh=aircraftMesh(s.spec.id,0,s.flapPosition??(s.flaps?1:0)),inverse=new Quat(-s.orientation.x,-s.orientation.y,-s.orientation.z,s.orientation.w),p=inverse.rotate(position.clone().sub(s.position));let best=null;
- for(let i=0;i<mesh.faces.length;i++){const ids=mesh.faces[i];for(let k=1;k<ids.length-1;k++){const point=closestTriangle(p,mesh.points[ids[0]],mesh.points[ids[k]],mesh.points[ids[k+1]]),distance=p.distance(point);if(!best||distance<best.distance)best={distance,part:faceDamagePart(mesh,i),localPoint:point,point:s.orientation.rotate(point).add(s.position)};}}
+ for(let i=0;i<mesh.faces.length;i++){const ids=mesh.faces[i];if(!modelFacePresent(mesh,ids,s.condition))continue;for(let k=1;k<ids.length-1;k++){const point=closestTriangle(p,damagedVertex(mesh,ids[0],s.condition),damagedVertex(mesh,ids[k],s.condition),damagedVertex(mesh,ids[k+1],s.condition)),distance=p.distance(point);if(!best||distance<best.distance)best={distance,part:faceDamagePart(mesh,i),engineIndex:mesh.faceEngines?.[i]??null,localPoint:point,point:s.orientation.rotate(point).add(s.position)};}}
  return best;
 }

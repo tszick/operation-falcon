@@ -1,5 +1,7 @@
+import {updateIronVeil} from './ironVeil.js';
 import {launchBallistic} from './ballisticFlight.js';
 export function updateMissionRuntime(s,m,targets,w){
+ if(m.spec.objective==='iron-veil')updateIronVeil(s,m,targets,w);
  if(m.spec.objective==='defend-city'){
   const pending=targets.filter(t=>t.pending),first=targets.filter(t=>t.wave===1),ready=s.elapsed>=240||first.length&&first.every(t=>!t.alive&&!t.falling);
   if(pending.length&&ready){for(const t of pending){t.pending=false;t.alive=true;}m.wave=2;w.emit?.({type:'mission-wave',wave:2,time:s.elapsed});}else m.wave=pending.length?1:2;

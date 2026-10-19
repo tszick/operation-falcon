@@ -1,10 +1,9 @@
+import {terrainSightCeiling} from './terrainSight.js';
 import {Vec3,clamp} from './math.js';
 import {terrainWorld,terrainHeight,pathCoordinates,pathPoint} from './terrain.js';
 export function terrainFeatureVisible(camera,point){
  const dx=point.x-camera.x,dy=point.y-camera.y,dz=point.z-camera.z,steps=Math.min(80,Math.ceil(Math.hypot(dx,dz)/100));
- // landscape waves cannot exceed 180 + 240*(1+.4+.16); other features
- // blend with that surface or lower it. Above this bound no ray sample can hit.
- const ceiling=Math.max(555,...terrainWorld.peaks.map(p=>p.height),terrainWorld.site?.height||0,(terrainWorld.river?.level||0)+8);
+ const ceiling=terrainSightCeiling(camera,point);
  if(Math.min(camera.y,point.y)+1.5>=ceiling)return true;
  for(let i=1;i<steps;i++){const t=i/steps,y=camera.y+dy*t;if(y+1.5>=ceiling)continue;if(terrainHeight(camera.x+dx*t,camera.z+dz*t)>y+1.5)return false;}
  return true;
@@ -29,9 +28,10 @@ export function projectFeaturePolygon(r,points,localCache=null){
  return clipped.map(p=>({x:r.w*.5+p.x*r.focal/p.z,y:r.h*.53-p.y*r.focal/p.z,depth:p.z}));
 }
 function fill(c,screen,color){c.fillStyle=color;c.beginPath();screen.forEach((p,i)=>i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y));c.closePath();c.fill();}
+export const terrainFeatureAlpha=(kind,depth)=>clamp(((kind==='river'?36000:10500)-depth)/(kind==='river'?12000:3500),0,1);
 export function renderTerrainFeatures(r){
  const c=r.ctx,patches=[];
- if(r.terrainFeatureCache?.revision!==terrainWorld.revision||r.terrainFeatureCache.tiles.size>4000)r.terrainFeatureCache={revision:terrainWorld.revision,tiles:new Map()};
+ if(r.terrainFeatureCache?.revision!==terrainWorld.revision||r.terrainFeatureCache.tiles.size>4000)r.terrainFeatureCache={revision:terrainWorld.revision,tiles:new Map(),details:new WeakMap()};
  const tiles=r.terrainFeatureCache.tiles,high=r.camera.y-terrainHeight(r.camera.x,r.camera.z)>4000;
  for(const kind of ['river','road']){const path=terrainWorld[kind];if(!path)continue;const center=pathCoordinates(path,r.camera.x,r.camera.z).along,step=kind==='river'?(high?200:100):(high?90:30),extent=kind==='river'?36000:10000;
   for(let t=Math.floor((center-extent)/step)*step;t<center+extent;t+=step){
@@ -44,21 +44,25 @@ export function renderTerrainFeatures(r){
    const pts=tiles.get(key);if(!pts)continue;
    const screen=projectFeaturePolygon(r,pts);if(screen.length<3)continue;
    if(screen.every(p=>p.x<0)||screen.every(p=>p.x>r.w)||screen.every(p=>p.y<0)||screen.every(p=>p.y>r.h))continue;
+   const depth=screen.reduce((v,p)=>v+p.depth,0)/screen.length;if(!terrainFeatureAlpha(kind,depth))continue;
    const midpoint=pts.reduce((p,v)=>p.add(v),new Vec3()).scale(.25);if(!terrainFeatureVisible(r.camera,midpoint))continue;
-   patches.push({screen,pts,kind,path,t,step,depth:screen.reduce((v,p)=>v+p.depth,0)/screen.length});
+   patches.push({screen,pts,kind,path,t,step,depth});
   }
  }
  patches.sort((a,b)=>b.depth-a.depth);for(const {screen,pts,kind,path,t,step,depth}of patches){
+  // Terrain features are static within a mission. Reuse their fitted geometry,
+  // including shoulders and markings, instead of resampling the landscape per frame.
+  const cache=r.terrainFeatureCache.details;let detail=cache.get(pts);if(!detail){detail={};cache.set(pts,detail);}
   if(kind==='river'){
-   c.save();c.globalAlpha=clamp((36000-depth)/12000,0,1);fill(c,screen,'#20505b');
+   c.save();c.globalAlpha=terrainFeatureAlpha('river',depth);fill(c,screen,'#20505b');
    // Subtle wet bank bands give the filled water a shore, not a neon outline.
-   const shore=riverSection(path,t,step,path.width+18);for(const ids of [[0,3],[1,2]]){const [a,b]=ids,bank=[pts[a],pts[b],shore[b].clone(),shore[a].clone()];for(let i=2;i<4;i++)bank[i].y=terrainHeight(bank[i].x,bank[i].z)+.3;const polygon=projectFeaturePolygon(r,bank);if(polygon.length>=3)fill(c,polygon,'#394b40');}
+   if(!detail.banks){const shore=riverSection(path,t,step,path.width+18);detail.banks=[[0,3],[1,2]].map(([a,b])=>{const bank=[pts[a],pts[b],shore[b].clone(),shore[a].clone()];for(let i=2;i<4;i++)bank[i].y=terrainHeight(bank[i].x,bank[i].z)+.3;return bank;});}for(const bank of detail.banks){const polygon=projectFeaturePolygon(r,bank);if(polygon.length>=3)fill(c,polygon,'#394b40');}
    if(depth<9000){c.strokeStyle='#78aaa76b';c.lineWidth=.5;c.beginPath();for(const [a,b]of [[0,3],[1,2]])r.line(pts[a],pts[b]);c.stroke();}c.restore();continue;
   }
   // A surfaced ribbon with shoulders, not two constant-brightness horizon lines.
-  c.save();c.globalAlpha=clamp((10500-depth)/3500,0,1);fill(c,screen,'#565346');const asphalt=projectFeaturePolygon(r,roadSection(path,t,step,path.width));if(asphalt.length>=3)fill(c,asphalt,'#151d20');
-  if(depth<4000){for(const side of [-1,1]){const edge=roadSection(path,t,step,path.width-.7),a=side<0?edge[0]:edge[1],b=side<0?edge[3]:edge[2];c.strokeStyle='#bdbca0';c.lineWidth=clamp(.2*r.focal/depth,.25,1.2);c.beginPath();r.line(a,b);c.stroke();}}
-  if(depth<2200){for(let mark=t;mark<t+step;mark+=12){const dash=projectFeaturePolygon(r,roadSection(path,mark,3,.18));if(dash.length>=3)fill(c,dash,'#d8d1a7');}}
+  c.save();c.globalAlpha=terrainFeatureAlpha('road',depth);fill(c,screen,'#565346');const asphalt=projectFeaturePolygon(r,detail.asphalt??=roadSection(path,t,step,path.width));if(asphalt.length>=3)fill(c,asphalt,'#151d20');
+  if(depth<4000){for(const side of [-1,1]){const edge=detail.edge??=roadSection(path,t,step,path.width-.7),a=side<0?edge[0]:edge[1],b=side<0?edge[3]:edge[2];c.strokeStyle='#bdbca0';c.lineWidth=clamp(.2*r.focal/depth,.25,1.2);c.beginPath();r.line(a,b);c.stroke();}}
+  if(depth<2200){if(!detail.dashes){detail.dashes=[];for(let mark=t;mark<t+step;mark+=12)detail.dashes.push(roadSection(path,mark,3,.18));}for(const points of detail.dashes){const dash=projectFeaturePolygon(r,points);if(dash.length>=3)fill(c,dash,'#d8d1a7');}}
   c.restore();
  }
 }

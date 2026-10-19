@@ -2,7 +2,13 @@ import {radioLines} from './radioLines.js';
 import {RadioDirector} from './radioDirector.js';
 export class RadioComms {
  constructor(){this.director=new RadioDirector();this.buffers=new Map();this.failed=new Set();this.current=null;this.generation=0;this.enabled=true;this.now=0;}
- attach(ctx){if(this.ctx===ctx)return;this.ctx=ctx;this.output=ctx.createGain();this.output.gain.value=.68;this.output.connect(ctx.destination);this.loading=Promise.allSettled(radioLines.map(async line=>{try{const response=await fetch(line.url);if(!response.ok)throw new Error('Radio clip '+response.status);const buffer=await ctx.decodeAudioData(await response.arrayBuffer());this.buffers.set(line.id,buffer);}catch{this.failed.add(line.id);}}));}
+ attach(ctx){
+  if(this.ctx===ctx)return;this.ctx=ctx;this.output=ctx.createGain();this.output.gain.value=.68;this.output.connect(ctx.destination);
+  // Bound decoding work at startup; replaying a line only uses cached PCM.
+  const initial=new Set(['clearance','hunt','civil','approach','wingmanReady','callsignToken','wingmanTail']),clips=[...radioLines].sort((a,b)=>Number(initial.has(b.group))-Number(initial.has(a.group)));let index=0;
+  const load=async()=>{while(this.ctx===ctx&&index<clips.length){const line=clips[index++];try{const response=await fetch(line.url);if(!response.ok)throw new Error('Radio clip '+response.status);const buffer=await ctx.decodeAudioData(await response.arrayBuffer());if(this.ctx!==ctx)return;this.buffers.set(line.id,buffer);}catch{if(this.ctx===ctx)this.failed.add(line.id);}await new Promise(resolve=>setTimeout(resolve,0));}};
+  this.loading=Promise.allSettled([load(),load()]);
+ }
  stop(){const current=this.current;this.current=null;if(current){current.source.onended=null;try{current.source.stop();}catch{}current.source.disconnect();}}
  reset(){this.stop();this.generation++;this.director.reset();}
  startMission(s,mission,targets){this.reset();this.now=s.elapsed||0;this.director.start(s,mission,targets);}

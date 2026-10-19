@@ -9,10 +9,10 @@ export function numberWords(n){
  if(n<1000000)return [...numberWords(Math.floor(n/1000)),'thousand',...(n%1000?numberWords(n%1000):[])];
  return String(n).split('').map(d=>small[Number(d)]);
 }
-export function wingmanLine(group,number,unitId){
- const base=radioLines.find(line=>line.group===group),words=numberWords(number),callSign='Falcon '+words.map(word=>word[0].toUpperCase()+word.slice(1)).join(' ');
- if(number===2)return {...base,callSign,unitId};
+export function wingmanLine(group,number,unitId,flight='Falcon'){
+ const base=radioLines.find(line=>line.group===group),words=numberWords(number),callSign=flight+' '+words.map(word=>word[0].toUpperCase()+word.slice(1)).join(' ');
+ if(number===2&&flight==='Falcon')return {...base,callSign,unitId};
  const suffix={wingmanReady:'ready',wingmanAttack:'attack',wingmanDown:'down'}[group];
- const clips=['call-falcon',...words.map(word=>'call-'+word),'wingman-tail-'+suffix];
- return {...base,id:base.id+'@'+number,callSign,unitId,text:callSign+'. '+tokens.get('wingman-tail-'+suffix).text,clips,duration:clips.reduce((sum,id)=>sum+tokens.get(id).duration,0)+.06*(clips.length-1)};
+ const clips=['call-'+flight.toLowerCase(),...words.map(word=>'call-'+word),'wingman-tail-'+suffix];
+ return {...base,id:base.id+'@'+flight+'-'+number,callSign,unitId,text:callSign+'. '+tokens.get('wingman-tail-'+suffix).text,clips,duration:clips.reduce((sum,id)=>sum+tokens.get(id).duration,0)+.06*(clips.length-1)};
 }

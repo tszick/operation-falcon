@@ -1,3 +1,4 @@
+import {ironVeilGuide} from './ironVeil.js';
 import {advisedTarget} from './targetAdvice.js';
 import {firingStatus} from './firingStatus.js';
 import {attitude,DEG} from './math.js';
@@ -14,7 +15,8 @@ export function phaseGuide(s,mission,aim,weapons,targets){
   const choices=(airTarget?['aam','gun']:['agm','bomb','gun']).filter(type=>weaponAvailable(s,type));
   const suggested=choices.includes(weapons.selected)?weapons.selected:choices[0];
   const weaponStep=()=>step(suggested?weaponKeys[suggested]:'—',suggested?weaponLabel(s,suggested):'Nincs megfelelő lőszer: térj haza',weapons.selected===suggested);
-  if(navigationJammed(s,targets))return [step('V','Szemmel keresd az antennás zavarókocsit'),step('1 / 4','Ágyú vagy bomba: kézzel célozz'),step('A / D','Vagy repülj ki a zavarási körből'),step('T','Odakint újra befoghatod a zavarót')].map((item,i)=>({...item,active:i===0}));
+  if(navigationJammed(s,targets))return [step('EGÉR','Szemmel keresd az antennás zavarókocsit'),step('1 / 4','Ágyú vagy bomba: kézzel célozz'),step('A / D','Vagy repülj ki a zavarási körből'),step('T','Odakint újra befoghatod a zavarót')].map((item,i)=>({...item,active:i===0}));
+  if(mission.spec.objective==='iron-veil'&&mission.phaseId?.startsWith('iron-'))return ironVeilGuide(mission,s,targets);
   targets=sensorTargets(s,targets);
   const target=preferred;
   const bearing=target?(Math.atan2(target.position.x-s.position.x,target.position.z-s.position.z)*180/Math.PI+360)%360:0;
@@ -49,7 +51,7 @@ export function phaseGuide(s,mission,aim,weapons,targets){
     case 'jammer-attack':
       steps=[step('A / D',`Zavaró a gép elé: ${course}`),step('T','Befogás a zavarási körön kívül',aim.locked),weaponStep(),step('SZÓKÖZ','Zavaró kiiktatása, utána a fő cél')];break;
     case 'escort-cover':
-      steps=[step('V','Kék jel: a védendő szállító'),step('T','Válassz egy közeledő támadót'),weaponStep(),step('—','Kísérd ki a szállítót; utána leszállás')];break;
+      steps=[step('EGÉR','Kék jel: a védendő szállító'),step('T','Válassz egy közeledő támadót'),weaponStep(),step('—','Kísérd ki a szállítót; utána leszállás')];break;
     case 'intercept':case 'target-approach':
       steps=[step('A / D',`Fordulj a cél felé: ${course}`,Math.abs(headingError)<8),step('W / S',target?`Célmagasság: ${Math.round(target.position.y)} m`:'Kövesd a cél jelzését',Math.abs(elevation)<8),step('T','Egyszer: célbefogás',aim.locked),weaponStep()];break;
     case 'air-combat':case 'ground-attack':

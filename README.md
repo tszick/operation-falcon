@@ -172,6 +172,14 @@ Próbalap: `/tests/damage-preview.html` — ép, enyhe, közepes, súlyos és v�
 
 Fizikai alapok: [NASA felhajtóerő-egyenlet](https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/lift-equation/), [NASA felhajtóerő és légellenállás](https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/lift-to-drag-ratio/), [NTSB – aszimmetrikus tolóerő és irányíthatóság](https://www.ntsb.gov/Advocacy/safety-alerts/Pages/SA-081.aspx). Ezek az összefüggéseket támasztják alá; a játék sérülési százalékai és hiba-küszöbei saját hangolási értékek.
 
+### Egyedi hajtóműsérülés és szárnyhoz tartozó alkatrészek
+
+A motorok külön integritást kapnak: a találat a ténylegesen eltalált hajtóművet károsítja. A rendelkezésre álló tolóerő az egyes motorok teljesítményének összege; egy egészséges ikerhajtóműves gépnél egy teljes kiesés felezi, a B–52-nél nyolcadával csökkenti a teljes tolóerőt. Az aszimmetrikus nyomaték a motor oldalából és a törzstől mért távolságából adódik. A sérült AI oldalkormánnyal is ellenkormányoz. Az összesített sérülés mellett a gépállapot-rajz és a napló hajtóművenkénti állapotot is őriz; a kiesés kis összsérülés mellett is figyelmeztetést ad.
+
+A szárnyra szerelt gondola, légcsavar, fegyvertartó és szárnyvégi sín a saját szárnyával deformálódik és tűnik el. A törzsre szerelt motor megmarad. A CPU- és WebGL2-rajzoló, valamint a találatvizsgálat ugyanazt a leválási állapotot követi. A tönkrement motor füstje a motor helyéről indul. Kritikus károsodásnál erősebb a fizikai billegés és a pilótanézet szögirányú remegése; a csökkentett mozgás beállítás a kameraremegést kikapcsolja.
+
+Összehasonlító képi próba: `/tests/engine-damage-preview.html` (B–52, Tu–95, A–10; WebGL2/CPU váltás). Ezek továbbra is játékmeneti közelítések, nem hitelesített sérüléstűrési adatok.
+
 ## Távolabbi terep és irányjelzős radar
 
 A procedurális terepnek nincs merev fizikai széle. A korábbi kb. 10 km-es részletes rajztávon kívül további, ritkább rács rajzolódik kb. 48 km-ig. A közeli, részletes terep megmaradt. A radar alapképe 60 km széles, nagy távolságnál automatikusan tágul, ezért a saját gép és a BASE nem fut le róla. Leszállási módban 20 km-es alapképre közelít, mutatja a pálya meghosszabbított tengelyét és 000°/180° irányait; a radar ekkor is látható a leszállási műszerek mellett.
@@ -404,3 +412,110 @@ Sikeres, pályán történt földetérés után, kiengedett futóművel, a kifut
 ### Több baráti pilóta rádióhívójele
 
 A baráti vadászok stabil, gépenkénti hívójele Falcon Two, Falcon Three, Falcon Four stb. A készenléti, támadás alatti és zuhanási jelzés külön géphez és külön ismétlési korláthoz kötött. Egy gép elvesztése csak a saját elavult üzeneteit törli. A bemondott hívójel és a bal oldali felirat azonos; a további számokat helyben előállított angol beszédrészletekből állítja össze a játék. A játékos Falcon One marad.
+
+### Légifölény · Top-gun
+
+A 7. Story #1 küldetés saját oldalon 3×4, az ellenségnél 4×4 géppel indul a levegőből. A játékos a saját 12 gép egyike, véletlen rajban. Minden raj három vadász és egy bombázó; a csapásmérő/közvetlen támogató játékosgép a bombázóhelyet tölti be. A saját raj Falcon (a játékos mindig One), a két másik Ironfist és Viper, külön One–Four számozással. A bombázó rajtagok is rádióznak. Mindkét oldalnak egy reptere és egy külön védő rakétarendszere van. Kötelező a 16 ellenséges repülő és az ellenséges reptér megsemmisítése, a saját bázis megóvása és a hazatérés/leszállás; opcionális az ellenséges SAM kiiktatása. A rajok 30 km-nél nagyobb kezdeti ellenségtávolságot kapnak, a szokásos radar- és fegyverhatótávokkal. A saját oldali AI-találatok is teljesítik a célokat.
+
+Indulási rádiófegyelem: a névvel és One–Four számozással rendelkező rajokból csak a One jelent készenlétet, rajonként egyszer. A játékos Falcon One, ezért a saját rajából nem hangzik el külön AI-készenléti jelentés. Az Ironfist One és Viper One jelentkezése időben eltolva szól. A raj nélküli régebbi kísérőgépek közül egy képviselő jelentkezik. A találati, támadás alatti és zuhanási bemondás továbbra is minden gépnél külön működik.
+
+A Légifölény negyedik ellenséges raja Spectre One–Four: három vadász és egy bombázó, már induláskor aktív. A három eredeti ellenséges és a három saját raj kezdőhelye, felszerelése és harci paraméterei változatlanok.
+
+
+### GPU model rendering and launch auditing
+
+Opaque aircraft, buildings and vehicles now use a WebGL 2 depth buffer for transforms and hidden-edge removal, composited beneath the existing Canvas HUD. The opaque shaded terrain and its vector grid also render with WebGL 2, using cached mission/camera-grid buffers and depth testing instead of per-frame CPU projection and face sorting. Terrain still writes the model depth mask, while target markers remain HUD overlays. The road/river overlay and weapon effects remain on Canvas. Geometry is uploaded once per mesh; obsolete flap/sweep variants are reclaimed. WebGL unavailability or context loss falls back to the CPU renderer. Road shoulders, markings and river banks reuse mission-scoped geometry, invalidated when the terrain changes.
+
+`tests/fleet-performance.html?combat=1` measures a dense, deterministic 27-AI-aircraft battle with live projectiles; `&backend=cpu` compares the fallback renderer. In the local 1280×720 run, mean frame processing was about 26 ms with WebGL 2 and 71 ms with the CPU fallback (both include the terrain-feature cache). These are browser CPU submission timings, not guaranteed end-to-end FPS or GPU timings.
+
+AI missile launches now repeat the shared live launch check immediately before firing, beyond the cached envelope used while acquiring a lock. Their combat events record `distanceM`, `radarRangeM`, `launchRangeM` and `nominalRangeM`. The current western superiority roster uses F-15/AIM-7M versus eastern Su-27/R-73: this gives the western side a loadout advantage, without extra team-dependent range. An F-16 player normally carries the shorter-range AIM-9M. No loadout rebalance is included in this performance change.
+
+
+Terrain-only comparison: add `&terrain=cpu` to the fleet fixture to retain GPU models but use the prior Canvas terrain. At 1280×720, the local near-combat measurement reported about 6.3 ms of CPU terrain work with Canvas versus 0.16 ms with WebGL 2; these submission timings exclude GPU completion. Terrain heights, collision, slope shading, grid extent and near/far projection stay the same. Context restoration rebuilds the terrain buffers, and unavailable terrain shaders fall back to Canvas independently of the models.
+
+
+### Distant mountain horizon
+
+`assets/environment/horizon-mountains.png` is a generated transparent-sky panorama; its exact generation prompt is preserved in the adjacent JSON file. A cached WebGL fullscreen sky pass maps the image by world bearing and elevation, including head look, pitch, roll and altitude depression. Mirrored sampling closes the circular panorama without a hard texture join. It replaces the old flat ground-horizon band when ready, sits above the star background and below all terrain/models/HUD, and has no collision or mission role. The scene keeps the previous flat horizon while loading or if WebGL is unavailable. `tests/horizon-preview.html` provides heading, seam, bank and high-altitude views.
+
+
+### Reticle-first target cycling
+
+T/Tab starts with the selectable radar contact nearest the fixed forward gunsight. Contacts inside a 1.5-degree reticle region are ordered by range; outside that region angular proximity wins. Further presses exhaust that contact's squad by current distance, then other airborne squads (the nearest remaining member determines the next squad), then ground contacts by distance. A complete traversal restarts at the reticle. Destroyed/out-of-radar contacts are skipped and newly available contacts join the live traversal. Pointing the nose more than four degrees away onto a clearly different reticle contact starts a fresh traversal. This follows the aircraft gunsight, not the moving gun-lead pipper or mouse head look; radar range/cone, jamming, civil intercept eligibility, friendly exclusion and acquisition time remain unchanged. A first ground selection remains possible by aiming at that ground target.
+
+
+### Smoke-heavy battle and wreck-view performance
+
+The reconstructed flight-log cases at 84 and 90 seconds exposed three sources of wasted work: offscreen smoke/effect terrain rays, completely faded road patches still undergoing visibility checks, and a global maximum-height bound that let a distant 2171 m peak force ray marching for unrelated sight lines. View-frustum rejection now precedes world-effect occlusion, zero-alpha feature patches are skipped before visibility work, and each terrain sight ray uses a conservative local peak bound (including the road fitting margin and training-canyon wall bound). No physics tick, hit detection, combat decision or visible smoke budget is reduced.
+
+`tests/log-stutter-performance.html` uses game-only snapshots in `tests/fixtures/stutter-scenes.json`; smoke/explosion details are reconstructed, not exact replay. `&legacy=1` restores the earlier offscreen effect-ray path only, not the old terrain bounds. Historical before/after CPU submission measurements are in `tests/fixtures/stutter-results.json`: approximately 74→7 ms for the cockpit scene and 111→10 ms for external wreck view. These are rendering measurements, not the original session's FPS.
+
+Current mission logs now record a `performance` summary every five wall-clock seconds and flush partial windows on pause/end: actual frame interval/FPS, p95/max interval, long-frame count, CPU/simulation/render/UI times, renderer backends, viewport, nearby ally, aircraft/falling/smoke/projectile/effect counts. The summary has no on-screen UI and resets with the mission. Unit snapshots also retain kind, home/civil status, radius and falling state for better reconstruction.
+
+
+### Startup radio and missile-following diagnostics
+
+The 26-second superiority log showed 44 FPS initially, then approximately 12 FPS after six allied AIM-7M launches at 6.008 s. The affected windows averaged 62–65 ms of simulation work per displayed frame versus 12 ms of drawing and 2–3 ms of UI/audio work. These timings implicate combat/weapon simulation; the old log has no radio-start events, so temporal coincidence with speech does not establish an audio cause.
+
+Weapon line-of-sight checks now share the conservative local terrain height bound used by rendering, skip samples guaranteed above the landscape and avoid intermediate vector allocation. Their original 6–100 sample spacing and two-metre clearance are unchanged. Autonomous IR missiles no longer calculate unused launcher radar support. An explicit benchmark, `node tests/startup-simulation-bench.mjs <flight-log.json>`, reconstructs the early simulation without graphics/audio; its results are diagnostics, not exact input replay or an FPS guarantee. In one same-process run, 2400 actual launch sight-ray checks fell from 332 ms to 0.71 ms with identical visibility decisions.
+
+Radio assets load through two bounded workers with initial callouts/callsigns prioritized, instead of decoding every WAV simultaneously. Clips and composed callsigns remain cached. Actual audible line starts are now written as `radio` events in the current flight log, so future stalls can be aligned with speech. Asset requests are same-origin `/assets/radio/` requests; no cloud AI, remote speech synthesis or flight-log upload occurs during gameplay. The static development server listens on loopback, and saved logs stay in local IndexedDB or explicit user downloads.
+
+
+### AI defensive dispensers and damage withdrawal
+
+Both friendly and hostile military aircraft use the same finite flare/chaff supplies and missile seeker/decoy probability model as the player. A targeted approaching missile inside 4.5 km and seven seconds estimated closing time triggers a 0.35-second reaction delay, then IR/imaging threats receive flares and radar-guided threats receive chaff. Dispensers retain their stock through the transition into damaged flight physics; they neither refill nor guarantee survival. Releases are rendered and recorded per aircraft.
+
+At 40% damage, or a disabled weapon system, a controllable AI aircraft stops attacking and attempts to fly to its own airfield, then an outward departure corridor 18 km beyond it. The controller uses the existing damaged flight physics, terrain look-ahead and limited bank, with trim compensation for persistent damage torque. It does not heal, teleport or replenish the aircraft; terminal damage still produces a crash. The protected escort transport retains its designated mission exit route while using dispensers. Civilian aircraft remain on their existing neutral logic.
+
+Only physical arrival at the departure point sets `retired`/`exited`. Withdrawn enemies count as neutralized attackers for defense/superiority objectives without awarding a missile hit or kill, and friendly departures do not trigger a false shot-down radio call. Unit logs retain withdrawal stage/reason/home, dispenser stocks and release events. Missile/gun evasion manoeuvres remain a separate next step.
+
+
+### Bomber defensive-fire audit
+
+The 341-second superiority log contained 35 allied, 27 hostile and two player missile launches; enemy launches were distributed among multiple allied aircraft. Performance summaries stayed at 58.8–60 FPS. It exposed two separate bomber bugs: the main bombing target also controlled gunfire (so bombers ignored nearby air threats and shot the airfields), and damage-created flight physics had no mission pilot input below the retreat threshold.
+
+Bomber turrets now independently choose an eligible hostile aircraft, including the player, within a limited aft cone and the existing gun ballistic range. The muzzle is located at the tail, and both current and predicted interception directions must be inside its sector; neutral/ground targets are excluded. The Tu-95 uses the modelled GSh-23 profile; B-52 uses a historical armed M61 configuration, not the modern gunless B-52. The 65-degree half-cone and finite ammunition budget are gameplay approximations. References: US Army Worldwide Equipment Guide (Tu-95 armament) and https://www.afgsc.af.mil/News/Article-Display/Article/1188813/the-last-b-52-gunner/ (B-52 gun retirement).
+
+Lightly damaged AI now retains physically controlled mission heading/altitude tracking with the same damaged-force model and trim compensation used by returning aircraft. Severe damage still triggers withdrawal; no repairs, invulnerability or forced trajectory are added. Logs retain independent mission/defensive target IDs, turret type, muzzle position, effective firing range and navigation goal. Eight dedicated tests cover independent air defense, turret sector, projectile damage, simultaneous bomb release, ammunition/failure and continued damaged flight.
+
+
+### Player bomber tail-gunner station
+
+B-52 (classic armed H configuration) and Tu-95 are now selectable under NATO classic and Soviet aircraft. Each has twelve compatible internal bomb positions, no invented forward cannon or air-to-air missile, and a separately configurable aft ammunition stock (0–1800 rounds). The planner, starting aircraft, weapon consumption, servicing and mass calculation share this quantity. As with other guns, complete-round mass is estimated at projectile mass times 2.2.
+
+V now switches cockpit/tail-gunner station only on these types; normal aircraft no longer have a player-selected external chase view. The automatic crash camera remains. Mouse motion aims the tail gun within its limited sector and retains its aim when stationary; Space fires only the aft gun from its own stock, regardless of the forward selected weapon. V restores the pilot view and its existing mouse-look behavior. The rear view has a dedicated reticle, ammunition/status and compact IAS/AGL information. Ground, training, fatal/weapon-system failure, empty stock and out-of-sector aim inhibit fire.
+
+The B-52 fuel capacity was corrected from an inflated 180000 kg to 141610 kg, matching the USAF fact sheet: https://www.af.mil/About-Us/Fact-Sheets/Display/Article/104465/b-52-stratofortress/b-52h-stratofortress/ . Its ordinary departure default is 90% (adjustable); both heavy aircraft retain their own engine count, thrust, wing area, G limit and slow control rates. The 60 km/60-degree radar setting is an explicit gameplay detection approximation, not a certified radar specification. Full-load runway takeoff and damaged AI return were tested with the ordinary physics.
+
+
+### Vasfátyol / Operation Iron Veil (Top-gun, story 8)
+
+A runway-start, staged combined-arms mission. Destroy two SAM sites and stop reinforcement before its bridge crossing (bridge OR convoy). Clearance arms a mandatory subsequent full-stop service gate; earlier services do not satisfy it. Only then do Nomad One and two Viper fighters activate. Two interceptors launch farther along the transport route. Once the transport exits, two flanking bombers counterattack the player's base; two escort fighters join unless the optional command bunker was destroyed before activation. Further services preserve time, units, ammunition and stage progress. Final victory requires the surviving base, transport exit, neutralized bomber raid, resolved incoming base-targeted weapons, and a final safe landing/full stop.
+
+Five optional goals: jammer, route flak, command bunker, convoy, and both Viper pilots surviving. Stage-specific cockpit objectives and help keep the full checklist from overflowing; the wiki and briefing explain tactical effects. Operation transitions/waves and pending/cancelled units are recorded. Dormant allied units do not report false losses over radio.
+
+
+### Tactical map zoom and paused Mission Control
+
+0 (including numpad 0) cycles the minimap through 1x, 2x and 4x. Overview retains the existing automatic bounds around the base and detected contacts; magnified levels center on the player. Zoom persists through servicing and resets on a new mission. Terrain contours use a bounded cache of padded, quantized map tiles so moving the player-centered map does not resample terrain every frame.
+
+O or clicking the radar opens a paused Mission Control chart with the full primary/optional objective checklist and current contact labels/list. Sensor range/cone, jamming and landing route rules are identical to the minimap; opening the chart never reveals hidden units. Zoom inside this view is independent of the cockpit setting. O/Esc closes it, resuming only if the chart itself paused the game; opening from the pause menu returns to that menu. Resize redraws the frozen chart. Map-open/close and cockpit zoom changes are recorded.
+
+
+### Iron Veil diagnostic playtests and pacing refinements
+
+`scripts/mission-playtest.mjs --mode strike|escort|counter --seed 17 --seconds 500 --out <folder>` runs a simple scripted pilot using ordinary 120 Hz flight physics, finite weapons, real launch checks, countermeasures and combat AI, writing standard recorder logs plus summaries. Escort/counter modes explicitly initialize checkpoints; these are isolated diagnostic runs, not claimed human playthroughs or difficulty benchmarks. No production autopilot or invulnerability is added. The pilot is deliberately limited and its defeats alone do not justify reducing enemy capability.
+
+The initial escort probe lost Nomad at 374.8 seconds: flak and the optional bridge convoy could repeatedly hit its straight route. The revised corridor skirts the flak envelope at 6.2 km lateral separation and runs outside the convoy, keeping these optional targets useful without making their destruction an implicit requirement. The damaged escort now uses the same physical damage/torque compensation as other AI pilots, while preserving its fixed route altitude and exit; damage and fuel are not restored. The same seeded escort probe subsequently exited at 472.8 seconds with about 53.6% damage and entered the counterstrike phase, without requiring the optional flak/convoy kills. This is one diagnostic case, not a survival guarantee.
+
+Viper elements now receive separate interceptor assignments and new bomber-intercept orders after the transport exits. Assigned fighters may navigate to distant objectives with a limited cruise turn rate; unassigned off-radar targets do not trigger distant steering, and all launch/radar limits remain. The designated home SAM prioritizes detected bombers attacking its protected base instead of exhausting its stock on nearer escort fighters. Withdrawal remains higher priority than new orders. Dedicated tests cover both factions, navigation/weapon-range separation, split tasks and long damaged C-130/Il-76 route flights.
+
+
+### Second-stage escort follow-up
+
+Four checkpoint probes compared F-16 seeds 29 and 71, MiG-29 seed 29, and F-16 seed 29 with the optional flak already destroyed. Three transports exited (about 465-480 seconds); the uncleared F-16 seed 29 lost Nomad under combined cannon/flak damage. These simple scripted-pilot cases demonstrate the optional target's tactical value, not a human success-rate estimate. Two repeated F-16 probes retained the same win/loss outcomes after the following changes.
+
+Both sides' AI now preserve the latter half of their finite missile load for an engagement inside the smaller of 8 km and 65% of the current effective envelope. Opening shots remain possible near the outer permitted envelope. This is a tactical conservation decision, not a range/profile change; all fresh launch checks still apply. In the repeated escort logs, several final Viper launches moved from 11-20 km to 2-8 km. Cached-envelope prechecks avoid repeatedly calculating a fresh trajectory at physics frequency while ammunition is deliberately held. Unit logs include initial stock and the current hold decision.
+
+Escort Mission Control help distinguishes joining and matching Nomad's pace from the active interceptor wave. Current bearing/distance is shown only for a radar-visible Nomad; the player keeps free target selection. 440 automated tests passed after these refinements.

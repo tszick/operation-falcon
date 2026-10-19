@@ -1,15 +1,16 @@
 import {clamp} from './math.js';
 import {damageResponse} from './damage.js';
-import {weaponProfile} from './weaponDynamics.js';
+import {weaponProfile,weaponProfiles} from './weaponDynamics.js';
 
 export function atmosphere(h){const t=288.15-.0065*clamp(h,0,11000);return {density:1.225*Math.exp(-Math.max(0,h)/8500),soundSpeed:Math.sqrt(1.4*287.05*t)};}
 // Gun profiles describe the projectile. The 2.2 factor is an approximate
 // complete-round allowance (projectile, case and propellant), not extra gun mass.
-export function ammoMass(spec,type,count){const profile=count>0?weaponProfile(spec,type):null;return profile?count*profile.mass*(type==='gun'?2.2:1):0;}
+export function ammoMass(spec,type,count){const profile=count>0?(type==='tailGun'?weaponProfiles[spec.defensiveGun?.profile]:weaponProfile(spec,type)):null;return profile?count*profile.mass*(['gun','tailGun'].includes(type)?2.2:1):0;}
 export function massBreakdown(s){
  const gunAmmoKg=ammoMass(s.spec,'gun',s.ammo.gun||0),missilesKg=ammoMass(s.spec,'aam',s.ammo.aam||0)+ammoMass(s.spec,'agm',s.ammo.agm||0),bombsKg=ammoMass(s.spec,'bomb',s.ammo.bomb||0);
+ const tailGunAmmoKg=ammoMass(s.spec,'tailGun',s.ammo.tailGun||0);
  const emptyKg=s.spec.emptyMass,fuelKg=s.fuel,storesKg=missilesKg+bombsKg;
- return {emptyKg,fuelKg,gunAmmoKg,missilesKg,bombsKg,storesKg,totalKg:emptyKg+fuelKg+gunAmmoKg+storesKg};
+ return {emptyKg,fuelKg,gunAmmoKg,tailGunAmmoKg,missilesKg,bombsKg,storesKg,totalKg:emptyKg+fuelKg+gunAmmoKg+tailGunAmmoKg+storesKg};
 }
 export function mass(s){return massBreakdown(s).totalKg;}
 // Reference speeds are indicated airspeeds, using the landing flap configuration.

@@ -366,7 +366,9 @@
     "text": "Zero",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-zero.wav",
+    "duration": 0.412
   },
   {
     "id": "call-one",
@@ -375,7 +377,9 @@
     "text": "One",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-one.wav",
+    "duration": 0.288
   },
   {
     "id": "call-two",
@@ -384,7 +388,9 @@
     "text": "Two",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-two.wav",
+    "duration": 0.265
   },
   {
     "id": "call-three",
@@ -393,7 +399,9 @@
     "text": "Three",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-three.wav",
+    "duration": 0.372
   },
   {
     "id": "call-four",
@@ -402,7 +410,9 @@
     "text": "Four",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-four.wav",
+    "duration": 0.312
   },
   {
     "id": "call-five",
@@ -411,7 +421,9 @@
     "text": "Five",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-five.wav",
+    "duration": 0.346
   },
   {
     "id": "call-six",
@@ -420,7 +432,9 @@
     "text": "Six",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-six.wav",
+    "duration": 0.478
   },
   {
     "id": "call-seven",
@@ -429,7 +443,9 @@
     "text": "Seven",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-seven.wav",
+    "duration": 0.379
   },
   {
     "id": "call-eight",
@@ -438,7 +454,9 @@
     "text": "Eight",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-eight.wav",
+    "duration": 0.216
   },
   {
     "id": "call-nine",
@@ -447,7 +465,9 @@
     "text": "Nine",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-nine.wav",
+    "duration": 0.318
   },
   {
     "id": "call-ten",
@@ -456,7 +476,9 @@
     "text": "Ten",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-ten.wav",
+    "duration": 0.302
   },
   {
     "id": "call-eleven",
@@ -465,7 +487,9 @@
     "text": "Eleven",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-eleven.wav",
+    "duration": 0.39
   },
   {
     "id": "call-twelve",
@@ -474,7 +498,9 @@
     "text": "Twelve",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-twelve.wav",
+    "duration": 0.474
   },
   {
     "id": "call-thirteen",
@@ -483,7 +509,9 @@
     "text": "Thirteen",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-thirteen.wav",
+    "duration": 0.507
   },
   {
     "id": "call-fourteen",
@@ -492,7 +520,9 @@
     "text": "Fourteen",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-fourteen.wav",
+    "duration": 0.545
   },
   {
     "id": "call-fifteen",
@@ -501,7 +531,9 @@
     "text": "Fifteen",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-fifteen.wav",
+    "duration": 0.496
   },
   {
     "id": "call-sixteen",
@@ -510,7 +542,9 @@
     "text": "Sixteen",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-sixteen.wav",
+    "duration": 0.568
   },
   {
     "id": "call-seventeen",
@@ -519,7 +553,9 @@
     "text": "Seventeen",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-seventeen.wav",
+    "duration": 0.614
   },
   {
     "id": "call-eighteen",
@@ -528,7 +564,9 @@
     "text": "Eighteen",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-eighteen.wav",
+    "duration": 0.43
   },
   {
     "id": "call-nineteen",
@@ -537,7 +575,9 @@
     "text": "Nineteen",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-nineteen.wav",
+    "duration": 0.519
   },
   {
     "id": "call-twenty",
@@ -546,7 +586,9 @@
     "text": "Twenty",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-twenty.wav",
+    "duration": 0.386
   },
   {
     "id": "call-thirty",
@@ -555,7 +597,9 @@
     "text": "Thirty",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-thirty.wav",
+    "duration": 0.382
   },
   {
     "id": "call-forty",
@@ -564,7 +608,9 @@
     "text": "Forty",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-forty.wav",
+    "duration": 0.391
   },
   {
     "id": "call-fifty",
@@ -573,7 +619,9 @@
     "text": "Fifty",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-fifty.wav",
+    "duration": 0.356
   },
   {
     "id": "call-sixty",
@@ -582,7 +630,9 @@
     "text": "Sixty",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-sixty.wav",
+    "duration": 0.462
   },
   {
     "id": "call-seventy",
@@ -591,7 +641,9 @@
     "text": "Seventy",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-seventy.wav",
+    "duration": 0.477
   },
   {
     "id": "call-eighty",
@@ -600,7 +652,9 @@
     "text": "Eighty",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-eighty.wav",
+    "duration": 0.289
   },
   {
     "id": "call-ninety",
@@ -609,7 +663,9 @@
     "text": "Ninety",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-ninety.wav",
+    "duration": 0.392
   },
   {
     "id": "call-hundred",
@@ -618,7 +674,9 @@
     "text": "Hundred",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-hundred.wav",
+    "duration": 0.551
   },
   {
     "id": "call-thousand",
@@ -627,7 +685,9 @@
     "text": "Thousand",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-thousand.wav",
+    "duration": 0.499
   },
   {
     "id": "call-falcon",
@@ -636,7 +696,9 @@
     "text": "Falcon",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/call-falcon.wav",
+    "duration": 0.378
   },
   {
     "id": "wingman-tail-ready",
@@ -645,7 +707,9 @@
     "text": "Ready. On your wing.",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/wingman-tail-ready.wav",
+    "duration": 1.366
   },
   {
     "id": "wingman-tail-attack",
@@ -654,13 +718,35 @@
     "text": "Taking fire! I am under attack!",
     "voice": "Microsoft Mark",
     "rate": 1,
-    "joinable": true
+    "joinable": true,
+    "url": "/assets/radio/wingman-tail-attack.wav",
+    "duration": 2.106
   },
   {
     "id": "wingman-tail-down",
     "speaker": "wingman",
     "group": "wingmanTail",
     "text": "Mayday! I am going down!",
+    "voice": "Microsoft Mark",
+    "rate": 1,
+    "joinable": true,
+    "url": "/assets/radio/wingman-tail-down.wav",
+    "duration": 1.685
+  },
+  {
+    "id": "call-ironfist",
+    "speaker": "wingman",
+    "group": "callsignToken",
+    "text": "Ironfist",
+    "voice": "Microsoft Mark",
+    "rate": 1,
+    "joinable": true
+  },
+  {
+    "id": "call-viper",
+    "speaker": "wingman",
+    "group": "callsignToken",
+    "text": "Viper",
     "voice": "Microsoft Mark",
     "rate": 1,
     "joinable": true

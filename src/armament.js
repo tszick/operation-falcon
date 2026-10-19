@@ -4,7 +4,10 @@
 const pair=(type,x,z)=>[{type,x:-x,z},{type,x,z}];
 const preset=(variant,gun,rounds,aam,stations,agm=null,bomb=null)=>({variant,weapons:{...(gun?{gun:{name:gun,quantity:rounds}}:{}),...(aam?{aam:{name:aam,quantity:stations.filter(s=>s.type==='aam').length}}:{}),...(agm?{agm:{name:agm,quantity:stations.filter(s=>s.type==='agm').length}}:{}),...(bomb?{bomb:{name:bomb,quantity:stations.filter(s=>s.type==='bomb').length}}:{})},stations});
 const mixed=(outer,inner,bombX,bombZ=-1)=>[...pair('aam',...outer),...pair('agm',...inner),...pair('bomb',bombX,bombZ)];
+const bombBay=()=>Array.from({length:12},(_,i)=>({type:'bomb',x:i%2?.65:-.65,z:3-Math.floor(i/2)*1.2,internal:true}));
 export const armaments={
+ b52:{...preset('B-52H · klasszikus, farokgépágyús',null,0,null,bombBay(),null,'Mk 82'),tailGun:{name:'M61 · farokgépágyú · 20 mm',quantity:1800}},
+ tu95:{...preset('Tu-95 · farokgépágyús',null,0,null,bombBay(),null,'FAB-250'),tailGun:{name:'GSh-23 · farokgépágyú · 23 mm',quantity:1800}},
  f22:preset('F-22A','M61A2 · 20 mm',480,'AIM-120C AMRAAM',[-.8,0,.8].flatMap(x=>[{type:'aam',x:x-.45,z:.7,internal:true},{type:'aam',x:x+.45,z:-1.5,internal:true}])),
  f35:preset('F-35A','GAU-22/A · 25 mm',180,'AIM-120C AMRAAM',[...pair('aam',.65,1),...pair('aam',.65,-1.7)].map(s=>({...s,internal:true}))),
  su35:preset('Su-35S','GSh-30-1 · 30 mm',150,'R-77-1',[...pair('aam',5,-1.5),...pair('aam',3.9,-.6),...pair('agm',2.8,-1),...pair('bomb',1.1,-2)],'Kh-29L','FAB-250'),

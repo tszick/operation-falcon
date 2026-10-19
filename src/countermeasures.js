@@ -1,3 +1,4 @@
+import {afterburnerActive} from './engineState.js';
 import {Vec3,forward,right,up,clamp,DEG} from './math.js';
 import {terrainHeight} from './terrain.js';
 // Gameplay dispenser loads, not verified equipment for every historical variant.
@@ -26,7 +27,7 @@ export function countermeasureTarget(p,s,dt,random=Math.random){
  const type=decoyKind(p.profile);if(!type||p.seekerLost||!decoys.length)return s;
  const los=s.position.clone().sub(p.position),distance=los.length();if(distance>4500||distance<30)return s;
  if(p.profile.guidance==='active'&&distance>(p.profile.activeRange||15000))return s;
- const unit=los.clone().normalize(),nose=p.velocity.clone().normalize(),ab=s.afterburner&&s.throttle>.8,aircraftSignal=type==='flare'?.6+s.throttle*.9+(ab?2.8:0)+(s.damage>50?.5:0):['f22','f35','su57','j20'].includes(s.spec.id)?.65:1;
+ const unit=los.clone().normalize(),nose=p.velocity.clone().normalize(),ab=afterburnerActive(s),aircraftSignal=type==='flare'?.6+s.throttle*.9+(ab?2.8:0)+(s.damage>50?.5:0):['f22','f35','su57','j20'].includes(s.spec.id)?.65:1;
  for(const d of decoys){
   if(d.type!==type||d.age<.04)continue;
   const decoyLOS=d.position.clone().sub(p.position),range=decoyLOS.length(),direction=decoyLOS.clone().normalize(),angle=Math.acos(clamp(direction.dot(unit),-1,1));

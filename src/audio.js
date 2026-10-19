@@ -1,3 +1,4 @@
+import {afterburnerActive} from './engineState.js';
 import {RadioComms} from './radioComms.js';
 import {CockpitAlerts} from './cockpitAlerts.js';
 import {right,clamp} from './math.js';
@@ -72,7 +73,8 @@ export class AudioSystem {
       this.thump({duration:.22,volume:.22*shotGain,frequency:125,endFrequency:38,pan});
       this.noise({when:time+.045,duration:1.45,volume:.28*shotGain,frequency:4200,endFrequency:350,highpass:120,pan,attack:.025});
     }else if(event.type==='countermeasure-release'){
-      this.noise({duration:.12,volume:.12,frequency:4200,endFrequency:1100,highpass:800,pan});
+      if(event.sourceId&&distance>8000)return;
+      this.noise({duration:.12,volume:.12*(event.sourceId?1/(1+(distance/800)**2):1),frequency:4200,endFrequency:1100,highpass:800,pan});
     }else if(event.type==='bomb-release'){
       this.noise({duration:.09,volume:.12,frequency:2600,endFrequency:700,highpass:500,pan});
       this.thump({duration:.07,volume:.065,frequency:230,endFrequency:95,pan});
@@ -92,7 +94,7 @@ export class AudioSystem {
   update(s,aim,active,mission=null,targets=[]){
     if(mission)this.radio.update(s,mission,targets,{muted:this.muted,active:active||!!((mission.complete||mission.recovered)&&s.onGround&&s.landing?.success)});
     if(!this.ctx)return;
-    const t=this.ctx.currentTime;this.fxOutput?.gain.setTargetAtTime(this.muted||!active?0:.24,t,.025);const ab=s.afterburner&&s.spec.hasAB&&s.throttle>.8&&s.fuel>0;
+    const t=this.ctx.currentTime;this.fxOutput?.gain.setTargetAtTime(this.muted||!active?0:.24,t,.025);const ab=afterburnerActive(s);
     this.gain.gain.setTargetAtTime(this.muted||!active?0:ENGINE_VOLUME,t,.12);
     this.engine.frequency.setTargetAtTime(850+s.throttle*1600+(ab?180:0),t,.3);
     this.engineGain.gain.setTargetAtTime(s.fuel>0&&!s.dying&&!s.crashed?(.015+s.throttle*.035)*(s.enginePower??1):0,t,.3);

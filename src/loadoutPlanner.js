@@ -17,11 +17,12 @@ export function stationOptions(spec,index){
  const preset=armaments[spec.id],s=preset.stations[index];if(!s)return [];
  return types.filter(t=>preset.weapons[t]&&(t===s.type||!s.internal&&s.type!=='aam'&&(t==='aam'||['agm','bomb'].includes(t))));
 }
-export function defaultLoadout(spec){const p=armaments[spec.id];return {gun:!!p.weapons.gun,stations:p.stations.map(s=>s.type)};}
+export function defaultLoadout(spec){const p=armaments[spec.id];return {gun:!!p.weapons.gun,stations:p.stations.map(s=>s.type),...(p.tailGun?{tailGun:p.tailGun.quantity}:{})};}
 export function validateLoadout(spec,choice){
  const preset=armaments[spec.id],limits=loadoutLimits(spec),errors=[];
  if(!choice||!Array.isArray(choice.stations)||choice.stations.length!==limits.stations)return {valid:false,errors:['Hibás függesztési kiosztás.'],payloadKg:0,count:0,limits};
  if(choice.gun&&!preset.weapons.gun)errors.push('Ehhez a változathoz nincs gépágyú.');
+ if(choice.tailGun!==undefined&&(!preset.tailGun||!Number.isInteger(choice.tailGun)||choice.tailGun<0||choice.tailGun>preset.tailGun.quantity))errors.push('Hibás farokgépágyú-lőszer mennyiség.');
  let payloadKg=0,count=0;
  choice.stations.forEach((type,index)=>{if(!type)return;count++;if(!stationOptions(spec,index).includes(type)){errors.push(`Nem kompatibilis fegyver a(z) ${index+1}. helyen.`);return;}payloadKg+=weaponProfile({id:spec.id},type).mass;});
  if(payloadKg>limits.maxPayloadKg)errors.push('A függesztmények meghaladják az engedélyezett fegyverterhelést.');
@@ -32,7 +33,7 @@ export function configureAircraft(spec,choice){
  const preset=armaments[spec.id],weapons={},stations=[];
  if(choice.gun&&preset.weapons.gun)weapons.gun={...preset.weapons.gun};
  choice.stations.forEach((type,index)=>{if(!type)return;weapons[type]??={...preset.weapons[type],quantity:0};weapons[type].quantity++;stations.push({...preset.stations[index],type});});
- return {...spec,configuredArmament:{variant:preset.variant,weapons,stations},loadoutClearance:check};
+ return {...spec,configuredArmament:{variant:preset.variant,weapons,stations,...(preset.tailGun?{tailGun:{...preset.tailGun,quantity:choice.tailGun??0}}:{})},loadoutClearance:check};
 }
 export function initialWeapon(s,mission){
  if(s.training)return 'none';
@@ -43,6 +44,7 @@ export function initialWeapon(s,mission){
 export function plannedDeparture(spec,choice,{fuelFraction=1,unarmed=false}={}){
  const preset=armaments[spec.id],ammo={gun:!unarmed&&choice.gun?(preset.weapons.gun?.quantity||0):0,aam:0,agm:0,bomb:0};
  if(!unarmed)choice.stations.forEach((type,i)=>{if(type&&stationOptions(spec,i).includes(type))ammo[type]++;});
+ if(!unarmed&&preset.tailGun)ammo.tailGun=choice.tailGun??0;
  const fraction=Number.isFinite(fuelFraction)?clamp(fuelFraction,0,1):1,fuel=spec.fuelCapacity*fraction;
  return {ammo,fuel,fuelFraction:fraction,...massBreakdown({spec,ammo,fuel})};
 }

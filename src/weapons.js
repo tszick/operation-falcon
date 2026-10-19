@@ -1,3 +1,5 @@
+import {tailGunStatus} from './tailGunnery.js';
+import {defenseState,updateAIDefense,militaryAircraft} from './aiDefense.js';
 import {combatSource} from './unitCombat.js';
 import {ballisticHit} from './ballisticFlight.js';
 import {teamOf} from './unitTypes.js';
@@ -17,11 +19,18 @@ import {weaponProfile,spreadDirection,gunDispersion,stepBallistic,stepMissile,mi
 import {updateCountermeasures,countermeasureTarget,decoyIntercept} from './countermeasures.js';
 export const weaponNames={gun:'GÉPÁGYÚ',aam:'LEVEGŐ–LEVEGŐ',agm:'LEVEGŐ–FÖLD',bomb:'BOMBA / CCIP'};
 export class Weapons {
- constructor({enemyFire=false,random=Math.random}={}){this.selected='aam';this.projectiles=[];this.cooldown=0;this.gunHeat=0;this.random=random;this.used=0;this.hits=0;this.misses=0;this.effects=[];this.trails=[];this.events=[];this.sequence=0;this.enemyCombat=enemyFire?new EnemyCombat():null;}
+ constructor({enemyFire=false,random=Math.random}={}){this.selected='aam';this.projectiles=[];this.cooldown=0;this.tailCooldown=0;this.gunHeat=0;this.random=random;this.used=0;this.hits=0;this.misses=0;this.effects=[];this.trails=[];this.events=[];this.sequence=0;this.enemyCombat=enemyFire?new EnemyCombat():null;}
  emit(event){this.events.push(event);if(this.events.length>128)this.events.shift();}
  drainEvents(){const events=this.events;this.events=[];return events;}
  select(s,type){if(!weaponAvailable(s,type))return false;this.selected=type;this.solution=null;return true;}
+ fireTail(s){
+  const status=tailGunStatus(s);if(!status.canFire)return status.label;if(this.tailCooldown>0)return null;
+  const {profile,pose}=status,position=pose.origin.clone(),velocity=spreadDirection(pose.direction,profile.dispersion*(1+(s.damage||0)*.006),this.random).scale(profile.muzzleSpeed).add(s.velocity);
+  s.ammo.tailGun--;this.used++;this.tailCooldown=.085;this.projectiles.push({id:++this.sequence,type:'gun',profile,position,previous:position.clone(),velocity,age:0,damage:18,station:'tail'});
+  this.emit({type:'gun',weapon:'tailGun',station:'tail',position:position.clone(),projectileId:this.sequence,sourceId:'PLAYER',profile:profile.id,initialVelocity:velocity.clone()});return 'FAROKGÉPÁGYÚ · TŰZ';
+ }
  fire(s,targets,aim){
+  if(s.rearView)return this.fireTail(s);
   if(this.cooldown>0)return null;
   const status=firingStatus(s,targets,aim,this);
   if(!status.canFire){if(status.status==='empty'){this.cooldown=.25;this.emit({type:'dry-fire',position:s.position.clone()});}return status.label;}
@@ -46,10 +55,11 @@ export class Weapons {
  }
  update(s,targets,dt){
   updateCountermeasures(s,dt);
+  updateAIDefense(s,targets,this,dt);
   this.enemyCombat?.update(s,targets,this,dt);
   if(s.impactPending){s.impactPending=false;this.explode(s.position,'bomb',{ground:true});}
   for(const t of targets)if(t.impactReady){t.impactReady=false;this.explode(t.position,'bomb',{ground:true});}
-  this.cooldown=Math.max(0,this.cooldown-dt);
+  this.cooldown=Math.max(0,this.cooldown-dt);this.tailCooldown=Math.max(0,this.tailCooldown-dt);
   this.gunHeat=Math.max(0,this.gunHeat-dt*.5);
   for(const e of this.effects){e.age+=dt;e.life-=dt;}
   this.effects=this.effects.filter(e=>e.life>0);
@@ -59,7 +69,7 @@ export class Weapons {
   for(const p of this.projectiles){
    p.previous=p.position.clone();p.age+=dt;
    const hostile=p.owner==='enemy',ai=!!p.sourceId,entityShot=ai&&!!p.targetEntityId,missile=p.type==='aam'||p.type==='agm',target=entityShot?targets.find(t=>t.id===p.targetEntityId&&t.alive):hostile?(!s.crashed?s:null):targets.find(t=>t.id===p.targetId&&t.alive);
-   if(missile){const source=ai?targets.find(t=>t.id===p.sourceId):s,launcher=ai&&source?combatSource(source,s):source,guidanceTarget=hostile&&!entityShot&&target?countermeasureTarget(p,s,dt,this.random):target;stepMissile(p,guidanceTarget,launcher&&navigationJammed(launcher,targets)&&['sarh','active'].includes(p.profile.guidance)?null:launcher,dt);}
+   if(missile){const source=ai?targets.find(t=>t.id===p.sourceId):s,launcher=ai&&source?combatSource(source,s):source,defender=target===s?s:target&&militaryAircraft(target)?defenseState(target):null,guidanceTarget=defender?countermeasureTarget(p,defender,dt,this.random):target;stepMissile(p,guidanceTarget,launcher&&navigationJammed(launcher,targets)&&['sarh','active'].includes(p.profile.guidance)?null:launcher,dt);}
    if(p.type==='bomb'||p.type==='gun')stepBallistic(p,dt);else if(p.type==='flak')p.velocity.y-=9.81*dt;
    p.position.add(p.velocity.clone().scale(dt));
    if(missile&&p.age<p.profile.burn){
@@ -68,14 +78,15 @@ export class Weapons {
    }
    if(hostile&&!entityShot){
     let consumed=false;
-    if(p.type==='flak'&&p.age>=p.fuse){this.explode(p.position,'flak');consumed=true;if(!s.crashed&&!s.dying&&p.position.distance(s.position)<85){const hit=closestAircraftSurface(s,p.position);if(hit&&hit.distance<65){const amount=p.damage*(1-hit.distance/65);applyDamage(s,amount,{part:hit.part,source:'Légvédelmi gránát repesztalálata'});s.lastHit={part:hit.part,weapon:'flak',time:s.elapsed};this.emit({type:'damage-hit',position:hit.point,targetId:'PLAYER',sourceId:p.sourceId,projectileId:p.id,weapon:p.type,part:hit.part});}}}
-    else if(p.type!=='flak'&&!s.crashed&&!s.dying){const hit=aircraftHit(s,p.previous,p.position,{radius:missile&&p.armed?p.profile.fuseRadius:.15});if(hit){if(!missile||p.armed){applyDamage(s,impactDamage(p,s.velocity),{part:hit.part,source:missile?'Ellenséges rakétatalálat':'Ellenséges gépágyútalálat'});s.lastHit={part:hit.part,weapon:p.type,time:s.elapsed};if(missile)this.explode(hit.point,'aam');else this.effects.push(impactEffect(hit.point));this.emit({type:'damage-hit',position:hit.point,targetId:'PLAYER',sourceId:p.sourceId,projectileId:p.id,weapon:p.type,part:hit.part});}consumed=true;}}
-    if(missile&&!consumed&&p.decoyId!==undefined){const point=decoyIntercept(p,s);if(point){this.explode(point,'aam');consumed=true;const hit=closestAircraftSurface(s,point);if(!s.crashed&&!s.dying&&hit.distance<35){applyDamage(s,p.damage*(1-hit.distance/35),{part:hit.part,source:'Elterelt rakéta közeli robbanása'});s.lastHit={part:hit.part,weapon:'aam',time:s.elapsed};this.emit({type:'damage-hit',position:hit.point,targetId:'PLAYER',sourceId:p.sourceId,projectileId:p.id,weapon:p.type,part:hit.part});}}}
+    if(p.type==='flak'&&p.age>=p.fuse){this.explode(p.position,'flak');consumed=true;if(!s.crashed&&!s.dying&&p.position.distance(s.position)<85){const hit=closestAircraftSurface(s,p.position);if(hit&&hit.distance<65){const amount=p.damage*(1-hit.distance/65);applyDamage(s,amount,{part:hit.part,engineIndex:hit.engineIndex,source:'Légvédelmi gránát repesztalálata'});s.lastHit={part:hit.part,engineIndex:hit.engineIndex,weapon:'flak',time:s.elapsed};this.emit({type:'damage-hit',position:hit.point,targetId:'PLAYER',sourceId:p.sourceId,projectileId:p.id,weapon:p.type,part:hit.part,engineIndex:hit.engineIndex});}}}
+    else if(p.type!=='flak'&&!s.crashed&&!s.dying){const hit=aircraftHit(s,p.previous,p.position,{radius:missile&&p.armed?p.profile.fuseRadius:.15});if(hit){if(!missile||p.armed){applyDamage(s,impactDamage(p,s.velocity),{part:hit.part,engineIndex:hit.engineIndex,source:missile?'Ellenséges rakétatalálat':'Ellenséges gépágyútalálat'});s.lastHit={part:hit.part,engineIndex:hit.engineIndex,weapon:p.type,time:s.elapsed};if(missile)this.explode(hit.point,'aam');else this.effects.push(impactEffect(hit.point));this.emit({type:'damage-hit',position:hit.point,targetId:'PLAYER',sourceId:p.sourceId,projectileId:p.id,weapon:p.type,part:hit.part,engineIndex:hit.engineIndex});}consumed=true;}}
+    if(missile&&!consumed&&p.decoyId!==undefined){const point=decoyIntercept(p,s);if(point){this.explode(point,'aam');consumed=true;const hit=closestAircraftSurface(s,point);if(!s.crashed&&!s.dying&&hit.distance<35){applyDamage(s,p.damage*(1-hit.distance/35),{part:hit.part,engineIndex:hit.engineIndex,source:'Elterelt rakéta közeli robbanása'});s.lastHit={part:hit.part,engineIndex:hit.engineIndex,weapon:'aam',time:s.elapsed};this.emit({type:'damage-hit',position:hit.point,targetId:'PLAYER',sourceId:p.sourceId,projectileId:p.id,weapon:p.type,part:hit.part,engineIndex:hit.engineIndex});}}}
     const terrain=p.position.y<=terrainHeight(p.position.x,p.position.z);if(terrain&&!consumed){this.explode(p.position,p.type,{ground:true});consumed=true;}
     if(!consumed&&p.age<(p.profile?.life||(p.type==='gun'?5:p.type==='flak'?15:70)))remaining.push(p);continue;
    }
    const canHit=t=>!ai||teamOf(t,s)!==p.owner&&teamOf(t,s)!=='neutral';
-   const recordHit=(t,p,info=null)=>{const amount=p.type==='gun'?impactDamage(p,t.velocity):(p.type==='aam'||p.type==='agm')&&t.kind==='ground'?100:p.damage??100,destroyed=applyTargetHit(t,p.type,{part:info?.part,amount});this.emit({type:'target-hit',targetId:t.id,sourceId:p.sourceId||'PLAYER',projectileId:p.id,weapon:p.type,part:info?.part,amount,destroyed,position:t.position.clone()});if(!ai){this.damageHits=(this.damageHits||0)+1;if(destroyed)this.hits++;}else if(p.owner==='ally'&&destroyed)this.alliedKills=(this.alliedKills||0)+1;return destroyed;};
+   const recordHit=(t,p,info=null)=>{const amount=p.type==='gun'?impactDamage(p,t.velocity):(p.type==='aam'||p.type==='agm')&&t.kind==='ground'?100:p.damage??100,destroyed=applyTargetHit(t,p.type,{part:info?.part,engineIndex:info?.engineIndex,amount});this.emit({type:'target-hit',targetId:t.id,sourceId:p.sourceId||'PLAYER',projectileId:p.id,weapon:p.type,part:info?.part,engineIndex:info?.engineIndex,amount,destroyed,position:t.position.clone()});if(!ai){this.damageHits=(this.damageHits||0)+1;if(destroyed)this.hits++;}else if(p.owner==='ally'&&destroyed)this.alliedKills=(this.alliedKills||0)+1;return destroyed;};
+   if(missile&&target&&target!==s&&p.decoyId!==undefined){const defender=defenseState(target),point=decoyIntercept(p,defender);if(point){this.explode(point,p.type);const hit=closestAircraftSurface(defender,point);if(hit&&hit.distance<35)recordHit(target,{...p,damage:p.damage*(1-hit.distance/35)},hit);continue;}}
    if(entityShot&&p.type==='flak'){
     if(p.age>=p.fuse){this.explode(p.position,'flak');for(const t of targets)if(t.alive&&canHit(t)&&t.kind==='air'&&t.position.distance(p.position)<65){recordHit(t,{...p,damage:p.damage*(1-t.position.distance(p.position)/65)});}}
     else if(p.position.y>terrainHeight(p.position.x,p.position.z)&&p.age<15)remaining.push(p);continue;

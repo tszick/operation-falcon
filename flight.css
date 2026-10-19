@@ -100,8 +100,8 @@ body.flying #flight-toast{position:static;transform:none;width:100%;padding:6px 
 body.flying #lock-hint{margin-top:4px;font-size:10px}body.flying #lock-button{font-size:10px}
 body.flying #warning{top:100px;max-width:75%;font-size:15px;text-align:center;z-index:3}
 body.flying #head-view-status{top:70px}body.flying #overlay{inset:40px 0 0}
-body.flying.wreck-view #cockpit,body.flying.external-view #cockpit{display:none!important}
-body.flying.external-view #combat-messages{bottom:24px}
+body.flying.wreck-view #cockpit,body.flying.rear-view #cockpit{display:none!important}
+body.flying.rear-view #combat-messages{bottom:24px}
 #cockpit.compact-cockpit #stores-display,#cockpit.compact-cockpit .store-option,#cockpit.compact-cockpit #fuel-status{font-size:10px}
 @media(max-width:1050px){#cockpit #guide-steps li,#cockpit #guide-steps kbd{font-size:10px}#cockpit #flight-config>div>button{font-size:9px}#cockpit #cockpit-engine{padding:1px}#cockpit #fuel-status{gap:1px}#cockpit .stores-heading small{display:none}#cockpit #approach-instruction{display:none}}
 
@@ -163,7 +163,7 @@ body.flying #combat-messages #targeting-panel{position:absolute;right:0;bottom:0
 body.flying #targeting-panel .targeting-row{justify-content:flex-end}
 body.flying #lock-button{pointer-events:auto;background:none;border:0;padding:3px 0;color:#baf37d;font:11px var(--mono)}
 body.flying #lock-progress{height:2px;width:100%;background:#72955322;margin:4px 0 0;border:0}
-body.flying.external-view #combat-messages{bottom:24px}
+body.flying.rear-view #combat-messages{bottom:24px}
 @media(prefers-reduced-motion:reduce){body.flying .flight-message{transition:opacity .25s}}
 
 body.flying .flight-message[data-level=radio] strong{color:#a6dce5;letter-spacing:.5px}
@@ -173,7 +173,7 @@ body.flying .flight-message[data-level=radio] p{color:#e0ead7;font-size:12px}
 body.flying #radio-message-feed{position:absolute;left:18px;top:90px;bottom:calc(var(--cockpit-height) + 12px);width:clamp(240px,28vw,370px);overflow:hidden;pointer-events:none}
 body.flying #radio-message-feed .flight-message{text-align:left;left:0;right:auto}
 body.flying #flight-message-feed{bottom:0}
-body.flying.external-view #radio-message-feed{bottom:24px}
+body.flying.rear-view #radio-message-feed{bottom:24px}
 body.flying #combat-messages #targeting-panel,body.flying #cockpit-annunciator{display:none!important}
 #cockpit #target-data{right:3px;left:3px;bottom:12px;max-width:none;text-align:left}
 #cockpit #radar{height:calc(100% - 36px)}
@@ -189,3 +189,37 @@ body.flying #combat-messages #targeting-panel,body.flying #cockpit-annunciator{d
 #cockpit #flight-config>div{display:block;position:static;gap:0;background:none;border:0;box-shadow:none}
 #cockpit #flight-config>div>button{position:absolute;left:0;top:0;display:flex;align-items:center;justify-content:center;transform-origin:0 0;pointer-events:auto;border:0!important;background:transparent!important;box-shadow:none!important;outline:none}
 #cockpit #flight-config>div>button::before,#cockpit #flight-config>div>button::after{display:none}
+
+/* The staged operation shows three current rows, each across the whole MFD. */
+#cockpit #mission-card[data-operation="iron-veil"] #mission-objectives{display:block}
+#cockpit #mission-card[data-operation="iron-veil"] .mission-goal-group ul{display:block}
+
+#cockpit #map-range{border:0;background:none;color:inherit;padding:0;font:inherit;cursor:pointer;white-space:nowrap}
+#cockpit #radar{cursor:zoom-in}
+#mission-control-view{position:fixed;inset:0;z-index:20;background:#020b0bed;display:grid;place-items:center;padding:18px;color:#d8e8d1;backdrop-filter:blur(5px)}
+#mission-control-view[hidden]{display:none}
+.control-room{width:min(1320px,100%);height:min(920px,100%);min-height:0;display:flex;flex-direction:column;background:#081512;border:1px solid #74905b77;padding:20px}
+.control-room-header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid #536d4e66;padding-bottom:14px}
+.control-room h2{font:32px var(--display);margin:4px 0;color:#c3f18e}
+.control-room-header p{margin:0;display:flex;gap:18px;flex-wrap:wrap;font:12px/1.5 var(--mono)}
+.control-room-header p span{color:#9aaf95}
+.control-room button{color:#c3f18e;cursor:pointer;white-space:nowrap}
+.control-room-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,340px);gap:22px;flex:1;min-height:0;padding-top:16px}
+.control-chart{display:flex;flex-direction:column;min-width:0;min-height:0}
+.control-chart-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;font:12px var(--mono);padding-bottom:10px}
+.control-chart-bar button{padding:8px}
+#mission-control-map{display:block;width:100%;height:100%;min-height:0;flex:1;background:#0a1712;border:1px solid #385534}
+.control-legend{display:flex;gap:14px;flex-wrap:wrap;font:11px/1.7 var(--mono);padding-top:10px;color:#9cae93}
+.control-legend span:first-child{color:#c3f18e}.control-legend span:nth-child(2){color:#82c6e5}.control-legend span:nth-child(3){color:#f2b482}
+.control-checklist{overflow:auto;padding-right:8px;font:13px/1.5 var(--mono);min-height:0}
+.control-checklist h3,.control-checklist h4{font:12px var(--mono);letter-spacing:1px;color:#9fbc8b;margin:0 0 12px}
+.control-checklist .mission-goal-group{margin:8px 0 22px}
+.control-checklist ul{list-style:none;padding:0;margin:0}
+.control-checklist .mission-goal-group li{display:flex;gap:9px;margin:10px 0;color:#d8e8d1}
+.control-checklist .goal-done{color:#baf37d!important}.control-checklist .goal-failed{color:#f09580!important}
+.control-checklist h4 span{float:right}
+.control-checklist summary{cursor:pointer;border-top:1px solid #536d4e66;padding:14px 0;color:#9fbc8b;font-size:12px}
+#control-contacts li{display:flex;justify-content:space-between;gap:12px;margin:7px 0;font-size:12px}
+#control-contacts b{white-space:nowrap;font-weight:400}
+.control-sensor-note{font:12px/1.6 var(--mono);color:#90a187;border-top:1px solid #536d4e66;padding-top:14px}
+@media(max-width:800px){#mission-control-view{padding:8px}.control-room{padding:12px}.control-room-body{grid-template-columns:1fr;overflow:auto;display:block}.control-chart{height:55vh;min-height:280px}.control-checklist{overflow:visible;margin-top:22px}.control-room-header p{gap:4px}.control-room-header button{font-size:10px;padding:10px}.control-chart-bar{font-size:10px}}

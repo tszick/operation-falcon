@@ -3,7 +3,7 @@ import {Vec3,clamp,DEG} from './math.js';
 // Hand-built, low-poly recognition models in metres (+Z nose, +Y up).
 // Each type has its own planform; these are visual approximations, not CAD replicas.
 export const airframes={
- airliner:{length:37,body:1.7,wing:[[1.5,2.4],[17,-3.7],[16.6,-5.3],[1.5,-2.1]],wingY:-.7,tail:[[1.2,-11.5],[6.3,-15.6],[5.9,-17],[1.1,-14.8]],fins:1,finHeight:5.8,finStart:-10.9,finEnd:-17.6,engines:2,engineX:5.6,engineY:-1.8,engineRadius:.95,engineFront:.6,engineBack:-3.8,canopy:14.5,canopyLength:1.6,canopyWidth:1.1,noseBlunt:true,cabinWindows:true},
+ airliner:{engineMount:'wing',length:37,body:1.7,wing:[[1.5,2.4],[17,-3.7],[16.6,-5.3],[1.5,-2.1]],wingY:-.7,tail:[[1.2,-11.5],[6.3,-15.6],[5.9,-17],[1.1,-14.8]],fins:1,finHeight:5.8,finStart:-10.9,finEnd:-17.6,engines:2,engineX:5.6,engineY:-1.8,engineRadius:.95,engineFront:.6,engineBack:-3.8,canopy:14.5,canopyLength:1.6,canopyWidth:1.1,noseBlunt:true,cabinWindows:true},
  f22:{length:18.9,body:1.42,wing:[[1.1,3.2],[6.78,-.8],[6.1,-3.7],[2,-4.8]],tail:[[1.5,-5],[4.8,-7.9],[3.5,-8.8],[1.2,-7]],fins:2,finX:2.0,finHeight:3.0,finCant:1.1,finStart:-4.5,finEnd:-8.3,engines:2,engineX:.86,engineRadius:.66,engineFront:1.8,engineBack:-8.9,canopy:3.9,canopyLength:3.2,canopyWidth:.62,intakes:'box',faceted:true,nozzle:'flat',bays:[[-1.1,.5],[1.1,.5]],bodyHeight:.64},
  f35:{length:15.67,body:1.25,wing:[[1.0,1.7],[5.35,-1.2],[4.7,-3.3],[1.4,-3.7]],tail:[[1,-4.1],[3.4,-6.1],[2.4,-7.1],[.9,-6]],fins:2,finX:1.38,finHeight:2.5,finCant:.9,finStart:-3.3,finEnd:-6.9,engines:1,engineRadius:.84,engineFront:-1.3,engineBack:-7.25,canopy:3.1,canopyLength:2.8,canopyWidth:.61,intakes:'side',faceted:true,bays:[[-.85,.3],[.85,.3]],bodyHeight:.92},
  su35:{length:21.9,body:.96,wing:[[.9,5.1],[2.25,2.6],[7.35,-2],[7.2,-4.9],[1.6,-5.5]],tail:[[1.4,-6.3],[4.6,-8.6],[4.05,-10.2],[1.4,-9.3]],fins:2,finX:2.05,finHeight:3.5,finStart:-5.1,finEnd:-9.5,engines:2,engineX:1.4,engineRadius:.76,engineFront:1.9,engineBack:-10.1,canopy:4.9,canopyLength:3.4,lerx:6.7,intakes:'box',stinger:true,rails:true},
@@ -29,10 +29,10 @@ export const airframes={
  su24:{length:22.5,body:1.3,wing:[[1.5,2.4],[2.7,2.1],[8.8,-2.6],[8.3,-4.1],[1.5,-4.6]],tail:[[1.4,-7],[4.2,-8.9],[3.8,-10.7],[1.2,-9.9]],fins:1,finHeight:4,finStart:-6.4,finEnd:-10.5,engines:2,engineX:.85,engineRadius:.69,engineFront:1.6,engineBack:-10.7,canopy:4.4,canopyLength:3.1,canopyWidth:1.2,sweep:true,intakes:'box'},
  mig27:{length:17.1,body:.87,wing:[[1.1,1.7],[2.4,1.5],[6.98,-1.9],[6.6,-3.4],[1.2,-3.3]],tail:[[.8,-4.9],[3.1,-6.5],[2.9,-7.9],[.7,-7.3]],fins:1,finHeight:3.4,finStart:-3.9,finEnd:-7.7,engines:1,engineRadius:.75,engineFront:-1,engineBack:-8.1,canopy:3,canopyLength:2.2,sweep:true,intakes:'box',noseDroop:.9},
  su25:{length:15.53,body:.9,wing:[[.85,2],[7.18,-.6],[6.9,-2.8],[.9,-2.5]],tail:[[.7,-4.4],[2.6,-5.9],[2.4,-7.1],[.6,-6.5]],fins:1,finHeight:3,finStart:-3.7,finEnd:-6.9,engines:2,engineX:1.1,engineRadius:.58,engineFront:1.6,engineBack:-5.5,canopy:4.4,canopyLength:2.4,noseBlunt:true,pylons:true,intakes:'side'},
- tu95:{length:46.2,body:1.3,wing:[[1.2,5.1],[25,-6.5],[24,-9.4],[1.3,-1.4]],tail:[[1,-14],[8.8,-18.4],[8.3,-20],[1,-17]],fins:1,finHeight:7,finStart:-13,finEnd:-21,engines:4,engineXs:[8,16],engineRadius:1.1,engineFront:1.8,engineBack:-7.5,canopy:17,canopyLength:2.5,propellers:true},
- b52:{length:48.5,body:1.8,wing:[[1.8,6],[28.2,-12.3],[27.3,-15],[1.7,-2]],tail:[[1.4,-15],[8,-21],[7.4,-22.6],[1.1,-19]],fins:1,finHeight:7.4,finStart:-13.2,finEnd:-22.5,engines:8,engineXs:[10,12.5,19,21.5],engineY:-2,engineRadius:.8,engineFront:-3,engineBack:-8,canopy:17,canopyLength:3,noseBlunt:true},
- il76:{length:46.6,body:2.2,wing:[[1.8,5],[25.2,-7.5],[24.8,-10],[1.8,-2.6]],wingY:1.6,tail:[[.8,-16],[10.5,-19],[9.5,-21],[.8,-18]],tailY:7,fins:1,finHeight:7.6,finStart:-13.9,finEnd:-22,engines:4,engineXs:[8,15],engineY:-.3,engineRadius:1.3,engineFront:2,engineBack:-5,canopy:17.5,canopyLength:2.4,noseBlunt:true},
- c130:{length:29.8,body:1.7,wing:[[1.5,2.8],[20.2,1.6],[20.0,-1],[1.5,-1.4]],wingY:1.2,tail:[[1,-9],[7.7,-11],[7.3,-13],[1,-12]],tailY:1.1,fins:1,finHeight:6.3,finStart:-8.5,finEnd:-14,engines:4,engineXs:[7,13],engineY:.2,engineRadius:.75,engineFront:5,engineBack:-1,canopy:10,canopyLength:2,noseBlunt:true,propellers:true}
+ tu95:{engineMount:'wing',length:46.2,body:1.3,wing:[[1.2,5.1],[25,-6.5],[24,-9.4],[1.3,-1.4]],tail:[[1,-14],[8.8,-18.4],[8.3,-20],[1,-17]],fins:1,finHeight:7,finStart:-13,finEnd:-21,engines:4,engineXs:[8,16],engineRadius:1.1,engineFront:1.8,engineBack:-7.5,canopy:17,canopyLength:2.5,propellers:true},
+ b52:{engineMount:'wing',length:48.5,body:1.8,wing:[[1.8,6],[28.2,-12.3],[27.3,-15],[1.7,-2]],tail:[[1.4,-15],[8,-21],[7.4,-22.6],[1.1,-19]],fins:1,finHeight:7.4,finStart:-13.2,finEnd:-22.5,engines:8,engineXs:[10,12.5,19,21.5],engineY:-2,engineRadius:.8,engineFront:-3,engineBack:-8,canopy:17,canopyLength:3,noseBlunt:true},
+ il76:{engineMount:'wing',length:46.6,body:2.2,wing:[[1.8,5],[25.2,-7.5],[24.8,-10],[1.8,-2.6]],wingY:1.6,tail:[[.8,-16],[10.5,-19],[9.5,-21],[.8,-18]],tailY:7,fins:1,finHeight:7.6,finStart:-13.9,finEnd:-22,engines:4,engineXs:[8,15],engineY:-.3,engineRadius:1.3,engineFront:2,engineBack:-5,canopy:17.5,canopyLength:2.4,noseBlunt:true},
+ c130:{engineMount:'wing',length:29.8,body:1.7,wing:[[1.5,2.8],[20.2,1.6],[20.0,-1],[1.5,-1.4]],wingY:1.2,tail:[[1,-9],[7.7,-11],[7.3,-13],[1,-12]],tailY:1.1,fins:1,finHeight:6.3,finStart:-8.5,finEnd:-14,engines:4,engineXs:[7,13],engineY:.2,engineRadius:.75,engineFront:5,engineBack:-1,canopy:10,canopyLength:2,noseBlunt:true,propellers:true}
 };
 
 class MeshBuilder{
@@ -50,7 +50,7 @@ export function aircraftMesh(id='f16',sweep=0,flaps=0){
  if(!airframes[id])id=({delta:'mirage',twin:'mig29',straight:'a10',swept:'f14'})[id]||'f16';
  const p=airframes[id],amount=p.sweep?clamp(sweep,0,1):0,flapStep=Math.round(clamp(flaps,0,1)*20),key=id+':'+Math.round(amount*20)+':'+flapStep;
  if(cache.has(key))return cache.get(key);
- const b=new MeshBuilder(),L=p.length/2,W=p.body,tags=new Map();
+ const b=new MeshBuilder(),L=p.length/2,W=p.body,tags=new Map(),engineFaces=new Map(),attachments={left:[],right:[]};
  const height=p.bodyHeight||W*.82;
  b.tube([[L,p.noseBlunt?W*.35:.025,p.noseBlunt?W*.3:.03,-(p.noseDroop||0)],[L*(p.noseBlunt?.87:.73),W*(p.noseBlunt?.85:.53),height*.76],[L*.35,W,height],[0,W*1.08,height],[-L*.5,W*.9,height*.83],[-L*.93,W*.55,height*.55],[-L,W*.15,height*.22]],8);
  const wing=p.wing.map(([x,z])=>{const pivot=2.0;if(!p.sweep||x<=pivot)return[x,z];const angle=amount*38*DEG,dx=x-pivot;return[pivot+dx*Math.cos(angle),z-dx*Math.sin(angle)];});
@@ -73,19 +73,21 @@ export function aircraftMesh(id='f16',sweep=0,flaps=0){
  if(p.cabinWindows)for(const sign of[-1,1])for(let z=-10;z<12;z+=1.15)b.line([sign*W,.65,z],[sign*W,.65,z+.45]);
  for(const sign of p.fins===2?[-1,1]:[0]){const x=(p.finX||0)*sign,h=p.finHeight,cant=(p.finCant||0)*sign;tags.set(b.face([[x,.45,p.finStart],[x+cant,h,p.finStart-1.7],[x+cant*.85,h*.91,p.finEnd+.7],[x,.5,p.finEnd]]),'tail');}
  const engineXs=p.engines===1?[0]:p.engineXs?p.engineXs.flatMap(x=>[-x,x]):[-p.engineX,p.engineX];
- for(const x of engineXs){const r=p.engineRadius,y=p.engineY??-.25,front=p.engineFront,back=p.engineBack,startFace=b.faces.length;b.tube([[front,r*.86,r*.86,y,x],[front-.7,r,r,y,x],[back+.5,r*.9,r*.9,y,x],[back,r*.8,r*.8,y,x]],10);for(let i=startFace;i<b.faces.length;i++)tags.set(b.faces[i],x<=0?'engineLeft':'engineRight');
+ for(const [engineIndex,x] of engineXs.entries()){const pointStart=b.points.length,r=p.engineRadius,y=p.engineY??-.25,front=p.engineFront,back=p.engineBack,startFace=b.faces.length;b.tube([[front,r*.86,r*.86,y,x],[front-.7,r,r,y,x],[back+.5,r*.9,r*.9,y,x],[back,r*.8,r*.8,y,x]],10);for(let i=startFace;i<b.faces.length;i++)tags.set(b.faces[i],x<=0?'engineLeft':'engineRight');
    if(p.nozzle==='flat')b.face([[x-r,y+.3,back-.25],[x+r,y+.3,back-.25],[x+r,y-.3,back-.25],[x-r,y-.3,back-.25]]);
    if(p.intakes==='box')for(const sign of[-1,1]){if(Math.sign(x)!==sign&&p.engines>1)continue;const ix=p.engines===1?sign*(W+.3):x;b.face([[ix-r,y+r,front],[ix+r,y+r,front],[ix+r,y-r,front],[ix-r,y-r,front]]);}
    if(p.propellers){const rad=r*2.8;for(let i=0;i<4;i++){const a=i*Math.PI/2+.3,dx=Math.cos(a)*rad,dy=Math.sin(a)*rad;b.face([[x-.18,y,front+.12],[x+dx-.12,y+dy,front+.12],[x+dx+.12,y+dy,front+.12],[x+.18,y,front+.12]]);}}
+   for(let i=startFace;i<b.faces.length;i++){tags.set(b.faces[i],x<=0?'engineLeft':'engineRight');engineFaces.set(b.faces[i],engineIndex);}
+   if(p.engineMount==='wing')for(let i=pointStart;i<b.points.length;i++)attachments[x<0?'left':'right'].push(i);
  }
  if(p.intakes==='chin')b.tube([[L*.24,.58,.36,-W*.9],[L*.08,.64,.4,-W*.9],[-L*.3,.45,.28,-W*.7]],8);
  if(p.intakes==='side')for(const sign of[-1,1])b.tube([[L*.25,.31,.48,-.05,sign*(W+.1)],[L*.03,.42,.5,-.05,sign*W]],8);
  if(p.stinger)b.tube([[-L*.68,.32,.3,0],[-L*1.07,.12,.12,0]],6);
  if(p.gun)b.tube([[L+.25,.1,.1,-.4,-.18],[L-.5,.1,.1,-.4,-.18]],6);
- if(p.rails){const outer=wing.reduce((a,v)=>v[0]>a[0]?v:a);for(const sign of[-1,1])b.tube([[outer[1]+.6,.09,.09,0,sign*outer[0]],[outer[1]-1.1,.09,.09,0,sign*outer[0]]],4);}
- if(p.pylons)for(const sign of[-1,1])for(const x of[2.5,4.5,6])b.face([[sign*x,0,0],[sign*x,-.5,-.2],[sign*x,-.5,-1.1],[sign*x,0,-1.3]]);
+ if(p.rails){const outer=wing.reduce((a,v)=>v[0]>a[0]?v:a);for(const sign of[-1,1]){const start=b.points.length;b.tube([[outer[1]+.6,.09,.09,0,sign*outer[0]],[outer[1]-1.1,.09,.09,0,sign*outer[0]]],4);for(let i=start;i<b.points.length;i++)attachments[sign<0?'left':'right'].push(i);}}
+ if(p.pylons)for(const sign of[-1,1])for(const x of[2.5,4.5,6]){const face=b.face([[sign*x,0,0],[sign*x,-.5,-.2],[sign*x,-.5,-1.1],[sign*x,0,-1.3]]);attachments[sign<0?'left':'right'].push(...face);tags.set(face,sign<0?'leftWing':'rightWing');}
  if(p.tanks)for(const sign of[-1,1])b.tube([[2,.15,.2,-.9,sign*1.1],[0,.5,.5,-.9,sign*1.1],[-4,.2,.2,-.9,sign*1.1]],6);
- const mesh={...b,id,flapFaces,flapFraction:flapStep/20,faceParts:b.faces.map(face=>tags.get(face)||'fuselage'),wingPoints:{left:[...wingFaces[0],...flapFaces[0]||[]],right:[...wingFaces[1],...flapFaces[1]||[]]},radius:Math.max(...b.points.map(p=>p.length()))};cache.set(key,mesh);return mesh;
+ const mesh={...b,id,flapFaces,flapFraction:flapStep/20,faceParts:b.faces.map(face=>tags.get(face)||'fuselage'),faceEngines:b.faces.map(face=>engineFaces.get(face)??null),wingPoints:{left:[...wingFaces[0],...(flapFaces[0]||[]),...attachments.left],right:[...wingFaces[1],...(flapFaces[1]||[]),...attachments.right]},radius:Math.max(...b.points.map(p=>p.length()))};cache.set(key,mesh);return mesh;
 }
 
 

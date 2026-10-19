@@ -15,6 +15,8 @@ export function buildTerrainSurface(cx,cz,heightAt=terrainHeight){
 export function renderTerrainSurface(r){
  const cx=Math.round(r.camera.x/450)*450,cz=Math.round(r.camera.z/450)*450,key=`${terrainWorld.revision}:${cx}:${cz}`;
  if(r.terrainSurfaceKey!==key){r.terrainSurfaceKey=key;r.terrainSurface=buildTerrainSurface(cx,cz);}
+ if(r.gpuModels?.renderTerrain(r))return;
+ if(r.debugMetrics)r.terrainMetrics={backend:'Canvas2D',triangles:r.terrainSurface.length};
  const faces=[],localCache=new Map();
  for(const face of r.terrainSurface){const screen=projectFeaturePolygon(r,face.points,localCache);if(screen.length<3||screen.every(p=>p.x<0)||screen.every(p=>p.x>r.w)||screen.every(p=>p.y<0)||screen.every(p=>p.y>r.h))continue;faces.push({...face,screen,depth:r.local(face.center).z});}
  faces.sort((a,b)=>b.depth-a.depth);

@@ -733,5 +733,27 @@ export const radioLines=[
   "joinable": true,
   "url": "/assets/radio/wingman-tail-down.wav",
   "duration": 1.685
+ },
+ {
+  "id": "call-ironfist",
+  "speaker": "wingman",
+  "group": "callsignToken",
+  "text": "Ironfist",
+  "voice": "Microsoft Mark",
+  "rate": 1,
+  "joinable": true,
+  "url": "/assets/radio/call-ironfist.wav",
+  "duration": 0.7
+ },
+ {
+  "id": "call-viper",
+  "speaker": "wingman",
+  "group": "callsignToken",
+  "text": "Viper",
+  "voice": "Microsoft Mark",
+  "rate": 1,
+  "joinable": true,
+  "url": "/assets/radio/call-viper.wav",
+  "duration": 0.396
  }
 ];

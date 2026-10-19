@@ -25,9 +25,9 @@ export function configureTerrain(m,anchor=new Vec3(22000,0,0),rng=Math.random){
   const avoid=(point,radius)=>{const {along,across}=pathCoordinates(river,point.x,point.z);if(Math.abs(across)<radius)river.detours.push({along,spread:radius*1.8,offset:-(Math.sign(across)||1)*(radius*1.7-Math.abs(across))});};
   const homeClearance=Math.hypot(Math.sin(river.angle)*6500,Math.cos(river.angle)*12000);
   avoid({x:0,z:0},homeClearance);
-  if(m.id==='airbase')avoid(anchor,1900);
+  if(['airbase','air-superiority'].includes(m.id))avoid(anchor,1900);
  }
- terrainWorld={revision:++revision,river,road,canyon,peaks,bridge:m.id==='bridge'?{span:river.width+70}:null,site:m.id==='airbase'?{x:anchor.x,z:anchor.z,height:180}:null};return terrainWorld;
+ terrainWorld={revision:++revision,river,road,canyon,peaks,bridge:m.id==='bridge'?{span:river.width+70}:null,site:['airbase','air-superiority'].includes(m.id)?{x:anchor.x,z:anchor.z,height:180}:null};return terrainWorld;
 }
 function pathOffset(path,t){let offset=path.bend*(Math.sin(t/6000+path.phase)-Math.sin(path.phase));if(path.training)offset+=420*Math.sin(t/1400)*smooth((t+1800)/1800)*(1-smooth((t-7500)/3000));for(const d of path.detours||[])offset+=d.offset*(Math.exp(-(((t-d.along)/d.spread)**2))-(path.keepAnchor?Math.exp(-((d.along/d.spread)**2))*Math.exp(-((t/4500)**2)):0));return offset;}
 export function pathPoint(path,t){const offset=pathOffset(path,t),c=Math.cos(path.angle),s=Math.sin(path.angle);return new Vec3(path.x+c*t-s*offset,0,path.z+s*t+c*offset);}

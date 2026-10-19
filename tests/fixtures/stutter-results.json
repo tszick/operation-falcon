@@ -1,0 +1,23 @@
+{
+  "description": "CPU render-submission measurements on reconstructed 1280x720 flight-log scenes, 30 warm samples. Not original-session FPS, exact particle replay, or GPU completion time.",
+  "measurements": [
+    {
+      "simulationSecond": 84,
+      "view": "cockpit",
+      "beforeMs": 73.82,
+      "afterMs": 7.34,
+      "beforeVisibilityChecks": 556,
+      "afterVisibilityChecks": 330,
+      "reconstructedSmokePuffs": 300
+    },
+    {
+      "simulationSecond": 90,
+      "view": "external-wreck",
+      "beforeMs": 111.16,
+      "afterMs": 10.16,
+      "beforeVisibilityChecks": 1067,
+      "afterVisibilityChecks": 550,
+      "reconstructedSmokePuffs": 319
+    }
+  ]
+}
