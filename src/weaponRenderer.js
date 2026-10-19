@@ -46,6 +46,7 @@ export function renderWeapons(renderer,s,weapons){
    if(p){const fade=e.life/e.maxLife;glow(c,p,20*fade,.5*fade);c.strokeStyle=`rgba(255,233,167,${fade})`;c.lineWidth=1;c.beginPath();for(let i=0;i<5;i++){const a=i*Math.PI*2/5;c.moveTo(p.x,p.y);c.lineTo(p.x+Math.cos(a)*15*fade,p.y+Math.sin(a)*15*fade);}c.stroke();}
    continue;
   }
+  if(e.kind==='practice-impact'){const point=project(r,e.position.clone().add(new Vec3(0,.5+age*.3,0)));if(point){c.strokeStyle=`rgba(${e.hit?'130,220,205':'190,170,125'},${Math.max(0,1-age/8)})`;c.lineWidth=1.5;c.beginPath();c.arc(point.x,point.y,Math.min(18,(1+age*1.5)*r.focal/point.depth),0,Math.PI*2);c.stroke();}continue;}
   if(e.kind==='impact'){
    c.strokeStyle=`rgba(255,191,102,${e.life/e.maxLife})`;c.lineWidth=1;c.beginPath();
    for(let i=0;i<8;i++){const a=i*.785,offset=new Vec3(Math.cos(a)*age*16,Math.max(0,age*14-4.9*age*age),Math.sin(a)*age*16),p=e.position.clone().add(offset);r.line(p,p.clone().sub(offset.clone().scale(.22)));}c.stroke();continue;

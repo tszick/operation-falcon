@@ -30,6 +30,9 @@ export function phaseGuide(s,mission,aim,weapons,targets){
   const solution=target&&suggested===weapons.selected?fireSolution(s,target,weapons.selected,{heat:weapons.gunHeat||0}):null;
   let steps=[];
   switch(mission.phaseId){
+    case 'transport-flight':{const t=targets.find(t=>t.playerControlled);steps=[step('KIJÁRAT',`Észak felé: ${Math.max(0,((t?.exitZ||24000)-s.position.z)/1000).toFixed(1)} km`),step('MAGASSÁG','Tarts biztonságos magasságot; a Falcon gépek fedeznek'),step('C','Rakétaveszély: elterelők és kíméletes kitérés')];break;}
+    case 'bomb-run':
+      steps=[step('4','Inert bomba kiválasztása',weapons.selected==='bomb'),step('A / D','Egyenes rárepülés a körre; kerüld a bedöntést'),step('SZÓKÖZ','CCIP a célkörbe: egyenként oldj'),step('—',`${s.bombingPractice?.hits||0}/2 találat · ${s.ammo.bomb}/3 bomba maradt`)];break;
     case 'canyon-run':
       steps=[step('A / D','Finom bedöntéssel kövesd a völgyet'),step('W / S','Türkiz kapuk sorban; 40–350 m AGL'),step('R / F','Őrizd a sebességet; ne fékezz túl'),step('—',mission.phaseHint)];break;
     case 'canyon-climb':

@@ -1,3 +1,4 @@
+import {transportExitPosition} from './transportRole.js';
 import {getLandingRoute} from './landingRoute.js';
 import {navigationJammed} from './electronicWarfare.js';
 import {attitude,DEG} from './math.js';
@@ -47,6 +48,7 @@ export function renderTacticalMap(canvas,s,targets,aim,options={}){
  c.strokeStyle='#9fc37388';c.setLineDash([3,4]);c.beginPath();const approach=13000*map.scale,base=mapPoint({x:0,z:0},map);c.moveTo(base.x,base.y-approach);c.lineTo(base.x,base.y+approach);c.stroke();c.setLineDash([]);
  c.strokeStyle='#d1efa8';c.strokeRect(base.x-1.5,base.y-runway.halfLength*map.scale,3,runway.halfLength*2*map.scale);
  c.fillStyle='#a9c88d';c.font='12px Consolas,monospace';c.fillText('N',cx+4,13);c.fillText('BASE',base.x+6,base.y+12);c.fillText('000°',base.x+5,base.y-approach+9);c.fillText('180°',base.x+5,base.y+approach-3);
+ if(s.spec.transport){const t=targets.find(t=>t.playerControlled&&!t.exited);if(t){const exit=transportExitPosition(t),p=mapPoint(exit,map);c.strokeStyle='#8ccbe3';c.strokeRect(p.x-5,p.y-5,10,10);c.fillStyle='#8ccbe3';c.font='12px Consolas,monospace';c.fillText(`KIJÁRAT ${(s.position.distance(exit)/1000).toFixed(1)} KM`,p.x+7,p.y);}}
  const own=mapPoint(s.position,map),heading=attitude(s.orientation).heading,range=Math.min(100,s.spec.radarRange*map.scale),cone=s.spec.radarCone*DEG;
  c.save();c.translate(own.x,own.y);c.rotate(heading);c.strokeStyle='#b0e18444';c.beginPath();c.moveTo(0,0);c.arc(0,0,range,-Math.PI/2-cone,-Math.PI/2+cone);c.closePath();c.stroke();c.restore();
  if(map.landingRoute){const route=map.landingRoute;c.save();c.strokeStyle=route.color;c.lineWidth=1.6;c.setLineDash([4,2]);c.beginPath();route.points.forEach((p,i)=>{const v=mapPoint(p,map);i?c.lineTo(v.x,v.y):c.moveTo(v.x,v.y);});c.stroke();c.setLineDash([]);const interval=Math.max(1,Math.floor(route.points.length/10));c.beginPath();for(let i=interval;i<route.points.length;i+=interval){const a=mapPoint(route.points[i-1],map),b=mapPoint(route.points[i],map),angle=Math.atan2(b.y-a.y,b.x-a.x);for(const sign of[-1,1]){c.moveTo(b.x,b.y);c.lineTo(b.x-4*Math.cos(angle+sign*.6),b.y-4*Math.sin(angle+sign*.6));}}c.stroke();c.fillStyle=route.color;c.font='12px Consolas,monospace';c.fillText('I · SEGÉDÍV',9,height-22);c.restore();}

@@ -1,4 +1,5 @@
-import {retreatFlightInput,combatFlightInput} from './aiDefense.js';
+import {radarContact} from './sensors.js';
+import {retreatFlightInput,combatFlightInput,moveEvasiveAircraft,ageEvasion,evasionFlightInput} from './aiDefense.js';
 import {TargetCycle} from './targetCycle.js';
 import {moveBallistic} from './ballisticFlight.js';
 import {mass,atmosphere} from './performance.js';
@@ -44,19 +45,19 @@ export function applyTargetHit(target,weapon,{part=null,engineIndex=null,amount=
 }
 const staticPoseCache=new WeakMap();
 export function updateTargets(targets,dt){for(const t of targets){
- if(t.pending||t.exited)continue;
- if(t.kind==='ground'&&t.type!=='convoy'){const p=staticPoseCache.get(t);if(!p||p.revision!==terrainWorld.revision||p.x!==t.position.x||p.y!==t.position.y||p.z!==t.position.z){t.previousPosition=t.position.clone();t.agl=t.position.y-terrainHeight(t.position.x,t.position.z);staticPoseCache.set(t,{revision:terrainWorld.revision,x:t.position.x,y:t.position.y,z:t.position.z});}continue;}
- t.previousPosition=t.position.clone();t.agl=t.position.y-terrainHeight(t.position.x,t.position.z);
+ if(t.playerControlled||t.pending||t.exited)continue;
+ if(t.kind==='ground'&&t.type!=='convoy'){const p=staticPoseCache.get(t);if(!p||p.revision!==terrainWorld.revision||p.x!==t.position.x||p.y!==t.position.y||p.z!==t.position.z){ageEvasion(t,dt);t.previousPosition=t.position.clone();t.agl=t.position.y-terrainHeight(t.position.x,t.position.z);staticPoseCache.set(t,{revision:terrainWorld.revision,x:t.position.x,y:t.position.y,z:t.position.z});}continue;}
+ ageEvasion(t,dt);t.previousPosition=t.position.clone();t.agl=t.position.y-terrainHeight(t.position.x,t.position.z);
  if(t.pending)continue;
  if(t.type==='ballistic'){if(t.alive)moveBallistic(t,dt);continue;}
  if(t.aiRole==='takeoff'&&t.alive){t.takeoffClock+=dt;if(t.takeoffClock>=0){t.velocity.z=Math.min(t.cruiseSpeed,t.velocity.z+6*dt);if(t.velocity.z>65){t.velocity.y=Math.min(35,t.velocity.y+8*dt);t.pitch=.15;}t.position.add(t.velocity.clone().scale(dt));if(t.position.y>900)t.aiRole='interceptor';}continue;}
- if(t.flight&&!t.flight.crashed){stepAircraft(t.flight,t.retreat?retreatFlightInput(t,dt):t.aiRole==='escortee'?escortFlightInput(t):combatFlightInput(t),dt);t.position=t.flight.position.clone();t.velocity=t.flight.velocity.clone();t.heading=attitude(t.flight.orientation).heading;t.damage=t.flight.damage;
+ if(t.flight&&!t.flight.crashed){stepAircraft(t.flight,t.retreat?retreatFlightInput(t,dt):t.evasion?evasionFlightInput(t):t.aiRole==='escortee'?escortFlightInput(t):combatFlightInput(t),dt);t.position=t.flight.position.clone();t.velocity=t.flight.velocity.clone();t.heading=attitude(t.flight.orientation).heading;t.damage=t.flight.damage;
   if(t.flight.dying){t.alive=false;t.falling=true;}
   if(t.flight.crashed){t.alive=false;t.falling=false;t.impactReady=true;}
- }else if(t.alive){if(t.civilian)updateCivilFlight(t,dt);else if(t.aiRole==='escortee')moveEscort(t,dt);else if(t.type==='convoy')moveConvoy(t,targets,dt);else t.position.add(t.velocity.clone().scale(dt));}
+ }else if(t.alive){if(moveEvasiveAircraft(t,dt)){}else if(t.civilian)updateCivilFlight(t,dt);else if(t.aiRole==='escortee')moveEscort(t,dt);else if(t.type==='convoy')moveConvoy(t,targets,dt);else t.position.add(t.velocity.clone().scale(dt));}
  if(t.alive&&t.aiRole==='escortee'&&t.position.z>=t.exitZ){t.exited=true;t.alive=false;}
 }}
-export function radarContacts(s,targets){const f=forward(s.orientation);return visibleTargets(s,targets).map(t=>{const d=t.position.clone().sub(s.position),distance=d.length(),angle=Math.acos(clamp(f.dot(d.clone().normalize()),-1,1));return {target:t,distance,angle,selectable:targetSelectable(t,s,targets),visible:distance<s.spec.radarRange&&angle<s.spec.radarCone*DEG};});}
+export function radarContacts(s,targets){const f=forward(s.orientation);return visibleTargets(s,targets).map(t=>{const d=t.position.clone().sub(s.position),distance=d.length(),angle=Math.acos(clamp(f.dot(d.clone().normalize()),-1,1));return {target:t,distance,angle,selectable:targetSelectable(t,s,targets),visible:radarContact(s,t)};});}
 export class Targeting {
  constructor(){this.id=null;this.progress=0;this.locked=false;this.selector=new TargetCycle();}
  cycle(s,targets){

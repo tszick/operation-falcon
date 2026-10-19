@@ -4,9 +4,15 @@ const one=n=>Number(n).toFixed(1),clock=t=>`${Math.floor(t/60)}:${Math.floor(t%6
 export function evaluateFlight(log){
  const entries=log?.entries||[],result=entries.findLast(e=>e.kind==='mission-end')?.data||log?.metadata?.result;
  const end=entries.at(-1)?.t||0,phaseEvents=entries.filter(e=>e.kind==='phase'),allSamples=entries.filter(e=>e.kind==='sample');
+ const order=new Map(entries.map((e,index)=>[e,index]));
  const phases=phaseEvents.map((event,i)=>{
   const start=event.t,finish=phaseEvents[i+1]?.t??end,id=event.data.id;
-  const events=entries.filter(e=>!['sample','world'].includes(e.kind)&&((e.t>=start&&e.t<finish&&!(e.kind==='touchdown'&&i>0&&e.t===start))||(e.kind==='touchdown'&&e.t===finish)));
+  const next=phaseEvents[i+1],events=entries.filter(e=>{
+   if(['sample','world'].includes(e.kind))return false;
+   // Touchdown belongs to the approach ending here, even when recorded after rollout.
+   if(e.kind==='touchdown')return (e.t>=start&&e.t<finish&&!(i>0&&e.t===start))||e.t===finish;
+   const after=e.t>start||e.t===start&&order.get(e)>=order.get(event),before=e.t<finish||e.t===finish&&(!next||order.get(e)<order.get(next));return after&&before;
+  });
   const samples=allSamples.filter(e=>e.t>=start&&e.t<finish&&e.data.player&&!e.data.player.crashed);
   const findings=[],facts=[];let status=samples.length?'good':'unknown';
   const durationWhere=predicate=>samples.reduce((total,e,j)=>total+(predicate(e.data.player)?Math.min(.2,Math.max(0,(samples[j+1]?.t??finish)-e.t)):0),0);
@@ -24,7 +30,9 @@ export function evaluateFlight(log){
   }
   const hits=events.filter(e=>e.kind==='combat'&&e.data.type==='target-hit'&&e.data.sourceId==='PLAYER');
   const launches=events.filter(e=>e.kind==='combat'&&['missile-launch','bomb-release','gun'].includes(e.data.type)&&e.data.sourceId==='PLAYER');
-  if(launches.length)facts.push(`${launches.length} rögzített fegyverhasználat; ${hits.length} közvetlen találati esemény. Az ágyúsorozat több eseményből állhat.`);
+  const practiceImpacts=events.filter(e=>e.kind==='combat'&&e.data.type==='practice-bomb-impact');
+  if(log?.metadata?.mission?.objective==='practice-bombing'||practiceImpacts.length){if(launches.length||practiceImpacts.length)facts.push(`${launches.filter(e=>e.data.type==='bomb-release').length} bombakioldás; ${practiceImpacts.filter(e=>e.data.hit).length} célkör-találat, ${practiceImpacts.filter(e=>!e.data.hit).length} mellé.`);}
+  else if(launches.length)facts.push(`${launches.length} rögzített fegyverhasználat; ${hits.length} közvetlen találati esemény. Az ágyúsorozat több eseményből állhat.`);
   const denied=[...new Set(events.filter(e=>e.kind==='message'&&typeof e.data==='string'&&/ELŐBB FOGD BE|NEM EHHEZ A CÉLHOZ|LŐTÁVON KÍVÜL|NINCS FELSZERELVE|RAKÉTAINDÍTÁS TILTVA/.test(e.data)).map(e=>e.data))];
   if(denied.length){findings.push(...denied.map(x=>`Rögzített tüzelési akadály: ${x}`));status='attention';}
   const playerHits=events.filter(e=>e.kind==='combat'&&e.data.type==='damage-hit'&&e.data.targetId==='PLAYER');if(playerHits.length)facts.push(`${playerHits.length} ellenséges találati esemény érte a gépet.`);
@@ -36,6 +44,7 @@ export function evaluateFlight(log){
    else if(touchdown.grade&&touchdown.grade!=='smooth'){status='attention';findings.push(`Túlélt ${touchdown.grade==='severe'?'súlyos':'kemény'} földetérés; ${one(touchdown.impactDamage||0)}% új sérülés.`,...(touchdown.problems||[]));}
    else facts.push('Sikeres földetérés.');
   }
+  for(const impact of events.filter(e=>e.kind==='combat'&&e.data.type==='practice-bomb-impact'))facts.push(`Gyakorlóbomba: ${impact.data.hit?'TALÁLAT':'MELLÉ'} · középtől ${one(impact.data.distanceM)} m.`);
   const damage=events.filter(e=>e.kind==='damage'&&e.data.damage<100),priorDamage=entries.findLast(e=>e.kind==='damage'&&e.t<start)?.data.damage||0;
   const damageDelta=damage.reduce((max,e)=>Math.max(max,e.data.damage-priorDamage),0);
   if(damageDelta>0)facts.push(`Rögzített sérülésnövekedés: ${one(damageDelta)} százalékpont. Utolsó ok: ${damage.at(-1).data.source||'nincs megadva'}.`);

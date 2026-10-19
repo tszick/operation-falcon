@@ -1,3 +1,4 @@
+import {transportExitPosition} from './transportRole.js';
 import {damagedVertex,modelFacePresent} from './modelDamage.js';
 import {damageVibration} from './damage.js';
 import {tailGunPose,tailGunStatus} from './tailGunnery.js';
@@ -128,13 +129,13 @@ export class Renderer {
  }if(!wreck&&!rear&&!this.thirdPerson&&this.headLook)cameraQ=this.headLook.orientation(s.orientation);if(!wreck&&!this.thirdPerson&&!(typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches)){const vibration=damageVibration(s);cameraQ=cameraQ.multiply(Quat.euler(vibration.yaw,vibration.pitch,vibration.roll));}this.setup(camera,cameraQ);
  const sky=c.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#081619');sky.addColorStop(.48,'#23392d');sky.addColorStop(1,'#07100c');c.fillStyle=sky;c.fillRect(0,0,w,h);
  this.worldOcclusion=false;this.skyStars();if(!this.gpuModels?.renderHorizon(this))this.groundHorizon();
- this.terrain();const featureStart=this.debugMetrics?performance.now():0;renderTerrainFeatures(this);if(this.debugMetrics)this.featureMs=performance.now()-featureStart;const jammed=navigationJammed(s,targets);this.worldOcclusion=true;this.meshQueue=[];this.runway(jammed);this.worldOcclusion=false;renderLandingRoute(this,getLandingRoute(s,{jammed}));this.worldOcclusion=true;renderCanyonCourse(this,s);const contacts=radarContacts(s,targets);
- for(const t of targets.filter(t=>!t.home&&(t.alive||t.falling||t.city)).sort((a,b)=>this.local(b.position).z-this.local(a.position).z)){if(t.type==='ballistic'){this.mesh(groundMesh('ballistic'),t.position,Quat.euler(t.heading,t.pitch||0,0),1,'#ffc48b');}else if(t.kind==='air'){if(t.flight)renderDamageSmoke(this,t.flight);this.mesh(aircraftMesh(t.aircraftId||'mig29'),t.position,t.flight?.orientation||Quat.euler(t.heading,t.pitch||0,t.bank||0),1,t.team==='ally'?'#8ccbe3':t.civilian?'#a6dce5':t.flight?.damage>40?'#e0a270':'#c39a78',t.flight?.condition);}else renderGroundTarget(this,t);}
+ this.terrain();const featureStart=this.debugMetrics?performance.now():0;renderTerrainFeatures(this);if(this.debugMetrics)this.featureMs=performance.now()-featureStart;const jammed=navigationJammed(s,targets);this.worldOcclusion=true;this.meshQueue=[];this.runway(jammed);this.worldOcclusion=false;renderLandingRoute(this,getLandingRoute(s,{jammed}));this.worldOcclusion=true;renderCanyonCourse(this,s);const contacts=radarContacts(s,targets);if(s.spec.transport&&!jammed){const transport=targets.find(t=>t.playerControlled);if(transport&&!transport.exited){const exit=transportExitPosition(transport);this.marker(exit,`KIJÁRAT ${(s.position.distance(exit)/1000).toFixed(1)} KM`,'#8ccbe3');}}
+ for(const t of targets.filter(t=>!t.playerControlled&&!t.home&&(t.alive||t.falling||t.city)).sort((a,b)=>this.local(b.position).z-this.local(a.position).z)){if(t.type==='ballistic'){this.mesh(groundMesh('ballistic'),t.position,Quat.euler(t.heading,t.pitch||0,0),1,'#ffc48b');}else if(t.kind==='air'){if(t.flight)renderDamageSmoke(this,t.flight);this.mesh(aircraftMesh(t.aircraftId||'mig29'),t.position,t.flight?.orientation||Quat.euler(t.heading,t.pitch||0,t.bank||0),1,t.team==='ally'?'#8ccbe3':t.civilian?'#a6dce5':t.flight?.damage>40?'#e0a270':'#c39a78',t.flight?.condition);}else renderGroundTarget(this,t);}
  if((this.thirdPerson||wreck)&&!s.crashed)this.mesh(aircraftMesh(s.spec.id,s.mach>.5?Math.min(1,(s.mach-.5)/.9):0,s.flapPosition??(s.flaps?1:0)),s.position,s.orientation,1,s.damage>40?'#e0a270':'#c7efa2',s.condition);
  this.flushMeshes();
  this.markerLabels=[];
  const friendlyFighters=targets.filter(t=>t.team==='ally'&&t.type==='fighter');
- for(const t of targets){if(!t.home&&!t.city&&t.alive&&!jammed&&!targetMasked(t,targets)){
+ for(const t of targets){if(!t.playerControlled&&!t.home&&!t.city&&t.alive&&!jammed&&!targetMasked(t,targets)){
   const contact=contacts.find(x=>x.target===t),locked=aim.id===t.id&&aim.locked;
   let name=t.name;
   if(t.team==='ally'&&t.kind==='air')name=t.displayCallSign|| (t.radioCallSign?formatCallSign(t.radioCallSign):t.type==='fighter'?formatCallSign({flight:'Falcon',number:friendlyFighters.indexOf(t)+2}):'Transport');

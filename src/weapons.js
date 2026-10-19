@@ -1,3 +1,5 @@
+import {syncPlayerTransport} from './transportRole.js';
+import {practiceBombImpact} from './bombingPractice.js';
 import {tailGunStatus} from './tailGunnery.js';
 import {defenseState,updateAIDefense,militaryAircraft} from './aiDefense.js';
 import {combatSource} from './unitCombat.js';
@@ -32,6 +34,7 @@ export class Weapons {
  fire(s,targets,aim){
   if(s.rearView)return this.fireTail(s);
   if(this.cooldown>0)return null;
+  if(s.bombingPractice&&s.onGround)return 'GYAKORLÓBOMBA CSAK REPÜLÉS KÖZBEN OLDHATÓ';
   const status=firingStatus(s,targets,aim,this);
   if(!status.canFire){if(status.status==='empty'){this.cooldown=.25;this.emit({type:'dry-fire',position:s.position.clone()});}return status.label;}
   const w=this.selected,target=status.target;
@@ -40,7 +43,8 @@ export class Weapons {
   const position=s.position.clone().add(forward(s.orientation).scale(w==='gun'?15:station?.z||0)).add(right(s.orientation).scale(station?.x||0)).add(up(s.orientation).scale(w==='gun'?0:-.9));
   const profile=weaponProfile(s.spec,w),direction=w==='gun'?spreadDirection(forward(s.orientation),gunDispersion(s,profile,this.gunHeat),this.random):forward(s.orientation);
   if(w==='gun')this.gunHeat=Math.min(5,this.gunHeat+.12);
-  this.projectiles.push({id:++this.sequence,type:w,profile,position,velocity:w==='aam'||w==='agm'?missileLaunchVelocity(s.velocity,direction,profile):s.velocity.clone().add(direction.scale(w==='gun'?profile.muzzleSpeed:0)),targetId:target?.id,age:0,travelled:0,trailTimer:0,trailAnchor:position.clone(),previous:position.clone(),damage:w==='gun'?18:50});
+  this.projectiles.push({id:++this.sequence,type:w,profile,position,velocity:w==='aam'||w==='agm'?missileLaunchVelocity(s.velocity,direction,profile):s.velocity.clone().add(direction.scale(w==='gun'?profile.muzzleSpeed:0)),targetId:target?.id,age:0,travelled:0,trailTimer:0,trailAnchor:position.clone(),previous:position.clone(),damage:w==='gun'?18:profile.inert?0:50,practice:!!s.bombingPractice&&!!profile.inert});
+  if(profile.inert&&s.bombingPractice)this.projectiles.at(-1).practiceShot=++s.bombingPractice.shots;
   this.emit({type:w==='gun'?'gun':w==='bomb'?'bomb-release':'missile-launch',position:position.clone(),weapon:w,projectileId:this.sequence,sourceId:'PLAYER',targetId:target?.id,profile:profile.id,initialVelocity:this.projectiles.at(-1).velocity.clone()});
   if(w==='gun')this.effects.push({kind:'muzzle',position:s.position.clone(),age:0,life:.055,maxLife:.055});
   return w==='gun'?'ÁGYÚTŰZ':w==='bomb'?'BOMBA KIOLDVA':'RAKÉTA INDÍTVA';
@@ -53,7 +57,7 @@ export class Weapons {
   this.effects.push(effect);
   this.emit({type:'explosion',weapon,ground,position:position.clone(),heavy});
  }
- update(s,targets,dt){
+ update(s,targets,dt){syncPlayerTransport(s,targets);
   updateCountermeasures(s,dt);
   updateAIDefense(s,targets,this,dt);
   this.enemyCombat?.update(s,targets,this,dt);
@@ -72,6 +76,7 @@ export class Weapons {
    if(missile){const source=ai?targets.find(t=>t.id===p.sourceId):s,launcher=ai&&source?combatSource(source,s):source,defender=target===s?s:target&&militaryAircraft(target)?defenseState(target):null,guidanceTarget=defender?countermeasureTarget(p,defender,dt,this.random):target;stepMissile(p,guidanceTarget,launcher&&navigationJammed(launcher,targets)&&['sarh','active'].includes(p.profile.guidance)?null:launcher,dt);}
    if(p.type==='bomb'||p.type==='gun')stepBallistic(p,dt);else if(p.type==='flak')p.velocity.y-=9.81*dt;
    p.position.add(p.velocity.clone().scale(dt));
+   if(p.profile?.inert){if(p.position.y<=terrainHeight(p.position.x,p.position.z)){const impact=practiceBombImpact(s,p,targets);if(impact.hit)this.hits++;else this.misses++;this.effects.push({kind:'practice-impact',position:impact.position,age:0,life:8,maxLife:8,hit:impact.hit});this.emit({type:'practice-bomb-impact',...impact});}else if(p.age>p.profile.life){this.misses++;this.emit({type:'practice-bomb-expired',projectileId:p.id});}else remaining.push(p);continue;}
    if(missile&&p.age<p.profile.burn){
     p.trailTimer+=dt;
     if(p.trailTimer>=.045){this.trails.push({from:p.trailAnchor.clone(),to:p.position.clone(),velocity:p.velocity.clone().normalize(),life:3.5,maxLife:3.5});p.trailAnchor=p.position.clone();p.trailTimer%=.045;}
@@ -84,7 +89,7 @@ export class Weapons {
     const terrain=p.position.y<=terrainHeight(p.position.x,p.position.z);if(terrain&&!consumed){this.explode(p.position,p.type,{ground:true});consumed=true;}
     if(!consumed&&p.age<(p.profile?.life||(p.type==='gun'?5:p.type==='flak'?15:70)))remaining.push(p);continue;
    }
-   const canHit=t=>!ai||teamOf(t,s)!==p.owner&&teamOf(t,s)!=='neutral';
+   const canHit=t=>!t.playerControlled&&(!ai||teamOf(t,s)!==p.owner&&teamOf(t,s)!=='neutral');
    const recordHit=(t,p,info=null)=>{const amount=p.type==='gun'?impactDamage(p,t.velocity):(p.type==='aam'||p.type==='agm')&&t.kind==='ground'?100:p.damage??100,destroyed=applyTargetHit(t,p.type,{part:info?.part,engineIndex:info?.engineIndex,amount});this.emit({type:'target-hit',targetId:t.id,sourceId:p.sourceId||'PLAYER',projectileId:p.id,weapon:p.type,part:info?.part,engineIndex:info?.engineIndex,amount,destroyed,position:t.position.clone()});if(!ai){this.damageHits=(this.damageHits||0)+1;if(destroyed)this.hits++;}else if(p.owner==='ally'&&destroyed)this.alliedKills=(this.alliedKills||0)+1;return destroyed;};
    if(missile&&target&&target!==s&&p.decoyId!==undefined){const defender=defenseState(target),point=decoyIntercept(p,defender);if(point){this.explode(point,p.type);const hit=closestAircraftSurface(defender,point);if(hit&&hit.distance<35)recordHit(target,{...p,damage:p.damage*(1-hit.distance/35)},hit);continue;}}
    if(entityShot&&p.type==='flak'){
@@ -97,7 +102,7 @@ export class Weapons {
     if(t.type==='ballistic'){hitInfo=ballisticHit(t,p.previous,p.position,missile&&p.armed?p.profile.fuseRadius:p.type==='gun'?.15:1);if(hitInfo){hitTarget=t;break;}continue;}
     const segment=p.position.clone().sub(p.previous),length2=segment.dot(segment),fraction=clamp(t.position.clone().sub(p.previous).dot(segment)/Math.max(1,length2),0,1),nearest=p.previous.clone().add(segment.scale(fraction));
     if(t.kind==='ground'?groundHit(t,p.previous,p.position,p.type==='bomb'?38:p.type==='gun'?.2:12):nearest.distance(t.position)<t.radius+(p.type==='bomb'?38:p.type==='gun'?2:12)){
-     if(t.kind==='air'){hitInfo=aircraftHit({spec:{id:t.aircraftId||'mig29'},position:t.position,previousPosition:t.previousPosition||t.position,orientation:t.flight?.orientation||Quat.euler(t.heading||0,t.pitch||0,t.bank||0),mach:0},p.previous,p.position,{radius:missile&&p.armed?p.profile.fuseRadius:p.type==='gun'?.15:1});if(!hitInfo)continue;}
+     if(t.kind==='air'){hitInfo=aircraftHit({spec:{id:t.aircraftId||'mig29'},position:t.position,previousPosition:t.previousPosition||t.position,orientation:t.flight?.orientation||Quat.euler(t.heading||0,t.pitch||0,t.bank||0),mach:0,condition:t.flight?.condition},p.previous,p.position,{radius:missile&&p.armed?p.profile.fuseRadius:p.type==='gun'?.15:1});if(!hitInfo)continue;}
      hitTarget=t;break;
     }
    }

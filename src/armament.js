@@ -6,6 +6,8 @@ const preset=(variant,gun,rounds,aam,stations,agm=null,bomb=null)=>({variant,wea
 const mixed=(outer,inner,bombX,bombZ=-1)=>[...pair('aam',...outer),...pair('agm',...inner),...pair('bomb',bombX,bombZ)];
 const bombBay=()=>Array.from({length:12},(_,i)=>({type:'bomb',x:i%2?.65:-.65,z:3-Math.floor(i/2)*1.2,internal:true}));
 export const armaments={
+ ...Object.fromEntries(['c130','c130j','il76','il76md90a','y20'].map(id=>[id,{variant:'Fegyvertelen szállító · önvédelmi elterelők',weapons:{},stations:[]} ])),
+ t45:preset('T-45C · kiképzési függesztő · kizárólag inert bomba',null,0,null,[{type:'bomb',x:-2,z:.8},{type:'bomb',x:-2,z:0},{type:'bomb',x:-2,z:-.8}],null,'Mk 76 · inert gyakorlóbomba'),
  b52:{...preset('B-52H · klasszikus, farokgépágyús',null,0,null,bombBay(),null,'Mk 82'),tailGun:{name:'M61 · farokgépágyú · 20 mm',quantity:1800}},
  tu95:{...preset('Tu-95 · farokgépágyús',null,0,null,bombBay(),null,'FAB-250'),tailGun:{name:'GSh-23 · farokgépágyú · 23 mm',quantity:1800}},
  f22:preset('F-22A','M61A2 · 20 mm',480,'AIM-120C AMRAAM',[-.8,0,.8].flatMap(x=>[{type:'aam',x:x-.45,z:.7,internal:true},{type:'aam',x:x+.45,z:-1.5,internal:true}])),

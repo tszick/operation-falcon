@@ -39,6 +39,7 @@ export function homography(width,height,points){
 }
 export function matrix3d(h){return [h[0],h[3],0,h[6],h[1],h[4],0,h[7],0,0,1,0,h[2],h[5],0,1];}
 export function compactObjective(row){
+ if(row.id==='practice-hits')return `Találat ${row.hits??row.text.match(/(\d+)\/2/)?.[1]??0}/${row.requiredHits??2} · bomba ${row.remainingBombs??row.text.match(/bomba:\s*(\d+)/)?.[1]??0}`;
  const ironLabels={'iv-rearm':'Leszállás / feltöltés','iv-jammer':'Jelzavaró (opció)','iv-flak':'Üteg (opció)','iv-command':'Bunker (opció)','iv-convoy':'Konvoj (opció)','iv-counter':'Ellencsapás'};
  if(ironLabels[row.id])return ironLabels[row.id];
  if(row.id==='iv-corridor')return 'SAM: '+(row.text.match(/\d\/2/)?.[0]||'0/2');

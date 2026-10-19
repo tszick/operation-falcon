@@ -13,6 +13,6 @@ export function moveConvoy(t,targets,dt){
  else{t.routeDistance=(t.routeDistance||0)+14*dt*direction;if(Math.abs(t.routeDistance)>2200){t.routeDistance=clamp(t.routeDistance,-2200,2200);t.routeDirection=-direction;}}
  Object.assign(t,convoyPose(t));t.velocity=t.position.clone().sub(previous).scale(1/Math.max(dt,1e-6));
 }
-export function moveEscort(t,dt){t.position.add(t.velocity.clone().scale(dt));if(t.position.z>=t.exitZ){t.exited=true;t.alive=false;t.velocity=new Vec3();}}
+export function moveEscort(t,dt){const desired=Math.atan2((t.routeX??t.position.x)-t.position.x,(t.exitZ??t.position.z+12000)-t.position.z),error=Math.atan2(Math.sin(desired-(t.heading||0)),Math.cos(desired-(t.heading||0))),speed=t.cruiseSpeed||125,turn=clamp(error,-.035*dt,.035*dt);t.heading=(t.heading||0)+turn;t.bank=Math.atan(speed*turn/(dt*9.81));t.velocity=new Vec3(Math.sin(t.heading)*speed,clamp(((t.routeAltitude??1700)-t.position.y)*.025,-8,10),Math.cos(t.heading)*speed);t.position.add(t.velocity.clone().scale(dt));if(t.position.z>=t.exitZ){t.exited=true;t.alive=false;t.velocity=new Vec3();}}
 
 export function escortFlightInput(t){t.routeX??=t.position.x;return guidedFlightInput(t,new Vec3(t.routeX,t.routeAltitude??1700,t.exitZ??t.position.z+12000),{altitude:t.routeAltitude??1700,bankLimit:20*Math.PI/180});}

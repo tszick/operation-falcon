@@ -35,7 +35,7 @@ test('very early releases and decoys outside the seeker cannot divert a missile'
  const {s,p}=encounter();p.position.z=-12000;assert.equal(countermeasureTarget(p,s,1,()=>0),s);p.position.z=-1500;s.countermeasures.decoys[0].position.x=1000;assert.equal(countermeasureTarget(p,s,1,()=>0),s);
 });
 test('decoy decisions integrate exposure rather than rerolling every frame; fade does not teleport a missile back',()=>{
- const a=encounter(),b=encounter();for(let i=0;i<30;i++)countermeasureTarget(a.p,a.s,1/30,()=>.8);for(let i=0;i<120;i++)countermeasureTarget(b.p,b.s,1/120,()=>.8);assert.equal(a.p.decoyId,b.p.decoyId);assert.equal(a.p.decoyId,1);a.s.countermeasures.decoys=[];assert.equal(countermeasureTarget(a.p,a.s,STEP),null);assert.equal(a.p.seekerLost,true);
+ const a=encounter(),b=encounter();for(let i=0;i<30;i++)countermeasureTarget(a.p,a.s,1/30,()=>.02);for(let i=0;i<120;i++)countermeasureTarget(b.p,b.s,1/120,()=>.02);assert.equal(a.p.decoyId,b.p.decoyId);assert.equal(a.p.decoyId,1);a.s.countermeasures.decoys=[];assert.equal(countermeasureTarget(a.p,a.s,STEP),null);assert.equal(a.p.seekerLost,true);
 });
 test('afterburner heat, modern seeker rejection and Doppler separation reduce decoy success without immunity',()=>{
  function exposure(profile,ab=false,beam=false){const {s,p}=encounter(profile,decoyKind(profile));s.afterburner=ab;s.throttle=ab?1:.6;if(beam)s.velocity=new Vec3(180,0,0);countermeasureTarget(p,s,.15,()=>.999999);return p.decoyEvidence.get(1).exposure;}

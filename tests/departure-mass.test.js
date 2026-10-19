@@ -1,3 +1,4 @@
+import {trainingAircraft,isPracticeMission,unarmedPractice} from '../src/trainingAircraft.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {aircraft,missions} from '../src/aircraftSpec.js';
@@ -17,16 +18,16 @@ test('F16 planner accounts separately for empty aircraft, fuel, stores and compl
 });
 test('planner and actual mission-start mass match for every aircraft, fuel level and start mode',()=>{
  for(const a of aircraft)for(const id of ['civil','landing','escort-transport'])for(const fuelFraction of [0,.05,.15,.5,1]){
-  const m=missions.find(m=>m.id===id),choice=defaultLoadout(a);choice.gun=false;choice.stations[0]='';const spec=configureAircraft(a,choice),plan=plannedDeparture(a,choice,{fuelFraction,unarmed:id==='landing'}),s=createMissionAircraft(spec,m,{fuelFraction});
+  const m=missions.find(m=>m.id===id),base=isPracticeMission(m)?trainingAircraft:a,choice=defaultLoadout(base);if(!isPracticeMission(m)){choice.gun=false;choice.stations[0]='';}const spec=configureAircraft(base,choice),plan=plannedDeparture(base,choice,{fuelFraction,unarmed:unarmedPractice(m)}),s=createMissionAircraft(spec,m,{fuelFraction});
   close(s.fuel,plan.fuelKg);close(mass(s),plan.totalKg);assert.deepEqual(s.ammo,plan.ammo);assert.equal(s.enginePower,fuelFraction>0?1:0);assert.ok(Number.isFinite(s.orientation.w));
  }
 });
 test('default tanking stays full for ordinary missions and fifteen percent for landing practice; explicit values override it',()=>{
- for(const m of missions){const expected=m.objective==='landing'?.15:m.objective==='canyon'?.5:1;assert.equal(defaultMissionFuel(m),expected);close(createMissionAircraft(f16,m).fuel,3200*expected);close(createMissionAircraft(f16,m,{fuelFraction:.42}).fuel,1344);}
- const m=missions.find(m=>m.id==='civil');close(createMissionAircraft(f16,m,{fuelFraction:5}).fuel,3200);close(createMissionAircraft(f16,m,{fuelFraction:-2}).fuel,0);close(createMissionAircraft(f16,m,{fuelFraction:NaN}).fuel,3200);
+ for(const m of missions){const expected=m.objective==='landing'?.15:m.objective==='canyon'?.5:1;assert.equal(defaultMissionFuel(m),expected);close(createMissionAircraft(f16,m).fuel,(isPracticeMission(m)?trainingAircraft:f16).fuelCapacity*expected);close(createMissionAircraft(f16,m,{fuelFraction:.42}).fuel,(isPracticeMission(m)?trainingAircraft:f16).fuelCapacity*.42);}
+ const m=missions.find(m=>m.id==='civil');close(createMissionAircraft(f16,m,{fuelFraction:5}).fuel,trainingAircraft.fuelCapacity);close(createMissionAircraft(f16,m,{fuelFraction:-2}).fuel,0);close(createMissionAircraft(f16,m,{fuelFraction:NaN}).fuel,trainingAircraft.fuelCapacity);
 });
 test('fuel consumption, an actual cannon shot and releasing stores reduce the same flying mass used in the planner',()=>{
- const choice=defaultLoadout(f16),s=createMissionAircraft(configureAircraft(f16,choice),missions.find(m=>m.id==='civil'),{fuelFraction:.5}),before=mass(s);
+ const choice=defaultLoadout(f16),s=createMissionAircraft(configureAircraft(f16,choice),missions.find(m=>m.id==='convoy'),{fuelFraction:.5}),before=mass(s);
  consumeFuel(s,2,5);close(before-mass(s),10);const w=new Weapons();w.selected='gun';assert.equal(w.fire(s,[],{id:null,locked:false}),'ÁGYÚTŰZ');close(before-mass(s),10.22);
  s.ammo.bomb--;close(before-mass(s),251.22);close(massBreakdown(s).totalKg,mass(s));
 });

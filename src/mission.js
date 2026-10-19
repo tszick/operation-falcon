@@ -1,3 +1,5 @@
+import {syncPlayerTransport} from './transportRole.js';
+import {updateBombingPractice} from './bombingPractice.js';
 import {ironVeilStages} from './ironVeil.js';
 import {updateCanyonCourse} from './canyonTraining.js';
 import {updateMissionRuntime} from './missionRuntime.js';
@@ -40,12 +42,14 @@ export class Mission {
   }
   service(s){this.lastServiceLanding=s.lastTouchdown||s.landing;this.serviceCount=(this.serviceCount||0)+1;serviceAircraft(s);this.departed=false;this.setPhase('preflight','ÚJRA FELKÉSZÍTVE','Új gép, teljes üzemanyag és fegyverzet. R: indulhatsz újra.');}
   update(s,targets,w,aim=null){
+    syncPlayerTransport(s,targets);
     if(this.complete||this.failed||this.recovered)return;
     const practice=this.spec.objective==='landing',civil=this.spec.objective==='escort'?targets.find(t=>t.civilian):null;
     if(s.crashed){this.setPhase('failed','KÜLDETÉS SIKERTELEN','A repülési jelentésben találod a részleteket.');return;}
     if(s.dying){this.setPhase('dying','IRÁNYÍTÁS ELVESZETT','Végzetes szerkezeti kár. A gép zuhanását külső nézetből követjük.');return;}
     updateMissionRuntime(s,this,targets,w);
-    if(this.aborted){const report=this.spec.composition?battleObjectives(this,s,targets,w):{failure:''};if(s.onGround&&s.landing?.success&&s.speed<5&&!report.failure&&!this.failed){this.aborted=false;this.interruptedObjectives=[];this.recovered=false;this.abortReason='';this.objectives=undefined;}else{if(report.failure){this.failed=true;this.failureReason=report.failure;this.setPhase('failed','KÜLDETÉS SIKERTELEN',report.failure);return;}this.updateReturn(s);return;}}
+    if(this.aborted){const report=this.spec.composition?battleObjectives(this,s,targets,w):{failure:''};if(s.onGround&&s.landing?.success&&s.speed<5&&!report.failure&&!this.failed){this.aborted=false;this.interruptedObjectives=[];this.recovered=false;this.abortReason='';this.objectives=undefined;}else{if(report.failure){this.objectives=report.rows.map(o=>({...o,status:o.done?'done':'failed'}));this.failed=true;this.failureReason=report.failure;this.setPhase('failed','KÜLDETÉS SIKERTELEN',report.failure);return;}this.updateReturn(s);return;}}
+    if(this.spec.objective==='practice-bombing'){updateBombingPractice(s,this,targets,w);return;}
     if(this.spec.objective==='canyon'){updateCanyonCourse(s,this,w);return;}
     if(civil&&(civil.damage>0||civil.flight?.damage>0||(!civil.alive&&!civil.departedAirspace))){this.failed=true;this.failureReason='A civil repülőgép megsérült. Ebben a küldetésben tilos tüzelni rá.';this.setPhase('failed','KÜLDETÉS SIKERTELEN · CIVIL GÉP',this.failureReason);return;}
     if(!civil&&targets.filter(t=>isHostile(t,s)).length&&targets.filter(t=>isHostile(t,s)).every(t=>!t.alive))this.destroyed=true;
@@ -76,6 +80,7 @@ export class Mission {
     }
     if(s.damage>=40){this.setPhase('emergency','SÉRÜLT GÉP · KÉNYSZERHELYZET','Enyhíts a manővereken, ellenkormányozz és térj vissza a bázisra.');return;}
     if(practice){this.setPhase('landing-setup','LESZÁLLÁSI GYAKORLAT','N: kapcsold be a leszállási segédet. G: futómű, X: fékszárny.');return;}
+    if(s.spec.transport&&!this.objectiveComplete){const t=targets.find(t=>t.playerControlled);this.setPhase('transport-flight','SZÁLLÍTÓREPÜLÉS',`Tarts észak felé a kijárathoz: ${Math.max(0,((t?.exitZ||24000)-s.position.z)/1000).toFixed(1)} km. C: vegyes elterelő; a Falcon gépek fedeznek.`);return;}
     if(this.objectiveComplete){
       this.setPhase('return','HAZATÉRÉS','Kövesd a BASE jelzést; készülj a leszállásra.');
       return;

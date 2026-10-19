@@ -13,7 +13,8 @@ class Builder {
 }
 const cache=new Map();
 export function groundMesh(type,span=220,dimensions={}){const key=type+':'+Math.round(span)+':'+(dimensions.width||0)+':'+(dimensions.depth||0)+':'+(dimensions.detail||'near');if(cache.has(key))return cache.get(key);const b=new Builder();
- if(type==='city-building'){const w=dimensions.width||24,d=dimensions.depth||30,h=span;b.box(0,0,0,w,dimensions.detail==='far'?h+2:h,d);if(dimensions.detail!=='far')b.box(0,h,0,w*.55,2,d*.55);if(!dimensions.detail||dimensions.detail==='near')for(let y=8;y<h;y+=10){b.line([-w,y,d+.05],[w,y,d+.05]);b.line([w+.05,y,-d],[w+.05,y,d]);}}
+ if(type==='target-range'){for(const radius of [25,50])for(let i=0;i<64;i++){const a=i*Math.PI/32,c=(i+1)*Math.PI/32;b.line([Math.cos(a)*radius,.1,Math.sin(a)*radius],[Math.cos(c)*radius,.1,Math.sin(c)*radius]);}b.line([-50,.12,0],[50,.12,0]);b.line([0,.12,-50],[0,.12,50]);b.box(0,.3,0,1.8,1.2,3.5);for(const x of [-2,2])b.box(x,.1,0,.4,1.1,3.7);b.box(0,1.5,-.3,1.3,1,1.5);b.box(0,2,3,.13,.22,2.5);}
+ else if(type==='city-building'){const w=dimensions.width||24,d=dimensions.depth||30,h=span;b.box(0,0,0,w,dimensions.detail==='far'?h+2:h,d);if(dimensions.detail!=='far')b.box(0,h,0,w*.55,2,d*.55);if(!dimensions.detail||dimensions.detail==='near')for(let y=8;y<h;y+=10){b.line([-w,y,d+.05],[w,y,d+.05]);b.line([w+.05,y,-d],[w+.05,y,d]);}}
  else if(type==='ballistic-silo'){b.box(0,0,0,30,4,30);b.rings(0,0,[[4,14],[6,14],[7,12]],24);b.box(38,0,5,12,9,18);b.box(-26,0,-32,10,5,8);b.line([-13,7,0],[13,7,0]);b.line([0,7,-13],[0,7,13]);for(const x of [-40,60])b.line([x,0,-40],[x,3,-40]);}
  else if(type==='ballistic'){b.rings(0,0,[[0,1.2],[12,1.2],[16,0]],12);for(const x of [-1,1]){b.face([[0,0,0],[x*3,0,0],[0,4,0]]);b.face([[0,0,0],[0,0,x*3],[0,4,0]]);}b.points=b.points.map(p=>new Vec3(p.x,-p.z,p.y-7));}
  else if(type==='convoy'){for(let i=-2;i<=2;i++)b.truck(0,i*30);}

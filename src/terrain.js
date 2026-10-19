@@ -7,6 +7,7 @@ export let terrainWorld={revision:0,river:null,road:null,canyon:null,peaks:[]};
 const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
 function corridor(anchor,rng){return {x:anchor.x,z:anchor.z,angle:rng()*Math.PI*2,bend:250+rng()*650,phase:rng()*6.28};}
 export function configureTerrain(m,anchor=new Vec3(22000,0,0),rng=Math.random){
+ if(m.id==='practice-bombing'){terrainWorld={revision:++revision,river:null,road:null,canyon:null,peaks:[],site:{x:4500,z:8500,height:80}};return terrainWorld;}
  if(m.id==='canyon'){terrainWorld={revision:++revision,river:null,road:null,canyon:{x:12000,z:-12000,angle:Math.PI/2,bend:650,phase:0,width:550,depth:750,training:true},peaks:[{x:11611,z:3000,height:1450,radius:2600,platform:0}]};return terrainWorld;}
  const river=m.id==='bridge'||rng()<.55?{...corridor(m.id==='bridge'?anchor:{x:anchor.x+5500,z:anchor.z+4000},rng),width:70+rng()*230,level:25+rng()*35}:null;
  if(river&&['bunker','sam'].includes(m.id)&&Math.abs(pathCoordinates(river,anchor.x,anchor.z).across)<2500){river.x+=Math.sin(river.angle)*6000;river.z-=Math.cos(river.angle)*6000;}

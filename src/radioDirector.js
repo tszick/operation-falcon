@@ -1,3 +1,4 @@
+import {playerRadioLine,playerRadioCallSign} from './playerRadio.js';
 import {wingmanLine} from './wingmanRadio.js';
 import {radioLines} from './radioLines.js';
 import {isHostile} from './unitTypes.js';
@@ -7,16 +8,16 @@ const isWingman=t=>t.team==='ally'&&(t.type==='fighter'||t.radioCallSign&&t.kind
 const groups=new Map();for(const line of radioLines){if(!groups.has(line.group))groups.set(line.group,[]);groups.get(line.group).push(line);}
 export class RadioDirector {
  constructor({random=Math.random}={}){this.random=random;this.reset();}
- reset(){this.queue=[];this.seen=new Set();this.cooldowns=new Map();this.variants=new Map();this.current=null;this.stopRequested=false;this.halted=false;this.nextScan=0;this.jammed=false;this.flightEmergency=null;this.flightEmergencySince=0;this.services=0;this.wingmen=new Map();}
+ reset(){this.playerCallSign='Falcon One';this.queue=[];this.seen=new Set();this.cooldowns=new Map();this.variants=new Map();this.current=null;this.stopRequested=false;this.halted=false;this.nextScan=0;this.jammed=false;this.flightEmergency=null;this.flightEmergencySince=0;this.services=0;this.wingmen=new Map();}
  issue(group,now,{priority=30,delay=0,cooldown=0,key=group,ttl=18,response=null,lineOverride=null}={}){
   if(this.halted||now<(this.cooldowns.get(key)??-Infinity)||this.queue.some(c=>c.key===key))return null;
-  const choices=groups.get(group);if(!choices?.length)return null;const n=this.variants.get(group)||0;this.variants.set(group,n+1);const line=lineOverride||choices[n%choices.length];
+  const choices=groups.get(group);if(!choices?.length)return null;const n=this.variants.get(group)||0;this.variants.set(group,n+1);const line=lineOverride||playerRadioLine(choices[n%choices.length],this.playerCallSign);
   const cue={line,key,priority,ready:now+delay,expires:now+delay+ttl,response};this.cooldowns.set(key,now+cooldown);this.queue.push(cue);this.queue.sort((a,b)=>b.priority-a.priority||a.ready-b.ready);
   if(this.queue.length>32)this.queue.length=32;return cue;
  }
  once(key,group,now,options={}){if(this.seen.has(key))return;this.seen.add(key);return this.issue(group,now,{...options,key});}
- start(s,mission,targets){this.reset();const now=s.elapsed||0,practice=mission.spec.objective==='landing',civil=mission.spec.objective==='escort';
-  if(mission.spec.objective!=='canyon')this.issue(practice?'approach':s.onGround?'clearance':civil?'civil':'hunt',now,{priority:35,ttl:35,response:practice||s.onGround?'ackGeneral':null});if(!s.onGround)this.seen.add('departure');
+ start(s,mission,targets){this.reset();this.playerCallSign=playerRadioCallSign(s);const now=s.elapsed||0,practice=mission.spec.objective==='landing',civil=mission.spec.objective==='escort';
+  if(mission.spec.objective!=='canyon'&&!s.spec.transport)this.issue(practice?'approach':s.onGround?'clearance':civil||s.spec.transport?'civil':'hunt',now,{priority:35,ttl:35,response:practice||s.onGround?'ackGeneral':null});if(!s.onGround)this.seen.add('departure');
   let readyIndex=0;for(const t of targets.filter(t=>isWingman(t)&&t.alive)){this.registerWingman(t);if(this.wingmanReady(t,now,{delay:6+readyIndex*4}))readyIndex++;}
  }
  registerWingman(t){let state=this.wingmen.get(t.id);if(!state){state={number:t.radioCallSign?.number??this.wingmen.size+2,flight:t.radioCallSign?.flight||'Falcon',ordinal:this.wingmen.size,damage:t.flight?.damage||t.damage||0,down:false};this.wingmen.set(t.id,state);}return state;}
@@ -27,7 +28,7 @@ export class RadioDirector {
   if(t.radioCallSign&&state.number!==1||this.seen.has(key))return null;
   const cue=this.wingmanCue('wingmanReady',t,now,{priority:25,ttl:45,...options,key});if(cue)this.seen.add(key);return cue;
  }
- observe(s,mission,targets){const now=s.elapsed||0;if(s.crashed){this.queue=[];this.halted=true;this.stopRequested=true;return;}
+ observe(s,mission,targets){this.playerCallSign=playerRadioCallSign(s);const now=s.elapsed||0;if(s.crashed){this.queue=[];this.halted=true;this.stopRequested=true;return;}
   if(s.dying){if(!this.seen.has('mayday')){this.queue=[];this.once('mayday','mayday',now,{priority:120,ttl:12});}return;}
   if((mission.serviceCount||0)>this.services){this.services=mission.serviceCount;const sortieKeys=['damaged-return','mayday','return','departure','success','welcome'];for(const key of sortieKeys)this.seen.delete(key);this.queue=this.queue.filter(c=>!sortieKeys.includes(c.key)&&c.key!=='flight-emergency');this.flightEmergency=null;this.flightEmergencySince=now;this.issue('welcome',now,{priority:80,key:'service-welcome-'+this.services,ttl:20});this.issue('clearance',now,{priority:35,delay:6,key:'service-clearance-'+this.services,ttl:25});}
   if(s.airborne&&s.onGround&&s.landing?.success&&s.speed<5){if(!this.seen.has('welcome')){this.queue=[];this.once('welcome','welcome',now,{priority:80,ttl:25});}return;}
@@ -49,7 +50,7 @@ export class RadioDirector {
   if(mission.civilIntercepted&&mission.spec.objective==='escort')this.once('civil-pilot','civilPilot',now,{priority:65,ttl:25});
   if(!damaged&&!weaponsFailed&&airborne&&mission.objectiveComplete&&!mission.aborted&&!['landing','canyon'].includes(mission.spec.objective)){this.once('success','success',now,{priority:55,ttl:30,response:'ack'});this.seen.add('return');}
   if(mission.phaseId==='return')this.once('return','return',now,{priority:55,response:'ack'});
-  if(airborne&&mission.departed&&!mission.aborted&&!mission.objectiveComplete&&!['landing','canyon'].includes(mission.spec.objective))this.once('departure',mission.spec.objective==='escort'?'civil':'hunt',now,{priority:30,ttl:25});
+  if(!s.spec.transport&&airborne&&mission.departed&&!mission.aborted&&!mission.objectiveComplete&&!['landing','canyon','practice-bombing'].includes(mission.spec.objective))this.once('departure',mission.spec.objective==='escort'?'civil':'hunt',now,{priority:30,ttl:25});
   const inbound=targets.some(t=>t.alive&&t.kind==='air'&&!t.civilian&&isHostile(t,s)&&(()=>{const dx=t.position.x-s.position.x,dy=t.position.y-s.position.y,dz=t.position.z-s.position.z,d=Math.hypot(dx,dy,dz);return d<20000&&dx*((t.velocity?.x||0)-s.velocity.x)+dy*((t.velocity?.y||0)-s.velocity.y)+dz*((t.velocity?.z||0)-s.velocity.z)<0;})());
   if(inbound)this.issue('bandits',now,{priority:60,cooldown:90,ttl:10});
   for(const t of targets.filter(t=>isWingman(t)&&!t.pending&&!t.cancelled)){
@@ -60,11 +61,11 @@ export class RadioDirector {
    previous.down=down;previous.damage=damage;
   }
  }
- event(event,s,targets){if(s.crashed||s.dying||this.halted)return;const now=s.elapsed||0;
+ event(event,s,targets){this.playerCallSign=playerRadioCallSign(s);if(s.crashed||s.dying||this.halted)return;const now=s.elapsed||0;
   if(event.owner==='enemy'){
    const wingman=targets.find(t=>t.id===event.targetId&&isWingman(t)&&t.alive&&!t.flight?.dying);
    if(wingman&&['missile-launch','gun'].includes(event.type))this.wingmanCue('wingmanAttack',wingman,now,{priority:75,key:'wingman-attack:'+wingman.id,cooldown:35,ttl:18});
-   if(event.type==='missile-launch'&&(event.targetId==='PLAYER'||s.id&&event.targetId===s.id)){const source=targets.find(t=>t.id===event.sourceId);this.issue(source?.kind==='ground'?'sam':'missile',now,{priority:100,key:'incoming-missile',cooldown:12,ttl:9});}return;
+   if(event.type==='missile-launch'&&(event.targetId==='PLAYER'||s.id&&event.targetId===s.id||targets.some(t=>t.playerControlled&&t.id===event.targetId))){const source=targets.find(t=>t.id===event.sourceId);this.issue(source?.kind==='ground'?'sam':'missile',now,{priority:100,key:'incoming-missile',cooldown:12,ttl:9});}return;
   }
   if(event.owner==='ally'||event.sourceId!=='PLAYER')return;
   if(event.type==='missile-launch')this.issue('launch',now,{priority:40,key:'pilot-launch',cooldown:22,ttl:7});

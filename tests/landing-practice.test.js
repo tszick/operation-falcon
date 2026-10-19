@@ -1,3 +1,4 @@
+import {trainingAircraft,isPracticeMission,unarmedPractice} from '../src/trainingAircraft.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {aircraft} from '../src/aircraftSpec.js';
@@ -13,8 +14,8 @@ import {Mission} from '../src/mission.js';
 import {phaseGuide} from '../src/phaseGuide.js';
 import {storesMarkup} from '../src/storesDisplay.js';
 const practice=missions.find(m=>m.id==='landing');
-test('landing practice starts all 25 aircraft in stable aligned flight, lightly fuelled and unarmed',()=>{
- for(const spec of aircraft){const s=createMissionAircraft(spec,practice),a=attitude(s.orientation);assert.equal(s.onGround,false);assert.equal(s.airborne,true);assert.equal(s.training,true);assert.equal(s.position.x,0);assert.equal(s.position.z,-runway.halfLength-landingStart.distance);assert.ok(Math.abs(a.heading)<1e-9&&Math.abs(a.bank)<1e-9);assert.ok(a.pitch>-3*DEG&&a.pitch<15*DEG,spec.id);assert.equal(s.fuel,spec.fuelCapacity*.15);assert.deepEqual(s.ammo,{gun:0,aam:0,agm:0,bomb:0});assert.equal(s.afterburner,false);assert.ok(s.agl>250);assert.ok(s.ias>50&&s.velocity.y<0);assert.equal(s.gear,false);assert.equal(s.flapPosition,0);for(let i=0;i<120*10;i++)stepAircraft(s,{});assert.equal(s.crashed,false,spec.id);assert.equal(s.approach.active,false,spec.id);assert.ok(Math.abs(s.position.x)<1e-5);}
+test('landing practice always uses the trainer, overriding combat aircraft selections in stable aligned flight, lightly fuelled and unarmed',()=>{
+ for(const spec of aircraft){const s=createMissionAircraft(spec,practice);assert.equal(s.spec.id,'t45');const a=attitude(s.orientation);assert.equal(s.onGround,false);assert.equal(s.airborne,true);assert.equal(s.training,true);assert.equal(s.position.x,0);assert.equal(s.position.z,-runway.halfLength-landingStart.distance);assert.ok(Math.abs(a.heading)<1e-9&&Math.abs(a.bank)<1e-9);assert.ok(a.pitch>-3*DEG&&a.pitch<15*DEG,spec.id);assert.equal(s.fuel,trainingAircraft.fuelCapacity*.15);assert.deepEqual(s.ammo,{gun:0,aam:0,agm:0,bomb:0});assert.equal(s.afterburner,false);assert.ok(s.agl>250);assert.ok(s.ias>50&&s.velocity.y<0);assert.equal(s.gear,false);assert.equal(s.flapPosition,0);for(let i=0;i<120*10;i++)stepAircraft(s,{});assert.equal(s.crashed,false,spec.id);assert.equal(s.approach.active,false,spec.id);assert.ok(Math.abs(s.position.x)<1e-5);}
 });
 test('practice has no hostile targets and does not activate landing help until manual N mode',()=>{
  const s=createMissionAircraft(aircraft[2],practice),w=new Weapons(),m=new Mission(practice),aim=new Targeting();assert.deepEqual(createTargets(practice,s.spec),[]);m.update(s,[],w,aim);assert.equal(m.phaseId,'landing-setup');assert.equal(m.objectiveComplete,false);assert.equal(m.destroyed,false);assert.equal(phaseGuide(s,m,aim,w,[])[0].key,'N');assert.equal(s.approach.active,false);s.landingMode='on';s.approach=evaluateApproach(s);m.update(s,[],w,aim);assert.equal(s.approach.active,true);assert.equal(m.phaseId,'landing');s.landingMode='off';s.approach=evaluateApproach(s);m.update(s,[],w,aim);assert.equal(m.phaseId,'landing-setup');

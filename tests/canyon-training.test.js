@@ -1,3 +1,4 @@
+import {trainingAircraft,isPracticeMission,unarmedPractice} from '../src/trainingAircraft.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {aircraft,missions} from '../src/aircraftSpec.js';
@@ -11,8 +12,8 @@ import {evaluateFlight} from '../src/flightDebrief.js';
 const spec=missions.find(m=>m.id==='canyon'),plane=aircraft.find(a=>a.id==='f16');
 function setup(a=plane){const targets=createTargets(spec,a),s=createMissionAircraft(a,spec),m=new Mission(spec),events=[],w={used:0,misses:0,projectiles:[],emit:e=>events.push(e)};return {s,m,w,targets,events};}
 function cross(x,g,{dx=0,dy=0,reverse=false}={}){const p=g.position.clone();p.x+=dx;p.y+=dy;x.s.position=p.clone();x.s.position.z+=reverse?2:-2;x.m.update(x.s,x.targets,x.w);x.s.position=p.clone();x.s.position.z+=reverse?-2:2;x.s.elapsed+=.025;x.m.update(x.s,x.targets,x.w);}
-test('canyon has a stable authored valley, high terminal ridge and safe unarmed airborne starts for all aircraft',()=>{
- for(const a of aircraft){const x=setup(a),s=x.s;assert.deepEqual(x.targets,[]);assert.ok(terrainWorld.canyon.training);assert.equal(terrainWorld.river,null);assert.equal(s.training,true);assert.equal(s.onGround,false);assert.equal(s.landingMode,'off');assert.equal(s.gear,false);assert.equal(s.flaps,false);assert.equal(s.fuel,a.fuelCapacity*.5);assert.deepEqual(s.ammo,{gun:0,aam:0,agm:0,bomb:0});assert.ok(s.agl>=200);assert.ok(s.ias>0);assert.equal(s.canyonTraining.gates.length,8);}
+test('canyon has a stable authored valley, high terminal ridge and safe unarmed airborne starts with the required trainer',()=>{
+ for(const a of aircraft){const x=setup(a),s=x.s;assert.deepEqual(x.targets,[]);assert.ok(terrainWorld.canyon.training);assert.equal(terrainWorld.river,null);assert.equal(s.training,true);assert.equal(s.onGround,false);assert.equal(s.landingMode,'off');assert.equal(s.gear,false);assert.equal(s.flaps,false);assert.equal(s.fuel,trainingAircraft.fuelCapacity*.5);assert.deepEqual(s.ammo,{gun:0,aam:0,agm:0,bomb:0});assert.ok(s.agl>=200);assert.ok(s.ias>0);assert.equal(s.canyonTraining.gates.length,8);}
  const valley=pathPoint(terrainWorld.canyon,5000),crest=pathPoint(terrainWorld.canyon,15000);assert.ok(terrainHeight(valley.x+1000,valley.z)>terrainHeight(valley.x,valley.z)+500);assert.ok(terrainHeight(crest.x,crest.z)>1400);
 });
 test('gates require forward, sequential, bounded crossings, interpolating the swept position',()=>{

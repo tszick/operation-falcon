@@ -1,3 +1,4 @@
+import {playerRadioLine} from '../src/playerRadio.js';
 import {wingmanLine,numberWords} from '../src/wingmanRadio.js';
 import test from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';
 import {RadioDirector} from '../src/radioDirector.js';import {RadioComms} from '../src/radioComms.js';import {radioLines} from '../src/radioLines.js';import {AudioSystem} from '../src/audio.js';import {Vec3} from '../src/math.js';
@@ -101,4 +102,22 @@ test('radio startup limits concurrent clip decoding, caches the results and keep
 test('a friendly aircraft safely withdrawing from combat is not announced as shot down',()=>{
  const {s,m,targets}=scene(),d=new RadioDirector(),ally={id:'RETIRING',type:'fighter',kind:'air',team:'ally',alive:true,position:new Vec3(1000,2000,0),flight:{damage:40}};targets.push(ally);d.start(s,m,targets);
  ally.retired=true;ally.exited=true;ally.alive=false;s.elapsed=1;d.observe(s,m,targets);assert.ok(!has(d,'wingmanDown'));
+});
+
+
+test('transport player uses recorded Nomad One speech and captions while Falcon One remains the escort',()=>{
+ const {s,m,targets}=scene();s.spec.transport=true;s.radioCallSign={flight:'Nomad',number:1};s.onGround=false;s.airborne=true;
+ targets.push({id:'ESCORT',type:'fighter',kind:'air',team:'ally',alive:true,radioCallSign:{flight:'Falcon',number:1},position:new Vec3(1000,1700,0)});
+ const d=new RadioDirector();d.start(s,m,targets);const escort=d.queue.find(c=>c.line.group==='wingmanReady');assert.equal(escort.line.callSign,'Falcon One');assert.match(escort.line.text,/Falcon One/);
+ const approach=d.issue('approach',0).line;assert.match(approach.text,/Nomad One/);assert.match(approach.url,/nomad-approach/);
+ const ack=d.issue('ackGeneral',0).line;assert.equal(ack.callSign,'Nomad One');
+ const mayday=d.issue('mayday',0).line;assert.equal(mayday.callSign,'Nomad One');
+ s.spec.transport=false;d.start(s,m,targets);const normal=d.issue('approach',0).line;assert.match(normal.text,/Falcon One/);assert.ok(!normal.url.includes('nomad-'));
+});
+test('every fixed Falcon One player or control phrase has a matching recorded Nomad One variant',()=>{
+ const originals=radioLines.filter(line=>!line.baseLineId&&['pilot','control'].includes(line.speaker)&&line.text.includes('Falcon One'));assert.ok(originals.length>=20);
+ for(const original of originals){const adapted=playerRadioLine(original,'Nomad One');assert.equal(adapted.text,original.text.replaceAll('Falcon One','Nomad One'));assert.equal(adapted.baseLineId,original.id);assert.equal(adapted.group,original.group);assert.notEqual(adapted.url,original.url);assert.ok(adapted.duration>0);if(original.speaker==='pilot')assert.equal(adapted.callSign,'Nomad One');}
+});
+test('a missile aimed at the player transport mission anchor produces the correct Nomad warning',()=>{
+ const {s,targets}=scene();s.spec.transport=true;targets.push({id:'TRANSPORT',playerControlled:true},{id:'SAM',kind:'ground',alive:true});const d=new RadioDirector();d.event({type:'missile-launch',owner:'enemy',sourceId:'SAM',targetId:'TRANSPORT'},s,targets);const cue=d.queue.find(c=>c.line.group==='sam');assert.ok(cue);assert.match(cue.line.text,/Nomad One/);assert.ok(!cue.line.text.includes('Falcon One'));
 });

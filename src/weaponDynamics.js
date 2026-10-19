@@ -41,12 +41,13 @@ export const weaponProfiles={
  giat:gun('giat',1025,.275,.030,.0017,1600),
  bk27:gun('bk27',1025,.26,.027,.0018,1600),
  groundGun:gun('groundGun',950,.19,.023,.003,1800),
+ mk76:{id:'mk76',kind:'bomb',mass:11.34,area:.0081,cd:.25,life:150,inert:true},
  mk82:{id:'mk82',kind:'bomb',mass:241,area:.059,cd:.25,life:150},
  fab250:{id:'fab250',kind:'bomb',mass:250,area:.083,cd:.3,life:150}
 };
 // Keep matching explicit: adding an aircraft preset with an unknown weapon must
 // fail validation instead of silently acquiring generic missile performance.
-const names=[[/AIM-120C/,'aim120c'],[/AIM-120/,'aim120'],[/AIM-9M/,'aim9m'],[/AIM-9L/,'aim9l'],[/AIM-7M/,'aim7m'],[/AIM-7E/,'aim7e'],[/Magic/,'magic2'],[/MICA/,'mica'],[/R-60M/,'r60m'],[/R-73/,'r73'],[/R-40/,'r40'],[/R-33/,'r33'],[/R-77-1/,'r771'],[/RVV-SDM/,'rvvsdm'],[/PL-15/,'pl15'],[/AGM-65/,'maverick'],[/Brimstone/,'brimstone'],[/Kh-29/,'kh29'],[/Kh-25/,'kh25'],[/M61/,'m61'],[/GAU-22/,'gau22'],[/GAU-8/,'gau8'],[/GSh-6-30/,'gsh630'],[/GSh-6-23|Type 23/,'gsh23'],[/GSh-30|9A1/,'gsh30'],[/DEFA/,'defa'],[/30 M 791/,'giat'],[/BK-27/,'bk27'],[/Mk 82/,'mk82'],[/FAB-250/,'fab250']];
+const names=[[/Mk 76/,'mk76'],[/AIM-120C/,'aim120c'],[/AIM-120/,'aim120'],[/AIM-9M/,'aim9m'],[/AIM-9L/,'aim9l'],[/AIM-7M/,'aim7m'],[/AIM-7E/,'aim7e'],[/Magic/,'magic2'],[/MICA/,'mica'],[/R-60M/,'r60m'],[/R-73/,'r73'],[/R-40/,'r40'],[/R-33/,'r33'],[/R-77-1/,'r771'],[/RVV-SDM/,'rvvsdm'],[/PL-15/,'pl15'],[/AGM-65/,'maverick'],[/Brimstone/,'brimstone'],[/Kh-29/,'kh29'],[/Kh-25/,'kh25'],[/M61/,'m61'],[/GAU-22/,'gau22'],[/GAU-8/,'gau8'],[/GSh-6-30/,'gsh630'],[/GSh-6-23|Type 23/,'gsh23'],[/GSh-30|9A1/,'gsh30'],[/DEFA/,'defa'],[/30 M 791/,'giat'],[/BK-27/,'bk27'],[/Mk 82/,'mk82'],[/FAB-250/,'fab250']];
 export function weaponProfile(spec,type){const name=armament(spec).weapons[type]?.name;if(!name)return null;const match=names.find(([re])=>re.test(name));if(!match)throw new Error(`Missing weapon dynamics: ${name}`);return weaponProfiles[match[1]];}
 export function enemyProfile(t,type){if(t.type==='bomber'&&type==='gun')return weaponProfiles[aircraftFlightSpec(t.aircraftId||'tu95').defensiveGun?.profile]||null;return t.type==='fighter'?weaponProfile({id:t.aircraftId},type):type==='gun'?weaponProfiles.groundGun:t.kind==='ground'?weaponProfiles.sam:weaponProfiles.defense;}
 export function missileLaunchVelocity(carrier,direction,profile,{ground=false}={}){return carrier.clone().add(direction.clone().normalize().scale(ground?(profile.groundLaunchSpeed??profile.launchSpeed??35):(profile.launchSpeed??35)));}
@@ -71,7 +72,7 @@ export function stepMissile(p,target,launcher,dt){
   const los=target.position.clone().sub(p.position),distance=los.length(),unit=los.clone().normalize(),offAxis=Math.acos(clamp(direction.dot(unit),-1,1)),rel=target.velocity.clone().sub(p.velocity),losRate=los.cross(rel).scale(1/Math.max(1,los.dot(los))),closing=Math.max(0,-unit.dot(rel));
   const launchLOS=launcher?target.position.clone().sub(launcher.position):null;
   const needsSupport=profile.guidance==='sarh'||profile.guidance==='laser'||profile.guidance==='active'&&distance>(profile.activeRange||15000);
-  const support=!needsSupport||!!launcher&&!launcher.crashed&&!launcher.dying&&launcher.alive!==false&&(!launcher.orientation||forward(launcher.orientation).dot(launchLOS.clone().normalize())>Math.cos((launcher.spec?.radarCone??60)*DEG))&&launchLOS.length()<(launcher.spec?.radarRange??150000)&&clearWeaponLine(launcher.position,target.position);
+  const support=!needsSupport||!!launcher&&!launcher.crashed&&!launcher.dying&&launcher.alive!==false&&(!launcher.orientation||forward(launcher.orientation).dot(launchLOS.clone().normalize())>Math.cos((launcher.spec?.radarCone??60)*DEG))&&launchLOS.length()<(launcher.spec?.radarRange??150000)&&radarContact(launcher,target)&&clearWeaponLine(launcher.position,target.position);
   if(p.age>.15&&(offAxis>profile.seeker||p.age>profile.burn&&speed<profile.minGuideSpeed||!clearWeaponLine(p.position,target.position))||needsSupport&&!support){p.seekerLost=true;p.lossReason=needsSupport&&!support?'TÁMOGATÁS MEGSZŰNT':'CÉL ELVESZETT';}
   else{
    lateral=losRate.cross(direction).scale(3.5*closing);

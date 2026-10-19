@@ -32,5 +32,10 @@ for index,row in enumerate(rows):
  path=root/'assets/radio'/(row['id']+'.wav')
  with wave.open(str(path),'wb') as f:f.setnchannels(1);f.setsampwidth(2);f.setframerate(rate);f.writeframes(encoded.tobytes())
  row.update(url='/assets/radio/'+path.name,duration=round(len(encoded)/rate,3))
+# Selective regeneration keeps metadata for previously rendered clips complete.
+for row in rows:
+ row['url']='/assets/radio/'+row['id']+'.wav'
+ with wave.open(str(root/'assets/radio'/(row['id']+'.wav')),'rb') as existing:
+  row['duration']=round(existing.getnframes()/existing.getframerate(),3)
 (root/'src/radioLines.js').write_bytes(('// Pre-rendered English speech; generated from assets/radio/script.json.\nexport const radioLines='+json.dumps(rows,indent=1)+';\n').encode('utf-8'))
 print(f'Processed {len(rows)} radio clips; {sum(r["duration"] for r in rows):.1f} seconds total.')

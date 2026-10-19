@@ -2,7 +2,7 @@ import {afterburnerActive} from './engineState.js';
 import {Vec3,forward,right,up,clamp,DEG} from './math.js';
 import {terrainHeight} from './terrain.js';
 // Gameplay dispenser loads, not verified equipment for every historical variant.
-export function createCountermeasures(spec){const modern=spec.group?.includes('modern'),heavy=spec.emptyMass>18000,n=modern?60:heavy?48:32;return {flare:n,chaff:n,capacity:n,cooldown:0,clock:0,sequence:0,decoys:[],used:0};}
+export function createCountermeasures(spec){const modern=spec.group?.includes('modern'),heavy=spec.emptyMass>18000,n=spec.countermeasureCapacity??(modern?60:heavy?48:32);return {flare:n,chaff:n,capacity:n,cooldown:0,clock:0,sequence:0,decoys:[],used:0};}
 export function deployCountermeasures(s,kind='mixed'){
  const cm=s.countermeasures||(s.countermeasures=createCountermeasures(s.spec));
  if(s.crashed||s.dying||s.onGround)return {message:'ELTERELŐ CSAK REPÜLÉS KÖZBEN',released:0};
@@ -33,8 +33,8 @@ export function countermeasureTarget(p,s,dt,random=Math.random){
   const decoyLOS=d.position.clone().sub(p.position),range=decoyLOS.length(),direction=decoyLOS.clone().normalize(),angle=Math.acos(clamp(direction.dot(unit),-1,1));
   if(angle>9*DEG||nose.dot(direction)<Math.cos(p.profile.seeker)||d.position.distance(s.position)<5)continue;
   const brightness=type==='flare'?8*Math.exp(-d.age*.8):5*Math.min(1,d.age/.3)*(1-d.age/d.life)**1.5;
-  const radialDifference=Math.abs(s.velocity.clone().sub(d.velocity).dot(unit)),doppler=type==='chaff'?1/(1+(radialDifference/100)**2):1;
-  const ratio=brightness/aircraftSignal*(distance/Math.max(10,range))**2*doppler,rate=3*(susceptibility[p.profile.id]??.4)*Math.min(4,ratio)*(1-angle/(9*DEG));
+  const radialDifference=Math.abs(s.velocity.clone().sub(d.velocity).dot(unit)),doppler=type==='chaff'?1/(1+(radialDifference/35)**2):1;
+  const ratio=brightness/aircraftSignal*(distance/Math.max(10,range))**2*doppler,rate=(type==='flare'?.04:.7)*(susceptibility[p.profile.id]??.4)*Math.min(4,ratio)*(1-angle/(9*DEG));
   p.decoyEvidence??=new Map();let evidence=p.decoyEvidence.get(d.id);if(!evidence){evidence={exposure:0,threshold:-Math.log(Math.max(1e-9,1-random()))};p.decoyEvidence.set(d.id,evidence);}
   evidence.exposure+=rate*dt;
   if(evidence.exposure>=evidence.threshold){p.decoyId=d.id;p.decoyType=d.type;return d;}

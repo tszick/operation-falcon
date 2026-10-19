@@ -8,7 +8,7 @@ export function firingStatus(s,targets,aim,weapons){
  if(s.rearView){const status=tailGunStatus(s);return weapons.tailCooldown>0&&status.canFire?{...status,canFire:false,status:'cooldown',label:'FAROKGÉPÁGYÚ ELŐKÉSZÍTÉSE'}:status;}
  const type=weapons.selected,guided=type==='aam'||type==='agm';
  const blocked=(status,label,solution=null)=>({canFire:false,status,label,solution});
- if(s.training)return blocked('training','LESZÁLLÁSI GYAKORLAT — FEGYVERZET NÉLKÜL');
+ if(s.training)return blocked('training','GYAKORLAT — FEGYVERZET NÉLKÜL');
  if(s.dying||s.crashed)return blocked('disabled','IRÁNYÍTÁS ELVESZETT');
  if(guided&&!damageResponse(s).weapons)return blocked('disabled','FEGYVERRENDSZER HIBA — RAKÉTAINDÍTÁS TILTVA');
  if(!armament(s.spec).weapons[type])return blocked('unequipped','EZ A FEGYVER NINCS FELSZERELVE');

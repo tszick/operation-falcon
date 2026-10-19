@@ -16,7 +16,7 @@ function setup(id,options={}){const scenario=missions.find(m=>m.id===id),targets
 function landed(x){x.s.airborne=true;x.s.onGround=true;x.s.speed=0;x.s.landing={success:true,descent:1,offset:0};x.m.update(x.s,x.targets,x.w,x.aim);}
 
 test('practice and story order, numbering and difficulty match the requested campaign',()=>{
- assert.deepEqual(missionGroups.map(g=>g.id),['practice','story1']);assert.deepEqual(missions.filter(m=>m.group==='practice').map(m=>m.id),['landing','canyon','civil']);assert.deepEqual(missions.filter(m=>m.group==='story1').map(m=>[m.id,m.order,m.difficulty]),[['convoy',1,'KEZDŐ'],['defend-base',2,'KEZDŐ'],['escort-transport',3,'HALADÓ'],['defend-city',4,'TOP-GUN'],['airbase',5,'HALADÓ'],['ballistic',6,'TOP-GUN'],['air-superiority',7,'TOP-GUN'],['iron-veil',8,'TOP-GUN']]);
+ assert.deepEqual(missionGroups.map(g=>g.id),['practice','story1']);assert.deepEqual(missions.filter(m=>m.group==='practice').map(m=>m.id),['landing','canyon','civil','practice-bombing']);assert.deepEqual(missions.filter(m=>m.group==='story1').map(m=>[m.id,m.order,m.difficulty]),[['convoy',1,'KEZDŐ'],['defend-base',2,'KEZDŐ'],['escort-transport',3,'HALADÓ'],['defend-city',4,'TOP-GUN'],['airbase',5,'HALADÓ'],['ballistic',6,'TOP-GUN'],['air-superiority',7,'TOP-GUN'],['iron-veil',8,'TOP-GUN']]);
 });
 test('transport and player start together well before the threat zone and survive an initial preparation minute',()=>{
  const x=setup('escort-transport',{enemyFire:true}),transport=x.by('TRANSPORT');assert.ok(x.s.position.distance(transport.position)<1800);assert.ok(Math.min(...x.targets.filter(t=>t.team==='enemy').map(t=>t.position.distance(transport.position)))>25000);
@@ -74,3 +74,5 @@ test('timed second wave activates exactly once even if the first wave remains al
 test('servicing at the silo deadline preserves countdown, pending launch and world state',()=>{
  const x=setup('ballistic');x.s.elapsed=299;landed(x);assert.equal(x.m.serviceCount,1);assert.equal(x.s.elapsed,299);assert.equal(x.by('SILO').launchAt,300);x.s.elapsed=300;x.m.update(x.s,x.targets,x.w);assert.ok(x.by('BALLISTIC').alive);assert.equal(x.m.complete,false);
 });
+
+test('base-defense SAMs have an explicit base-protection assignment on each side',()=>{for(const id of ['defend-base','air-superiority']){const x=setup(id);for(const sam of x.targets.filter(t=>t.type==='sam-system'))assert.ok(sam.defendId,id+' '+sam.id);}});

@@ -15,7 +15,7 @@ export function defenseState(t){
  Object.assign(s,{position:t.position,velocity:t.velocity,orientation:Quat.euler(t.heading||0,t.pitch||0,t.bank||0),damage:t.damage||0,onGround:t.aiRole==='takeoff',dying:!!t.falling,crashed:false});
  s.countermeasures??=createCountermeasures(s.spec);return s;
 }
-export const militaryAircraft=t=>t.kind==='air'&&t.type!=='ballistic'&&!t.civilian&&t.faction!=='neutral';
+export const militaryAircraft=t=>t.kind==='air'&&t.type!=='ballistic'&&!t.civilian&&!t.playerControlled&&t.faction!=='neutral';
 export function retreatReason(t){
  const s=t.flight;if(!s||s.dying||s.crashed)return '';
  if(s.damage>=40)return 'structural-damage';
@@ -40,13 +40,14 @@ export function updateAIDefense(player,targets,w,dt){
   if(!t.retreat&&t.aiRole!=='escortee'&&retreatReason(t))beginRetreat(t,targets,player,w);
   for(const p of incoming.get(t.id)||[]){
    if((p.owner||'ally')===teamOf(t,player))continue;
-   const kind=decoyKind(p.profile);if(!kind)continue;
+   const kind=decoyKind(p.profile);
    const delta=t.position.clone().sub(p.position),distance=delta.length(),closing=p.velocity.clone().sub(t.velocity).dot(delta.clone().normalize());
    // A short reaction delay, finite detection range and time-to-impact window.
    if(p.age<.35||distance>4500||closing<=0||distance/closing>7)continue;
    t.defenseReaction??=new Map();const seen=t.defenseReaction.get(p.id)??s.countermeasures.clock;t.defenseReaction.set(p.id,seen);
    if(s.countermeasures.clock-seen<.35)continue;
-   const result=deployCountermeasures(s,kind);if(result.released)w.emit({type:'countermeasure-release',sourceId:t.id,owner:teamOf(t,player),kind,projectileId:p.id,flare:s.countermeasures.flare,chaff:s.countermeasures.chaff,position:t.position.clone()});
+   if(!t.evasion){const incomingHeading=Math.atan2(p.velocity.x,p.velocity.z),left=incomingHeading-Math.PI/2,right=incomingHeading+Math.PI/2,error=h=>Math.abs(Math.atan2(Math.sin(h-(t.heading||0)),Math.cos(h-(t.heading||0))));t.evasion={heading:error(left)<error(right)?left:right,remaining:3,altitude:t.position.y};w.emit({type:'ai-evasion',sourceId:t.id,owner:teamOf(t,player),projectileId:p.id,position:t.position.clone()});}t.evasion.remaining=3;
+   const result=kind?deployCountermeasures(s,kind):{released:0};if(result.released)w.emit({type:'countermeasure-release',sourceId:t.id,owner:teamOf(t,player),kind,projectileId:p.id,flare:s.countermeasures.flare,chaff:s.countermeasures.chaff,position:t.position.clone()});
   }
   if(t.defenseReaction)for(const id of t.defenseReaction.keys())if(!(incoming.get(t.id)||[]).some(p=>p.id===id))t.defenseReaction.delete(id);
  }
@@ -60,6 +61,7 @@ export function retreatFlightInput(t,dt){
  return guidedFlightInput(t,r.stage==='home'?r.home:r.exit);
 }
 export function combatFlightInput(t){
+ if(t.evasion)return evasionFlightInput(t);
  const goal=t.navigationGoal;if(!goal)return {};
  return guidedFlightInput(t,goal.position,{altitude:goal.kind==='ground'?1800:goal.position.y,bankLimit:35*DEG});
 }
@@ -70,3 +72,13 @@ export function guidedFlightInput(t,goal,{altitude=1500,bankLimit=25*DEG}={}){
  const authority=clamp(q/2800,.06,1),rates=s.condition.rates,pitchTrim=(rates.pitch||0)/Math.max(.01,s.spec.pitchRate*DEG*authority*response.pitchControl),rollTrim=(rates.roll||0)/Math.max(.01,s.spec.rollRate*DEG*authority*response.rollControl);
  return {yaw:clamp(-(rates.yaw||0)/Math.max(.005,.07*response.control),-1,1),pitch:clamp((pitch-a.pitch)*2-pitchTrim,-.65,.65),roll:clamp((bank-a.bank)*2-rollTrim,-.65,.65),throttle:clamp((Math.max(s.spec.approachSpeed*1.5,t.cruiseSpeed||160)-v)*.01,-.2,.2)};
 }
+
+export function evasionFlightInput(t){const e=t.evasion;return guidedFlightInput(t,t.position.clone().add(new Vec3(Math.sin(e.heading)*8000,0,Math.cos(e.heading)*8000)),{altitude:e.altitude,bankLimit:(t.type==='fighter'?55:25)*DEG});}
+export function moveEvasiveAircraft(t,dt){
+ const e=t.evasion;if(!e||!t.alive||t.retreat)return false;
+ const speed=Math.max(70,Math.hypot(t.velocity.x,t.velocity.z)),limit=Math.min(t.type==='fighter'?.24:.065,9.81*Math.tan((t.type==='fighter'?55:25)*DEG)/speed),error=Math.atan2(Math.sin(e.heading-(t.heading||0)),Math.cos(e.heading-(t.heading||0))),turn=clamp(error,-limit*dt,limit*dt);
+ t.heading=(t.heading||0)+turn;t.bank=Math.atan(speed*turn/(dt*9.81));
+ const ahead=new Vec3(Math.sin(t.heading)*1800,0,Math.cos(t.heading)*1800),safe=Math.max(e.altitude,terrainHeight(t.position.x+ahead.x,t.position.z+ahead.z)+350),vertical=clamp((safe-t.position.y)*.035,-8,t.type==='fighter'?25:10);
+ t.velocity=new Vec3(Math.sin(t.heading)*speed,vertical,Math.cos(t.heading)*speed);t.pitch=Math.atan2(vertical,speed);t.position.add(t.velocity.clone().scale(dt));return true;
+}
+export function ageEvasion(t,dt){if(t.evasion){t.evasion.remaining-=dt;if(t.evasion.remaining<=0)delete t.evasion;}}
