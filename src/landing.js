@@ -1,15 +1,24 @@
-import {attitude,DEG} from './math.js';
+import {attitude,DEG,Quat} from './math.js';
 import {onRunway,runway,homeHangars} from './terrain.js';
 import {approachSpeeds,atmosphere} from './performance.js';
 import {flapStatus} from './flaps.js';
 
+// Alternate AI airfields use the same landing checks in runway-local coordinates.
+export function runwayState(s){
+ if(!s.airfield||s.airfieldLocal)return s;
+ const f=s.airfield,rotation=Quat.euler(-f.heading,0,0),local=p=>{const v=rotation.rotate(p.clone().sub(f.position));v.y=p.y-f.elevation;return v;};
+ return {...s,position:local(s.position),previousPosition:local(s.previousPosition||s.position),velocity:rotation.rotate(s.velocity),orientation:rotation.multiply(s.orientation),worldAltitude:s.position.y,airfieldLocal:true};
+}
+export function onLandingRunway(s){const v=runwayState(s),strip=s.airfield||runway;return Math.abs(v.position.x)<strip.halfWidth&&Math.abs(v.position.z)<strip.halfLength;}
+export function landingGroundHeight(s,terrain){return s.airfield&&onLandingRunway(s)?s.airfield.elevation:terrain;}
 // Approach detection is independent of mission completion and works from both ends.
 export function evaluateApproach(s) {
+  s=runwayState(s);const strip=s.airfield||runway;
   const a=attitude(s.orientation);
-  const direction=Math.abs(s.position.z)>runway.halfLength?(s.position.z<0?1:-1):(s.velocity.z>=0?1:-1);
+  const direction=Math.abs(s.position.z)>strip.halfLength?(s.position.z<0?1:-1):(s.velocity.z>=0?1:-1);
   const desired=direction>0?0:Math.PI;
   const headingError=Math.atan2(Math.sin(a.heading-desired),Math.cos(a.heading-desired))/DEG;
-  const distance=Math.max(0,-direction*(s.position.z+direction*runway.halfLength));
+  const distance=Math.max(0,-direction*(s.position.z+direction*strip.halfLength));
   const lateral=Math.abs(s.position.x);
   const height=s.position.y;
   const sink=-s.velocity.y;
@@ -19,7 +28,7 @@ export function evaluateApproach(s) {
   const glideError=height-idealHeight;
   const corridor=lateral<Math.min(650,100+distance*.10)&&Math.abs(headingError)<30;
   const arriving=s.velocity.y<-.15||(s.approach?.active&&s.velocity.y<3)||(distance>300&&s.gear&&s.velocity.y<1.5);
-  const auto=s.airborne&&!s.onGround&&distance<7000&&height<650&&corridor&&s.velocity.z*direction>15&&arriving&&(distance>0||onRunway(s.position));
+  const auto=s.airborne&&!s.onGround&&distance<7000&&height<650&&corridor&&s.velocity.z*direction>15&&arriving&&(distance>0||onLandingRunway(s));
   const active=!s.onGround&&!s.crashed&&!s.dying&&(s.landingMode==='on'||(s.landingMode!=='off'&&auto));
   const near=distance<350&&height<35;
   const speeds=approachSpeeds(s),targetSpeed=speeds.target;
@@ -71,9 +80,9 @@ export function evaluateApproach(s) {
 
 export function touchdownLimits(s){const speeds=approachSpeeds(s);return {maxIASKmh:Math.max(396,speeds.max),minIASKmh:108,maxSink:3,maxBankDeg:10,minPitchDeg:-3,maxPitchDeg:15,maxHeadingErrorDeg:Math.asin(.13)/DEG,hardSink:3,severeSink:5,criticalSink:8};}
 export function touchdownProblems(s,descent,speed) {
-  const a=attitude(s.orientation),problems=[],limits=touchdownLimits(s),ias=speed*Math.sqrt(atmosphere(s.position.y).density/1.225)*3.6;
+  s=runwayState(s);const a=attitude(s.orientation),problems=[],limits=touchdownLimits(s),ias=speed*Math.sqrt(atmosphere(s.worldAltitude??s.position.y).density/1.225)*3.6;
   if(!s.gear)problems.push('A futómű nem volt kiengedve (G).');
-  if(!onRunway(s.position))problems.push('A földetérés a pályán kívül történt.');
+  if(!onLandingRunway(s))problems.push('A földetérés a pályán kívül történt.');
   if(descent>=3)problems.push(`Túl nagy süllyedés: ${descent.toFixed(1)} m/s; 3 m/s alatt szükséges.`);
   if(ias>=limits.maxIASKmh)problems.push(`Túl nagy sebesség: ${ias.toFixed(0)} km/h IAS; ${limits.maxIASKmh.toFixed(0)} km/h alatt szükséges.`);
   if(ias<=limits.minIASKmh)problems.push('Túl kis sebességgel értél földet.');
@@ -89,11 +98,11 @@ export function touchdownProblems(s,descent,speed) {
 // Contact energy grows with sink speed squared. The old 3 m/s boundary is
 // a quality threshold; only catastrophic contacts stop the simulation.
 export function assessTouchdown(s,descent,speed){
- const a=attitude(s.orientation),limits=touchdownLimits(s),ias=speed*Math.sqrt(atmosphere(s.position.y).density/1.225)*3.6;
+ s=runwayState(s);const a=attitude(s.orientation),limits=touchdownLimits(s),ias=speed*Math.sqrt(atmosphere(s.worldAltitude??s.position.y).density/1.225)*3.6;
  const problems=touchdownProblems(s,descent,speed),sink=Math.max(0,descent),bank=Math.abs(a.bank/DEG),pitch=a.pitch/DEG;
  const track=Math.abs(Math.atan2(Math.sin(Math.atan2(s.velocity.x,s.velocity.z)-a.heading),Math.cos(Math.atan2(s.velocity.x,s.velocity.z)-a.heading))/DEG);
  const runwayAngle=Math.asin(Math.abs(Math.sin(a.heading)))/DEG;
- const fatal=s.dying||(!s.gear&&sink>=5)||runwayAngle>=35||!onRunway(s.position)||sink>=limits.criticalSink||bank>=25||pitch<=-12||pitch>=25||ias>=limits.maxIASKmh*1.3||track>=35;
+ const fatal=s.dying||(!s.gear&&sink>=5)||runwayAngle>=35||!onLandingRunway(s)||sink>=limits.criticalSink||bank>=25||pitch<=-12||pitch>=25||ias>=limits.maxIASKmh*1.3||track>=35;
  if(track>8)problems.push(`Oldalazó földetérés: ${track.toFixed(1)}°.`);
  if(fatal)return {fatal:true,grade:'crash',damage:100,problems};
  const energy=Math.max(0,sink*sink-9),gearPenalty=s.gear?0:25;
@@ -104,12 +113,12 @@ export function assessTouchdown(s,descent,speed){
 // A shoulder is available only after a surviving runway touchdown, not for off-field landing.
 export const rolloutLateralTolerance=25;
 export function rolloutSurface(s){
- const lateral=Math.abs(s.position.x),along=Math.abs(s.position.z)<=runway.halfLength;
- const shoulder=!!(s.onGround&&s.landing?.success&&s.gear&&along&&lateral>=runway.halfWidth&&lateral<=runway.halfWidth+rolloutLateralTolerance);
- return {shoulder,allowed:onRunway(s.position)||shoulder};
+ s=runwayState(s);const strip=s.airfield||runway,lateral=Math.abs(s.position.x),along=Math.abs(s.position.z)<=strip.halfLength;
+ const shoulder=!!(s.onGround&&s.landing?.success&&s.gear&&along&&lateral>=strip.halfWidth&&lateral<=strip.halfWidth+rolloutLateralTolerance);
+ return {shoulder,allowed:onLandingRunway(s)||shoulder};
 }
 export function rolloutObstacle(s,from=s.previousPosition||s.position,to=s.position){
- if(!s.onGround)return null;
+ if(!s.onGround)return null;if(s.airfield&&!s.airfield.home)return null;if(s.airfield){s=runwayState(s);from=s.previousPosition;to=s.position;}
  // A conservative footprint includes the wings while keeping the clear shoulder free.
  const radius=Math.max(5,Math.min(15,Math.sqrt(s.spec.wingArea*3.5)/2));
  for(const h of homeHangars){

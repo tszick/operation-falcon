@@ -14,7 +14,8 @@ export function updateBombingPractice(s,m,targets,w){
  const hits=s.bombingPractice?.hits||0,remaining=s.ammo.bomb||0,pending=w.projectiles.filter(p=>p.practice).length,landed=!!(s.airborne&&s.onGround&&s.landing?.success&&s.speed<5);
  m.objectiveComplete=hits>=2;m.objectives=[{id:'practice-hits',text:`Célkör-találat: ${hits}/2 · megmaradt bomba: ${remaining}/3`,hits,requiredHits:2,remainingBombs:remaining,pendingBombs:pending,done:hits>=2},{id:'landing',text:'Biztonságos leszállás és megállás',done:landed}];
  if(hits+remaining+pending<2||(landed&&hits<2&&pending===0)){m.failed=true;m.failureReason='A három gyakorlóbombából legalább kettőnek ugyanabba a célkörbe kell találnia. Nincs újratöltés.';m.objectives[0].status='failed';m.setPhase('failed','GYAKORLAT SIKERTELEN',m.failureReason);return;}
- if(landed&&hits>=2){m.complete=true;m.score=Math.max(0,Math.round(1000+hits*200+(100-s.damage)*5-s.elapsed*.2));m.setPhase('complete','GYAKORLAT TELJESÍTVE','Legalább két találat, sikeres leszállás és megállás.');return;}
+ if(landed&&hits>=2&&pending===0){m.complete=true;m.score=Math.max(0,Math.round(1000+hits*200+(100-s.damage)*5-s.elapsed*.2));m.setPhase('complete','GYAKORLAT TELJESÍTVE','Legalább két találat, sikeres leszállás és megállás.');return;}
+ if(landed&&pending>0){m.setPhase('bombs-pending','BOMBÁK BECSAPÓDÁSA',`Várd meg a még úton levő ${pending} gyakorlóbomba becsapódását. Maradj álló helyzetben.`);return;}
  if(s.onGround&&s.landing?.success){m.setPhase('rollout','KIFUTÁS','Gáz le, Ctrl: kerékfék a teljes megállásig.');return;}
  if(s.approach?.active){m.setPhase(s.approach.stage==='SZINTBE VÉTEL'?'flare':'landing',`LESZÁLLÁS · ${s.approach.stage}`,s.approach.instruction);return;}
  if(hits>=2){m.setPhase('return','HAZATÉRÉS','A két találat megvan. BASE: hazatérés, N: leszállási segéd.');return;}

@@ -1,3 +1,4 @@
+import {EnemyCombat} from '../src/enemyCombat.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {aircraft,missions} from '../src/aircraftSpec.js';
@@ -76,3 +77,23 @@ test('servicing at the silo deadline preserves countdown, pending launch and wor
 });
 
 test('base-defense SAMs have an explicit base-protection assignment on each side',()=>{for(const id of ['defend-base','air-superiority']){const x=setup(id);for(const sam of x.targets.filter(t=>t.type==='sam-system'))assert.ok(sam.defendId,id+' '+sam.id);}});
+
+
+test('city guards intercept detected bombers, but an immediate personal attacker overrides that priority',()=>{
+ const x=setup('defend-city'),guard=x.by('ALLY-FIGHTER1'),bomber=x.targets.find(t=>t.type==='bomber'&&t.alive),fighter=x.targets.find(t=>t.type==='fighter'&&t.team==='enemy'&&t.alive),ai=new EnemyCombat();guard.aiRole='interceptor';guard.position=new Vec3(0,2500,16000);guard.heading=0;bomber.position=new Vec3(0,1900,30000);fighter.position=new Vec3(500,2500,18000);fighter.aiTargetId=null;
+ assert.equal(guard.defendGroup,'city');assert.equal(ai.chooseTarget(guard,x.s,x.targets),bomber);fighter.aiTargetId=guard.id;assert.equal(ai.chooseTarget(guard,x.s,x.targets),fighter);
+});
+test('city bombers distribute assignments and avoid an already committed bomb target',()=>{
+ const x=setup('defend-city'),bombers=x.targets.filter(t=>t.type==='bomber'&&t.alive),ai=new EnemyCombat(),a=bombers[0],b=bombers[1];a.position=new Vec3(0,1900,20000);b.position=a.position.clone();const first=ai.chooseTarget(a,x.s,x.targets);ai.unit(a).missionTargetId=first.id;const second=ai.chooseTarget(b,x.s,x.targets);assert.notEqual(first.id,second.id);ai.bombCommitments=new Map([[second.id,1]]);assert.notEqual(ai.chooseTarget(b,x.s,x.targets).id,second.id);
+});
+
+
+test('a city defender with no contact physically returns instead of drifting off the map',()=>{
+ const x=setup('defend-city'),guard=x.by('ALLY-FIGHTER1'),city=x.targets.filter(t=>t.city),ai=new EnemyCombat();guard.aiRole='interceptor';guard.position=new Vec3(0,2400,48000);guard.heading=0;guard.velocity=new Vec3(0,0,220);ai.activeTime=10;const units=[...city,guard];
+ for(let i=0;i<60*260;i++){updateTargets(units,1/60);ai.update(x.s,units,x.w,1/60);}assert.ok(guard.position.distance(new Vec3(0,2400,16000))<13000);assert.ok(['area-patrol','area-return'].includes(guard.coordinatedFlight.mode));
+});
+test('a city bomber completes repeated physical bombing passes against distinct buildings',()=>{
+ const x=setup('defend-city',{enemyFire:true}),bomber=x.targets.find(t=>t.type==='bomber'&&t.alive),city=x.targets.filter(t=>t.city&&t.id.startsWith('CITY-2-')).slice(0,3),units=[...city,bomber];bomber.position=new Vec3(city[0].position.x,1800,city[0].position.z-9000);bomber.heading=0;bomber.velocity=new Vec3(0,0,145);x.w.enemyCombat.activeTime=10;
+ for(let i=0;i<60*700&&city.filter(t=>!t.alive).length<2;i++){updateTargets(units,1/60);x.w.update(x.s,units,1/60);}
+ const drops=x.w.events.filter(e=>e.type==='bomb-release');assert.ok(new Set(drops.map(e=>e.targetId)).size>=2);assert.ok(city.filter(t=>!t.alive).length>=2);assert.ok(x.w.enemyCombat.unit(bomber).bombs>0);
+});

@@ -45,7 +45,8 @@ export function terrainHeight(x,z){
  let base=landscape(x,z);const road=terrainWorld.road;
  if(road){const {along,across}=pathCoordinates(road,x,z),blend=1-smooth((Math.abs(across)-road.width*.5)/18),center=pathPoint(road,along);base=base*(1-blend)+landscape(center.x,center.z)*blend;}
  // Keep the home runway and both three-degree approach corridors unobstructed.
- const across=1-smooth((Math.abs(x)-120)/480),along=smooth((Math.abs(z)-1600)/500)*(1-smooth((Math.abs(z)-8500)/2000));return base*(1-across*along);
+ const across=1-smooth((Math.abs(x)-120)/480),along=smooth((Math.abs(z)-1600)/500)*(1-smooth((Math.abs(z)-8500)/2000));base*=1-across*along;
+ for(const f of terrainWorld.airfields||[]){const dx=x-f.x,dz=z-f.z,c=Math.cos(f.heading),s=Math.sin(f.heading),lateral=dx*c-dz*s,longitudinal=dx*s+dz*c,blend=Math.max((1-smooth((Math.abs(lateral)-70)/160))*(1-smooth((Math.abs(longitudinal)-1800)/700)),(1-smooth((Math.abs(lateral)-100)/400))*smooth((Math.abs(longitudinal)-1600)/500)*(1-smooth((Math.abs(longitudinal)-8500)/2000)));base=base*(1-blend)+f.elevation*blend;}return base;
 }
 export function onRunway(p){return Math.abs(p.x)<runway.halfWidth&&Math.abs(p.z)<runway.halfLength;}
 export function convoyPose(t,offset=0){const road=terrainWorld.road;if(!road)return {position:t.position.clone().add(new Vec3(0,0,offset)),heading:t.heading||0};const distance=(t.routeDistance||0)+offset*(t.routeDirection||1),p=pathPoint(road,distance);p.y=terrainHeight(p.x,p.z)+.05;if(terrainWorld.bridge){const half=terrainWorld.bridge.span*.5,blend=clamp((half+220-Math.abs(distance))/220,0,1);p.y=p.y*(1-blend)+(terrainWorld.river.level+16.15)*blend;}return {position:p,heading:pathHeading(road,distance)+(t.routeDirection<0?Math.PI:0)};}

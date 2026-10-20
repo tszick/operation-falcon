@@ -9,8 +9,8 @@ export function evaluateFlight(log){
   const start=event.t,finish=phaseEvents[i+1]?.t??end,id=event.data.id;
   const next=phaseEvents[i+1],events=entries.filter(e=>{
    if(['sample','world'].includes(e.kind))return false;
-   // Touchdown belongs to the approach ending here, even when recorded after rollout.
-   if(e.kind==='touchdown')return (e.t>=start&&e.t<finish&&!(i>0&&e.t===start))||e.t===finish;
+   // Contact belongs to the flight phase ending here, even if the terminal phase was recorded first.
+   if(e.kind==='touchdown'||e.kind==='impact')return (e.t>=start&&e.t<finish&&!(i>0&&e.t===start))||e.t===finish;
    const after=e.t>start||e.t===start&&order.get(e)>=order.get(event),before=e.t<finish||e.t===finish&&(!next||order.get(e)<order.get(next));return after&&before;
   });
   const samples=allSamples.filter(e=>e.t>=start&&e.t<finish&&e.data.player&&!e.data.player.crashed);
@@ -37,6 +37,7 @@ export function evaluateFlight(log){
   if(denied.length){findings.push(...denied.map(x=>`Rögzített tüzelési akadály: ${x}`));status='attention';}
   const playerHits=events.filter(e=>e.kind==='combat'&&e.data.type==='damage-hit'&&e.data.targetId==='PLAYER');if(playerHits.length)facts.push(`${playerHits.length} ellenséges találati esemény érte a gépet.`);
   if(events.some(e=>e.kind==='target-lock'&&e.data.locked))facts.push('Sikeres célbefogás rögzítve.');
+  const impact=events.findLast(e=>e.kind==='impact')?.data;if(impact){status='failed';findings.push(impact.reason);if(impact.source)facts.push(`Becsapódás előtti sérülés oka: ${impact.source}.`);}
   const touchdown=events.findLast(e=>e.kind==='touchdown')?.data;
   if(touchdown){
    facts.push(`Földetérés: ${one(touchdown.iasKmh)} km/h IAS, ${one(touchdown.sinkMps)} m/s süllyedés; orr ${one(touchdown.pitchDeg)}°, bedöntés ${one(touchdown.bankDeg)}°.`);
@@ -48,7 +49,7 @@ export function evaluateFlight(log){
   const damage=events.filter(e=>e.kind==='damage'&&e.data.damage<100),priorDamage=entries.findLast(e=>e.kind==='damage'&&e.t<start)?.data.damage||0;
   const damageDelta=damage.reduce((max,e)=>Math.max(max,e.data.damage-priorDamage),0);
   if(damageDelta>0)facts.push(`Rögzített sérülésnövekedés: ${one(damageDelta)} százalékpont. Utolsó ok: ${damage.at(-1).data.source||'nincs megadva'}.`);
-  if(!findings.length&&samples.length)facts.push('A vizsgált biztonsági feltételeknél nem találtunk tartós eltérést. Ez önmagában nem igazolja a harcászati cél teljesítését.');
+  if(!findings.length&&samples.length)facts.push(log?.metadata?.mission?.group==='practice'||['landing','canyon','escort','practice-bombing'].includes(log?.metadata?.mission?.objective)?'A vizsgált biztonsági feltételeknél nem találtunk tartós eltérést. A gyakorlat sikerét a rögzített célok és a végeredmény mutatja.':'A vizsgált biztonsági feltételeknél nem találtunk tartós eltérést. Ez önmagában nem igazolja a harcászati cél teljesítését.');
   if(samples.length){const speeds=samples.map(e=>e.data.player.iasKmh).filter(Number.isFinite);if(speeds.length)facts.push(`IAS: ${Math.round(speeds.reduce((a,b)=>Math.min(a,b),Infinity))}–${Math.round(speeds.reduce((a,b)=>Math.max(a,b),0))} km/h.`);}
   return {id,label:event.data.label,start,end:finish,duration:finish-start,status,statusLabel:statusLabels[status],findings:[...new Set(findings)],facts};
  }).filter(p=>!terminal.has(p.id));

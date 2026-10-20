@@ -1,3 +1,4 @@
+import {retreatProbe} from '../scripts/retreat-playtest.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Vec3} from '../src/math.js';
@@ -40,8 +41,8 @@ test('minor damage does not abort; structural and weapon failure trigger a singl
   updateAIDefense(s,[t,...bs],w,.1);const r=t.retreat;assert.ok(r);assert.equal(r.homeId,team==='ally'?'BASE':'ENEMY-BASE');assert.equal(t.alive,true);assert.equal(t.aiRole,'returning');updateAIDefense(s,[t,...bs],w,.1);assert.equal(t.retreat,r);assert.equal(w.events.filter(e=>e.type==='ai-retreat').length,1);
  }
 });
-test('returning aircraft stop attacking and remain damageable; fatal ones fall instead of safely exiting',()=>{
- const s=player(),t=plane(),w=new Weapons({enemyFire:true});applyTargetHit(t,'gun',{amount:40});w.update(s,[t,...bases()],.1);assert.ok(t.retreat);assert.equal(w.enemyCombat.units.has(t.id),false);assert.equal(t.retired,undefined);
+test('repair-bound aircraft stop attacking and remain damageable; fatal ones fall instead of being serviced',()=>{
+ const s=player(),t=plane(),w=new Weapons({enemyFire:true});applyTargetHit(t,'gun',{amount:40});w.update(s,[t,...bases()],.1);assert.equal(t.service?.reason,'repair');assert.equal(w.projectiles.length,0);assert.equal(t.retired,undefined);
  applyTargetHit(t,'aam',{amount:100});assert.equal(t.flight.dying,true);const before=t.position.y;for(let i=0;i<120;i++)updateTargets([t],1/120);assert.notEqual(t.position.y,before);assert.equal(t.exited,undefined);
 });
 test('a homeward controller physically turns toward its base without healing, teleportation or replenishing',()=>{
@@ -72,4 +73,18 @@ test('damaged fighters and heavy bombers can actually reach home and exit under 
   for(let i=0;i<120*600&&t.alive;i++)updateTargets([t],1/120);
   assert.equal(t.retired,true,id);assert.equal(t.flight.crashed,false,id);assert.equal(t.flight.damage,40,id);
  }
+});
+
+
+test('without a surviving friendly base, withdrawal goes away from the threat rather than toward an imaginary point behind the aircraft',()=>{
+ const s=player(),t=plane('enemy'),w=new Weapons(),home={id:'DEAD-HOME',kind:'ground',type:'airbase',team:'enemy',alive:false,position:new Vec3(0,0,30000)},threat={id:'BASE',kind:'ground',type:'airbase',team:'ally',alive:true,position:new Vec3()};applyTargetHit(t,'gun',{amount:40});const start=t.position.clone();updateAIDefense(s,[t,home,threat],w,.1);assert.equal(t.retreat.homeId,null);assert.equal(t.retreat.stage,'exit');assert.deepEqual(t.retreat.home,start);assert.ok(t.retreat.exit.clone().sub(start).dot(start.clone().sub(threat.position))>0);
+});
+test('crossing the departure corridor counts even after missing the old exit dot, without kills or healing',()=>{
+ const s=player(),t=plane(),w=new Weapons();applyTargetHit(t,'gun',{amount:40});updateAIDefense(s,[t,...bases()],w,.1);t.retreat.stage='exit';const r=t.retreat,axis=r.exit.clone().sub(r.home);axis.y=0;axis.normalize();const side=new Vec3(axis.z,0,-axis.x);t.flight.position=r.exit.clone().add(axis.clone().scale(6000)).add(side.scale(2200));t.flight.position.y=2500;const damage=t.flight.damage;retreatFlightInput(t,.1);assert.equal(t.retired,true);assert.equal(t.flight.damage,damage);assert.equal(w.hits,0);
+});
+test('a distant sideways position or elapsed time alone cannot retire a returning aircraft',()=>{
+ const s=player(),t=plane(),w=new Weapons();applyTargetHit(t,'gun',{amount:40});updateAIDefense(s,[t,...bases()],w,.1);t.retreat.stage='exit';t.flight.position=new Vec3(100000,2500,-100000);t.flight.elapsed=100000;retreatFlightInput(t,.1);assert.equal(t.retired,undefined);assert.equal(t.alive,true);assert.equal(t.retreat.stage,'exit');
+});
+test('fast damaged aircraft that previously circled can physically leave with or without a friendly base',()=>{
+ for(const args of [{id:'f16',heading:Math.PI/2,base:true},{id:'f16',heading:0,base:false},{id:'b52',heading:Math.PI/2,base:true}]){const result=retreatProbe(args);assert.equal(result.retired,true,JSON.stringify(result));assert.equal(result.crashed,false);assert.ok(result.duration<600);}
 });

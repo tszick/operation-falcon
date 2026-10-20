@@ -1,3 +1,4 @@
+import {aiServiceInput,moveServiceTaxi} from './aiResupply.js';
 import {radarContact} from './sensors.js';
 import {retreatFlightInput,combatFlightInput,moveEvasiveAircraft,ageEvasion,evasionFlightInput} from './aiDefense.js';
 import {TargetCycle} from './targetCycle.js';
@@ -51,7 +52,8 @@ export function updateTargets(targets,dt){for(const t of targets){
  if(t.pending)continue;
  if(t.type==='ballistic'){if(t.alive)moveBallistic(t,dt);continue;}
  if(t.aiRole==='takeoff'&&t.alive){t.takeoffClock+=dt;if(t.takeoffClock>=0){t.velocity.z=Math.min(t.cruiseSpeed,t.velocity.z+6*dt);if(t.velocity.z>65){t.velocity.y=Math.min(35,t.velocity.y+8*dt);t.pitch=.15;}t.position.add(t.velocity.clone().scale(dt));if(t.position.y>900)t.aiRole='interceptor';}continue;}
- if(t.flight&&!t.flight.crashed){stepAircraft(t.flight,t.retreat?retreatFlightInput(t,dt):t.evasion?evasionFlightInput(t):t.aiRole==='escortee'?escortFlightInput(t):combatFlightInput(t),dt);t.position=t.flight.position.clone();t.velocity=t.flight.velocity.clone();t.heading=attitude(t.flight.orientation).heading;t.damage=t.flight.damage;
+ if(moveServiceTaxi(t,dt))continue;
+ if(t.flight&&!t.flight.crashed){stepAircraft(t.flight,t.retreat?retreatFlightInput(t,dt):t.service?aiServiceInput(t):t.evasion?evasionFlightInput(t):t.aiRole==='escortee'?escortFlightInput(t):combatFlightInput(t),dt);t.position=t.flight.position.clone();t.velocity=t.flight.velocity.clone();t.heading=attitude(t.flight.orientation).heading;t.damage=t.flight.damage;
   if(t.flight.dying){t.alive=false;t.falling=true;}
   if(t.flight.crashed){t.alive=false;t.falling=false;t.impactReady=true;}
  }else if(t.alive){if(moveEvasiveAircraft(t,dt)){}else if(t.civilian)updateCivilFlight(t,dt);else if(t.aiRole==='escortee')moveEscort(t,dt);else if(t.type==='convoy')moveConvoy(t,targets,dt);else t.position.add(t.velocity.clone().scale(dt));}

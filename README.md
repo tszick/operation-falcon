@@ -549,3 +549,60 @@ A fizikai indíthatóság mellett a közös AI-döntés megköveteli a sebesség
 Célonként, az egész oldalon közös rakétakötelezettség-számláló működik. Normál távoli helyzetben egy, közeli vagy sürgős védelemben kettő követő rakéta engedett. A játékos rakétája is beleszámít a saját oldal keretébe; a két oldal kerete különálló. Célt vesztett, elterelt és lejárt rakéta nem foglalja a keretet. A számláló egy lövedéklistás átfutással készül, az ugyanazon szimulációs lépésben indított lövések azonnal frissítik. A lőszer második fele továbbra is közelebbi helyzetre tartalék. Az aktív kitérést végző hordozó nem kezd új SARH/lézeres, illetve még hordozói támogatást igénylő aktív rakétaindítást.
 
 A szabály küldetésfüggetlen, baráti és ellenséges vadászokra és földi rakétarendszerekre azonos. Nem változtat fegyverprofilt, radarhatótávot, sebzést vagy elterelő-ellenállást. A napló indítási eseménye az `aiTacticalRangeM`, `aiInboundOnTarget`, `aiSalvoLimit` mezőket is tartalmazza; a világmintákban a visszatartás indoka is látszik.
+
+
+### Kötelékrepülés, kísérők és sérült AI-k kivonása
+
+A raj hívójele és oldala szerinti One a vezér; a játékos is lehet One. A gépek külön kötelékhelyre állnak, a vezér aktuális sebességéhez igazodnak, fokozatosan gyorsítva vagy lassítva. A tervezett sebességet a típus Mach-határa és emelt átesési tartalék korlátozza; a könnyített AI-mozgás gyorsulását a típus tolóerejével, fél tankkal becsült tömegével és légellenállásával közelítjük. A gyorsulás legfeljebb 6 m/s²; nincs helyre ugrás. A sérült gépek továbbra is a rendes erőalapú repülési modellt használják. A rajvezér kiesése vagy hazatérése után a legalacsonyabb megmaradt hívószámú repülőképes gép lesz a követendő vezér, hívójel-átnevezés nélkül.
+
+Észlelt közeli ellenfélnél a rajtagok kiválhatnak harcolni; utána visszacsatlakoznak. A kijelölt légi egységet védő vadászok annak előretolt, oldalt eltolt fedezetét adják, a rá támadó észlelt ellenfelet részesítik előnyben, és túl nagy eltávolodásnál visszazárkóznak. A szabály oldaltól és küldetéstől független; a Vasfátyol Viper gépei is Nomad védelmét kapják. A fegyveres cél és a navigációs cél különálló. A napló `coordinatedFlight` mezője rögzíti a vezért, a módot és a célsebességet.
+
+A korábbi, 2500 m-es hazai és 1200 m-es kilépési pontba érkezést megkövetelő sérült AI-útvonal gyors gépeknél tartós körözést okozhatott. A vezérlés most az útvonalon előretekintő célt követ, egy elvétett pont után nem fordul vissza. A kilépési folyosó végének fizikai átlépése vagy a 3 km-es kilépési körzet tényleges elérése engedi a távozást; időtúllépés vagy oldalirányú távolság önmagában nem. Saját működő reptér hiányában nincs mögé képzett mesterséges hazai pont: a fenyegetéstől kifelé indul. A távozás nem javít, nem teleportál és nem ad lelövési pontot. `scripts/retreat-playtest.mjs` 16 irány/típus/bázishelyzet próbáját menti összehasonlíthatóan.
+
+
+### Fegyverzet- és veszélyfüggő AI földi támadás
+
+A vadászok közös célválasztása már földi célokat is mérlegel. A fegyverkészlet, a kijelölt feladat, a saját/védett egység közvetlen veszélye, a védett gép következő 120 másodperces útvonalának légvédelmi lefedettsége, az észlelés, a tiszta tűzvonal és a távolság pontozott sorrendet ad; egy kijelölés nem feltétlenül írja felül a sürgős védelmet. A hasonló célok közötti ugrálást kis megtartási előny csökkenti. Nincs külön játékosra vadászó bónusz. Az észlelt álló cél helyét a visszaforduló rácsapás alatt, 25 km-en belül megjegyzik; ez nem old fel indítási tiltást.
+
+A tényleges alapfegyverzetből külön véges AGM- és bombakészlet készül. Földi célra az AI nem alakítja át az AAM-et: a saját Maverick/Brimstone/Kh család profilt használja, ugyanazzal a radarral, zavarási tiltással, látókúppal, indítási burkolattal, támogatási igénnyel és közös rakétakötelezettség-számlálóval. Gépágyúnál valódi előretartás és szűk célzási szöghatár kell, rácsapás–kirepülés–új ráfordulás útvonallal. A repülőgépágyúk korábbi 1,8-as AI-alapsebzése 18-ra, a sorozaton belüli időköz 0,085 s-ra változott: a játékoséval azonos, mindkét oldalon. A földi általános gépágyú profilja és sebzése nem változott. A bombakioldás a tényleges gép bombaprofiljából számol, nem egy fix F-16-példányéból.
+
+Játékos vezette szállító mellé a nyugati F-15E és az orosz Su-35S többfeladatú kísérő kerül; a kínai J-10C marad a saját alapfegyvereivel. A napló `ai.targetDecision` mezője az indokot, a `coordinatedFlight` a földi támadás fázisát is mutatja. Az új `tests/ai-ground-attack.test.js` valódi lövedékkel, ütközéssel és sebzéssel vizsgálja az AGM-et és az ismételt gépágyús támadást; mindkét oldalra ellenőrzi a célválasztást és a készletfogyást.
+
+
+### City Shield metropolis
+
+A város 25 külön rombolható célja közel 4 × 4 km-es, 900 méteres osztású toronynegyedet alkot. A fél szélesség/mélység 80–140 m: az utcafolyosók legalább 620 m szélesek. A külső tornyok 180–300 m, a belvárosi gyűrű 400–560 m, a központ 820–900 m magas. A 80%-os védelmi követelmény és az épületek száma megmaradt. A közeli szintjelző vonalak száma épületenként legfeljebb 24; távolról ugyanúgy 8 pont / 6 tömör lap jelenik meg. A city-optimization tesztek a széles folyosók átjárhatóságát, a magassági profilt és a részletesség felső korlátját is ellenőrzik.
+
+
+### Városvédelmi naplóteszt utáni AI-finomítás
+
+A City Shield baráti vadászai `defendGroup: city` csoportvédelmet kapnak. A közös célpontozás a védett csoportot támadó bombázó távolságából és sebességéből becsült beérkezési idővel számol. A 4 km-en belüli, közvetlenül a védőre támadó repülő önvédelmi prioritása felülírhatja a bombázóelfogást. A feladat nem ad nagyobb radart, lőtávot vagy végtelen lőszert.
+
+A várost bombázó gépek választásakor számítanak más bombázók célhozzárendelései és a már úton levő bombák. Minden AI-bombavetés előtt a cél megmaradt életereje és a már hozzárendelt bombák 100-as játékbeli alapsebzése szab határt; a számláló az adott lépésben azonnal frissül. Ez megakadályozza a tucatnyi bomba elpazarlását ugyanarra a 60 HP-s épületre, és másik célra ösztönöz. A számláló az élő lövedékekből újraépül: a mellément bombát nem tekinti találatnak. A repülési napló a védett csoportot is menti.
+
+A hang nélküli kampánypróba nem inicializál hangrendszert, tényleges 120 Hz-es repülést és véges fegyverkészletet használ. A tesztpilóta irányított fegyvernél most a kedvező indítási burkolatig vár; ez csak a tesztvezérlés taktikáját változtatja, a játékos tüzelési engedélyét nem.
+
+
+### AI repteres javítás és utánpótlás
+
+A `src/aiResupply.js` mindkét oldalra azonos kiszolgálási állapotgépet ad. Elfogyott, ténylegesen használt fő fegyverkészletnél, repülőképes javítási igénynél vagy a repülési állapot 12% alatti üzemanyagánál saját működő repteret választ. Fegyverhiánynál a még támogatandó rakéta megszűnéséig vár. A kifutó forgalma sorba állított: várakozás, beállás, végső megközelítés, valódi erőalapú földetérés/fékezés, 60 s kiszolgálás, legfeljebb 8 m/s gurulás a szabad oldalon vissza a küszöbhöz, fizikai felszállás és feladatra visszatérés. A gurulás kormányzott, korlátozott sebességű AI-mozgás; nincs pályaelejére teleportálás. A levegőben és a kifutón az AI a játékos repülési modelljét használja.
+
+A leszállási vizsgálatok kifutóhoz viszonyított helyzetet és irányt kezelnek. A repterek látható kifutója 3,2 km-es; a terep ugyanitt és a megközelítési folyosón ténylegesen a repülőtér magasságához igazodik. Távoli, elforgatott, 180 m-en fekvő ellenséges reptéren is végigpróbált ciklus. A kiszolgálás teljes, eredeti fegyverzetet, üzemanyagot, elterelőket és javítást ad; csak a megállás és a 60 s után. Az ép harci AI korábbi könnyített mozgatása továbbra is megmarad, a kiszolgálási repülés és az utána megmaradó repülési állapot erőalapú.
+
+Reptér nélkül lőszerhiánynál külön kijárati útvonal, 60 s külső kiszolgálás és visszarepülés működik. A korábbi sérült AI-kivonulási szabály most súlyos sérülésnél csak saját működő reptér nélkül végleges; reptérrel javítási leszállást próbál. Végzetes sérülés, lezuhanás, illetve földön kiszolgáló bázis megsemmisülése nem ad visszatérő gépet. Az átmenetileg kiszolgált gép `alive=true` marad, tehát nem oldja fel a minden ellenség leküzdését kérő célt; külső kiszolgálásnál `exited=true` miatt nem látható és nem lőhető. Az eredeti objektumazonosító és hívójel megmarad.
+
+A `Mission.update` minden lépés végén közzéteszi a `weapons.missionEnded` állapotot; a kiszolgálás célok miatti siker/vereség, megszakított küldetés lezárása, illetve játékos dying/crashed állapot után nem léphet tovább és nem hozhat vissza egységet. A napló menti a `service`, `serviceCount` mezőket és a ciklus eseményeit. `scripts/ai-service-playtest.mjs` és `tests/ai-resupply.test.js` valódi fizikai repüléssel ellenőrzi a szövetséges, ellenséges, sérült, reptér nélküli és B-52-ciklust, valamint a küldetésvégi és bázisvesztési korlátokat.
+
+
+### Gyakorlóküldetések teljes repülési ellenőrzése
+
+A hang nélküli kampánypilótával a leszállás, a nyolckapus kanyon, a civil elfogás és a két találatos bombagyakorlat teljesült. Civil elfogásra és bombázásra három indulási véletlenértékkel is sikeres volt a teljes repülés és a megállással záruló leszállás. A felszállási Mission Control már az aktuális tömegből számolt megközelítési referencia alapján ad közelítő elemelési tartományt (95%-ra kerekített célsebesség és +20 km/h), nem fix 280–330 km/h-t. A T–45 utánégető nélküli típus, ezért a felszállási és hazatérési segítség nem kér Shift-használatot. A sebességtartomány tájékoztató; a tényleges elemelést a fizikai felhajtóerő dönti el.
+
+A megállt bombagyakorlat nem zárható le, amíg ledobott inert bomba van a levegőben: külön várakozási fázis őrzi meg az utolsó becsapódás és találatszám naplózását. A gyakorló kiértékelés a gyakorlat céljairól beszél, nem harcászati célról. A többi gyakorló továbbra is eredeti teljesítési feltételeit használja: szabad N-segéd a leszálláshoz, sorrendben átjárt kanyonkapuk, békés befogás és sértetlen civil távozás, illetve legalább két célkör-találat és teljes megállás bombázáskor.
+
+
+### Harci küldetések változatos diagnosztikai próbái
+
+A `scripts/campaign-playtest.mjs` a `--style conservative|objective|aggressive` kapcsolóval különböző sebességet, bedöntést, indítási tartalékot, rakétaszámot és hazatérési üzemanyagküszöböt használ. A játék rendes fizikájával, érzékelőivel, véges készletével és teljesítési feltételeivel repül; nincs célok közvetlen sebzése vagy teleportálás. A vezérlő ismeri a küldetés navigációs célhelyeit, ezért diagnosztikai segéd, nem emberi teljesítmény mércéje. A hang és a renderelés nem része ezeknek a próbáknak. Explicit stílusnál a napló neve a küldetést, gépet, stílust és véletlenmagot is tartalmazza.
+
+A cél nélküli AI-köteléktag most is megkapja az aktuális navigációs parancsot, akkor is, ha nincs tüzelhető cél. Az egyedül maradt vezér járőrözik a saját reptérnél vagy a várakozás kezdeti helyén. Az Iron Veil ellencsapását a lőszerért átmenetileg kivonuló bombázó nem teljesíti; a végleg kivont sérült gép továbbra is semlegesített fenyegetés. A végzetesen sérült gép becsapódása külön `impact` esemény: a kiértékelés nem talál ki hozzá futómű- vagy megközelítési hibát. Szintén külön becsapódás a kifutón kívüli terepütközés, ha nincs futó, bekapcsolt leszállási mód vagy aktív megközelítés. A valódi leszállási kísérletek továbbra is a leszállási szabályokat használják.

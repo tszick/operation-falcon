@@ -23,3 +23,16 @@ test('ground bounding rejection keeps rotated truck and building collision accur
 test('column visibility reuse is exact at multiple heights, resets with the camera and preserves ridge occlusion',()=>{
  configureTerrain({id:'bunker'},new Vec3(22000,0,0),()=>.23);const r=Object.create(Renderer.prototype);r.setup(new Vec3(0,600,-1000),new Quat());for(const x of [0,500,3000,18000])for(const z of [1000,8000,22000])for(const height of [500,0,1000,20,100,800]){const p=new Vec3(x,height,z);assert.equal(r.worldVisible(p),terrainFeatureVisible(r.camera,p));}const previous=r.visibilityColumns;r.setup(new Vec3(1000,800,-1000),new Quat());assert.notEqual(r.visibilityColumns,previous);assert.equal(r.visibilityColumns.size,0);
 });
+
+
+test('metropolis has a flyable street grid, varied skyscraper skyline and the same 25 defense objectives',async()=>{
+ const {createTargets}=await import('../src/targeting.js'),{aircraft,missions}=await import('../src/aircraftSpec.js');
+ for(const value of [0,.5,.999]){const city=createTargets(missions.find(m=>m.id==='defend-city'),aircraft[0],{rng:()=>value}).filter(t=>t.city);assert.equal(city.length,25);const center=city.find(t=>t.id==='CITY-2-2');assert.ok(center.buildingHeight>=820&&center.buildingHeight<=900);assert.ok(Math.max(...city.map(t=>t.position.x))-Math.min(...city.map(t=>t.position.x))>=3600);
+ for(const a of city){assert.ok(a.buildingHeight>=180);for(const b of city){if(a===b)continue;if(a.position.z===b.position.z)assert.ok(Math.abs(a.position.x-b.position.x)-a.buildingWidth-b.buildingWidth>=620);if(a.position.x===b.position.x)assert.ok(Math.abs(a.position.z-b.position.z)-a.buildingDepth-b.buildingDepth>=620);}}
+ // A straight street between two rows remains outside all building collision volumes.
+ const start=new Vec3(450,500,13500),end=new Vec3(450,500,18500);assert.equal(city.some(t=>groundHit(t,start,end,8)),false);
+ }
+});
+test('a 900-metre skyscraper keeps a bounded detail budget and a simple opaque distant silhouette',()=>{
+ const mesh=groundMesh('city-building',900,{width:140,depth:140,detail:'near'}),far=groundMesh('city-building',900,{width:140,depth:140,detail:'far'});assert.ok(mesh.details.length<=24);assert.equal(far.faces.length,6);assert.equal(far.points.length,8);assert.equal(far.details.length,0);assert.ok(mesh.bounds.y[1]>=900);
+});

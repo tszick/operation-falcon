@@ -41,7 +41,8 @@ export class Mission {
     else this.setPhase('emergency','HAZATÉRÉS','Térj a BASE felé, majd szállj le.');
   }
   service(s){this.lastServiceLanding=s.lastTouchdown||s.landing;this.serviceCount=(this.serviceCount||0)+1;serviceAircraft(s);this.departed=false;this.setPhase('preflight','ÚJRA FELKÉSZÍTVE','Új gép, teljes üzemanyag és fegyverzet. R: indulhatsz újra.');}
-  update(s,targets,w,aim=null){
+  update(s,targets,w,aim=null){this.updateState(s,targets,w,aim);if(w)w.missionEnded=!!(this.complete||this.failed||this.recovered||s.crashed||s.dying);}
+  updateState(s,targets,w,aim=null){
     syncPlayerTransport(s,targets);
     if(this.complete||this.failed||this.recovered)return;
     const practice=this.spec.objective==='landing',civil=this.spec.objective==='escort'?targets.find(t=>t.civilian):null;
@@ -87,7 +88,7 @@ export class Mission {
     }
     if(!s.airborne){
       if(s.speed>1||s.throttle>.05)this.setPhase('takeoff','FELSZÁLLÁS','Gyorsíts a pályán, majd finoman emeld az orrot.');
-      else this.setPhase('preflight','FELSZÁLLÁSI ELŐKÉSZÜLET','R: gáz növelése · Shift: utánégető.');
+      else this.setPhase('preflight','FELSZÁLLÁSI ELŐKÉSZÜLET',s.spec.hasAB?'R: gáz növelése · Shift: utánégető.':'R: gáz növelése.');
       return;
     }
     if(!this.departed){

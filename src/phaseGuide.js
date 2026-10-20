@@ -25,7 +25,7 @@ export function phaseGuide(s,mission,aim,weapons,targets){
   const headingError=((bearing-attitudeNow.heading/DEG+540)%360)-180;
   const elevation=target?Math.atan2(target.position.y-s.position.y,Math.hypot(target.position.x-s.position.x,target.position.z-s.position.z))/DEG-attitudeNow.pitch/DEG:0;
   const course=`${Math.round(bearing).toString().padStart(3,'0')}°`;
-  const speed=Math.round(approachSpeeds(s).target),speedAction=approachSpeedAction(s);
+  const speed=Math.round(approachSpeeds(s).target),rotation=Math.round(approachSpeeds(s).target*.95/5)*5,speedAction=approachSpeedAction(s);
   const firing=firingStatus(s,targets,aim,weapons);
   const solution=target&&suggested===weapons.selected?fireSolution(s,target,weapons.selected,{heat:weapons.gunHeat||0}):null;
   let steps=[];
@@ -33,6 +33,8 @@ export function phaseGuide(s,mission,aim,weapons,targets){
     case 'transport-flight':{const t=targets.find(t=>t.playerControlled);steps=[step('KIJÁRAT',`Észak felé: ${Math.max(0,((t?.exitZ||24000)-s.position.z)/1000).toFixed(1)} km`),step('MAGASSÁG','Tarts biztonságos magasságot; a Falcon gépek fedeznek'),step('C','Rakétaveszély: elterelők és kíméletes kitérés')];break;}
     case 'bomb-run':
       steps=[step('4','Inert bomba kiválasztása',weapons.selected==='bomb'),step('A / D','Egyenes rárepülés a körre; kerüld a bedöntést'),step('SZÓKÖZ','CCIP a célkörbe: egyenként oldj'),step('—',`${s.bombingPractice?.hits||0}/2 találat · ${s.ammo.bomb}/3 bomba maradt`)];break;
+    case 'bombs-pending':
+      steps=[step('VÁRJ','A ledobott bombák becsapódását várjuk'),step('F','Gáz alapjáraton',s.throttle<.01),step('CTRL','Maradj álló helyzetben',s.speed<5)];break;
     case 'canyon-run':
       steps=[step('A / D','Finom bedöntéssel kövesd a völgyet'),step('W / S','Türkiz kapuk sorban; 40–350 m AGL'),step('R / F','Őrizd a sebességet; ne fékezz túl'),step('—',mission.phaseHint)];break;
     case 'canyon-climb':
@@ -48,7 +50,7 @@ export function phaseGuide(s,mission,aim,weapons,targets){
     case 'emergency':
       steps=[step('A / D','Finoman ellensúlyozd a bedőlést'),step('R / F','Tarts sebességet; kerüld a nagy G-t'),step('A / D',`Fordulj a BASE felé; figyeld az AGL-t`),step('N','Készülj kényszerleszállásra')];break;
     case 'preflight':case 'takeoff':
-      steps=[step(s.spec.hasAB?'R / SHIFT':'R',s.spec.hasAB?'Teljes gáz, utánégető':'Teljes gáz',s.throttle>=.95&&(!s.spec.hasAB||s.afterburner)),step('S','280–330 km/h: orr fel',s.airborne),step('G','Emelkedés után futómű be',!s.gear),step('X','Fékszárny be',flap.retracted)];break;
+      steps=[step(s.spec.hasAB?'R / SHIFT':'R',s.spec.hasAB?'Teljes gáz, utánégető':'Teljes gáz',s.throttle>=.95&&(!s.spec.hasAB||s.afterburner)),step('S',`${rotation}–${rotation+20} km/h: finoman orr fel`,s.airborne),step('G','Emelkedés után futómű be',!s.gear),step('X','Fékszárny be',flap.retracted)];break;
     case 'climb':
       steps=[step('G','Futómű behúzása',!s.gear),step('X','Fékszárny behúzása',flap.retracted),step('S','Finoman emelkedj 150 m fölé',s.agl>=150)];break;
     case 'jammer-attack':
@@ -61,7 +63,7 @@ export function phaseGuide(s,mission,aim,weapons,targets){
       steps=[weaponStep(),step('A / D',`Cél a gép elé: ${course}`,aim.locked),step(weapons.selected==='gun'?'1':'T',weapons.selected==='bomb'?'Bombánál a CCIP-kört figyeld':weapons.selected==='gun'?'Az előretartás kis körét figyeld':'Befogás: tartsd elöl 2 mp-ig',aim.locked||weapons.selected==='bomb'||weapons.selected==='gun'),step('SZÓKÖZ',weapons.selected==='bomb'?'CCIP a célon: kioldás':weapons.selected==='gun'?'Rövid sorozatokkal lőj':'LOCK jelzés után tűz')];break;
     case 'return':{
       const home=(Math.atan2(-s.position.x,-s.position.z)*180/Math.PI+360)%360;
-      steps=[step('A / D',`BASE irány: ${Math.round(home).toString().padStart(3,'0')}°`),step('SHIFT','Utánégető kikapcsolása',!s.afterburner||!s.spec.hasAB),step(speedAction.key,speedAction.text,speedAction.done),step('N','Leszállási segéd, ha szükséges')];break;
+      steps=[step('A / D',`BASE irány: ${Math.round(home).toString().padStart(3,'0')}°`),...(s.spec.hasAB?[step('SHIFT','Utánégető kikapcsolása',!s.afterburner)]:[]),step(speedAction.key,speedAction.text,speedAction.done),step('N','Leszállási segéd, ha szükséges')];break;
     }
     case 'landing':case 'flare':
       steps=[step('G','Futómű kiengedése',s.gear),step('X','Fékszárny kiengedése',flap.deployed),step(speedAction.key,speedAction.text,speedAction.done),step('S','10–15 m-en szintbe; süllyedés <3 m/s')];break;

@@ -14,6 +14,7 @@ export function createBattleTargets(m,player,{rng=Math.random}={}){
  function add(id,type,team,position,extra={}){
   const def=unitDefinition(type),opponent=enemyAircraft({id:type},team==='ally'?{...player,faction:enemies}:player),air=def.kind==='air';position=position.clone();if(!air)position.y=terrainHeight(position.x,position.z)+3;
   const t={id,type,team,name:def.name,role:def.role,kind:def.kind,threats:def.weapons.filter(w=>w!=='jammer'),faction:team==='neutral'?'neutral':team==='ally'?player.faction:enemies,alive:true,position,previousPosition:position.clone(),velocity:new Vec3(),heading:0,radius:air?28:60,health:def.health||100,maxHealth:def.health||100,combatSeed:Math.floor(rng()*0xffffffff),...extra};
+  if(type==='airbase'){terrainWorld.airfields??=[];terrainWorld.airfields.push({x:position.x,z:position.z,elevation:position.y-3,heading:t.heading});}
   if(air){t.aircraftId=type==='civil'?'airliner':opponent.id;t.cruiseSpeed=def.speed||145;t.heading=Math.atan2(-position.x,-position.z);t.velocity=new Vec3(Math.sin(t.heading)*t.cruiseSpeed,0,Math.cos(t.heading)*t.cruiseSpeed);if(type==='fighter'||type==='bomber'||type==='transport')t.name=opponent.name;}
   if(t.aiRole==='escortee')t.routeX=t.position.x;units.push(t);return t;
  }
@@ -54,15 +55,17 @@ export function createBattleTargets(m,player,{rng=Math.random}={}){
  if(m.objective==='escort-transport'){
   for(const [x,z]of [[-2300,6000]])terrainWorld.peaks.push({x,z,height:850+rng()*350,radius:1500,platform:100});
   const transport=add('TRANSPORT','transport','ally',new Vec3(-700,1700,-22000),{aiRole:'escortee',exitZ:24000,heading:0});transport.heading=0;transport.velocity=new Vec3(0,0,transport.cruiseSpeed);
-  if(player.transport){transport.playerControlled=true;transport.aircraftId=player.id;transport.name=player.name;for(let i=0;i<2;i++){const spec=player.faction==='west'?['f15','F-15 Eagle']:player.faction==='china'?['j10','Chengdu J-10C']:['su27','Su-27 Flanker'];const escort=add(`TRANSPORT-ESCORT${i+1}`,'fighter','ally',new Vec3(i?600:-600,1900,-22500),{aiRole:'interceptor',defendId:transport.id,radioCallSign:{flight:'Falcon',number:i+1}});escort.aircraftId=spec[0];escort.name=spec[1];escort.heading=0;escort.velocity=new Vec3(0,0,165);}}else{const spec=transportAircraft.find(a=>a.faction===player.faction);if(spec){transport.aircraftId=spec.id;transport.name=spec.name;}}
+  if(player.transport){transport.playerControlled=true;transport.aircraftId=player.id;transport.name=player.name;for(let i=0;i<2;i++){const spec=player.faction==='west'?['f15e','F-15E Strike Eagle']:player.faction==='china'?['j10','Chengdu J-10C']:['su35','Su-35S'];const escort=add(`TRANSPORT-ESCORT${i+1}`,'fighter','ally',new Vec3(i?600:-600,1900,-22500),{aiRole:'interceptor',defendId:transport.id,radioCallSign:{flight:'Falcon',number:i+1}});escort.aircraftId=spec[0];escort.name=spec[1];escort.heading=0;escort.velocity=new Vec3(0,0,165);}}else{const spec=transportAircraft.find(a=>a.faction===player.faction);if(spec){transport.aircraftId=spec.id;transport.name=spec.name;}}
   add('FIGHTER1','fighter','enemy',new Vec3(-6500,2200,16500),{aiTargetId:transport.id});
   for(const [i,x,z]of [[1,-2300,6000]])add(`FLAK${i}`,'sam','enemy',new Vec3(x,0,z),{aiTargetId:transport.id});return units;
  }
  if(m.objective==='defend-city'){
   const city=new Vec3(0,0,16000),direction=new Vec3(Math.sin(bearing)*.45,0,1).normalize(),side=new Vec3(direction.z,0,-direction.x);
-  for(let x=-2;x<=2;x++)for(let z=-2;z<=2;z++){const height=14+(3-Math.max(Math.abs(x),Math.abs(z)))**2*12+rng()*12;add(`CITY-${x+2}-${z+2}`,'city-building','ally',city.clone().add(new Vec3(x*120,0,z*120)),{buildingHeight:height,buildingWidth:22+rng()*12,buildingDepth:22+rng()*12,city:true});}
+  // Metropolis blocks: broad flight corridors, low outer skyline and a tall core.
+  // Keep 25 independent objectives; scale and silhouette supply the city, not extra meshes.
+  for(let x=-2;x<=2;x++)for(let z=-2;z<=2;z++){const ring=Math.max(Math.abs(x),Math.abs(z)),height=(ring===0?820:ring===1?400:180)+rng()*(ring===0?80:ring===1?160:120);add(`CITY-${x+2}-${z+2}`,'city-building','ally',city.clone().add(new Vec3(x*900,0,z*900)),{buildingHeight:height,buildingWidth:80+rng()*60,buildingDepth:80+rng()*60,city:true});}
   const friendly=player.faction==='west'?['f15','F-15 Eagle']:player.faction==='china'?['j10','Chengdu J-10C']:['su27','Su-27 Flanker'];
-  for(let i=0;i<2;i++){const t=add(`ALLY-FIGHTER${i+1}`,'fighter','ally',new Vec3(i?8:-8,2,-300+i*200),{aiRole:'takeoff',takeoffClock:-i*6,heading:0,cruiseSpeed:220});t.aircraftId=friendly[0];t.name=friendly[1];t.velocity=new Vec3(0,0,25);}
+  for(let i=0;i<2;i++){const t=add(`ALLY-FIGHTER${i+1}`,'fighter','ally',new Vec3(i?8:-8,2,-300+i*200),{aiRole:'takeoff',takeoffClock:-i*6,heading:0,cruiseSpeed:220,defendGroup:'city'});t.aircraftId=friendly[0];t.name=friendly[1];t.velocity=new Vec3(0,0,25);}
   for(let wave=1;wave<=2;wave++)for(let i=0;i<(wave===1?4:3);i++){const fighter=i<(wave===1?2:1),t=add(`W${wave}-${fighter?'F':'B'}${i}` ,fighter?'fighter':'bomber','enemy',city.clone().add(direction.clone().scale(27000+(wave-1)*5000)).add(side.clone().scale((i-1.5)*1800)).add(new Vec3(0,fighter?2500:1900,0)),{wave,pending:wave===2,alive:wave===1,aiRole:fighter?'interceptor':undefined,preferCity:!fighter});const d=city.clone().sub(t.position);t.heading=Math.atan2(d.x,d.z);t.velocity=new Vec3(Math.sin(t.heading)*t.cruiseSpeed,0,Math.cos(t.heading)*t.cruiseSpeed);}
   return units;
  }

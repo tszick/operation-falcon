@@ -2,6 +2,9 @@ import {radarContact} from './sensors.js';
 import {Vec3} from './math.js';
 import {terrainWorld,terrainHeight,pathPoint,pathHeading,convoyPose} from './terrain.js';
 
+// Temporary ammunition trips must not award a permanent repulsion.
+const counterRaidRepelled=targets=>{const raiders=targets.filter(t=>t.operationWave==='counterstrike');return raiders.length===2&&raiders.every(t=>!t.pending&&(!t.alive||!!t.retreat&&t.retreat.reason!=='resupply'));};
+
 export const ironVeilStages={breach:['FOLYOSÓNYITÁS','Két SAM és az erősítés útja: híd VAGY konvoj.'],resupply:['KÖZTES HAZATÉRÉS / FELTÖLTÉS','Szállj le és állj meg. Nomad One csak a feltöltésed után indul.'],escort:['NOMAD ONE KÍSÉRÉSE','Viper One és Two segít. Óvd a szállítót, különösen az üteg környékén.'],counterstrike:['ELLENCSAPÁS VISSZAVERÉSE','Két bombázó oldalirányból a bázisra tart. Elfogás; szükség esetén köztes feltöltés.'],return:['HAZATÉRÉS','Az elsődleges feladatok kész; a végső sikerhez szállj le és állj meg.']};
 export function spawnIronVeil(add,anchor,player,rng){
  const road=terrainWorld.road,normal=new Vec3(-Math.sin(road.angle),0,Math.cos(road.angle));
@@ -19,7 +22,7 @@ export function spawnIronVeil(add,anchor,player,rng){
  const routeX=flakSite.x+(Math.sign(flakSite.x-anchor.x)||1)*6200;
  const friendly=player.faction==='west'?'f15':player.faction==='china'?'j10':'su27';
  for(let i=0;i<2;i++){
-  const t=add(`IV-VIPER${i+1}`,'fighter','ally',new Vec3(routeX+(i?1200:-1200),2400,-11000-i*700),{pending:true,alive:false,aiRole:'interceptor',radioCallSign:{flight:'Viper',number:i+1},operationWave:'escort'});
+  const t=add(`IV-VIPER${i+1}`,'fighter','ally',new Vec3(routeX+(i?1200:-1200),2400,-11000-i*700),{pending:true,alive:false,aiRole:'interceptor',defendId:'IV-TRANSPORT',radioCallSign:{flight:'Viper',number:i+1},operationWave:'escort'});
   t.aircraftId=friendly;t.name={f15:'F-15 Eagle',j10:'Chengdu J-10C',su27:'Su-27 Flanker'}[friendly];t.heading=0;t.cruiseSpeed=165;t.velocity=new Vec3(0,0,165);
  }
  const transport=add('IV-TRANSPORT','transport','ally',new Vec3(routeX,2200,-12000),{pending:true,alive:false,aiRole:'escortee',exitZ:46000,routeAltitude:2200,displayCallSign:'Nomad One',operationWave:'escort'});transport.heading=0;transport.velocity=new Vec3(0,0,125);
@@ -62,14 +65,14 @@ export function updateIronVeil(s,m,targets,w){
   transition(s,m,w,'counterstrike');emit(w,{type:'operation-wave',stage:'counterstrike',units:ids,message:p.escortSuppressed?'KÉT BOMBÁZÓ A BÁZIS FELÉ · A VADÁSZKÍSÉRETET MEGELŐZTED':'KÉT BOMBÁZÓ ÉS KÉT VADÁSZ A BÁZIS FELÉ · VIPER: BOMBÁZÓELFOGÁS',time:s.elapsed});
  }
  if(p.transportLaunched&&targets.some(t=>t.id.startsWith('IV-VIPER')&&!t.alive&&!t.pending&&!t.retired))p.escortLost=true;
- const raiders=targets.filter(t=>t.operationWave==='counterstrike'),raidRepelled=p.counterStarted&&raiders.length===2&&raiders.every(t=>!t.pending&&(!t.alive||!!t.retreat));
+ const raidRepelled=p.counterStarted&&counterRaidRepelled(targets);
  const incoming=w.projectiles?.some(shot=>shot.owner==='enemy'&&shot.targetEntityId==='BASE');
  if(p.stage==='counterstrike'&&raidRepelled&&!incoming)transition(s,m,w,'return');
 }
 export function ironVeilObjectives(m,s,targets,w){
  const p=m.ironVeil||{},by=id=>byId(targets,id),transport=by('IV-TRANSPORT'),convoy=by('IV-CONVOY'),base=by('BASE'),left=convoy?.alive&&!p.roadSecured?Math.max(0,Math.ceil(((by('IV-BRIDGE')?.radius||100)+120-convoy.routeDistance)/14)):0;
  const clock=`${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`,row=(id,text,done,optional=false,status=null)=>({id,text,done:!!done,optional,...(status?{status}:{})});
- const raidDone=p.counterStarted&&targets.filter(t=>t.operationWave==='counterstrike').length===2&&targets.filter(t=>t.operationWave==='counterstrike').every(t=>!t.pending&&(!t.alive||!!t.retreat)),incoming=w.projectiles?.some(shot=>shot.owner==='enemy'&&shot.targetEntityId==='BASE');
+ const raidDone=p.counterStarted&&counterRaidRepelled(targets),incoming=w.projectiles?.some(shot=>shot.owner==='enemy'&&shot.targetEntityId==='BASE');
  const complete=!!(p.corridor&&p.roadSecured&&p.rearmed&&transport?.exited&&raidDone&&!incoming&&base?.alive&&!p.failure);
  const viper=targets.filter(t=>t.id.startsWith('IV-VIPER')),survivors=viper.filter(t=>t.alive&&!t.falling&&!t.flight?.dying&&!t.flight?.crashed||t.retired).length;
  return {complete,failure:p.failure||'',rows:[

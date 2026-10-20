@@ -1,3 +1,4 @@
+import {updateAIResupply} from './aiResupply.js';
 import {syncPlayerTransport} from './transportRole.js';
 import {practiceBombImpact} from './bombingPractice.js';
 import {tailGunStatus} from './tailGunnery.js';
@@ -59,6 +60,7 @@ export class Weapons {
  }
  update(s,targets,dt){syncPlayerTransport(s,targets);
   updateCountermeasures(s,dt);
+  if(this.enemyCombat)updateAIResupply(s,targets,this,this.enemyCombat,dt);
   updateAIDefense(s,targets,this,dt);
   this.enemyCombat?.update(s,targets,this,dt);
   if(s.impactPending){s.impactPending=false;this.explode(s.position,'bomb',{ground:true});}
@@ -72,7 +74,7 @@ export class Weapons {
   const remaining=[];
   for(const p of this.projectiles){
    p.previous=p.position.clone();p.age+=dt;
-   const hostile=p.owner==='enemy',ai=!!p.sourceId,entityShot=ai&&!!p.targetEntityId,missile=p.type==='aam'||p.type==='agm',target=entityShot?targets.find(t=>t.id===p.targetEntityId&&t.alive):hostile?(!s.crashed?s:null):targets.find(t=>t.id===p.targetId&&t.alive);
+   const hostile=p.owner==='enemy',ai=!!p.sourceId,entityShot=ai&&!!p.targetEntityId,missile=p.type==='aam'||p.type==='agm',target=entityShot?targets.find(t=>t.id===p.targetEntityId&&t.alive&&!t.exited):hostile?(!s.crashed?s:null):targets.find(t=>t.id===p.targetId&&t.alive);
    if(missile){const source=ai?targets.find(t=>t.id===p.sourceId):s,launcher=ai&&source?combatSource(source,s):source,defender=target===s?s:target&&militaryAircraft(target)?defenseState(target):null,guidanceTarget=defender?countermeasureTarget(p,defender,dt,this.random):target;stepMissile(p,guidanceTarget,launcher&&navigationJammed(launcher,targets)&&['sarh','active'].includes(p.profile.guidance)?null:launcher,dt);}
    if(p.type==='bomb'||p.type==='gun')stepBallistic(p,dt);else if(p.type==='flak')p.velocity.y-=9.81*dt;
    p.position.add(p.velocity.clone().scale(dt));
@@ -89,7 +91,7 @@ export class Weapons {
     const terrain=p.position.y<=terrainHeight(p.position.x,p.position.z);if(terrain&&!consumed){this.explode(p.position,p.type,{ground:true});consumed=true;}
     if(!consumed&&p.age<(p.profile?.life||(p.type==='gun'?5:p.type==='flak'?15:70)))remaining.push(p);continue;
    }
-   const canHit=t=>!t.playerControlled&&(!ai||teamOf(t,s)!==p.owner&&teamOf(t,s)!=='neutral');
+   const canHit=t=>!t.exited&&!t.playerControlled&&(!ai||teamOf(t,s)!==p.owner&&teamOf(t,s)!=='neutral');
    const recordHit=(t,p,info=null)=>{const amount=p.type==='gun'?impactDamage(p,t.velocity):(p.type==='aam'||p.type==='agm')&&t.kind==='ground'?100:p.damage??100,destroyed=applyTargetHit(t,p.type,{part:info?.part,engineIndex:info?.engineIndex,amount});this.emit({type:'target-hit',targetId:t.id,sourceId:p.sourceId||'PLAYER',projectileId:p.id,weapon:p.type,part:info?.part,engineIndex:info?.engineIndex,amount,destroyed,position:t.position.clone()});if(!ai){this.damageHits=(this.damageHits||0)+1;if(destroyed)this.hits++;}else if(p.owner==='ally'&&destroyed)this.alliedKills=(this.alliedKills||0)+1;return destroyed;};
    if(missile&&target&&target!==s&&p.decoyId!==undefined){const defender=defenseState(target),point=decoyIntercept(p,defender);if(point){this.explode(point,p.type);const hit=closestAircraftSurface(defender,point);if(hit&&hit.distance<35)recordHit(target,{...p,damage:p.damage*(1-hit.distance/35)},hit);continue;}}
    if(entityShot&&p.type==='flak'){
