@@ -103,3 +103,20 @@ test('transport route skirts the flak range, preserving an optional rather than 
 test('escort help gives current bearing only for a visible contact and changes from joining to combat',()=>{
  const x=scene();launch(x);x.s.position=x.by('IV-TRANSPORT').position.clone().add(new Vec3(0,200,-2000));x.s.orientation=new Quat();let steps=ironVeilGuide(x.m,x.s,x.targets);assert.match(steps[0].text,/Nomad 000/);assert.equal(steps[1].key,'R / F');x.s.orientation=Quat.euler(Math.PI,0,0);steps=ironVeilGuide(x.m,x.s,x.targets);assert.ok(!/\d{3}°/.test(steps[0].text));x.m.ironVeil.interceptorsLaunched=true;steps=ironVeilGuide(x.m,x.s,x.targets);assert.equal(steps[1].key,'2 / T');assert.match(steps[1].text,/Viper/);
 });
+
+
+test('temporary bomber ammunition service does not complete the counterstrike or grant landing victory',()=>{
+ const x=scene();counter(x);kill(x,'IV-RAIDER1');const bomber=x.by('IV-RAIDER2');
+ for(const stage of ['outbound','servicing','returning']){
+  bomber.retreat={reason:'resupply',stage};bomber.exited=stage==='servicing';tick(x);
+  assert.equal(x.m.ironVeil.stage,'counterstrike');
+  const result=ironVeilObjectives(x.m,x.s,x.targets,x.w);assert.equal(result.complete,false);assert.equal(result.rows.find(r=>r.id==='iv-counter').done,false);
+ }
+ delete bomber.retreat;bomber.exited=false;tick(x);assert.equal(x.m.ironVeil.stage,'counterstrike');
+ land(x);assert.equal(x.m.complete,false);kill(x,'IV-RAIDER2');airborne(x);tick(x);assert.equal(x.m.ironVeil.stage,'return');land(x);assert.equal(x.m.complete,true);
+});
+
+test('permanent damaged bomber withdrawal still repels the Iron Veil counterstrike',()=>{
+ const x=scene();counter(x);kill(x,'IV-RAIDER1');x.by('IV-RAIDER2').retreat={reason:'structural',stage:'outbound'};tick(x);
+ assert.equal(x.m.ironVeil.stage,'return');assert.equal(ironVeilObjectives(x.m,x.s,x.targets,x.w).rows.find(r=>r.id==='iv-counter').done,true);
+});

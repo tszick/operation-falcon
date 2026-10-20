@@ -57,3 +57,25 @@ test('sideways contact records its real reason and shared phase boundary records
  const s=contact();s.velocity.x=60;const c=assessTouchdown(s,1,s.velocity.length());assert.equal(c.fatal,true);assert.match(c.problems.join(' '),/Oldalazó/);
  const log={entries:[{t:0,kind:'phase',data:{id:'flare',label:'Szintbe vétel'}},sample(.1,'flare'),{t:1,kind:'touchdown',data:{success:true,grade:'hard',iasKmh:255,sinkMps:3.68,pitchDeg:0,bankDeg:0,impactDamage:7,problems:[]}},{t:1,kind:'phase',data:{id:'rollout',label:'Kifutás'}},sample(1.1,'rollout'),{t:2,kind:'mission-end',data:{result:'success'}}]};const a=evaluateFlight(log);assert.equal(a.phases.filter(p=>p.facts.some(f=>f.startsWith('Földetérés:'))).length,1);
 });
+
+
+test('fatal airborne wreck records an impact rather than a failed landing even with landing mode on',()=>{
+ const s=contact(100);s.damage=100;s.dying=true;s.landingMode='on';stepAircraft(s,{});
+ assert.equal(s.crashed,true);assert.equal(s.lastTouchdown,undefined);assert.equal(s.lastImpact.dying,true);assert.match(s.lastImpact.reason,/irányíthatatlan/);assert.doesNotMatch(s.landing.reasons.join(' '),/futómű/);
+});
+
+test('terrain impact outside the runway without landing intent is not evaluated as a touchdown',()=>{
+ const s=contact(100,false);s.position.x=9000;s.position.y=-100;s.landingMode='off';stepAircraft(s,{});
+ assert.equal(s.crashed,true);assert.equal(s.lastTouchdown,undefined);assert.equal(s.lastImpact.dying,false);assert.match(s.lastImpact.reason,/terepnek/);
+});
+
+test('debrief reports recorded impact cause without inventing landing configuration faults',()=>{
+ const log={entries:[{t:0,kind:'phase',data:{id:'dying',label:'Zuhanás'}},{t:1,kind:'impact',data:{reason:'Végzetes sérülés utáni becsapódás.',source:'Rakétatalálat'}},{t:2,kind:'mission-end',data:{result:'crash'}}]};
+ const phase=evaluateFlight(log).phases[0];assert.equal(phase.status,'failed');assert.match(phase.findings.join(' '),/becsapódás/);assert.match(phase.facts.join(' '),/Rakétatalálat/);assert.doesNotMatch(phase.findings.join(' '),/futómű/);
+});
+
+
+test('impact after a same-time terminal phase remains attached to the preceding dying phase',()=>{
+ const log={entries:[{t:0,kind:'phase',data:{id:'dying',label:'Zuhanás'}},{t:1,kind:'phase',data:{id:'failed',label:'Vége'}},{t:1,kind:'impact',data:{reason:'Terepütközés.',source:'Rakétatalálat'}},{t:1,kind:'mission-end',data:{result:'crash'}}]};
+ const phases=evaluateFlight(log).phases;assert.equal(phases.length,1);assert.match(phases[0].facts.join(' '),/Rakétatalálat/);assert.equal(phases[0].findings.filter(x=>x==='Terepütközés.').length,1);
+});
