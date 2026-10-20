@@ -2,7 +2,7 @@ import {updateIronVeil} from './ironVeil.js';
 import {launchBallistic} from './ballisticFlight.js';
 export function updateMissionRuntime(s,m,targets,w){
  if(m.spec.objective==='iron-veil')updateIronVeil(s,m,targets,w);
- if(m.spec.naval){const first=targets.filter(t=>t.wave===1),pending=targets.filter(t=>t.pending&&t.wave===2);if(first.length&&first.every(t=>!t.alive&&!t.falling)&&pending.length){m.navalNextWaveAt??=s.elapsed+35;if(s.elapsed>=m.navalNextWaveAt){for(const t of pending){t.pending=false;t.alive=true;}w.emit?.({type:'mission-wave',wave:2,time:s.elapsed,message:'MÁSODIK TENGERI HULLÁM · 3 VADÁSZ ÉS 1 BOMBÁZÓ'});}}m.wave=pending.some(t=>t.pending)?1:2;}
+ if(m.spec.naval)m.wave=1;
  if(m.spec.objective==='defend-city'){
   const pending=targets.filter(t=>t.pending),first=targets.filter(t=>t.wave===1),ready=s.elapsed>=240||first.length&&first.every(t=>!t.alive&&!t.falling);
   if(pending.length&&ready){for(const t of pending){t.pending=false;t.alive=true;}m.wave=2;w.emit?.({type:'mission-wave',wave:2,time:s.elapsed});}else m.wave=pending.length?1:2;

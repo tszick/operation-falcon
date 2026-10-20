@@ -25,7 +25,7 @@ export function missionCardState(s,m,targets=[]){
  return {name:m.spec.name,phase:m.phase,elapsed:flightClock(s.elapsed||0),rows,priority,primary:count(false),optional:count(true)};
 }
 export function missionGoalsMarkup(card){
- return [false,true].map(optional=>{const rows=card.rows.filter(o=>!!o.optional===optional),count=optional?card.optional:card.primary;if(!rows.length)return '';return `<section class="mission-goal-group"><h4>${optional?'OPCIONÁLIS':'ELSŐDLEGES'} <span>${count.done}/${count.total}</span></h4><ul>${rows.map(o=>`<li class="goal-${o.status}" title="${esc(o.fullText||o.text)}"><span aria-hidden="true">${o.status==='done'?'✓':o.status==='failed'?'✕':'○'}</span><span>${esc(o.text)}</span></li>`).join('')}</ul></section>`;}).join('');
+ return [false,true].map(optional=>{const rows=card.rows.filter(o=>!!o.optional===optional),count=optional?card.optional:card.primary;if(!rows.length)return '';return `<section class="mission-goal-group" data-optional="${optional}"><h4>${optional?'OPCIONÁLIS':'ELSŐDLEGES'} <span>${count.done}/${count.total}</span></h4><ul>${rows.map(o=>`<li class="goal-${o.status}" title="${esc(o.fullText||o.text)}"><span aria-hidden="true">${o.status==='done'?'✓':o.status==='failed'?'✕':'○'}</span><span>${esc(o.text)}</span></li>`).join('')}</ul></section>`;}).join('');
 }
 
 export function configurationIndicators(s){

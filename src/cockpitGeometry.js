@@ -46,9 +46,11 @@ export function compactObjective(row){
  if(row.id==='iv-road')return row.done?'Erősítés megállítva':'Híd / konvoj '+(row.text.match(/\d+:\d{2}/)?.[0]||'');
  if(row.id==='iv-transport')return row.done?'Nomad: kijutott':row.text.replace('Nomad One:','Nomad:').replace('indulásra vár','várakozik').replace('kijárat ','');
  if(row.id==='iv-wingmen')return 'Viper: '+(row.text.match(/\d\/2/)?.[0]||'0/2');
- const labels={return:'Hazatérés',bridge:'Híd lezárása',convoy:'Konvoj',enemyBase:'Reptér',enemySam:'Rakétavédelem',landing:'Leszállás','civil-lock':'Befogás','civil-exit':'Távozás',transport:'Szállító',enemies:'Ellenség',main:'Elsődleges feladat'};
+ const wingmen={wingman:'F2','wingman-three':'F3','wingman-four':'F4'};if(wingmen[row.id])return wingmen[row.id];
+ if(row.id==='carrier')return row.text.replace('Anyahajó:','Hajó:');
+ const labels={destroyer:'Romboló',return:'Hazatérés',bridge:'Híd lezárása',convoy:'Konvoj',enemyBase:'Reptér',enemySam:'Rakétavédelem',landing:'Leszállás','civil-lock':'Befogás','civil-exit':'Távozás',transport:'Szállító',enemies:'Ellenség',main:'Elsődleges feladat'};
  if(row.id==='city')return row.text.split(' · ')[0];
- if(row.id==='waves')return row.text.replace(' · támadók ',' · ');
+ if(row.id==='waves')return row.text.replace(/^Hullám \d\/\d · (\d+) gép újratölt$/,'$1 újratölt').replace(/^Hullám \d\/\d · (\d+) gép kivonul$/,'$1 kivonul').replace(/^(\d+)\. hullám: (\d+) mp$/,'Raj $1: $2 mp').replace(/^Hullám /,'').replace(' · támadók ',' · ');
  if(row.id==='ballistic')return row.done?'Csapás elhárítva':row.text.includes('Rakéta')?'RAKÉTA A LEVEGŐBEN':'SILÓ '+(row.text.match(/\d+:\d{2}/)?.[0]||'');
  if(row.id==='attackers')return row.text.replace(/^Támadók(?: leküzdve)?:\s*/,'');
  return labels[row.id]||(row.id==='base'?row.text.replace('Saját reptér:','Bázis:'):row.text);

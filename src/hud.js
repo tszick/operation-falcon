@@ -82,7 +82,7 @@ export function updateHUD(s,targets,weapons,aim,mission,muted){
    html($('approach-checks'),approach.items.filter(item=>!['FUTÓMŰ','FÉKSZÁRNY','LÉGFÉK','BEDÖNTÉS','ORRHELYZET','PÁLYAIRÁNY'].includes(item.label)).map(item=>`<div class="${item.ok?'check-ok':'check-warn'}" title="${item.label}"><span>${item.ok?'✓':'!'} ${{'SEBESSÉG':'IAS','SÜLLYEDÉS':'V/S','SIKLÓPÁLYA':'SIKLÁS','BEÉRKEZÉS':'SZÖG'}[item.label]||item.label}</span><b>${item.value}</b></div>`).join(''));
    $('approach-instruction').textContent=approach.instruction+(map.landingRoute?.advisory?' '+map.landingRoute.advisory:'');
  }
- updateCockpit(s);updateFlightMessages(s,lock,aim,weapons);
+ updateCockpit(s);fitMissionObjectives();updateFlightMessages(s,lock,aim,weapons);
 }
 
 
@@ -105,4 +105,14 @@ function fitPhaseGuide(steps){
   full=full||row.offsetTop+row.offsetHeight>height;
   row.hidden=full;
  }
+}
+
+const missionLayouts=new WeakMap();
+function fitMissionObjectives(){
+ const card=$('mission-card'),list=$('mission-objectives');
+ const key=list.innerHTML+':'+list.clientWidth+':'+list.clientHeight;
+ if(missionLayouts.get(list)===key)return;
+ card.classList.remove('dense-objectives');
+ if(list.scrollHeight>list.clientHeight+1)card.classList.add('dense-objectives');
+ missionLayouts.set(list,key);
 }

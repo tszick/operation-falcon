@@ -223,3 +223,18 @@ body.flying #combat-messages #targeting-panel,body.flying #cockpit-annunciator{d
 #control-contacts b{white-space:nowrap;font-weight:400}
 .control-sensor-note{font:12px/1.6 var(--mono);color:#90a187;border-top:1px solid #536d4e66;padding-top:14px}
 @media(max-width:800px){#mission-control-view{padding:8px}.control-room{padding:12px}.control-room-body{grid-template-columns:1fr;overflow:auto;display:block}.control-chart{height:55vh;min-height:280px}.control-checklist{overflow:visible;margin-top:22px}.control-room-header p{gap:4px}.control-room-header button{font-size:10px;padding:10px}.control-chart-bar{font-size:10px}}
+
+/* Mission objectives stay inside the registered glass at all cockpit sizes. */
+#cockpit #cockpit-mission{overflow:hidden;box-sizing:border-box}
+#cockpit #mission-card{min-height:0;overflow:hidden}
+#cockpit .mission-card-heading{flex-shrink:0}
+#cockpit #mission-objectives,#cockpit.compact-cockpit #mission-objectives{display:flex;flex-direction:column;flex-wrap:nowrap;flex:1;min-height:0;min-width:0;gap:1px;overflow:hidden}
+#cockpit .mission-goal-group,#cockpit.compact-cockpit .mission-goal-group{flex:0 0 auto;min-width:0;margin:0;padding:0}
+#cockpit .mission-goal-group ul,#cockpit.compact-cockpit .mission-goal-group ul{display:grid;grid-template-columns:repeat(var(--objective-columns,1),minmax(0,1fr));gap:1px 5px}
+#cockpit .mission-goal-group[data-optional=true] ul,#cockpit.compact-cockpit .mission-goal-group[data-optional=true] ul{grid-template-columns:repeat(auto-fit,minmax(60px,1fr))}
+#cockpit .mission-goal-group li{min-width:0;margin:0;line-height:1.12}
+#cockpit .mission-goal-group li>span:first-child{flex:0 0 auto}
+#cockpit .mission-goal-group li>span:last-child{min-width:0}
+#cockpit #mission-card.dense-objectives{--objective-columns:2}
+
+#cockpit #mission-card[data-operation="carrier-defense"] .mission-goal-group[data-optional=true] ul{grid-template-columns:repeat(3,minmax(0,1fr))}
