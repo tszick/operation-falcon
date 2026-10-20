@@ -7,6 +7,7 @@ const mixed=(outer,inner,bombX,bombZ=-1)=>[...pair('aam',...outer),...pair('agm'
 const bombBay=()=>Array.from({length:12},(_,i)=>({type:'bomb',x:i%2?.65:-.65,z:3-Math.floor(i/2)*1.2,internal:true}));
 export const armaments={
  ...Object.fromEntries(['c130','c130j','il76','il76md90a','y20'].map(id=>[id,{variant:'Fegyvertelen szállító · önvédelmi elterelők',weapons:{},stations:[]} ])),
+ harrier:preset('AV-8B II Plus','GAU-12/U · 25 mm',300,'AIM-9M Sidewinder',mixed([4.1,-1.7],[2.9,-1],1.6),'AGM-65F Maverick','Mk 82'),
  t45:preset('T-45C · kiképzési függesztő · kizárólag inert bomba',null,0,null,[{type:'bomb',x:-2,z:.8},{type:'bomb',x:-2,z:0},{type:'bomb',x:-2,z:-.8}],null,'Mk 76 · inert gyakorlóbomba'),
  b52:{...preset('B-52H · klasszikus, farokgépágyús',null,0,null,bombBay(),null,'Mk 82'),tailGun:{name:'M61 · farokgépágyú · 20 mm',quantity:1800}},
  tu95:{...preset('Tu-95 · farokgépágyús',null,0,null,bombBay(),null,'FAB-250'),tailGun:{name:'GSh-23 · farokgépágyú · 23 mm',quantity:1800}},
@@ -16,7 +17,7 @@ export const armaments={
  su57:preset('Su-57E','9A1-4071K · 30 mm',150,'RVV-SDM',[...pair('aam',.55,1.6),...pair('aam',.55,-2)].map(s=>({...s,internal:true}))),
  j10:preset('J-10C','Type 23-3 · 23 mm',200,'PL-15',[...pair('aam',3.2,-2.3),...pair('aam',2,-1.6)]),
  j20:preset('J-20',null,0,'PL-15',[...pair('aam',.5,1.2),...pair('aam',.5,-1.5)].map(s=>({...s,internal:true}))),
- f14:preset('F-14A','M61A1 · 20 mm',675,'AIM-7M Sparrow',[...pair('aam',.55,1),...pair('aam',.55,-3)]),
+ f14:preset('F-14A','M61A1 · 20 mm',675,'AIM-7M Sparrow',[...pair('aam',.55,1),...pair('aam',.55,-3),...pair('bomb',2.4,-1)],null,'Mk 82'),
  f15:preset('F-15C','M61A1 · 20 mm',940,'AIM-7M Sparrow',[...pair('aam',1.3,1),...pair('aam',1.3,-3)]),
  f16:preset('F-16C','M61A1 · 20 mm',511,'AIM-9M Sidewinder',mixed([4.65,-1.5],[3,-1],1.8),'AGM-65D Maverick','Mk 82'),
  fa18:preset('F/A-18C','M61A1 · 20 mm',578,'AIM-9M Sidewinder',mixed([5.6,-1.7],[3.7,-1],2.3),'AGM-65F Maverick','Mk 82'),

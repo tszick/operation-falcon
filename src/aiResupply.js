@@ -1,3 +1,5 @@
+import {carrierAirfield} from './navalData.js';
+import {initialiseNaval,requestCatapult} from './navalOps.js';
 import {Vec3,Quat,attitude,clamp,DEG} from './math.js';
 import {createAircraft} from './physics.js';
 import {aircraftFlightSpec} from './aiAircraftSpec.js';
@@ -19,7 +21,7 @@ export function updateAIResupply(p,targets,w,combat,dt){
  if(terminal(p,w))return;
  for(const t of targets){
   if(t.kind!=='air'||!['fighter','bomber'].includes(t.type)||!t.alive||t.pending||t.playerControlled||t.flight?.dying||t.flight?.crashed)continue;
-  const u=combat.unit(t),damage=t.flight&&(t.flight.damage>=40||t.flight.condition.parts.weapons<=.35),bases=targets.filter(a=>a.type==='airbase'&&a.alive&&teamOf(a,p)===teamOf(t,p)),home=bases.sort((a,b)=>a.position.distance(t.position)-b.position.distance(t.position))[0];
+  const u=combat.unit(t),damage=t.flight&&(t.flight.damage>=40||t.flight.condition.parts.weapons<=.35),bases=targets.filter(a=>(a.type==='airbase'||a.type==='carrier'&&t.flight?.spec?.carrierCapable||a.type==='carrier'&&t.aircraftId==='fa18')&&a.alive&&teamOf(a,p)===teamOf(t,p)),home=bases.sort((a,b)=>a.position.distance(t.position)-b.position.distance(t.position))[0];
   if(damage&&!home){if(t.service){delete t.service;delete t.retreat;beginRetreat(t,targets,p,w);}continue;}
   if(!t.service){
    if(t.retreat)continue;
@@ -27,7 +29,7 @@ export function updateAIResupply(p,targets,w,combat,dt){
    const lowFuel=t.flight&&t.flight.fuel<t.flight.spec.fuelCapacity*.12;if(!(damage&&home)&&!empty&&!lowFuel)continue;
    if(!damage&&w.projectiles.some(a=>a.sourceId===t.id&&!a.seekerLost&&a.decoyId===undefined&&['sarh','laser','active'].includes(a.profile?.guidance)))continue;
    flightFor(t,u);t.service={reason:damage?'repair':lowFuel?'fuel':'ammunition',homeId:home?.id||null,stage:home?'holding':'outbound',remaining:aiServiceSeconds,previousRole:t.aiRole,previousTarget:t.aiTargetId,sorties:t.serviceCount||0};delete t.coordinatedFlight;delete t.groundAttack;delete t.evasion;t.aiRole='resupply';t.aiTargetId=null;
-   if(home){t.flight.airfield={position:home.position.clone(),elevation:terrainHeight(home.position.x,home.position.z),heading:home.heading||0,halfLength:runway.halfLength,halfWidth:runway.halfWidth,home:!!home.home};}else startOffmap(t,targets,p,w);
+   if(home?.type==='carrier'){t.flight.airfield=carrierAirfield();t.flight.naval={nozzle:0,hook:true,arrested:false};}else if(home){t.flight.airfield={position:home.position.clone(),elevation:terrainHeight(home.position.x,home.position.z),heading:home.heading||0,halfLength:runway.halfLength,halfWidth:runway.halfWidth,home:!!home.home};}else startOffmap(t,targets,p,w);
    emit(w,t,'ai-service-request');
   }
   const service=t.service;if(!service)continue;
@@ -42,7 +44,8 @@ export function updateAIResupply(p,targets,w,combat,dt){
    service.remaining-=dt;if(service.remaining>0)continue;
    const old=t.flight,s=createAircraft(old.spec),position=old.position.clone(),orientation=old.orientation;t.flight=s;t.defense=s;s.ammo={gun:u.initialRounds,aam:u.initialMissiles,agm:u.initialAgm,bomb:u.initialBombs};s.position=position;s.previousPosition=position.clone();s.orientation=orientation;s.airfield=old.airfield;
    Object.assign(u,{rounds:u.initialRounds,missiles:u.initialMissiles,agm:u.initialAgm,bombs:u.initialBombs,missile:2,gun:1,bomb:0,lock:0,envelope:null,choiceId:null,choiceUntil:0});t.damage=0;delete t.retreat;delete t.lastAIWeapon;delete t.groundAttack;t.serviceCount=(t.serviceCount||0)+1;
-   if(service.homeId){service.stage='taxi';service.taxiLeg=0;s.gear=true;s.flaps=true;s.flapPosition=1;s.onGround=true;s.airborne=false;}
+   if(s.airfield?.carrier){initialiseNaval(s);service.stage='takeoff';t.position=s.position.clone();t.velocity=s.velocity.clone();}
+   else if(service.homeId){service.stage='taxi';service.taxiLeg=0;s.gear=true;s.flaps=true;s.flapPosition=1;s.onGround=true;s.airborne=false;}
    else{service.stage='inbound';s.onGround=false;s.airborne=true;s.gear=false;s.flaps=false;s.flapPosition=0;s.position.y=Math.max(1800,terrainHeight(position.x,position.z)+800);s.velocity=old.velocity.clone().normalize().scale(-(t.cruiseSpeed||165));s.orientation=Quat.euler(Math.atan2(s.velocity.x,s.velocity.z),.05,0);t.position=s.position.clone();t.velocity=s.velocity.clone();t.exited=false;}
    emit(w,t,'ai-service-complete');
   }
@@ -55,15 +58,15 @@ function control(s,goal,{speed=160,vertical=null,bankLimit=25}={}){
 }
 export function aiServiceInput(t){
  const s=t.flight,a=t.service,f=s.airfield;if(t.evasion&&!s.onGround)return evasionFlightInput(t);if(!f)return {};
- const rotation=Quat.euler(f.heading,0,0),inverse=Quat.euler(-f.heading,0,0),local=inverse.rotate(s.position.clone().sub(f.position)),a0=attitude(s.orientation),world=(x,y,z)=>rotation.rotate(new Vec3(x,y,z)).add(new Vec3(f.position.x,f.elevation,f.position.z));s.afterburner=false;
+ const rotation=Quat.euler(f.heading,0,0),inverse=Quat.euler(-f.heading,0,0),local=inverse.rotate(s.position.clone().sub(f.position)),a0=attitude(s.orientation),world=(x,y,z)=>rotation.rotate(new Vec3(x,y,z)).add(new Vec3(f.position.x,f.elevation,f.position.z));if(f.carrier)local.y-=f.elevation;s.afterburner=false;
  if(a.stage==='servicing')return {throttle:-1,brake:true};
- if(a.stage==='takeoff'){s.gear=true;s.flaps=true;if(!s.onGround&&local.y>100){s.gear=false;s.flaps=false;}const c=control(s,world(0,1000,f.halfLength+8000),{speed:180,vertical:s.onGround?0:18,bankLimit:10});c.throttle=1;if(s.onGround)c.pitch=s.speed>s.spec.approachSpeed*1.08&&a0.pitch<.15?.12:0;return c;}
+ if(a.stage==='takeoff'){if(f.carrier&&s.onGround&&s.throttle>.9&&!s.naval.catapult)requestCatapult(s);s.gear=true;s.flaps=true;if(!s.onGround&&local.y>100){s.gear=false;s.flaps=false;}const c=control(s,world(0,1000,f.halfLength+8000),{speed:180,vertical:s.onGround?0:18,bankLimit:10});c.throttle=1;if(s.onGround)c.pitch=s.speed>s.spec.approachSpeed*1.08&&a0.pitch<.15?.12:0;return c;}
  if(a.stage==='rollout'){return {throttle:-1,brake:true,pitch:clamp(-a0.pitch*2,-.2,.2),yaw:clamp(-local.x*.03,-1,1)};}
  if(a.stage==='holding'){s.gear=false;s.flaps=false;const angle=Math.atan2(local.x,local.z)+.7;return control(s,world(Math.sin(angle)*7000,1500,Math.cos(angle)*7000),{speed:180});}
  if(a.stage==='align'){s.gear=false;s.flaps=false;s.airbrake=s.speed>185;const goal=world(0,750,-f.halfLength-12000);if(s.position.distance(goal)<900)a.stage='final';return control(s,goal,{speed:160});}
- s.landingMode='on';s.gear=true;s.flaps=true;const target=approachSpeeds(s).target/3.6,v=target/Math.sqrt(atmosphere(s.position.y).density/1.225),d=-f.halfLength+500-local.z,desired=Math.max(0,d*Math.tan(3*DEG)),vy=local.y<15?-1+clamp((2-local.y)*.03,-.5,.1):clamp(-s.velocity.length()*.052+(desired-local.y)*.3,-10,4);s.airbrake=s.ias>target+14;
+ s.landingMode='on';if(f.carrier)s.naval.hook=true;s.gear=true;s.flaps=true;const target=approachSpeeds(s).target/3.6,v=target/Math.sqrt(atmosphere(s.position.y).density/1.225),d=-(f.touchdownOffset??f.halfLength)+(f.carrier?0:500)-local.z,desired=Math.max(0,d*Math.tan((f.glideDeg||3)*DEG)),vy=f.carrier?clamp(-v*.061+(desired-local.y)*.2,-5,3):local.y<15?-1+clamp((2-local.y)*.03,-.5,.1):clamp(-s.velocity.length()*.052+(desired-local.y)*.3,-10,4);s.airbrake=s.ias>target+14;
  if(s.onGround&&s.landing?.success){a.stage='rollout';return {throttle:-1,brake:true};}
- if(local.z>f.halfLength-300||local.y<80&&(Math.abs(local.x)>70||Math.abs(a0.bank)>15*DEG)){a.stage='align';s.gear=false;s.flaps=false;return control(s,world(0,1000,f.halfLength+5000),{speed:180,vertical:18});}
+ if(local.z>(f.carrier?80:f.halfLength-300)||local.y<80&&(Math.abs(local.x)>70||Math.abs(a0.bank)>15*DEG)){a.stage='align';s.gear=false;s.flaps=false;return control(s,world(0,1000,f.halfLength+5000),{speed:180,vertical:18});}
  return control(s,world(0,desired,local.z+Math.max(700,Math.min(2000,d+500))),{speed:v,bankLimit:local.y<80?8:20,vertical:vy});
 }
 

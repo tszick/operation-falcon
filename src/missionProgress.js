@@ -1,6 +1,7 @@
+import {recoveryComplete} from './navalOps.js';
 // Shared objective snapshots used by the simulation, HUD and recorder.
 export function objectiveRows(s,m,targets=[]){
- const landed=m.complete||!!(s.onGround&&s.landing?.success&&s.speed<5),civil=targets.find(t=>t.civilian);
+ const landed=m.complete||!!(recoveryComplete(s)),civil=targets.find(t=>t.civilian);
  let rows=(m.objectives||[]).map(o=>({...o,status:o.status==='failed'?'failed':o.done?'done':'pending'}));
  if(!rows.length){
   if(m.spec.objective==='landing')rows=[{id:'landing',text:'Földetérés és megállás',done:landed}];

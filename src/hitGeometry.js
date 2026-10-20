@@ -20,21 +20,46 @@ function closestTriangle(p,a,b,c){
  const sum=va+vb+vc;if(Math.abs(sum)<1e-12)return a.clone();return a.clone().add(ab.scale(vb/sum)).add(ac.scale(vc/sum));
 }
 function rayTriangle(from,direction,a,b,c){const edge1=b.clone().sub(a),edge2=c.clone().sub(a),h=direction.cross(edge2),det=edge1.dot(h);if(Math.abs(det)<1e-9)return null;const inv=1/det,s=from.clone().sub(a),u=inv*s.dot(h);if(u<0||u>1)return null;const q=s.cross(edge1),v=inv*direction.dot(q);if(v<0||u+v>1)return null;const t=inv*edge2.dot(q);return t>=0&&t<=1?t:null;}
+// Geometry is immutable until wing integrity or the flap/sweep mesh changes.
+// Weak keys avoid retaining retired aircraft or old model variants.
+const intactGeometry=new WeakMap(),damagedGeometry=new WeakMap();
+function collisionTriangles(mesh,condition){
+ const left=condition?.parts.leftWing??1,right=condition?.parts.rightWing??1,intact=left>=.8&&right>=.8;
+ let cache=intact?intactGeometry:damagedGeometry.get(condition);
+ if(!cache){cache=new WeakMap();damagedGeometry.set(condition,cache);}
+ const previous=cache.get(mesh);if(previous&&(intact||previous.left===left&&previous.right===right))return previous.triangles;
+ const vertices=mesh.points.map((_,i)=>damagedVertex(mesh,i,condition)),triangles=[];
+ for(let i=0;i<mesh.faces.length;i++){const face=mesh.faces[i];if(!modelFacePresent(mesh,face,condition))continue;
+  const part=faceDamagePart(mesh,i),engineIndex=mesh.faceEngines?.[i]??null;
+  for(let k=1;k<face.length-1;k++){const a=vertices[face[0]],b=vertices[face[k]],c=vertices[face[k+1]];
+   triangles.push({a,b,c,part,engineIndex,x0:Math.min(a.x,b.x,c.x),x1:Math.max(a.x,b.x,c.x),y0:Math.min(a.y,b.y,c.y),y1:Math.max(a.y,b.y,c.y),z0:Math.min(a.z,b.z,c.z),z1:Math.max(a.z,b.z,c.z)});
+  }
+ }
+ cache.set(mesh,{left,right,triangles});return triangles;
+}
+function outsideTriangleBounds(t,a,b,radius){
+ return Math.max(a.x,b.x)<t.x0-radius||Math.min(a.x,b.x)>t.x1+radius||Math.max(a.y,b.y)<t.y0-radius||Math.min(a.y,b.y)>t.y1+radius||Math.max(a.z,b.z)<t.z0-radius||Math.min(a.z,b.z)>t.z1+radius;
+}
+function boundsDistanceSquared(t,p){const x=Math.max(t.x0-p.x,0,p.x-t.x1),y=Math.max(t.y0-p.y,0,p.y-t.y1),z=Math.max(t.z0-p.z,0,p.z-t.z1);return x*x+y*y+z*z;}
 export function aircraftHit(s,from,to,{radius=.35,moving=true}={}){
  const mesh=aircraftMesh(s.spec.id,s.mach>.5?Math.min(1,(s.mach-.5)/.9):0,s.flapPosition??(s.flaps?1:0)),inverse=new Quat(-s.orientation.x,-s.orientation.y,-s.orientation.z,s.orientation.w);
  const a=inverse.rotate(from.clone().sub(moving?(s.previousPosition||s.position):s.position)),b=inverse.rotate(to.clone().sub(s.position)),direction=b.clone().sub(a),length2=direction.dot(direction);
  const mid=a.clone().add(direction.clone().scale(clamp(-a.dot(direction)/Math.max(1e-12,length2),0,1)));if(mid.length()>mesh.radius+radius)return null;
  let best=null;
- for(let i=0;i<mesh.faces.length;i++){const face=mesh.faces[i];if(!modelFacePresent(mesh,face,s.condition))continue;for(let k=1;k<face.length-1;k++){
-  const v0=damagedVertex(mesh,face[0],s.condition),v1=damagedVertex(mesh,face[k],s.condition),v2=damagedVertex(mesh,face[k+1],s.condition),hit=rayTriangle(a,direction,v0,v1,v2);
+ for(const triangle of collisionTriangles(mesh,s.condition)){if(outsideTriangleBounds(triangle,a,b,radius))continue;
+  const {a:v0,b:v1,c:v2}=triangle,hit=rayTriangle(a,direction,v0,v1,v2);
   let fraction=hit,point;
   if(hit!==null)point=a.clone().add(direction.clone().scale(hit));
   else if(radius>0){const centre=v0.clone().add(v1).add(v2).scale(1/3);let t=clamp(centre.clone().sub(a).dot(direction)/Math.max(1e-12,length2),0,1);for(let pass=0;pass<3;pass++){point=closestTriangle(a.clone().add(direction.clone().scale(t)),v0,v1,v2);t=clamp(point.clone().sub(a).dot(direction)/Math.max(1e-12,length2),0,1);}if(point.distance(a.clone().add(direction.clone().scale(t)))<=radius)fraction=t;}
-  if(fraction!==null&&(!best||fraction<best.fraction))best={fraction,localPoint:point,part:faceDamagePart(mesh,i),engineIndex:mesh.faceEngines?.[i]??null,point:s.orientation.rotate(point).add(s.position)};
- }}return best;
+  if(fraction!==null&&(!best||fraction<best.fraction))best={fraction,localPoint:point,part:triangle.part,engineIndex:triangle.engineIndex,point:s.orientation.rotate(point).add(s.position)};
+ }return best;
 }
 export function closestAircraftSurface(s,position){
  const mesh=aircraftMesh(s.spec.id,0,s.flapPosition??(s.flaps?1:0)),inverse=new Quat(-s.orientation.x,-s.orientation.y,-s.orientation.z,s.orientation.w),p=inverse.rotate(position.clone().sub(s.position));let best=null;
- for(let i=0;i<mesh.faces.length;i++){const ids=mesh.faces[i];if(!modelFacePresent(mesh,ids,s.condition))continue;for(let k=1;k<ids.length-1;k++){const point=closestTriangle(p,damagedVertex(mesh,ids[0],s.condition),damagedVertex(mesh,ids[k],s.condition),damagedVertex(mesh,ids[k+1],s.condition)),distance=p.distance(point);if(!best||distance<best.distance)best={distance,part:faceDamagePart(mesh,i),engineIndex:mesh.faceEngines?.[i]??null,localPoint:point,point:s.orientation.rotate(point).add(s.position)};}}
+ for(const triangle of collisionTriangles(mesh,s.condition)){
+  if(best&&boundsDistanceSquared(triangle,p)>best.distance*best.distance+1e-10)continue;
+  const point=closestTriangle(p,triangle.a,triangle.b,triangle.c),distance=p.distance(point);
+  if(!best||distance<best.distance)best={distance,part:triangle.part,engineIndex:triangle.engineIndex,localPoint:point,point:s.orientation.rotate(point).add(s.position)};
+ }
  return best;
 }

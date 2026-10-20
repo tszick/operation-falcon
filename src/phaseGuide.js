@@ -10,6 +10,8 @@ import {sensorTargets,navigationJammed} from './electronicWarfare.js';
 // Short, ordered cockpit reminders. Detailed instructions remain in H.
 export function phaseGuide(s,mission,aim,weapons,targets){
   const step=(key,text,done=false)=>({key,text,done});
+  if(mission.spec.naval&&(!s.airborne||s.onGround&&!s.landing?.success))return (s.spec.vtol?[step('Z',`Fúvócső ${s.naval?.nozzle||0}° · 45 rövid / 90 függőleges`),step('R','Gáz fel; nehéz géppel nekifutás, S: orr fel'),step('Z / G','Emelkedés után fokozatosan 0°; futó be')]:[step('R','Teljes gáz; Falcon Two előbb indul'),step('U','Katapult indítása · 5 s után'),step('S / G','Emelkedj; pozitív emelkedésnél futó be')]).map((v,i)=>({...v,active:i===0}));
+  if(mission.spec.naval&&s.approach?.active)return (s.spec.vtol?[step('G / Z','Futó ki; lassítás után fúvócső 90°'),step('R / F','Finom gáz: lebegés, süllyedés <3 m/s'),step('WASD / QE','Kis döntéssel igazodj a fedélzet fölé')]:[step('G / X / K','Futó, fékszárny és fékezőhorog ki'),step('R / F','3,5° siklás a ferde fedélzet tengelyén'),step('S','Stabil orrhelyzet; ne lebegtesd ki'),step('R','Elvétett kötél: teljes gáz és átstartolás')]).map((v,i)=>({...v,active:i===0}));
   const preferred=advisedTarget(s,targets,aim,mission.spec);
   const airTarget=preferred?preferred.kind==='air':mission.spec.kind==='air';
   const choices=(airTarget?['aam','gun']:['agm','bomb','gun']).filter(type=>weaponAvailable(s,type));

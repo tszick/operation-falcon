@@ -23,7 +23,7 @@ test('planner and actual mission-start mass match for every aircraft, fuel level
  }
 });
 test('default tanking stays full for ordinary missions and fifteen percent for landing practice; explicit values override it',()=>{
- for(const m of missions){const expected=m.objective==='landing'?.15:m.objective==='canyon'?.5:1;assert.equal(defaultMissionFuel(m),expected);close(createMissionAircraft(f16,m).fuel,(isPracticeMission(m)?trainingAircraft:f16).fuelCapacity*expected);close(createMissionAircraft(f16,m,{fuelFraction:.42}).fuel,(isPracticeMission(m)?trainingAircraft:f16).fuelCapacity*.42);}
+ for(const m of missions){const expected=m.objective==='landing'?.15:m.objective==='canyon'?.5:1;assert.equal(defaultMissionFuel(m),expected);close(createMissionAircraft(m.naval?aircraft.find(a=>a.id==='fa18'):f16,m).fuel,(isPracticeMission(m)?trainingAircraft:m.naval?aircraft.find(a=>a.id==='fa18'):f16).fuelCapacity*expected);close(createMissionAircraft(m.naval?aircraft.find(a=>a.id==='fa18'):f16,m,{fuelFraction:.42}).fuel,(isPracticeMission(m)?trainingAircraft:m.naval?aircraft.find(a=>a.id==='fa18'):f16).fuelCapacity*.42);}
  const m=missions.find(m=>m.id==='civil');close(createMissionAircraft(f16,m,{fuelFraction:5}).fuel,trainingAircraft.fuelCapacity);close(createMissionAircraft(f16,m,{fuelFraction:-2}).fuel,0);close(createMissionAircraft(f16,m,{fuelFraction:NaN}).fuel,trainingAircraft.fuelCapacity);
 });
 test('fuel consumption, an actual cannon shot and releasing stores reduce the same flying mass used in the planner',()=>{
@@ -32,7 +32,7 @@ test('fuel consumption, an actual cannon shot and releasing stores reduce the sa
  s.ammo.bomb--;close(before-mass(s),251.22);close(massBreakdown(s).totalKg,mass(s));
 });
 test('lower chosen fuel mass changes acceleration and the lift-limited approach speed',()=>{
- const m=missions.find(m=>m.id==='civil'),heavy=createMissionAircraft(f16,m),light=createMissionAircraft(f16,m,{fuelFraction:.2});heavy.throttle=light.throttle=1;
+ const m=missions.find(m=>m.id==='civil'),heavy=createMissionAircraft(m.naval?aircraft.find(a=>a.id==='fa18'):f16,m),light=createMissionAircraft(f16,m,{fuelFraction:.2});heavy.throttle=light.throttle=1;
  for(let i=0;i<120;i++){stepAircraft(heavy,{});stepAircraft(light,{});}assert.ok(light.speed>heavy.speed);
  const a=aircraft.find(a=>a.id==='mig31'),h=createMissionAircraft(a,m),l=createMissionAircraft(a,m,{fuelFraction:.15});assert.ok(approachSpeeds(h).target>approachSpeeds(l).target);
 });

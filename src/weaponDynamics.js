@@ -29,6 +29,8 @@ export const weaponProfiles={
  brimstone:missile('brimstone',22000,50,4200,4,.18,'active',{minRange:500,maxG:15,life:85,minGuideSpeed:100,terminalReserve:180,activeRange:10000}),
  kh29:missile('kh29',12000,660,40000,4,.38,'laser',{minRange:1000,maxG:10,life:65,minGuideSpeed:110,terminalReserve:180}),
  kh25:missile('kh25',10000,300,20000,3.5,.275,'laser',{minRange:800,maxG:12,life:60,minGuideSpeed:110,terminalReserve:180}),
+ ram:missile('ram',9000,73,9500,3.5,.127,'ir',{minRange:180,life:35,groundLaunchSpeed:260,maxG:40,fuseRadius:6}),
+ seaSparrow:missile('seaSparrow',9000,230,22500,6,.203,'sarh',{minRange:450,life:45,groundLaunchSpeed:260}),
  sam:missile('sam',24000,180,22500,6,.2,'active',{minRange:450,life:100,activeRange:12000,groundLaunchSpeed:260}),
  defense:missile('defense',14000,90,10000,3.4,.127),
  m61:gun('m61',1030,.10,.020,.002,1400),
@@ -40,16 +42,18 @@ export const weaponProfiles={
  defa:gun('defa',815,.275,.030,.0022,1300),
  giat:gun('giat',1025,.275,.030,.0017,1600),
  bk27:gun('bk27',1025,.26,.027,.0018,1600),
+ gau12:gun('gau12',1040,.185,.025,.002,1600),
  groundGun:gun('groundGun',950,.19,.023,.003,1800),
+ carrierGun:gun('carrierGun',950,.19,.023,.003,1800),
  mk76:{id:'mk76',kind:'bomb',mass:11.34,area:.0081,cd:.25,life:150,inert:true},
  mk82:{id:'mk82',kind:'bomb',mass:241,area:.059,cd:.25,life:150},
  fab250:{id:'fab250',kind:'bomb',mass:250,area:.083,cd:.3,life:150}
 };
 // Keep matching explicit: adding an aircraft preset with an unknown weapon must
 // fail validation instead of silently acquiring generic missile performance.
-const names=[[/Mk 76/,'mk76'],[/AIM-120C/,'aim120c'],[/AIM-120/,'aim120'],[/AIM-9M/,'aim9m'],[/AIM-9L/,'aim9l'],[/AIM-7M/,'aim7m'],[/AIM-7E/,'aim7e'],[/Magic/,'magic2'],[/MICA/,'mica'],[/R-60M/,'r60m'],[/R-73/,'r73'],[/R-40/,'r40'],[/R-33/,'r33'],[/R-77-1/,'r771'],[/RVV-SDM/,'rvvsdm'],[/PL-15/,'pl15'],[/AGM-65/,'maverick'],[/Brimstone/,'brimstone'],[/Kh-29/,'kh29'],[/Kh-25/,'kh25'],[/M61/,'m61'],[/GAU-22/,'gau22'],[/GAU-8/,'gau8'],[/GSh-6-30/,'gsh630'],[/GSh-6-23|Type 23/,'gsh23'],[/GSh-30|9A1/,'gsh30'],[/DEFA/,'defa'],[/30 M 791/,'giat'],[/BK-27/,'bk27'],[/Mk 82/,'mk82'],[/FAB-250/,'fab250']];
+const names=[[/Mk 76/,'mk76'],[/AIM-120C/,'aim120c'],[/AIM-120/,'aim120'],[/AIM-9M/,'aim9m'],[/AIM-9L/,'aim9l'],[/AIM-7M/,'aim7m'],[/AIM-7E/,'aim7e'],[/Magic/,'magic2'],[/MICA/,'mica'],[/R-60M/,'r60m'],[/R-73/,'r73'],[/R-40/,'r40'],[/R-33/,'r33'],[/R-77-1/,'r771'],[/RVV-SDM/,'rvvsdm'],[/PL-15/,'pl15'],[/AGM-65/,'maverick'],[/Brimstone/,'brimstone'],[/Kh-29/,'kh29'],[/Kh-25/,'kh25'],[/M61/,'m61'],[/GAU-12/,'gau12'],[/GAU-22/,'gau22'],[/GAU-8/,'gau8'],[/GSh-6-30/,'gsh630'],[/GSh-6-23|Type 23/,'gsh23'],[/GSh-30|9A1/,'gsh30'],[/DEFA/,'defa'],[/30 M 791/,'giat'],[/BK-27/,'bk27'],[/Mk 82/,'mk82'],[/FAB-250/,'fab250']];
 export function weaponProfile(spec,type){const name=armament(spec).weapons[type]?.name;if(!name)return null;const match=names.find(([re])=>re.test(name));if(!match)throw new Error(`Missing weapon dynamics: ${name}`);return weaponProfiles[match[1]];}
-export function enemyProfile(t,type){if(t.type==='bomber'&&type==='gun')return weaponProfiles[aircraftFlightSpec(t.aircraftId||'tu95').defensiveGun?.profile]||null;return t.type==='fighter'?weaponProfile({id:t.aircraftId},type):type==='gun'?weaponProfiles.groundGun:t.kind==='ground'?weaponProfiles.sam:weaponProfiles.defense;}
+export function enemyProfile(t,type){if(['carrier','destroyer'].includes(t.type)&&type==='aam')return weaponProfiles.seaSparrow;if(t.type==='carrier'&&type==='gun')return weaponProfiles.carrierGun;if(t.type==='bomber'&&type==='gun')return weaponProfiles[aircraftFlightSpec(t.aircraftId||'tu95').defensiveGun?.profile]||null;return t.type==='fighter'?weaponProfile({id:t.aircraftId},type):type==='gun'?weaponProfiles.groundGun:t.kind==='ground'?weaponProfiles.sam:weaponProfiles.defense;}
 export function missileLaunchVelocity(carrier,direction,profile,{ground=false}={}){return carrier.clone().add(direction.clone().normalize().scale(ground?(profile.groundLaunchSpeed??profile.launchSpeed??35):(profile.launchSpeed??35)));}
 export const airDensity=h=>1.225*Math.exp(-Math.max(0,h)/8500);
 export function clearWeaponLine(a,b){

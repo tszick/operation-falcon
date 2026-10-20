@@ -15,16 +15,23 @@ import {renderTacticalMap} from './tacticalMap.js';
 import {landingAttitudeMarkup} from './landingAttitude.js';
 import {flapStatus} from './flaps.js';
 const $=id=>document.getElementById(id);
+const htmlCache=new WeakMap(),controlFit=new WeakMap();
+const text=(element,value)=>{if(element.textContent!==value)element.textContent=value;};
+const html=(element,value)=>{if(htmlCache.get(element)!==value){element.innerHTML=value;htmlCache.set(element,value);}};
+
 export function updateHUD(s,targets,weapons,aim,mission,muted){
  mountCockpit();
  const jammed=navigationJammed(s,targets);document.body.classList.toggle('navigation-jammed',jammed);updateCockpit(s);
  updateStores(s,weapons,{compact:true});
  const flap=flapStatus(s),cm=s.countermeasures;
  const indicators=configurationIndicators(s),labels={gear:'G · FUTÓMŰ',flaps:'X · FÉKSZÁRNY',airbrake:'B · LÉGFÉK',engine:`GÁZ ${Math.round(s.throttle*100)}%`,afterburner:'SHIFT · AB',assist:'L · G-LIMIT',wheelBrake:'CTRL · KERÉKFÉK'},ids={gear:'config-gear',flaps:'config-flaps',airbrake:'config-airbrake',engine:'config-engine',afterburner:'config-afterburner',assist:'config-assist',wheelBrake:'config-wheel-brake'};
- const shortLabels={gear:'FUTÓ',flaps:'FÉKSZ.',airbrake:'LÉGFÉK',afterburner:afterburnerStatus(s).label,assist:'G-LIM',wheelBrake:'KERÉKFÉK'};
- for(const [key,indicator] of Object.entries(indicators)){const element=$(ids[key]);element.textContent=shortLabels[key]||labels[key];if(element.tagName==='BUTTON'&&element.clientWidth>0)element.style.fontSize=`${Math.max(7,Math.min(innerWidth<=1050?9:10,(element.clientWidth-2)/(element.textContent.length*.62)))}px`;element.dataset.state=indicator.state;element.setAttribute('aria-label',`${labels[key]} · ${indicator.active?'aktív':'inaktív'}${indicator.state==='danger'?' · veszélyes állás':''}`);if(element.tagName==='BUTTON')element.setAttribute('aria-pressed',String(indicator.active));}
- $('config-afterburner').hidden=!s.spec.hasAB;$('config-afterburner').title=afterburnerStatus(s).message;$('config-afterburner').setAttribute('aria-label','SHIFT · '+afterburnerStatus(s).message);$('config-flaps').dataset.moving=String(flap.moving);$('config-flaps').title=flap.label;
- $('config-countermeasures').textContent=`C · IR ${cm?.flare||0} / R ${cm?.chaff||0}`;
+ const shortLabels={gear:'FUTÓ',flaps:'FÉKSZ.',airbrake:'LÉGFÉK',afterburner:s.spec.vtol?'FÚVÓ '+(s.naval?.nozzle||0)+'°':afterburnerStatus(s).label,assist:'G-LIM',wheelBrake:'KERÉKFÉK'};
+ if(s.naval&&!s.spec.vtol){shortLabels.assist='HOROG';labels.assist='K · FÉKEZŐHOROG';indicators.assist={active:!!s.naval.hook,state:s.approach?.active&&!s.naval.hook?'danger':s.naval.hook?'active':'off'};}
+ // Read changed control dimensions together before any label/style writes.
+ const controls=Object.entries(indicators).map(([key,indicator])=>{const element=$(ids[key]),label=shortLabels[key]||labels[key],fitKey=`${innerWidth}:${innerHeight}:${label}`,fit=element.tagName==='BUTTON'&&controlFit.get(element)!==fitKey;return {key,indicator,element,label,fitKey,width:fit?element.clientWidth:0};});
+ for(const {key,indicator,element,label,fitKey,width}of controls){text(element,label);if(width>0){element.style.fontSize=`${Math.max(7,Math.min(innerWidth<=1050?9:10,(width-2)/(label.length*.62)))}px`;controlFit.set(element,fitKey);}if(element.dataset.state!==indicator.state)element.dataset.state=indicator.state;element.setAttribute('aria-label',`${labels[key]} · ${indicator.active?'aktív':'inaktív'}${indicator.state==='danger'?' · veszélyes állás':''}`);if(element.tagName==='BUTTON')element.setAttribute('aria-pressed',String(indicator.active));}
+ $('config-afterburner').hidden=!s.spec.hasAB&&!s.spec.vtol;if(s.spec.vtol)$('config-afterburner').dataset.state=s.naval?.nozzle?'active':'off';$('config-afterburner').title=s.spec.vtol?'Z: fúvócső 0° / 45° / 90°':afterburnerStatus(s).message;if(s.spec.vtol)$('config-afterburner').setAttribute('aria-pressed',String((s.naval?.nozzle||0)>0));$('config-assist').title=s.naval&&!s.spec.vtol?'K: fékezőhorog ki/be':'L: terheléskorlátozás';$('config-afterburner').setAttribute('aria-label',s.spec.vtol?'Z · fúvócső '+(s.naval?.nozzle||0)+' fok':'SHIFT · '+afterburnerStatus(s).message);$('config-flaps').dataset.moving=String(flap.moving);$('config-flaps').title=flap.label;
+ text($('config-countermeasures'),`C · IR ${cm?.flare||0} / R ${cm?.chaff||0}`);
  const damaged=s.damage>=15||s.condition?.engines?.some(v=>v<.5),damagePanel=$('damage-status'),stage=damageStage(s);damagePanel.hidden=!damaged||s.dying||s.crashed;
  if(damaged){damagePanel.dataset.stage=stage.id;$('damage-title').textContent=stage.label;$('damage-integrity').textContent=`SZERKEZET ${Math.max(0,Math.round(100-s.damage))}%`;$('damage-bar').style.width=`${Math.max(0,100-s.damage)}%`;const faults=damageWarnings(s);$('damage-faults').textContent=faults.slice(0,2).join(' · ')||'SÉRÜLT SZERKEZET · FINOM MANŐVEREK';damagePanel.title=faults.join('\n');}
  const lock=s.rearView?{state:'rear',label:tailGunStatus(s).label,hint:'EGÉR: CÉLZÁS · SZÓKÖZ: TŰZ · V: PILÓTAFÜLKE',progress:0}:targetingStatus(s,targets,aim,weapons);
@@ -41,7 +48,7 @@ export function updateHUD(s,targets,weapons,aim,mission,muted){
  $('phase-hint').textContent=mission.phaseHint;
  $('guide-title').textContent=mission.phase;
  const card=missionCardState(s,mission,targets);$('mission-card').dataset.operation=mission.spec.objective;$('mission-card-name').textContent=card.name;$('mission-time').textContent=card.elapsed;$('mission-time').title='Eltelt küldetésidő';$('mission-card-phase').textContent=card.phase;
- $('mission-priority').hidden=true;$('mission-priority').textContent=card.priority;$('mission-objectives').innerHTML=missionGoalsMarkup({...card,rows:(mission.spec.objective==='iron-veil'?ironVeilVisibleRows(mission,card.rows):card.rows).map(row=>({...row,text:compactObjective(row),fullText:row.text}))});$('mission-card').title=card.name+' · '+card.phase;
+ $('mission-priority').hidden=true;$('mission-priority').textContent=card.priority;html($('mission-objectives'),missionGoalsMarkup({...card,rows:(mission.spec.objective==='iron-veil'?ironVeilVisibleRows(mission,card.rows):card.rows).map(row=>({...row,text:compactObjective(row),fullText:row.text}))}));$('mission-card').title=card.name+' · '+card.phase;
  const guideSteps=phaseGuide(s,mission,aim,weapons,targets);
  fitPhaseGuide(guideSteps);
  const engine=engineInstruments(s),gauge=$('g-load');
@@ -68,11 +75,11 @@ export function updateHUD(s,targets,weapons,aim,mission,muted){
  const wasLanding=document.body.classList.contains('approaching');document.body.classList.toggle('approaching',landing);if(landing!==wasLanding)$('weapon-bay').open=!landing;
  $('landing-guidance').hidden=!landing;
  $('landing-attitude').hidden=!landing;
- if(landing)$('landing-attitude').innerHTML=landingAttitudeMarkup(s);
+ if(landing)html($('landing-attitude'),landingAttitudeMarkup(s));
  $('approach-button').setAttribute('aria-pressed',String(landing));const routeButton=$('landing-route-button');if(routeButton){routeButton.hidden=!landing;routeButton.setAttribute('aria-pressed',String(s.landingRouteEnabled!==false));routeButton.textContent=`I SEGÉDÍV ${s.landingRouteEnabled===false?'KI':'BE'}`;}const head=$('head-view-status');if(head){const yaw=s.headLook?.yawDeg||0,pitch=s.headLook?.pitchDeg||0;head.hidden=Math.abs(yaw)+Math.abs(pitch)<2;head.textContent=`NÉZET ${yaw<0?'BAL':'JOBB'} ${Math.abs(yaw).toFixed(0)}° · ${pitch<0?'LE':'FEL'} ${Math.abs(pitch).toFixed(0)}°`;}
  if(landing){
    $('approach-stage').textContent=`${approach.stage} · ${(approach.distance/1000).toFixed(1)} KM`;
-   $('approach-checks').innerHTML=approach.items.filter(item=>!['FUTÓMŰ','FÉKSZÁRNY','LÉGFÉK','BEDÖNTÉS','ORRHELYZET','PÁLYAIRÁNY'].includes(item.label)).map(item=>`<div class="${item.ok?'check-ok':'check-warn'}" title="${item.label}"><span>${item.ok?'✓':'!'} ${{'SEBESSÉG':'IAS','SÜLLYEDÉS':'V/S','SIKLÓPÁLYA':'SIKLÁS','BEÉRKEZÉS':'SZÖG'}[item.label]||item.label}</span><b>${item.value}</b></div>`).join('');
+   html($('approach-checks'),approach.items.filter(item=>!['FUTÓMŰ','FÉKSZÁRNY','LÉGFÉK','BEDÖNTÉS','ORRHELYZET','PÁLYAIRÁNY'].includes(item.label)).map(item=>`<div class="${item.ok?'check-ok':'check-warn'}" title="${item.label}"><span>${item.ok?'✓':'!'} ${{'SEBESSÉG':'IAS','SÜLLYEDÉS':'V/S','SIKLÓPÁLYA':'SIKLÁS','BEÉRKEZÉS':'SZÖG'}[item.label]||item.label}</span><b>${item.value}</b></div>`).join(''));
    $('approach-instruction').textContent=approach.instruction+(map.landingRoute?.advisory?' '+map.landingRoute.advisory:'');
  }
  updateCockpit(s);updateFlightMessages(s,lock,aim,weapons);
@@ -88,8 +95,9 @@ const guideLayout=new WeakMap();
 function fitPhaseGuide(steps){
  const list=$('guide-steps'),pending=steps.filter(item=>!item.done);
  const html=pending.map(item=>`<li class="${item.active?'current':''}"><kbd>${item.key}</kbd><span>${item.text}</span></li>`).join('');
- const width=list.clientWidth,height=list.clientHeight,key=html+':'+width+':'+height;
+ const key=html+':'+innerWidth+':'+innerHeight+':'+document.body.className;
  if(guideLayout.get(list)===key)return;
+ const height=list.clientHeight;
  guideLayout.set(list,key);list.innerHTML=html;
  list.style.setProperty('--guide-lines',height>=24?2:1);
  let full=false;

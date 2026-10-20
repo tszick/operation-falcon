@@ -20,7 +20,7 @@ export function deployCountermeasures(s,kind='mixed'){
 }
 export function updateCountermeasures(s,dt){const cm=s.countermeasures;if(!cm)return;cm.clock+=dt;cm.cooldown=Math.max(0,cm.cooldown-dt);for(const d of cm.decoys){d.previous=d.position.clone();d.age+=dt;d.velocity.scale(Math.exp(-(d.type==='flare'?.8:1.8)*dt));d.velocity.y-=(d.type==='flare'?9.81:1.5)*dt;d.position.add(d.velocity.clone().scale(dt));}cm.decoys=cm.decoys.filter(d=>d.age<d.life&&d.position.y>terrainHeight(d.position.x,d.position.z));}
 export function decoyKind(profile){return ['ir','imaging'].includes(profile?.guidance)?'flare':['sarh','active'].includes(profile?.guidance)?'chaff':null;}
-const susceptibility={aim9m:.65,aim9l:.75,magic2:.6,r60m:.9,r73:.5,mica:.3,aim7e:.8,aim7m:.6,aim120:.4,aim120c:.25,r40:.75,r33:.65,r771:.35,rvvsdm:.25,pl15:.23,sam:.4,defense:.75,maverick:.12};
+const susceptibility={aim9m:.65,aim9l:.75,magic2:.6,r60m:.9,r73:.5,mica:.3,aim7e:.8,aim7m:.6,aim120:.4,aim120c:.25,r40:.75,r33:.65,r771:.35,rvvsdm:.25,pl15:.23,sam:.4,seaSparrow:.6,defense:.75,maverick:.12};
 export function countermeasureTarget(p,s,dt,random=Math.random){
  const decoys=s.countermeasures?.decoys||[];
  if(p.decoyId!==undefined){const decoy=decoys.find(d=>d.id===p.decoyId);if(decoy)return decoy;p.seekerLost=true;p.lossReason='CSALI ELHALVÁNYULT';return null;}

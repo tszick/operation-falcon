@@ -1,19 +1,38 @@
+import {surfaceStyle,terrainTint} from './surfaceStyle.js';
 import {Vec3,clamp} from './math.js';
 import {terrainHeight,terrainWorld} from './terrain.js';
 import {projectFeaturePolygon} from './terrainFeatures.js';
 // One connected grid: no overlapping transparent near/far wire meshes or LOD gaps.
-const outer=[10000,12000,15000,18000,22000,28000,36000,48000];
-const offsets=[...outer.map(x=>-x).reverse(),...Array.from({length:41},(_,i)=>(i-20)*450),...outer];
+// Every LOD samples world-aligned coordinates. Translating a coarse grid with
+// the camera used to move distant peak vertices by 450 m at each rebuild.
+export function terrainAxis(center){
+ const coordinates=new Set();for(let i=-20;i<=20;i++)coordinates.add(center+i*450);
+ let inner=9000;for(const [outer,step]of [[12600,1800],[19800,3600],[34200,7200],[54000,14400]]){
+  for(const sign of [-1,1]){const lo=sign<0?center-outer:center+inner,hi=sign<0?center-inner:center+outer;for(let value=Math.ceil(lo/step)*step;value<=hi;value+=step)if(Math.abs(value-center)>inner)coordinates.add(value);}
+  inner=outer;
+ }
+ return [...coordinates].sort((a,b)=>a-b);
+}
+let sampleRevision=-1,sampleCache=new Map();
 export function buildTerrainSurface(cx,cz,heightAt=terrainHeight){
- const points=offsets.map(z=>offsets.map(x=>new Vec3(cx+x,heightAt(cx+x,cz+z),cz+z))),faces=[];
+ const xs=terrainAxis(cx),zs=terrainAxis(cz);
+ // Explicit peak anchors keep narrow prominent summits from jumping between LOD samples.
+ if(heightAt===terrainHeight){for(const [axis,center,values]of [['x',cx,xs],['z',cz,zs]])for(const peak of terrainWorld.peaks)for(const offset of [-1,-.5,0,.5,1]){const value=peak[axis]+offset*peak.radius;if(Math.abs(value-center)<48000&&!values.some(v=>Math.abs(v-value)<1))values.push(value);}xs.sort((a,b)=>a-b);zs.sort((a,b)=>a-b);}
+ if(sampleRevision!==terrainWorld.revision||sampleCache.size>32000){sampleRevision=terrainWorld.revision;sampleCache=new Map();}
+ const point=(x,z)=>{if(heightAt!==terrainHeight)return new Vec3(x,heightAt(x,z),z);const key=x+':'+z;let p=sampleCache.get(key);if(!p){p=new Vec3(x,heightAt(x,z),z);sampleCache.set(key,p);}return p;};
+ const points=zs.map(z=>xs.map(x=>point(x,z))),faces=[];
  const add=pts=>{const normal=pts[1].clone().sub(pts[0]).cross(pts[2].clone().sub(pts[0])).normalize();if(normal.y<0)normal.scale(-1);
   const light=clamp(normal.dot(new Vec3(-.36,.86,-.36)),0,1);
-  faces.push({points:pts,center:pts.reduce((p,v)=>p.add(v),new Vec3()).scale(1/3),color:`rgb(${Math.round(12+light*8)},${Math.round(27+light*18)},${Math.round(20+light*10)})`});};
- for(let z=0;z<points.length-1;z++)for(let x=0;x<points.length-1;x++){const a=points[z][x],b=points[z][x+1],c=points[z+1][x+1],d=points[z+1][x];add([a,b,c]);add([a,c,d]);}
+  faces.push({points:pts,normal,center:pts.reduce((p,v)=>p.add(v),new Vec3()).scale(1/3),color:`rgb(${Math.round(12+light*8)},${Math.round(27+light*18)},${Math.round(20+light*10)})`});};
+ for(let z=0;z<points.length-1;z++)for(let x=0;x<xs.length-1;x++){const a=points[z][x],b=points[z][x+1],c=points[z+1][x+1],d=points[z+1][x];add([a,b,c]);add([a,c,d]);}
  return faces;
 }
+export function terrainGridCenter(camera,previous=null){
+ const reuse=previous?.revision===terrainWorld.revision;
+ return {x:reuse&&Math.abs(camera.x-previous.x)<=337.5?previous.x:Math.round(camera.x/450)*450,z:reuse&&Math.abs(camera.z-previous.z)<=337.5?previous.z:Math.round(camera.z/450)*450,revision:terrainWorld.revision};
+}
 export function renderTerrainSurface(r){
- const cx=Math.round(r.camera.x/450)*450,cz=Math.round(r.camera.z/450)*450,key=`${terrainWorld.revision}:${cx}:${cz}`;
+ const center=r.terrainGridCenter=terrainGridCenter(r.camera,r.terrainGridCenter),cx=center.x,cz=center.z,key=`${terrainWorld.revision}:${cx}:${cz}`;
  if(r.terrainSurfaceKey!==key){r.terrainSurfaceKey=key;r.terrainSurface=buildTerrainSurface(cx,cz);}
  if(r.gpuModels?.renderTerrain(r))return;
  if(r.debugMetrics)r.terrainMetrics={backend:'Canvas2D',triangles:r.terrainSurface.length};
@@ -23,7 +42,8 @@ export function renderTerrainSurface(r){
  const c=r.ctx;c.save();c.lineJoin='round';c.lineWidth=1;
  for(const face of faces){c.beginPath();face.screen.forEach((p,i)=>i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y));c.closePath();
   // Opaque fill covers the far slope, stars and all previously painted grid lines.
-  c.fillStyle=face.color;c.fill();c.strokeStyle=face.color;c.stroke();
+  const palette=surfaceStyle(r.surfaceMode),color=r.surfaceMode&&r.surfaceMode!=='vector'?`rgb(${terrainTint(r.surfaceMode,face.normal.y,face.center.y,(Number(face.color.match(/[\d.]+/g)[1])-27)/18).map(v=>Math.round(v*255)).join(',')})`:face.color;c.fillStyle=color;c.fill();c.strokeStyle=color;c.stroke();
+  if(r.surfaceLines===false)continue;
   const alpha=face.depth<3200?.72:face.depth<10000?.54:.32;
   c.strokeStyle=`rgba(115,163,96,${alpha})`;c.lineWidth=face.depth<6500?1.05:.8;c.stroke();
  }

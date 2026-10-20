@@ -3,6 +3,7 @@ import {terrainWorld} from './terrain.js';
 // Conservative upper bound along a horizontal sight segment, shared by visual
 // occlusion and weapon support; the callers keep their own sampling/clearance rules.
 export function terrainSightCeiling(camera,point){
+ if(terrainWorld.ocean)return 0;
  const dx=point.x-camera.x,dz=point.z-camera.z;
  // Bound only terrain that can meet this sight ray. A remote high peak must
  // not force every smoke puff to ray-march across the entire map.

@@ -1,3 +1,4 @@
+import {updateSeaRam} from './navalInterception.js';
 import {updateAIResupply} from './aiResupply.js';
 import {syncPlayerTransport} from './transportRole.js';
 import {practiceBombImpact} from './bombingPractice.js';
@@ -7,7 +8,7 @@ import {combatSource} from './unitCombat.js';
 import {ballisticHit} from './ballisticFlight.js';
 import {teamOf} from './unitTypes.js';
 import {firingStatus} from './firingStatus.js';
-import {groundHit} from './groundModels.js';
+import {groundHit,groundCollisionBounds,sweptBoundsOverlap} from './groundModels.js';
 import {Vec3,forward,right,up,clamp} from './math.js';
 import {terrainHeight} from './terrain.js';
 import {explosionEffect,impactEffect} from './effects.js';
@@ -71,6 +72,8 @@ export class Weapons {
   this.effects=this.effects.filter(e=>e.life>0);
   for(const trail of this.trails)trail.life-=dt;
   this.trails=this.trails.filter(t=>t.life>0);
+  const interceptors=updateSeaRam(this,s,targets,dt);
+  const collisionBounds=new Map();if(this.projectiles.length)for(const t of targets)if(t.alive&&t.kind==='ground'&&!t.exited)collisionBounds.set(t,groundCollisionBounds(t));
   const remaining=[];
   for(const p of this.projectiles){
    p.previous=p.position.clone();p.age+=dt;
@@ -98,26 +101,27 @@ export class Weapons {
     if(p.age>=p.fuse){this.explode(p.position,'flak');for(const t of targets)if(t.alive&&canHit(t)&&t.kind==='air'&&t.position.distance(p.position)<65){recordHit(t,{...p,damage:p.damage*(1-t.position.distance(p.position)/65)});}}
     else if(p.position.y>terrainHeight(p.position.x,p.position.z)&&p.age<15)remaining.push(p);continue;
    }
-   let hitTarget=null,hitInfo=null;
+   let hitTarget=null,hitInfo=null;const dx=p.position.x-p.previous.x,dy=p.position.y-p.previous.y,dz=p.position.z-p.previous.z,length2=Math.max(1,dx*dx+dy*dy+dz*dz);
    for(const t of targets){
     if(!t.alive||!canHit(t))continue;
+    if(t.kind==='ground'&&!sweptBoundsOverlap(collisionBounds.get(t),p.previous,p.position,p.type==='bomb'?38:p.type==='gun'?.2:12))continue;
     if(t.type==='ballistic'){hitInfo=ballisticHit(t,p.previous,p.position,missile&&p.armed?p.profile.fuseRadius:p.type==='gun'?.15:1);if(hitInfo){hitTarget=t;break;}continue;}
-    const segment=p.position.clone().sub(p.previous),length2=segment.dot(segment),fraction=clamp(t.position.clone().sub(p.previous).dot(segment)/Math.max(1,length2),0,1),nearest=p.previous.clone().add(segment.scale(fraction));
-    if(t.kind==='ground'?groundHit(t,p.previous,p.position,p.type==='bomb'?38:p.type==='gun'?.2:12):nearest.distance(t.position)<t.radius+(p.type==='bomb'?38:p.type==='gun'?2:12)){
+    const fraction=t.kind==='air'?clamp(((t.position.x-p.previous.x)*dx+(t.position.y-p.previous.y)*dy+(t.position.z-p.previous.z)*dz)/length2,0,1):0,nearDistance=t.kind==='air'?Math.hypot(p.previous.x+dx*fraction-t.position.x,p.previous.y+dy*fraction-t.position.y,p.previous.z+dz*fraction-t.position.z):0;
+    if(t.kind==='ground'?groundHit(t,p.previous,p.position,p.type==='bomb'?38:p.type==='gun'?.2:12):nearDistance<t.radius+(p.type==='bomb'?38:p.type==='gun'?2:12)){
      if(t.kind==='air'){hitInfo=aircraftHit({spec:{id:t.aircraftId||'mig29'},position:t.position,previousPosition:t.previousPosition||t.position,orientation:t.flight?.orientation||Quat.euler(t.heading||0,t.pitch||0,t.bank||0),mach:0,condition:t.flight?.condition},p.previous,p.position,{radius:missile&&p.armed?p.profile.fuseRadius:p.type==='gun'?.15:1});if(!hitInfo)continue;}
      hitTarget=t;break;
     }
    }
    const ground=p.position.y<=terrainHeight(p.position.x,p.position.z);
    if(ground&&!hitTarget){
-    for(const t of targets)if(t.alive&&canHit(t)&&t.kind==='ground'&&groundHit(t,p.position,p.position,p.type==='bomb'?100:20)){hitTarget=t;break;}
+    for(const t of targets)if(t.alive&&canHit(t)&&t.kind==='ground'&&sweptBoundsOverlap(collisionBounds.get(t),p.position,p.position,p.type==='bomb'?100:20)&&groundHit(t,p.position,p.position,p.type==='bomb'?100:20)){hitTarget=t;break;}
    }
    if(hitTarget&&(!missile||p.armed)){const destroyed=recordHit(hitTarget,p,hitInfo),point=hitInfo?.point||hitTarget.position;if(p.type==='gun'&&!destroyed)this.effects.push(impactEffect(point));else this.explode(point,p.type,{ground:hitTarget.kind==='ground',target:hitTarget});}
    else if(ground){this.explode(p.position,p.type,{ground:true});}
    if(hitTarget||ground||p.age>(p.profile?.life||(p.type==='gun'?5:150))){if(!hitTarget&&!ai)this.misses++;}else remaining.push(p);
   }
-  this.projectiles=remaining;
-  s.incomingMissiles=remaining.filter(p=>p.owner==='enemy'&&!p.targetEntityId&&p.type==='aam'&&!p.seekerLost&&p.decoyId===undefined).length;s.threatWarning=s.incomingMissiles?`RAKÉTA KÖZELEDIK · ${s.incomingMissiles} · C: ELTERELŐ`:'';
+  remaining.push(...interceptors);this.projectiles=remaining;
+  s.incomingMissiles=remaining.filter(p=>p.owner==='enemy'&&!p.interceptor&&!p.targetEntityId&&p.type==='aam'&&!p.seekerLost&&p.decoyId===undefined).length;s.threatWarning=s.incomingMissiles?`RAKÉTA KÖZELEDIK · ${s.incomingMissiles} · C: ELTERELŐ`:'';
   if(this.trails.length>500)this.trails.splice(0,this.trails.length-500);
  }
 }

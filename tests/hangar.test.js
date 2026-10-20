@@ -8,8 +8,8 @@ import {enemyAircraft} from '../src/enemies.js';
 import {storesMarkup} from '../src/storesDisplay.js';
 test('hangar has the requested five groups and every aircraft belongs to exactly one',()=>{
  assert.deepEqual(hangarGroups.map(g=>g.id),['nato-classic','nato-modern','soviet','russia-modern','china-modern']);
- assert.deepEqual(hangarGroups.map(g=>aircraft.filter(a=>a.group===g.id).length),[10,5,8,2,2]);
- assert.equal(new Set(aircraft.map(a=>a.id)).size,27);assert.ok(aircraft.every(a=>hangarGroups.some(g=>g.id===a.group)));
+ assert.deepEqual(hangarGroups.map(g=>aircraft.filter(a=>a.group===g.id).length),[11,5,8,2,2]);
+ assert.equal(new Set(aircraft.map(a=>a.id)).size,28);assert.ok(aircraft.every(a=>hangarGroups.some(g=>g.id===a.group)));
  for(const group of hangarGroups){const faction=group.id.startsWith('nato')?'west':group.id.startsWith('china')?'china':'east';assert.ok(aircraft.filter(a=>a.group===group.id).every(a=>a.faction===faction));}
 });
 test('modern aircraft have distinctive layout, correct engine counts and tailored handling',()=>{

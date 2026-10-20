@@ -10,7 +10,7 @@ export class Vec3 {
  cross(v){return new Vec3(this.y*v.z-this.z*v.y,this.z*v.x-this.x*v.z,this.x*v.y-this.y*v.x);}
  length(){return Math.hypot(this.x,this.y,this.z);}
  normalize(){return this.scale(1/(this.length()||1));}
- distance(v){return this.clone().sub(v).length();}
+ distance(v){return Math.hypot(this.x-v.x,this.y-v.y,this.z-v.z);}
 }
 export class Quat {
  constructor(x=0,y=0,z=0,w=1){Object.assign(this,{x,y,z,w});}

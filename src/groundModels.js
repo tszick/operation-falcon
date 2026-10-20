@@ -1,3 +1,5 @@
+import {runwaySurfaceMesh} from './runwayVisuals.js';
+import {materialFor} from './surfaceStyle.js';
 import {Vec3,Quat} from './math.js';
 import {terrainWorld,terrainHeight,convoyPose} from './terrain.js';
 class Builder {
@@ -14,6 +16,14 @@ class Builder {
 const cache=new Map();
 export function groundMesh(type,span=220,dimensions={}){const key=type+':'+Math.round(span)+':'+(dimensions.width||0)+':'+(dimensions.depth||0)+':'+(dimensions.detail||'near');if(cache.has(key))return cache.get(key);const b=new Builder();
  if(type==='target-range'){for(const radius of [25,50])for(let i=0;i<64;i++){const a=i*Math.PI/32,c=(i+1)*Math.PI/32;b.line([Math.cos(a)*radius,.1,Math.sin(a)*radius],[Math.cos(c)*radius,.1,Math.sin(c)*radius]);}b.line([-50,.12,0],[50,.12,0]);b.line([0,.12,-50],[0,.12,50]);b.box(0,.3,0,1.8,1.2,3.5);for(const x of [-2,2])b.box(x,.1,0,.4,1.1,3.7);b.box(0,1.5,-.3,1.3,1,1.5);b.box(0,2,3,.13,.22,2.5);}
+ else if(type==='carrier'||type==='destroyer'){
+ const carrier=type==='carrier',L=carrier?160:75,W=carrier?34:9,H=carrier?20:10;
+ const lower=[[-W*.65,0,-L*.88],[W*.65,0,-L*.88],[W*.72,0,L*.7],[0,0,L]],upper=[[-W,H,-L],[W,H,-L],[W,H,L*.72],[0,H,L]];
+ b.face(lower);b.face(upper);for(let i=0;i<4;i++)b.face([lower[i],lower[(i+1)%4],upper[(i+1)%4],upper[i]]);
+  b.box(carrier?30:6,H+2,-30,2.5,2,3.5);b.box(carrier?30:6,H+4,-30,3,2,3);
+  if(carrier){b.box(0,H,0,36,.08,160);b.box(26,H,12,7,19,28);b.box(26,H+19,5,8,5,13);b.box(26,H+24,8,1.2,16,1.2);for(const z of[-115,115]){b.box(-31,H,z,3,3,4);b.box(-31,H+3,z+3,1,1,5);}}
+ else{b.box(0,H,0,6,12,23);b.box(0,H+12,0,3,8,8);b.box(0,H+20,0,.8,15,.8);b.box(0,H+4,-28,3,10,6);for(const z of[-48,43]){b.box(0,H,z,3,3,5);b.box(0,H+3,z+5,.6,.6,6);}for(const x of[-3,0,3])for(const z of[26,30,34])b.box(x,H+.1,z,1.2,.35,1.2);}
+ }
  else if(type==='city-building'){const w=dimensions.width||24,d=dimensions.depth||30,h=span;b.box(0,0,0,w,dimensions.detail==='far'?h+2:h,d);if(dimensions.detail!=='far')b.box(0,h,0,w*.55,2,d*.55);if(!dimensions.detail||dimensions.detail==='near')for(let y=8;y<h;y+=Math.max(10,h/12)){b.line([-w,y,d+.05],[w,y,d+.05]);b.line([w+.05,y,-d],[w+.05,y,d]);}}
  else if(type==='ballistic-silo'){b.box(0,0,0,30,4,30);b.rings(0,0,[[4,14],[6,14],[7,12]],24);b.box(38,0,5,12,9,18);b.box(-26,0,-32,10,5,8);b.line([-13,7,0],[13,7,0]);b.line([0,7,-13],[0,7,13]);for(const x of [-40,60])b.line([x,0,-40],[x,3,-40]);}
  else if(type==='ballistic'){b.rings(0,0,[[0,1.2],[12,1.2],[16,0]],12);for(const x of [-1,1]){b.face([[0,0,0],[x*3,0,0],[0,4,0]]);b.face([[0,0,0],[0,0,x*3],[0,4,0]]);}b.points=b.points.map(p=>new Vec3(p.x,-p.z,p.y-7));}
@@ -33,11 +43,20 @@ function preparedInstance(position,heading,mesh){const rotation=Quat.euler(headi
 export function groundInstances(t,{detail='near'}={}){
  const key=[terrainWorld.revision,t.type,t.position.x,t.position.y,t.position.z,t.heading,t.routeDistance,t.routeDirection,t.alive,t.buildingHeight,t.buildingWidth,t.buildingDepth,terrainWorld.river?.width].join(':');let cached=instanceCache.get(t);if(!cached||cached.key!==key){cached={key,levels:new Map()};instanceCache.set(t,cached);}if(cached.levels.has(detail))return cached.levels.get(detail);
  let result;if(t.type==='convoy')result=[-2,-1,0,1,2].map(i=>{const pose=convoyPose(t,i*30);return preparedInstance(pose.position,pose.heading,groundMesh('truck'));});
- else{const mesh=groundMesh(t.type,t.city?(t.alive?t.buildingHeight:2):t.type==='bridge'?(terrainWorld.river?.width||180)+70:220,{width:t.buildingWidth,depth:t.buildingDepth,detail}),position=t.position.clone();if(t.type!=='bridge')position.y=terrainHeight(position.x,position.z)+.5;result=[preparedInstance(position,t.heading||0,mesh)];}
+ else{const mesh=groundMesh(t.type,t.city?(t.alive?t.buildingHeight:2):t.type==='bridge'?(terrainWorld.river?.width||180)+70:220,{width:t.buildingWidth,depth:t.buildingDepth,detail}),position=t.position.clone();if(['carrier','destroyer'].includes(t.type))position.y=0;else if(t.type!=='bridge')position.y=terrainHeight(position.x,position.z)+.5;result=[preparedInstance(position,t.heading||0,mesh)];}
  cached.levels.set(detail,result);return result;
 }
 export function buildingDetail(t,camera,focal=600){const distance=t.position.distance(camera),pixels=(t.buildingHeight||20)*focal/Math.max(1,distance);return distance<1800&&pixels>=12?'near':distance<6000&&pixels>=6?'medium':'far';}
-export function renderGroundTarget(renderer,t){const detail=t.city?buildingDetail(t,renderer.camera,renderer.focal):'near';for(const instance of groundInstances(t,{detail}))renderer.mesh(instance.mesh,instance.position,instance.rotation,1,t.alive===false?'#56645b':t.team==='ally'?'#8dbed4':t.type==='jammer'?'#e7c994':'#c4aa88');}
+export function renderGroundTarget(renderer,t){const detail=t.city?buildingDetail(t,renderer.camera,renderer.focal):'near';for(const instance of groundInstances(t,{detail})){if(t.type==='airbase'&&renderer.surfaceMode!=='vector')renderer.mesh(runwaySurfaceMesh(.04),instance.position,instance.rotation,1,'#c8e4aa',null,'asphalt');renderer.mesh(instance.mesh,instance.position,instance.rotation,1,t.alive===false?'#56645b':t.team==='ally'?'#8dbed4':t.type==='jammer'?'#e7c994':'#c4aa88',null,materialFor(t.type));}}
+// Collect once per simulation step, rather than resolving instance caches for
+// every projectile/object pair. Bounds enclose the exact rotated hit boxes.
+export function groundCollisionBounds(t){
+ const instances=groundInstances(t),bounds={x:[Infinity,-Infinity],y:[Infinity,-Infinity],z:[Infinity,-Infinity]};
+ for(const {worldBounds}of instances)for(const axis of ['x','y','z']){bounds[axis][0]=Math.min(bounds[axis][0],worldBounds[axis][0]);bounds[axis][1]=Math.max(bounds[axis][1],worldBounds[axis][1]);}return bounds;
+}
+export function sweptBoundsOverlap(bounds,from,to,padding=0){
+ return Math.max(from.x,to.x)>=bounds.x[0]-padding&&Math.min(from.x,to.x)<=bounds.x[1]+padding&&Math.max(from.y,to.y)>=bounds.y[0]-padding&&Math.min(from.y,to.y)<=bounds.y[1]+padding&&Math.max(from.z,to.z)>=bounds.z[0]-padding&&Math.min(from.z,to.z)<=bounds.z[1]+padding;
+}
 export function groundHit(t,from,to,padding=0){
  // Swept local boxes follow the exact rendered instances, including each truck.
  for(const {position,inverse,mesh,worldBounds}of groundInstances(t)){

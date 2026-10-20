@@ -18,6 +18,14 @@ export function createBattleTargets(m,player,{rng=Math.random}={}){
   if(air){t.aircraftId=type==='civil'?'airliner':opponent.id;t.cruiseSpeed=def.speed||145;t.heading=Math.atan2(-position.x,-position.z);t.velocity=new Vec3(Math.sin(t.heading)*t.cruiseSpeed,0,Math.cos(t.heading)*t.cruiseSpeed);if(type==='fighter'||type==='bomber'||type==='transport')t.name=opponent.name;}
   if(t.aiRole==='escortee')t.routeX=t.position.x;units.push(t);return t;
  }
+ if(m.naval){
+  const home=add('BASE','carrier','ally',new Vec3(),{home:true,health:600,maxHealth:600});home.position.y=0;home.previousPosition=home.position.clone();
+  const ally=add('ALLY-FIGHTER1','fighter','ally',new Vec3(-7,22,70),{aiRole:'takeoff',takeoffClock:0,heading:0,cruiseSpeed:190,defendId:'BASE',radioCallSign:{flight:'Falcon',number:2}});ally.aircraftId='fa18';ally.name='F/A-18C Hornet';ally.velocity=new Vec3(0,6,70);
+  const cover=add('ALLY-FIGHTER2','fighter','ally',new Vec3(250,450,1200),{aiRole:'interceptor',cruiseSpeed:190,defendId:'BASE',radioCallSign:{flight:'Falcon',number:3}});cover.aircraftId='fa18';cover.name='F/A-18C Hornet';cover.heading=0;cover.velocity=new Vec3(0,0,190);
+  const extraCover=add('ALLY-FIGHTER3','fighter','ally',new Vec3(-450,500,900),{aiRole:'interceptor',cruiseSpeed:190,defendId:'BASE',radioCallSign:{flight:'Falcon',number:4}});extraCover.aircraftId='fa18';extraCover.name='F/A-18C Hornet';extraCover.heading=0;extraCover.velocity=new Vec3(0,0,190);
+  for(let wave=1;wave<=2;wave++)for(let i=0;i<4;i++){const bomber=i===3,position=new Vec3((i-1.5)*1200+(wave===2?7000:0),bomber?1800:2400,24000+(i%2)*1500),t=add(`NAVAL-W${wave}-${i}`,bomber?'bomber':'fighter','enemy',position,{wave,pending:wave===2,alive:wave===1,squad:'BANDIT-'+wave,formationSlot:i,aiTargetId:'BASE'});t.aircraftId=bomber?'tu95':'mig29';t.name=bomber?'Tu-95 Bear':'MiG-29A';t.cruiseSpeed=bomber?140:180;t.heading=Math.atan2(-position.x,-position.z);t.velocity=new Vec3(Math.sin(t.heading)*t.cruiseSpeed,0,Math.cos(t.heading)*t.cruiseSpeed);if(!bomber)delete t.aiTargetId;}
+  const ship=add('ENEMY-DESTROYER','destroyer','enemy',new Vec3(13000,0,19500));ship.position.y=0;ship.heading=Math.atan2(-ship.position.x,-ship.position.z);ship.velocity=new Vec3(Math.sin(ship.heading)*10,0,Math.cos(ship.heading)*10);return units;
+ }
  if(m.objective==='practice-bombing'){add('RANGE','target-range','neutral',new Vec3(4500,0,8500),{practiceTarget:true,radius:50});return units;}
  if(['landing','canyon'].includes(m.objective))return [];
  const home=add('BASE','airbase','ally',new Vec3(),{home:true,health:320,maxHealth:320});
@@ -60,6 +68,7 @@ export function createBattleTargets(m,player,{rng=Math.random}={}){
   for(const [i,x,z]of [[1,-2300,6000]])add(`FLAK${i}`,'sam','enemy',new Vec3(x,0,z),{aiTargetId:transport.id});return units;
  }
  if(m.objective==='defend-city'){
+  terrainWorld.cityRoads=Array.from({length:12},(_,i)=>({x:i<6?-2250+i*900:0,z:i<6?16000:13750+(i-6)*900,angle:i<6?Math.PI/2:0,bend:0,phase:0,width:42,min:-2400,max:2400,city:true}));
   const city=new Vec3(0,0,16000),direction=new Vec3(Math.sin(bearing)*.45,0,1).normalize(),side=new Vec3(direction.z,0,-direction.x);
   // Metropolis blocks: broad flight corridors, low outer skyline and a tall core.
   // Keep 25 independent objectives; scale and silhouette supply the city, not extra meshes.

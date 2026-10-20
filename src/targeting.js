@@ -47,7 +47,7 @@ export function applyTargetHit(target,weapon,{part=null,engineIndex=null,amount=
 const staticPoseCache=new WeakMap();
 export function updateTargets(targets,dt){for(const t of targets){
  if(t.playerControlled||t.pending||t.exited)continue;
- if(t.kind==='ground'&&t.type!=='convoy'){const p=staticPoseCache.get(t);if(!p||p.revision!==terrainWorld.revision||p.x!==t.position.x||p.y!==t.position.y||p.z!==t.position.z){ageEvasion(t,dt);t.previousPosition=t.position.clone();t.agl=t.position.y-terrainHeight(t.position.x,t.position.z);staticPoseCache.set(t,{revision:terrainWorld.revision,x:t.position.x,y:t.position.y,z:t.position.z});}continue;}
+ if(t.kind==='ground'&&t.type!=='convoy'&&t.type!=='destroyer'){const p=staticPoseCache.get(t);if(!p||p.revision!==terrainWorld.revision||p.x!==t.position.x||p.y!==t.position.y||p.z!==t.position.z){ageEvasion(t,dt);t.previousPosition=t.position.clone();t.agl=t.position.y-terrainHeight(t.position.x,t.position.z);staticPoseCache.set(t,{revision:terrainWorld.revision,x:t.position.x,y:t.position.y,z:t.position.z});}continue;}
  ageEvasion(t,dt);t.previousPosition=t.position.clone();t.agl=t.position.y-terrainHeight(t.position.x,t.position.z);
  if(t.pending)continue;
  if(t.type==='ballistic'){if(t.alive)moveBallistic(t,dt);continue;}
@@ -70,7 +70,11 @@ export class Targeting {
   if(next!==this.id){this.id=next;this.progress=0;this.locked=false;}
   return this.id;
  }
- update(s,targets,dt){const c=radarContacts(s,targets).find(c=>c.target.id===this.id);if(!c||!c.visible||!c.selectable){this.selector.reset();this.id=null;this.progress=0;this.locked=false;return;}this.progress=Math.min(s.spec.lockTime,this.progress+dt);this.locked=this.progress>=s.spec.lockTime;}
+ update(s,targets,dt){
+  // No lock can progress without a selected contact. Avoid scanning every radar
+  // ray at 120 Hz while idle; selection and the HUD still refresh contacts.
+  if(this.id==null){this.selector.reset();this.progress=0;this.locked=false;return;}
+  const c=radarContacts(s,targets).find(c=>c.target.id===this.id);if(!c||!c.visible||!c.selectable){this.selector.reset();this.id=null;this.progress=0;this.locked=false;return;}this.progress=Math.min(s.spec.lockTime,this.progress+dt);this.locked=this.progress>=s.spec.lockTime;}
 }
 export const bombImpact=predictBombImpact;
 

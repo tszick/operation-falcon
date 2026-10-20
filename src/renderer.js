@@ -1,3 +1,8 @@
+import {renderCarrier} from './carrierVisuals.js';
+import {renderCityVisuals} from './cityVisuals.js';
+import {renderEnvironmentSky} from './environmentSky.js';
+import {homeRunwayMesh,runwaySurfaceMesh} from './runwayVisuals.js';
+import {surfaceStyle} from './surfaceStyle.js';
 import {transportExitPosition} from './transportRole.js';
 import {damagedVertex,modelFacePresent} from './modelDamage.js';
 import {damageVibration} from './damage.js';
@@ -27,8 +32,10 @@ import {renderDamageSmoke} from './damageVisuals.js';
 import {damageResponse} from './damage.js';
 import {renderCountermeasures} from './countermeasureVisuals.js';
 export {aircraftMesh} from './airframes.js';
+// Carrier navigation marks the physical deck, not the old land-runway approach point.
+export function baseMarkerPosition(targets,ocean=false){const home=targets.find(t=>t.home&&t.type==='carrier');return ocean?(home?.position.clone()||new Vec3()).add(new Vec3(0,20,0)):new Vec3(0,10,-1000);}
 export class Renderer {
- constructor(canvas){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.gpuModels=GpuModels.create();this.camera=new Vec3();this.q=new Quat();this.thirdPerson=false;this.stars=createStars();this.resize();}
+ constructor(canvas){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.gpuModels=GpuModels.create();this.camera=new Vec3();this.q=new Quat();this.thirdPerson=false;this.surfaceMode='vector';this.surfaceLines=true;this.stars=createStars();this.resize();}
  resize(){const d=Math.min(devicePixelRatio||1,2);this.w=innerWidth;this.h=innerHeight;this.canvas.width=this.w*d;this.canvas.height=this.h*d;this.ctx.setTransform(d,0,0,d,0,0);this.focal=this.h*.8;}
  setup(position,q){this.visibilityColumns=new Map();this.visibilityRevision=terrainWorld.revision;this.camera=position;this.q=q;this.f=forward(q);this.u=up(q);this.r=right(q);}
  local(p){const d=p.clone().sub(this.camera);return new Vec3(d.dot(this.r),d.dot(this.u),d.dot(this.f));}
@@ -45,8 +52,8 @@ export class Renderer {
   }
  }
  rawLine(a,b){let v=this.local(a),w=this.local(b);if(v.z<1&&w.z<1)return;if(v.z<1)v=v.add(w.clone().sub(v).scale((1-v.z)/(w.z-v.z)));if(w.z<1)w=w.add(v.clone().sub(w).scale((1-w.z)/(v.z-w.z)));const ax=this.w*.5+v.x*this.focal/v.z,ay=this.h*.53-v.y*this.focal/v.z,bx=this.w*.5+w.x*this.focal/w.z,by=this.h*.53-w.y*this.focal/w.z;if((ax<0&&bx<0)||(ax>this.w&&bx>this.w)||(ay<0&&by<0)||(ay>this.h&&by>this.h))return;this.ctx.moveTo(ax,ay);this.ctx.lineTo(bx,by);}
- mesh(mesh,position,q,scale=1,color='#b9ed8c',condition=null){
-  const entry={mesh,position,q,scale,color,condition};
+ mesh(mesh,position,q,scale=1,color='#b9ed8c',condition=null,material='concrete'){
+  const entry={mesh,position,q,scale,color,condition,material};
   if(this.meshQueue)this.meshQueue.push(entry);else this.paintMeshes([entry]);
  }
  flushMeshes(){const queue=this.meshQueue;this.meshQueue=null;if(queue?.length)this.paintMeshes(queue);}
@@ -55,7 +62,7 @@ export class Renderer {
   const c=this.ctx,screen=[],faces=[],details=[],fills=[];
   // All opaque models share one face/edge pass: a far object cannot repaint a
   // near object's outline merely because it was submitted later in the frame.
-  for(const {mesh,position,q,scale,color,condition}of entries){
+  for(const {mesh,position,q,scale,color,condition,material}of entries){
    const center=this.local(position),radius=(mesh.radius||Math.max(...mesh.points.map(p=>p.length())))*scale;
    if(center.z+radius<1||Math.abs(center.x)>center.z*this.w/(2*this.focal)+radius*Math.hypot(1,this.w/(2*this.focal))||Math.abs(center.y)>center.z*this.h*.53/this.focal+radius*Math.hypot(1,this.h*.53/this.focal))continue;
    const pts=mesh.points.map((v,i)=>q.rotate(damagedVertex(mesh,i,condition).clone().scale(scale)).add(position));
@@ -67,7 +74,7 @@ export class Renderer {
     // Clip to the near plane; never drop a whole wall when one corner passes
     // behind the pilot. This matters for hangars and other large nearby units.
     const polygon=projectFeaturePolygon(this,original.map(i=>pts[i]),projectionCache);if(polygon.length<3||polygon.every(p=>p.x<0)||polygon.every(p=>p.x>this.w)||polygon.every(p=>p.y<0)||polygon.every(p=>p.y>this.h))continue;
-    const ids=polygon.map(p=>screen.push({...p,color})-1);faces.push(ids);fills.push({ids,depth:polygon.reduce((sum,p)=>sum+p.depth,0)/polygon.length,color:mesh.flapFaces?.includes(original)&&mesh.flapFraction>.02?'#40522b':'#101c16'});
+    const ids=polygon.map(p=>screen.push({...p,color})-1);faces.push(ids);fills.push({ids,depth:polygon.reduce((sum,p)=>sum+p.depth,0)/polygon.length,color:mesh.flapFaces?.includes(original)&&mesh.flapFraction>.02?'#40522b':this.surfaceMode!=='vector'?(material==='aircraft'?'#929ba2':material==='camo'?'#686e49':material==='hangar'?'#939b9b':material==='asphalt'?'#303437':'#8b918c'):'#101c16'});
    }
    for(const [a,b]of modelDetails){if(!visible.get(a)||!visible.get(b))continue;let v=this.local(pts[a]),w=this.local(pts[b]);if(v.z<1&&w.z<1)continue;
     if(v.z<1)v=v.clone().add(w.clone().sub(v).scale((1-v.z)/(w.z-v.z)));if(w.z<1)w=w.clone().add(v.clone().sub(w).scale((1-w.z)/(v.z-w.z)));
@@ -76,43 +83,43 @@ export class Renderer {
   }
   if(this.debugMetrics)this.modelMetrics={entries:entries.length,faces:faces.length,details:details.length,vertices:screen.length,largest:entries.map(e=>({faces:e.mesh.faces?.length||0,points:e.mesh.points.length,distance:Math.round(e.position.distance(this.camera)),pixels:Math.round((e.mesh.radius||0)*this.focal/Math.max(1,this.local(e.position).z))})).sort((a,b)=>b.faces-a.faces).slice(0,4)};
   fills.sort((a,b)=>b.depth-a.depth);for(const face of fills){c.beginPath();face.ids.forEach((i,j)=>j?c.lineTo(screen[i].x,screen[i].y):c.moveTo(screen[i].x,screen[i].y));c.closePath();c.fillStyle=face.color;c.fill();}
-  const strokes=new Map();for(const [a,b]of visibleMeshEdges(screen,faces,details,{minLength:.65})){const color=a.color||'#b9ed8c';if(!strokes.has(color))strokes.set(color,[]);strokes.get(color).push([a,b]);}
+  const strokes=new Map();for(const [a,b]of visibleMeshEdges(screen,faces,details,{minLength:.65,faceEdges:this.surfaceLines!==false})){const color=a.color||'#b9ed8c';if(!strokes.has(color))strokes.set(color,[]);strokes.get(color).push([a,b]);}
   c.lineWidth=.8;for(const [color,segments]of strokes){c.strokeStyle=color;c.beginPath();for(const[a,b]of segments){c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);}c.stroke();}
  }
 
  skyStars(){
-  const c=this.ctx;
-  for(const star of this.stars){const p=projectStar(star,this,this.w,this.h,this.focal);if(!p||starOccluded(star.direction,this.camera,terrainHeight))continue;const opacity=star.brightness*Math.min(1,.35+star.direction.y*3);c.fillStyle=`rgba(205,225,220,${opacity})`;c.fillRect(p.x,p.y,star.size,star.size);if(star.size>1.4){c.fillStyle=`rgba(190,221,216,${opacity*.3})`;c.fillRect(p.x-2,p.y+.5,5,1);c.fillRect(p.x+.5,p.y-2,1,5);}}
+  const c=this.ctx,starLevel=surfaceStyle(this.surfaceMode).stars;if(!starLevel)return;
+  for(const star of this.stars){const p=projectStar(star,this,this.w,this.h,this.focal);if(!p||starOccluded(star.direction,this.camera,terrainHeight))continue;const opacity=starLevel*star.brightness*Math.min(1,.35+star.direction.y*3);c.fillStyle=`rgba(205,225,220,${opacity})`;c.fillRect(p.x,p.y,star.size,star.size);if(star.size>1.4){c.fillStyle=`rgba(190,221,216,${opacity*.3})`;c.fillRect(p.x-2,p.y+.5,5,1);c.fillRect(p.x+.5,p.y-2,1,5);}}
  }
  groundHorizon(){
   const c=this.ctx,w=this.w,h=this.h,cx=w*.5,cy=h*.53;
   const worldY=p=>this.f.y+this.r.y*(p.x-cx)/this.focal+this.u.y*(cy-p.y)/this.focal;
   const corners=[{x:0,y:0},{x:w,y:0},{x:w,y:h},{x:0,y:h}],polygon=[],cuts=[];
   for(let i=0;i<4;i++){const a=corners[i],b=corners[(i+1)%4],va=worldY(a),vb=worldY(b);if(va<=0)polygon.push(a);if((va<=0)!==(vb<=0)){const t=va/(va-vb),p={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};polygon.push(p);cuts.push(p);}}
-  if(polygon.length){c.fillStyle='#0e1e16';c.beginPath();polygon.forEach((p,i)=>i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y));c.closePath();c.fill();}
-  if(cuts.length===2){c.strokeStyle='#6f866055';c.beginPath();c.moveTo(cuts[0].x,cuts[0].y);c.lineTo(cuts[1].x,cuts[1].y);c.stroke();}
+  if(polygon.length){c.fillStyle=this.surfaceMode==='vector'?'#0e1e16':surfaceStyle(this.surfaceMode).sky[2];c.beginPath();polygon.forEach((p,i)=>i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y));c.closePath();c.fill();}
+  if(cuts.length===2&&this.surfaceMode!=='ocean'){c.strokeStyle='#6f866055';c.beginPath();c.moveTo(cuts[0].x,cuts[0].y);c.lineTo(cuts[1].x,cuts[1].y);c.stroke();}
  }
  terrain(){renderTerrainSurface(this);}
  worldVisible(p){if(!this.visibilityColumns||this.visibilityRevision!==terrainWorld.revision){this.visibilityColumns=new Map();this.visibilityRevision=terrainWorld.revision;}const key=p.x+':'+p.z;let column=this.visibilityColumns.get(key);if(column){if(p.y>=column.visible)return true;if(p.y<=column.hidden)return false;}else{column={visible:Infinity,hidden:-Infinity};this.visibilityColumns.set(key,column);}const visible=terrainFeatureVisible(this.camera,p);if(visible)column.visible=Math.min(column.visible,p.y);else column.hidden=Math.max(column.hidden,p.y);return visible;}
  projectWorld(p,padding=150){const screen=this.project(p);if(!projectedInView(this,screen,padding))return null;return this.worldVisible(p)?screen:null;}
- runway(jammed=false){const c=this.ctx;c.strokeStyle='#c8e4aa';c.lineWidth=1.5;c.beginPath();this.line(new Vec3(-45,.8,-1600),new Vec3(-45,.8,1600));this.line(new Vec3(45,.8,-1600),new Vec3(45,.8,1600));this.line(new Vec3(-45,.8,-1600),new Vec3(45,.8,-1600));this.line(new Vec3(-45,.8,1600),new Vec3(45,.8,1600));for(let z=-1500;z<1600;z+=130)this.line(new Vec3(0,1,z),new Vec3(0,1,z+55));for(let z=-1500;z<1600;z+=140){for(const x of[-48,48]){this.line(new Vec3(x,2,z),new Vec3(x,5,z));}}for(const z of[-1450,1450])for(let x=-35;x<=35;x+=14)this.line(new Vec3(x,1,z),new Vec3(x,1,z+60));c.stroke();
+ runway(jammed=false){if(terrainWorld.ocean){renderCarrier(this);return;}if(this.surfaceMode!=='vector')this.mesh(runwaySurfaceMesh(),new Vec3(),new Quat(),1,'#c8e4aa',null,'asphalt');if(this.gpuModels?.gl&&!this.gpuModels.lost&&!this.gpuModels.gl.isContextLost()){this.mesh(homeRunwayMesh(!jammed),new Vec3(),new Quat(),1,'#c8e4aa',null,'runway');for(const h of homeHangars)this.box(new Vec3(h.x,0,h.z),h.halfWidth,h.height,h.halfLength,'#64735f');return;}const c=this.ctx;c.strokeStyle='#c8e4aa';c.lineWidth=1.5;c.beginPath();this.line(new Vec3(-45,.8,-1600),new Vec3(-45,.8,1600));this.line(new Vec3(45,.8,-1600),new Vec3(45,.8,1600));this.line(new Vec3(-45,.8,-1600),new Vec3(45,.8,-1600));this.line(new Vec3(-45,.8,1600),new Vec3(45,.8,1600));for(let z=-1500;z<1600;z+=130)this.line(new Vec3(0,1,z),new Vec3(0,1,z+55));for(let z=-1500;z<1600;z+=140){for(const x of[-48,48]){this.line(new Vec3(x,2,z),new Vec3(x,5,z));}}for(const z of[-1450,1450])for(let x=-35;x<=35;x+=14)this.line(new Vec3(x,1,z),new Vec3(x,1,z+60));c.stroke();
  for(const h of homeHangars)this.box(new Vec3(h.x,0,h.z),h.halfWidth,h.height,h.halfLength,'#64735f');
  // Two approach gates on the three-degree glide path.
  if(jammed)return;
  c.strokeStyle='#89af6955';c.beginPath();for(const z of[-2600,-3600]){const y=(-z-1600)*Math.tan(3*DEG)+3;this.line(new Vec3(-60,y-12,z),new Vec3(-60,y+12,z));this.line(new Vec3(-60,y+12,z),new Vec3(60,y+12,z));this.line(new Vec3(60,y+12,z),new Vec3(60,y-12,z));}c.stroke();}
- box(p,w,h,d,color){this.boxMeshes??=new Map();const key=[w,h,d].join(':');if(this.boxMeshes.has(key)){this.mesh(this.boxMeshes.get(key),p,new Quat(),1,color);return;}const points=[[-w,0,-d],[w,0,-d],[w,0,d],[-w,0,d],[-w,h,-d],[w,h,-d],[w,h,d],[-w,h,d]].map(v=>new Vec3(...v));const mesh={points,faces:[[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7],[4,5,6,7],[3,2,1,0]],details:[]};this.boxMeshes.set(key,mesh);this.mesh(mesh,p,new Quat(),1,color);}
+ box(p,w,h,d,color){this.boxMeshes??=new Map();const key=[w,h,d].join(':');if(this.boxMeshes.has(key)){this.mesh(this.boxMeshes.get(key),p,new Quat(),1,color,null,'hangar');return;}const points=[[-w,0,-d],[w,0,-d],[w,0,d],[-w,0,d],[-w,h,-d],[w,h,-d],[w,h,d],[-w,h,d]].map(v=>new Vec3(...v));const mesh={points,faces:[[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7],[4,5,6,7],[3,2,1,0]],details:[]};this.boxMeshes.set(key,mesh);this.mesh(mesh,p,new Quat(),1,color,null,'hangar');}
 
- marker(p,label,color='#baf37d',locked=false,{offscreenLabel=false}={}){const c=this.ctx,screen=this.project(p);if(projectedInView(this,screen,0)){const{x,y}=screen;c.strokeStyle=color;c.fillStyle=color;c.lineWidth=1;c.strokeRect(x-12,y-12,24,24);if(locked){c.beginPath();c.arc(x,y,21,0,Math.PI*2);c.stroke();}c.font='10px Consolas,monospace';c.textAlign='center';this.markerLabel(label,x,y-22);return screen;}
- const local=this.local(p),angle=Math.atan2(local.x,local.z),x=this.w*.5+Math.sin(angle)*Math.min(this.w*.32,320),y=this.h*.53-Math.cos(angle)*Math.min(this.h*.26,190);c.save();c.translate(x,y);c.rotate(angle);c.strokeStyle=color;c.beginPath();c.moveTo(-6,7);c.lineTo(0,-7);c.lineTo(6,7);c.stroke();c.restore();c.fillStyle=color;c.font='10px Consolas,monospace';c.textAlign='center';if(offscreenLabel)this.markerLabel(label,x,y+25);return null;}
+ marker(p,label,color='#baf37d',locked=false,{offscreenLabel=false}={}){const c=this.ctx,screen=this.project(p);if(projectedInView(this,screen,0)){const{x,y}=screen;c.fillStyle=color;for(const [ink,width]of [['#071014',4.5],[color,1.7]]){c.strokeStyle=ink;c.lineWidth=width;c.strokeRect(x-12,y-12,24,24);if(locked){c.beginPath();c.arc(x,y,21,0,Math.PI*2);c.stroke();}}c.font='bold 12px Consolas,monospace';c.textAlign='center';this.markerLabel(label,x,y-22);return screen;}
+ const local=this.local(p),angle=Math.atan2(local.x,local.z),x=this.w*.5+Math.sin(angle)*Math.min(this.w*.32,320),y=this.h*.53-Math.cos(angle)*Math.min(this.h*.26,190);c.save();c.translate(x,y);c.rotate(angle);c.strokeStyle=color;c.beginPath();c.moveTo(-6,7);c.lineTo(0,-7);c.lineTo(6,7);c.stroke();c.restore();c.fillStyle=color;c.font='bold 12px Consolas,monospace';c.textAlign='center';if(offscreenLabel)this.markerLabel(label,x,y+25);return null;}
  markerLabel(label,x,y){
   if(!label)return;
   const c=this.ctx,width=(c.measureText?.(label).width||label.length*6)+10,half=width/2,px=clamp(x,half+8,this.w-half-8),top=45,bottom=cockpitHudFooterY(this.w,this.h)-12,used=this.markerLabels||(this.markerLabels=[]);
   let py=clamp(y,top,bottom);
   for(let step=0;step<40;step++){
-   const candidate=clamp(y-step*14,top,bottom),rect={left:px-half,right:px+half,top:candidate-10,bottom:candidate+3};
+   const candidate=clamp(y-step*16,top,bottom),rect={left:px-half,right:px+half,top:candidate-12,bottom:candidate+4};
    if(used.every(r=>rect.right<r.left||rect.left>r.right||rect.bottom<r.top||rect.top>r.bottom)){py=candidate;used.push(rect);break;}
   }
-  c.fillText(label,px,py);
+  c.strokeStyle='#071014';c.lineWidth=3.5;c.lineJoin='round';c.strokeText?.(label,px,py);c.fillText(label,px,py);
  }
  flakBattery(p){for(const x of [-30,30]){const base=p.clone().add(new Vec3(x,-6,0));this.box(base,9,5,13,'#d0a780');const c=this.ctx;c.strokeStyle='#e5b98c';c.lineWidth=1.7;c.beginPath();for(const offset of [-2,2])this.line(base.clone().add(new Vec3(offset,7,0)),base.clone().add(new Vec3(offset,23,13)));c.stroke();}}
  samBattery(p){
@@ -127,11 +134,12 @@ export class Renderer {
  }else{this.wreckOffset=null;camera=s.position.clone().add(up(s.orientation).scale(this.thirdPerson?18:1.5)).add(forward(s.orientation).scale(this.thirdPerson?-58:4));
   if(!this.thirdPerson&&!(typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches)){const shake=damageResponse(s).shake;camera.add(right(s.orientation).scale(Math.sin(s.elapsed*39)*shake*.18)).add(up(s.orientation).scale(Math.sin(s.elapsed*31)*shake*.12));}
  }if(!wreck&&!rear&&!this.thirdPerson&&this.headLook)cameraQ=this.headLook.orientation(s.orientation);if(!wreck&&!this.thirdPerson&&!(typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches)){const vibration=damageVibration(s);cameraQ=cameraQ.multiply(Quat.euler(vibration.yaw,vibration.pitch,vibration.roll));}this.setup(camera,cameraQ);
- const sky=c.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#081619');sky.addColorStop(.48,'#23392d');sky.addColorStop(1,'#07100c');c.fillStyle=sky;c.fillRect(0,0,w,h);
- this.worldOcclusion=false;this.skyStars();if(!this.gpuModels?.renderHorizon(this))this.groundHorizon();
+ renderEnvironmentSky(this);
+ this.worldOcclusion=false;this.skyStars();if(!this.gpuModels?.renderHorizon(this,true))this.groundHorizon();
  this.terrain();const featureStart=this.debugMetrics?performance.now():0;renderTerrainFeatures(this);if(this.debugMetrics)this.featureMs=performance.now()-featureStart;const jammed=navigationJammed(s,targets);this.worldOcclusion=true;this.meshQueue=[];this.runway(jammed);this.worldOcclusion=false;renderLandingRoute(this,getLandingRoute(s,{jammed}));this.worldOcclusion=true;renderCanyonCourse(this,s);const contacts=radarContacts(s,targets);if(s.spec.transport&&!jammed){const transport=targets.find(t=>t.playerControlled);if(transport&&!transport.exited){const exit=transportExitPosition(transport);this.marker(exit,`KIJÁRAT ${(s.position.distance(exit)/1000).toFixed(1)} KM`,'#8ccbe3');}}
- for(const t of targets.filter(t=>!t.exited&&!t.playerControlled&&!t.home&&(t.alive||t.falling||t.city)).sort((a,b)=>this.local(b.position).z-this.local(a.position).z)){if(t.type==='ballistic'){this.mesh(groundMesh('ballistic'),t.position,Quat.euler(t.heading,t.pitch||0,0),1,'#ffc48b');}else if(t.kind==='air'){if(t.flight)renderDamageSmoke(this,t.flight);this.mesh(aircraftMesh(t.aircraftId||'mig29'),t.position,t.flight?.orientation||Quat.euler(t.heading,t.pitch||0,t.bank||0),1,t.team==='ally'?'#8ccbe3':t.civilian?'#a6dce5':t.flight?.damage>40?'#e0a270':'#c39a78',t.flight?.condition);}else renderGroundTarget(this,t);}
- if((this.thirdPerson||wreck)&&!s.crashed)this.mesh(aircraftMesh(s.spec.id,s.mach>.5?Math.min(1,(s.mach-.5)/.9):0,s.flapPosition??(s.flaps?1:0)),s.position,s.orientation,1,s.damage>40?'#e0a270':'#c7efa2',s.condition);
+ renderCityVisuals(this,targets);
+ for(const t of targets.filter(t=>!t.city&&!t.exited&&!t.playerControlled&&!t.home&&(t.alive||t.falling)).sort((a,b)=>this.local(b.position).z-this.local(a.position).z)){if(t.type==='ballistic'){this.mesh(groundMesh('ballistic'),t.position,Quat.euler(t.heading,t.pitch||0,0),1,'#ffc48b');}else if(t.kind==='air'){if(t.flight)renderDamageSmoke(this,t.flight);this.mesh(aircraftMesh(t.aircraftId||'mig29'),t.position,t.flight?.orientation||Quat.euler(t.heading,t.pitch||0,t.bank||0),1,t.team==='ally'?'#8ccbe3':t.civilian?'#a6dce5':t.flight?.damage>40?'#e0a270':'#c39a78',t.flight?.condition,'aircraft');}else renderGroundTarget(this,t);}
+ if((this.thirdPerson||wreck)&&!s.crashed)this.mesh(aircraftMesh(s.spec.id,s.mach>.5?Math.min(1,(s.mach-.5)/.9):0,s.flapPosition??(s.flaps?1:0)),s.position,s.orientation,1,s.damage>40?'#e0a270':'#c7efa2',s.condition,'aircraft');
  this.flushMeshes();
  this.markerLabels=[];
  const friendlyFighters=targets.filter(t=>t.team==='ally'&&t.type==='fighter');
@@ -142,12 +150,12 @@ export class Renderer {
   else if(isHostile(t,s)&&t.kind==='air'&&t.aircraftId)name=aircraftFlightSpec(t.aircraftId).name;
   // Unlocked hostile contacts keep their geometry/marker, without a wall of names.
   const label=isHostile(t,s)&&!locked?'':`${name.toUpperCase()} ${(t.position.distance(s.position)/1000).toFixed(1)} KM`;
-  this.marker(t.position,label,t.team==='ally'?'#8ccbe3':aim.id===t.id?(aim.locked?'#baf37d':'#ffda83'):contact?.visible?'#f0b78d':'#92a08a',locked);
+  this.marker(t.position,label,t.team==='ally'?'#64d7ff':aim.id===t.id?(aim.locked?'#baf37d':'#ffda83'):contact?.visible?'#ff9875':'#92a08a',locked);
  }}
- const city=targets.filter(t=>t.city);if(city.length&&!jammed){const center=city.reduce((p,t)=>p.add(t.position),new Vec3()).scale(1/city.length);this.marker(center,`VÁROS ${Math.round(city.filter(t=>t.alive).length/city.length*100)}%`,'#8ccbe3');}
- if(!jammed&&(targets.every(t=>!t.alive)||targets.some(t=>t.civilian&&t.withdrawing)||s.position.length()>3500))this.marker(new Vec3(0,10,-1000),`BASE ${(s.position.distance(new Vec3(0,0,0))/1000).toFixed(1)} KM`,'#baf37d',false,{offscreenLabel:true});
+ const city=targets.filter(t=>t.city);if(city.length&&!jammed){const center=city.reduce((p,t)=>p.add(t.position),new Vec3()).scale(1/city.length);this.marker(center,`VÁROS ${Math.round(city.filter(t=>t.alive).length/city.length*100)}%`,'#64d7ff');}
+ if(!jammed&&(targets.every(t=>!t.alive)||targets.some(t=>t.civilian&&t.withdrawing)||s.position.length()>3500))this.marker(baseMarkerPosition(targets,terrainWorld.ocean),`${terrainWorld.ocean?'ANYAHAJÓ':'BASE'} ${(s.position.distance(new Vec3(0,0,0))/1000).toFixed(1)} KM`,'#baf37d',false,{offscreenLabel:true});
  const effectsStart=this.debugMetrics?performance.now():0;renderWeapons(this,s,weapons);if(this.debugMetrics)this.effectsMs=performance.now()-effectsStart;
- renderCountermeasures(this,s);for(const t of targets)if(t.defense?.countermeasures?.decoys.length)renderCountermeasures(this,t.defense);
+ const cmStart=this.debugMetrics?performance.now():0;renderCountermeasures(this,s);for(const t of targets)if(t.defense?.countermeasures?.decoys.length)renderCountermeasures(this,t.defense);if(this.debugMetrics)this.countermeasureMs=performance.now()-cmStart;
  renderDamageSmoke(this,s);
  this.worldOcclusion=false;
  if(wreck)return;
@@ -167,7 +175,7 @@ export class Renderer {
  if(!this.thirdPerson){c.strokeStyle='#4b6546';c.lineWidth=3;c.beginPath();c.moveTo(0,h);c.lineTo(w*.18,h*.88);c.lineTo(w*.32,h*.85);c.moveTo(w,h);c.lineTo(w*.82,h*.88);c.lineTo(w*.68,h*.85);c.stroke();}}
  idle(time){const c=this.ctx;c.fillStyle='#071211';c.fillRect(0,0,this.w,this.h);this.setup(new Vec3(1600,1600,-2400),Quat.euler(time*.015,-.2,0));c.globalAlpha=.17;this.terrain();c.globalAlpha=1;}
 }
-export function renderAircraftPreview(canvas,spec,time,model=null){
+export function renderAircraftPreview(canvas,spec,time,model=null,mode='vector'){
  const rect=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2),w=rect.width,h=rect.height;
  if(canvas.width!==Math.round(w*d)||canvas.height!==Math.round(h*d)){canvas.width=w*d;canvas.height=h*d;}
  const c=canvas.getContext('2d');c.setTransform(d,0,0,d,0,0);c.clearRect(0,0,w,h);
@@ -179,12 +187,12 @@ export function renderAircraftPreview(canvas,spec,time,model=null){
  const pts=mesh.points.map(p=>q.rotate(p)),screen=pts.map(p=>({x:w/2+p.x*scale,y:h*.50-(p.y*.62+p.z*.78)*scale,depth:-p.y*.78+p.z*.62}));
  const faces=mesh.faces.map(ids=>({ids,depth:ids.reduce((v,i)=>v+screen[i].depth,0)/ids.length})).sort((a,b)=>b.depth-a.depth);
  c.lineWidth=.8;
- for(const{ids}of faces){const normal=pts[ids[1]].clone().sub(pts[ids[0]]).cross(pts[ids[2]].clone().sub(pts[ids[0]])).normalize(),light=Math.abs(normal.dot(new Vec3(.3,.85,.4)));c.fillStyle=`rgb(${Math.round(10+light*8)},${Math.round(23+light*12)},${Math.round(15+light*7)})`;c.strokeStyle=`rgba(185,235,140,${.5+light*.4})`;c.beginPath();ids.forEach((i,j)=>j?c.lineTo(screen[i].x,screen[i].y):c.moveTo(screen[i].x,screen[i].y));c.closePath();c.fill();}
- c.strokeStyle='#b9eb8c';c.beginPath();for(const[a,b]of visibleMeshEdges(screen,mesh.faces,mesh.details,{perspective:false})){c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);}c.stroke();
- c.fillStyle='#759268';c.font='10px Consolas,monospace';c.textAlign='left';c.fillText((model?'TARGET / ':'AIRFRAME / ')+spec.id.toUpperCase(),15,h-15);c.textAlign='right';c.fillText('VECTOR MODEL',w-15,h-15);c.textAlign='left';
+ for(const{ids}of faces){const normal=pts[ids[1]].clone().sub(pts[ids[0]]).cross(pts[ids[2]].clone().sub(pts[ids[0]])).normalize(),light=Math.abs(normal.dot(new Vec3(.3,.85,.4)));c.fillStyle=mode==='vector'?`rgb(${Math.round(10+light*8)},${Math.round(23+light*12)},${Math.round(15+light*7)})`:`rgb(${(model?[115,124,90]:[162,170,177]).map(v=>Math.round(v*(.5+light*.5))).join(',')})`;c.strokeStyle=`rgba(185,235,140,${.5+light*.4})`;c.beginPath();ids.forEach((i,j)=>j?c.lineTo(screen[i].x,screen[i].y):c.moveTo(screen[i].x,screen[i].y));c.closePath();c.fill();}
+ c.strokeStyle=mode==='vector'?'#b9eb8c':'#647166';c.beginPath();for(const[a,b]of visibleMeshEdges(screen,mesh.faces,mesh.details,{perspective:false,faceEdges:mode==='vector'})){c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);}c.stroke();
+ c.fillStyle='#759268';c.font='10px Consolas,monospace';c.textAlign='left';c.fillText((model?'TARGET / ':'AIRFRAME / ')+spec.id.toUpperCase(),15,h-15);c.textAlign='right';c.fillText(mode==='vector'?'VECTOR MODEL':'SURFACE PREVIEW',w-15,h-15);c.textAlign='left';
 }
 
 
 
 
-export function renderTargetPreview(canvas,mission,player,time){const mesh=mission.id==='ballistic'?groundMesh('ballistic'):mission.id==='city-building'?groundMesh('city-building',80):mission.kind==='air'?aircraftMesh(enemyAircraft(mission,player).id):mission.objective==='landing'?groundMesh('airbase'):groundMesh(mission.id);renderAircraftPreview(canvas,mission,time,mesh);}
+export function renderTargetPreview(canvas,mission,player,time,mode='vector'){const mesh=mission.id==='ballistic'?groundMesh('ballistic'):mission.id==='city-building'?groundMesh('city-building',80):mission.kind==='air'?aircraftMesh(enemyAircraft(mission,player).id):mission.objective==='landing'?groundMesh('airbase'):groundMesh(mission.id);renderAircraftPreview(canvas,mission,time,mesh,mode);}
