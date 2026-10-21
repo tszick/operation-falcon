@@ -1,7 +1,106 @@
-<!doctype html><html lang="hu"><meta charset="utf-8"><title>Rajzolási teljesítménymérés</title><style>body{margin:0;overflow:hidden;background:#071211;color:#baf37d;font:14px monospace}aside{position:fixed;top:16px;left:16px;padding:12px;background:#071211ee;max-width:650px}button{background:#1d3528;color:#baf37d;border:1px solid #729553;padding:8px}pre{white-space:pre-wrap}</style><canvas id="world"></canvas><aside><button id="high">Nagy magasság</button> <button id="low">Kis magasság</button><pre id="report">Mérés...</pre></aside><script type="module">
-import {Renderer} from '/src/renderer.js';import {aircraft,missions} from '/src/aircraftSpec.js';import {createAircraft} from '/src/physics.js';import {Vec3,Quat} from '/src/math.js';import {createTargets,Targeting} from '/src/targeting.js';import {Weapons} from '/src/weapons.js';
-const s=createAircraft(aircraft[0]),targets=createTargets(missions.find(m=>m.id==='airbase'),s.spec,{rng:()=>.2}),r=new Renderer(document.getElementById('world')),w=new Weapons(),aim=new Targeting();s.onGround=false;s.airborne=true;s.gear=false;s.speed=s.ias=180;s.velocity=new Vec3(0,0,180);let times={},samples=[],generation=0;
-for(const name of ['terrain','skyStars','paintMeshes','runway']){const original=r[name].bind(r);r[name]=(...args)=>{const start=performance.now(),result=original(...args);times[name]=(times[name]||0)+performance.now()-start;return result;};}
-async function run(high){const id=++generation;s.position=new Vec3(12000,high?9000:600,-3000);s.orientation=Quat.euler(.4,high?-.6:-.08,0);s.agl=s.position.y;samples=[];document.getElementById('report').textContent='Mérés...';for(let i=0;i<26;i++){await new Promise(requestAnimationFrame);if(id!==generation)return;times={};s.position.x+=8;const start=performance.now();r.render(s,targets,w,aim);if(i>=6)samples.push({total:performance.now()-start,...times});}const values=samples.map(s=>s.total).sort((a,b)=>a-b),avg=key=>+(samples.reduce((sum,s)=>sum+(s[key]||0),0)/samples.length).toFixed(2);document.getElementById('report').textContent=JSON.stringify({altitude:s.position.y,viewport:[r.w,r.h],frames:samples.length,meanMs:avg('total'),p95Ms:+values[Math.floor(values.length*.95)].toFixed(2),terrainMs:avg('terrain'),starsMs:avg('skyStars'),modelsMs:avg('paintMeshes'),runwayMs:avg('runway')},null,2);}
-document.getElementById('high').onclick=()=>run(true);document.getElementById('low').onclick=()=>run(false);run(true);
-</script></html>
+<!doctype html>
+<html lang="hu">
+  <meta charset="utf-8" /><title>Rajzolási teljesítménymérés</title
+  ><style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #071211;
+      color: #baf37d;
+      font: 14px monospace;
+    }
+    aside {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      padding: 12px;
+      background: #071211ee;
+      max-width: 650px;
+    }
+    button {
+      background: #1d3528;
+      color: #baf37d;
+      border: 1px solid #729553;
+      padding: 8px;
+    }
+    pre {
+      white-space: pre-wrap;
+    }</style
+  ><canvas id="world"></canvas>
+  <aside>
+    <button id="high">Nagy magasság</button> <button id="low">Kis magasság</button>
+    <pre id="report">Mérés...</pre>
+  </aside>
+  <script type="module">
+    import { Renderer } from '/src/renderer.js';
+    import { aircraft, missions } from '/src/aircraftSpec.js';
+    import { createAircraft } from '/src/physics.js';
+    import { Vec3, Quat } from '/src/math.js';
+    import { createTargets, Targeting } from '/src/targeting.js';
+    import { Weapons } from '/src/weapons.js';
+    const s = createAircraft(aircraft[0]),
+      targets = createTargets(
+        missions.find((m) => m.id === 'airbase'),
+        s.spec,
+        { rng: () => 0.2 },
+      ),
+      r = new Renderer(document.getElementById('world')),
+      w = new Weapons(),
+      aim = new Targeting();
+    s.onGround = false;
+    s.airborne = true;
+    s.gear = false;
+    s.speed = s.ias = 180;
+    s.velocity = new Vec3(0, 0, 180);
+    let times = {},
+      samples = [],
+      generation = 0;
+    for (const name of ['terrain', 'skyStars', 'paintMeshes', 'runway']) {
+      const original = r[name].bind(r);
+      r[name] = (...args) => {
+        const start = performance.now(),
+          result = original(...args);
+        times[name] = (times[name] || 0) + performance.now() - start;
+        return result;
+      };
+    }
+    async function run(high) {
+      const id = ++generation;
+      s.position = new Vec3(12000, high ? 9000 : 600, -3000);
+      s.orientation = Quat.euler(0.4, high ? -0.6 : -0.08, 0);
+      s.agl = s.position.y;
+      samples = [];
+      document.getElementById('report').textContent = 'Mérés...';
+      for (let i = 0; i < 26; i++) {
+        await new Promise(requestAnimationFrame);
+        if (id !== generation) return;
+        times = {};
+        s.position.x += 8;
+        const start = performance.now();
+        r.render(s, targets, w, aim);
+        if (i >= 6) samples.push({ total: performance.now() - start, ...times });
+      }
+      const values = samples.map((s) => s.total).sort((a, b) => a - b),
+        avg = (key) =>
+          +(samples.reduce((sum, s) => sum + (s[key] || 0), 0) / samples.length).toFixed(2);
+      document.getElementById('report').textContent = JSON.stringify(
+        {
+          altitude: s.position.y,
+          viewport: [r.w, r.h],
+          frames: samples.length,
+          meanMs: avg('total'),
+          p95Ms: +values[Math.floor(values.length * 0.95)].toFixed(2),
+          terrainMs: avg('terrain'),
+          starsMs: avg('skyStars'),
+          modelsMs: avg('paintMeshes'),
+          runwayMs: avg('runway'),
+        },
+        null,
+        2,
+      );
+    }
+    document.getElementById('high').onclick = () => run(true);
+    document.getElementById('low').onclick = () => run(false);
+    run(true);
+  </script>
+</html>

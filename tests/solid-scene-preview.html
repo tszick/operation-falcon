@@ -1,7 +1,65 @@
-<!doctype html><html lang="hu"><meta charset="utf-8"><title>Hangárok takarási próbája</title><style>body{margin:0;overflow:hidden;background:#071211;color:#baf37d;font:14px monospace}canvas{display:block}aside{position:fixed;left:20px;top:20px;background:#081610dd;padding:10px}button{background:#1d3528;color:#baf37d;border:1px solid #729553;padding:8px}</style><canvas id="world"></canvas><aside><button id="start">Felszállás előtt</button> <button id="reverse">Fordított beküldési sorrend</button> <button id="close">Közel az épülethez</button><p id="result"></p></aside><script type="module">
-import {Renderer} from '/src/renderer.js';import {Vec3,Quat} from '/src/math.js';import {configureTerrain} from '/src/terrain.js';
-configureTerrain({id:'none'},new Vec3(22000,0,0),()=>.99);const r=new Renderer(document.getElementById('world'));
-function draw(reverse=false,close=false){const start=performance.now();r.setup(close?new Vec3(115,6,-950):new Vec3(0,5,-1300),Quat.euler(close?.8:.25,0,0));r.ctx.fillStyle='#14291f';r.ctx.fillRect(0,0,r.w,r.h);r.groundHorizon();r.terrain();r.worldOcclusion=true;r.meshQueue=[];
- const positions=[-900,-650,-400];if(reverse)positions.reverse();for(const z of positions)r.box(new Vec3(190,0,z),60,22,100,'#baf37d');r.flushMeshes();document.getElementById('result').textContent=`${close?'Közeli fal':reverse?'Fordított sorrend':'Normál sorrend'} · ${Math.round(performance.now()-start)} ms`;}
-document.getElementById('start').onclick=()=>draw();document.getElementById('reverse').onclick=()=>draw(true);document.getElementById('close').onclick=()=>draw(false,true);draw();
-</script></html>
+<!doctype html>
+<html lang="hu">
+  <meta charset="utf-8" /><title>Hangárok takarási próbája</title
+  ><style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #071211;
+      color: #baf37d;
+      font: 14px monospace;
+    }
+    canvas {
+      display: block;
+    }
+    aside {
+      position: fixed;
+      left: 20px;
+      top: 20px;
+      background: #081610dd;
+      padding: 10px;
+    }
+    button {
+      background: #1d3528;
+      color: #baf37d;
+      border: 1px solid #729553;
+      padding: 8px;
+    }</style
+  ><canvas id="world"></canvas>
+  <aside>
+    <button id="start">Felszállás előtt</button>
+    <button id="reverse">Fordított beküldési sorrend</button>
+    <button id="close">Közel az épülethez</button>
+    <p id="result"></p>
+  </aside>
+  <script type="module">
+    import { Renderer } from '/src/renderer.js';
+    import { Vec3, Quat } from '/src/math.js';
+    import { configureTerrain } from '/src/terrain.js';
+    configureTerrain({ id: 'none' }, new Vec3(22000, 0, 0), () => 0.99);
+    const r = new Renderer(document.getElementById('world'));
+    function draw(reverse = false, close = false) {
+      const start = performance.now();
+      r.setup(
+        close ? new Vec3(115, 6, -950) : new Vec3(0, 5, -1300),
+        Quat.euler(close ? 0.8 : 0.25, 0, 0),
+      );
+      r.ctx.fillStyle = '#14291f';
+      r.ctx.fillRect(0, 0, r.w, r.h);
+      r.groundHorizon();
+      r.terrain();
+      r.worldOcclusion = true;
+      r.meshQueue = [];
+      const positions = [-900, -650, -400];
+      if (reverse) positions.reverse();
+      for (const z of positions) r.box(new Vec3(190, 0, z), 60, 22, 100, '#baf37d');
+      r.flushMeshes();
+      document.getElementById('result').textContent =
+        `${close ? 'Közeli fal' : reverse ? 'Fordított sorrend' : 'Normál sorrend'} · ${Math.round(performance.now() - start)} ms`;
+    }
+    document.getElementById('start').onclick = () => draw();
+    document.getElementById('reverse').onclick = () => draw(true);
+    document.getElementById('close').onclick = () => draw(false, true);
+    draw();
+  </script>
+</html>

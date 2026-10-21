@@ -1,9 +1,10 @@
-import http from 'node:http';
-import {readFile} from 'node:fs/promises';
-import {fileURLToPath} from 'node:url';
-import path from 'node:path';
-const root=fileURLToPath(new URL('.',import.meta.url));
-const types={'.wav':'audio/wav','.png':'image/png','.jpg':'image/jpeg','.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8'};
-const server=http.createServer(async(req,res)=>{
-try {const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);const file=path.resolve(root,'.'+(pathname==='/'?'/index.html':pathname));if(!file.startsWith(root)){res.writeHead(403);res.end();return;}const body=await readFile(file);res.writeHead(200,{'Content-Type':types[path.extname(file)]||'application/octet-stream','Cache-Control':'no-store'});res.end(body);}catch{res.writeHead(404);res.end('Nem található');}});
-server.listen(Number(process.env.PORT)||5173,'127.0.0.1',()=>console.log(`Operation Falcon: Redline: http://localhost:${server.address().port}`));
+import { fileURLToPath } from 'node:url';
+import { createStaticServer } from './server/static-server.mjs';
+const root = fileURLToPath(new URL('.', import.meta.url));
+const port = process.env.PORT === undefined ? 5173 : Number(process.env.PORT);
+if (!Number.isInteger(port) || port < 1 || port > 65535)
+  throw new Error('PORT must be an integer from 1 to 65535.');
+const server = createStaticServer({ root });
+server.listen(port, '127.0.0.1', () =>
+  console.log(`Operation Falcon: Redline: http://localhost:${server.address().port}`),
+);

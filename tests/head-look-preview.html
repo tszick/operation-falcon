@@ -1,5 +1,78 @@
-<!doctype html><html lang="hu"><meta charset="utf-8"><title>Relatív egérnézet próbája</title><style>body{margin:0;background:#071211;color:#baf37d;font:16px monospace}#surface{display:block;width:100vw;height:70vh;background:#193226}button{padding:10px}pre{white-space:pre-wrap}</style><button id="capture">Nézelődés indítása</button><button id="release">Kurzor felengedése</button><pre id="status"></pre><canvas id="surface"></canvas><script type="module">
-import {HeadLook} from '/src/headLook.js';import {HeadLookInput} from '/src/headLookInput.js';const surface=document.getElementById('surface'),head=new HeadLook();let error='',last=performance.now();const native=surface.requestPointerLock?.bind(surface);if(native)surface.requestPointerLock=()=>{try{const result=native();if(result?.catch)return result.catch(e=>{error=e.name+': '+e.message;throw e;});return result;}catch(e){error=e.name+': '+e.message;throw e;}};
-const input=new HeadLookInput(surface,head,document,{canLook:()=>true});document.getElementById('capture').onclick=()=>input.capture();surface.onclick=()=>input.capture();document.getElementById('release').onclick=()=>input.release();document.addEventListener('pointerlockchange',()=>input.changed());document.addEventListener('pointerlockerror',()=>input.failed());document.addEventListener('mousemove',e=>input.move(e,performance.now()/1000));document.addEventListener('keydown',e=>{if(e.code==='AltLeft'||e.code==='AltRight'){e.preventDefault();input.release();}});
-function frame(now){head.update(Math.min(.1,(now-last)/1000),now/1000);last=now;document.getElementById('status').textContent=JSON.stringify({supported:!!native,locked:input.locked,fallback:input.fallback,error,yaw:Math.round(head.yaw*180/Math.PI),pitch:Math.round(head.pitch*180/Math.PI)});requestAnimationFrame(frame);}requestAnimationFrame(frame);
-</script></html>
+<!doctype html>
+<html lang="hu">
+  <meta charset="utf-8" /><title>Relatív egérnézet próbája</title
+  ><style>
+    body {
+      margin: 0;
+      background: #071211;
+      color: #baf37d;
+      font: 16px monospace;
+    }
+    #surface {
+      display: block;
+      width: 100vw;
+      height: 70vh;
+      background: #193226;
+    }
+    button {
+      padding: 10px;
+    }
+    pre {
+      white-space: pre-wrap;
+    }</style
+  ><button id="capture">Nézelődés indítása</button
+  ><button id="release">Kurzor felengedése</button>
+  <pre id="status"></pre>
+  <canvas id="surface"></canvas>
+  <script type="module">
+    import { HeadLook } from '/src/headLook.js';
+    import { HeadLookInput } from '/src/headLookInput.js';
+    const surface = document.getElementById('surface'),
+      head = new HeadLook();
+    let error = '',
+      last = performance.now();
+    const native = surface.requestPointerLock?.bind(surface);
+    if (native)
+      surface.requestPointerLock = () => {
+        try {
+          const result = native();
+          if (result?.catch)
+            return result.catch((e) => {
+              error = e.name + ': ' + e.message;
+              throw e;
+            });
+          return result;
+        } catch (e) {
+          error = e.name + ': ' + e.message;
+          throw e;
+        }
+      };
+    const input = new HeadLookInput(surface, head, document, { canLook: () => true });
+    document.getElementById('capture').onclick = () => input.capture();
+    surface.onclick = () => input.capture();
+    document.getElementById('release').onclick = () => input.release();
+    document.addEventListener('pointerlockchange', () => input.changed());
+    document.addEventListener('pointerlockerror', () => input.failed());
+    document.addEventListener('mousemove', (e) => input.move(e, performance.now() / 1000));
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'AltLeft' || e.code === 'AltRight') {
+        e.preventDefault();
+        input.release();
+      }
+    });
+    function frame(now) {
+      head.update(Math.min(0.1, (now - last) / 1000), now / 1000);
+      last = now;
+      document.getElementById('status').textContent = JSON.stringify({
+        supported: !!native,
+        locked: input.locked,
+        fallback: input.fallback,
+        error,
+        yaw: Math.round((head.yaw * 180) / Math.PI),
+        pitch: Math.round((head.pitch * 180) / Math.PI),
+      });
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  </script>
+</html>

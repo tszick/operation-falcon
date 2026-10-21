@@ -1,19 +1,266 @@
-<!doctype html><html lang="hu"><meta charset="utf-8"><title>Napló · szaggatás vizsgálata</title><style>body{margin:0;overflow:hidden;background:#071211;color:#baf37d;font:13px monospace}aside{position:fixed;top:12px;left:12px;background:#071211e8;padding:12px;max-height:92vh;overflow:auto}button{padding:7px;background:#1d3528;color:#baf37d}pre{white-space:pre-wrap}</style><canvas id="world"></canvas><aside><button data-time="30">30 s</button><button data-time="84">84 s</button><button data-time="90">90 s · zuhanás</button><button data-time="96">96 s · zuhanás</button><pre id="report">Mérés…</pre></aside><script type="module">
-import {Renderer} from '/src/renderer.js';import {aircraft} from '/src/aircraftSpec.js';import {createAircraft} from '/src/physics.js';import {aircraftFlightSpec} from '/src/aiAircraftSpec.js';import {terrainWorld} from '/src/terrain.js';import {Vec3,Quat,DEG} from '/src/math.js';import {explosionEffect} from '/src/effects.js';import {HeadLook} from '/src/headLook.js';
-const data=await(await fetch('/tests/fixtures/stutter-scenes.json')).json(),r=new Renderer(document.getElementById('world'));Object.assign(terrainWorld,data.terrain);r.debugMetrics=true;const vec=p=>new Vec3(p.x,p.y,p.z),quat=p=>new Quat(p.x,p.y,p.z,p.w);let generation=0,counts={},timing={};
-if(new URLSearchParams(location.search).has('legacy')){
- r.projectWorld=p=>r.worldVisible(p)?r.project(p):null;
- r.line=function(a,b){if(!this.worldOcclusion){this.rawLine(a,b);return;}const count=Math.min(32,Math.max(1,Math.ceil(a.distance(b)/150))),delta=b.clone().sub(a);let start=a,visible=this.worldVisible(a);for(let i=1;i<=count;i++){const end=a.clone().add(delta.clone().scale(i/count)),next=this.worldVisible(end);if(visible&&next)this.rawLine(start,end);else if(visible!==next){let lo=start,hi=end;for(let j=0;j<7;j++){const mid=lo.clone().add(hi).scale(.5);if(this.worldVisible(mid)===visible)lo=mid;else hi=mid;}if(visible)this.rawLine(start,lo);else this.rawLine(hi,end);}start=end;visible=next;}};
-}
+<!doctype html>
+<html lang="hu">
+  <meta charset="utf-8" /><title>Napló · szaggatás vizsgálata</title
+  ><style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #071211;
+      color: #baf37d;
+      font: 13px monospace;
+    }
+    aside {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      background: #071211e8;
+      padding: 12px;
+      max-height: 92vh;
+      overflow: auto;
+    }
+    button {
+      padding: 7px;
+      background: #1d3528;
+      color: #baf37d;
+    }
+    pre {
+      white-space: pre-wrap;
+    }</style
+  ><canvas id="world"></canvas>
+  <aside>
+    <button data-time="30">30 s</button><button data-time="84">84 s</button
+    ><button data-time="90">90 s · zuhanás</button><button data-time="96">96 s · zuhanás</button>
+    <pre id="report">Mérés…</pre>
+  </aside>
+  <script type="module">
+    import { Renderer } from '/src/renderer.js';
+    import { aircraft } from '/src/aircraftSpec.js';
+    import { createAircraft } from '/src/physics.js';
+    import { aircraftFlightSpec } from '/src/aiAircraftSpec.js';
+    import { terrainWorld } from '/src/terrain.js';
+    import { Vec3, Quat, DEG } from '/src/math.js';
+    import { explosionEffect } from '/src/effects.js';
+    import { HeadLook } from '/src/headLook.js';
+    const data = await (await fetch('/tests/fixtures/stutter-scenes.json')).json(),
+      r = new Renderer(document.getElementById('world'));
+    Object.assign(terrainWorld, data.terrain);
+    r.debugMetrics = true;
+    const vec = (p) => new Vec3(p.x, p.y, p.z),
+      quat = (p) => new Quat(p.x, p.y, p.z, p.w);
+    let generation = 0,
+      counts = {},
+      timing = {};
+    if (new URLSearchParams(location.search).has('legacy')) {
+      r.projectWorld = (p) => (r.worldVisible(p) ? r.project(p) : null);
+      r.line = function (a, b) {
+        if (!this.worldOcclusion) {
+          this.rawLine(a, b);
+          return;
+        }
+        const count = Math.min(32, Math.max(1, Math.ceil(a.distance(b) / 150))),
+          delta = b.clone().sub(a);
+        let start = a,
+          visible = this.worldVisible(a);
+        for (let i = 1; i <= count; i++) {
+          const end = a.clone().add(delta.clone().scale(i / count)),
+            next = this.worldVisible(end);
+          if (visible && next) this.rawLine(start, end);
+          else if (visible !== next) {
+            let lo = start,
+              hi = end;
+            for (let j = 0; j < 7; j++) {
+              const mid = lo.clone().add(hi).scale(0.5);
+              if (this.worldVisible(mid) === visible) lo = mid;
+              else hi = mid;
+            }
+            if (visible) this.rawLine(start, lo);
+            else this.rawLine(hi, end);
+          }
+          start = end;
+          visible = next;
+        }
+      };
+    }
 
-for(const name of ['worldVisible','line','projectWorld']){const fn=r[name].bind(r);r[name]=(...args)=>{counts[name]=(counts[name]||0)+1;return fn(...args);};}
-for(const name of ['terrain','paintMeshes','skyStars','runway']){const fn=r[name].bind(r);r[name]=(...args)=>{const t=performance.now(),out=fn(...args);timing[name]=(timing[name]||0)+performance.now()-t;return out;};}
-function smoke(history,time,parts){history=history.flatMap((h,i)=>{const next=history[i+1];if(!next||next.time-h.time<.2||!h.position||!next.position)return [h];return Array.from({length:5},(_,j)=>({...h,time:h.time+j*.1,position:{x:h.position.x+(next.position.x-h.position.x)*j/5,y:h.position.y+(next.position.y-h.position.y)*j/5,z:h.position.z+(next.position.z-h.position.z)*j/5}}));});return history.filter(h=>h.time<=time&&h.time>time-5&&(h.damage>35||h.dying)&&!h.crashed).map(h=>({position:vec(h.position).add(new Vec3(0,(time-h.time)*2,0)),age:time-h.time,hot:Math.min(parts?.engineLeft??1,parts?.engineRight??1)<.3}));}
-async function run(time){const id=++generation,scene=data.scenes.find(s=>Math.round(s.time)===time),p=scene.player,s=createAircraft(aircraft.find(a=>a.id===data.aircraftId));Object.assign(s,p,{position:vec(p.position),velocity:vec(p.velocity),orientation:quat(p.orientation),elapsed:scene.time,ias:p.iasKmh/3.6,speed:p.tasKmh/3.6,mach:p.mach,g:p.g,agl:p.aglM,damage:p.damage});s.condition.parts=p.parts;s.condition.rates=p.damageRates;s.condition.smoke=smoke(scene.playerHistory.map(h=>({time:h.t,...h.player})),scene.time,p.parts);s.countermeasures.decoys=[];
- r.headLook=new HeadLook();r.headLook.yaw=(p.headLook?.yawDeg||0)*DEG;r.headLook.pitch=(p.headLook?.pitchDeg||0)*DEG;r.wreckOffset=null;
- const targets=scene.world.units.map(u=>{const initial=data.initialUnits.find(t=>t.id===u.id)||{},t={...initial,...u,kind:u.aircraftId?'air':'ground',home:u.id==='BASE',falling:!!u.flight?.dying&&!u.flight?.crashed,radius:u.aircraftId?28:60,position:vec(u.position),velocity:vec(u.velocity),heading:u.headingDeg*DEG,pitch:u.pitchDeg*DEG,bank:u.bankDeg*DEG};if(u.flight){const f=createAircraft(aircraftFlightSpec(u.aircraftId));Object.assign(f,{position:t.position,velocity:t.velocity,orientation:quat(u.flight.orientation),damage:u.damage,dying:u.flight.dying,crashed:u.flight.crashed});f.condition.parts=u.flight.parts;f.condition.smoke=smoke(scene.history.map(h=>({time:h.t,...h.units.find(x=>x.id===u.id),dying:h.units.find(x=>x.id===u.id)?.flight?.dying,crashed:h.units.find(x=>x.id===u.id)?.flight?.crashed})),scene.time,u.flight.parts);t.flight=f;}return t;});
- const projectiles=scene.world.projectiles.map(p=>({...p,position:vec(p.position),velocity:vec(p.velocity),profile:data.profiles[p.profile]||data.profiles.aim7m})),effects=scene.explosions.map((e,i)=>{const effect=explosionEffect(vec(e.position),{ground:e.ground,heavy:e.heavy,seed:i+1});effect.age=scene.time-e.t;effect.life-=effect.age;return effect;}).filter(e=>e.life>0),w={selected:'aam',projectiles,effects,trails:[]},aim={id:scene.target.id,locked:scene.target.locked};
- const samples=[];document.getElementById('report').textContent='Mérés…';for(let frame=0;frame<35;frame++){await new Promise(resolve=>setTimeout(resolve,0));if(id!==generation)return;counts={};timing={};const start=performance.now();r.render(s,targets,w,aim);if(frame>=5)samples.push({total:performance.now()-start,...counts,...timing,features:r.featureMs,effects:r.effectsMs});}
- const mean=key=>+(samples.reduce((n,s)=>n+(s[key]||0),0)/samples.length).toFixed(2),values=samples.map(s=>s.total).sort((a,b)=>a-b);document.getElementById('report').textContent=JSON.stringify({time,view:s.dying?'external':'cockpit',totalMs:mean('total'),p95Ms:+values[Math.floor(values.length*.95)].toFixed(2),terrainMs:mean('terrain'),featuresMs:mean('features'),modelsMs:mean('paintMeshes'),effectsMs:mean('effects'),visibilityChecks:mean('worldVisible'),lines:mean('line'),projectedEffects:mean('projectWorld'),smokePuffs:targets.reduce((n,t)=>n+(t.flight?.condition.smoke.length||0),s.condition.smoke.length),effects:effects.length,projectiles:projectiles.length,models:r.modelMetrics},null,2);}
-for(const b of document.querySelectorAll('button'))b.onclick=()=>run(Number(b.dataset.time));run(Number(new URLSearchParams(location.search).get('time')||84)).catch(e=>document.getElementById('report').textContent=e.stack);
-</script></html>
+    for (const name of ['worldVisible', 'line', 'projectWorld']) {
+      const fn = r[name].bind(r);
+      r[name] = (...args) => {
+        counts[name] = (counts[name] || 0) + 1;
+        return fn(...args);
+      };
+    }
+    for (const name of ['terrain', 'paintMeshes', 'skyStars', 'runway']) {
+      const fn = r[name].bind(r);
+      r[name] = (...args) => {
+        const t = performance.now(),
+          out = fn(...args);
+        timing[name] = (timing[name] || 0) + performance.now() - t;
+        return out;
+      };
+    }
+    function smoke(history, time, parts) {
+      history = history.flatMap((h, i) => {
+        const next = history[i + 1];
+        if (!next || next.time - h.time < 0.2 || !h.position || !next.position) return [h];
+        return Array.from({ length: 5 }, (_, j) => ({
+          ...h,
+          time: h.time + j * 0.1,
+          position: {
+            x: h.position.x + ((next.position.x - h.position.x) * j) / 5,
+            y: h.position.y + ((next.position.y - h.position.y) * j) / 5,
+            z: h.position.z + ((next.position.z - h.position.z) * j) / 5,
+          },
+        }));
+      });
+      return history
+        .filter(
+          (h) => h.time <= time && h.time > time - 5 && (h.damage > 35 || h.dying) && !h.crashed,
+        )
+        .map((h) => ({
+          position: vec(h.position).add(new Vec3(0, (time - h.time) * 2, 0)),
+          age: time - h.time,
+          hot: Math.min(parts?.engineLeft ?? 1, parts?.engineRight ?? 1) < 0.3,
+        }));
+    }
+    async function run(time) {
+      const id = ++generation,
+        scene = data.scenes.find((s) => Math.round(s.time) === time),
+        p = scene.player,
+        s = createAircraft(aircraft.find((a) => a.id === data.aircraftId));
+      Object.assign(s, p, {
+        position: vec(p.position),
+        velocity: vec(p.velocity),
+        orientation: quat(p.orientation),
+        elapsed: scene.time,
+        ias: p.iasKmh / 3.6,
+        speed: p.tasKmh / 3.6,
+        mach: p.mach,
+        g: p.g,
+        agl: p.aglM,
+        damage: p.damage,
+      });
+      s.condition.parts = p.parts;
+      s.condition.rates = p.damageRates;
+      s.condition.smoke = smoke(
+        scene.playerHistory.map((h) => ({ time: h.t, ...h.player })),
+        scene.time,
+        p.parts,
+      );
+      s.countermeasures.decoys = [];
+      r.headLook = new HeadLook();
+      r.headLook.yaw = (p.headLook?.yawDeg || 0) * DEG;
+      r.headLook.pitch = (p.headLook?.pitchDeg || 0) * DEG;
+      r.wreckOffset = null;
+      const targets = scene.world.units.map((u) => {
+        const initial = data.initialUnits.find((t) => t.id === u.id) || {},
+          t = {
+            ...initial,
+            ...u,
+            kind: u.aircraftId ? 'air' : 'ground',
+            home: u.id === 'BASE',
+            falling: !!u.flight?.dying && !u.flight?.crashed,
+            radius: u.aircraftId ? 28 : 60,
+            position: vec(u.position),
+            velocity: vec(u.velocity),
+            heading: u.headingDeg * DEG,
+            pitch: u.pitchDeg * DEG,
+            bank: u.bankDeg * DEG,
+          };
+        if (u.flight) {
+          const f = createAircraft(aircraftFlightSpec(u.aircraftId));
+          Object.assign(f, {
+            position: t.position,
+            velocity: t.velocity,
+            orientation: quat(u.flight.orientation),
+            damage: u.damage,
+            dying: u.flight.dying,
+            crashed: u.flight.crashed,
+          });
+          f.condition.parts = u.flight.parts;
+          f.condition.smoke = smoke(
+            scene.history.map((h) => ({
+              time: h.t,
+              ...h.units.find((x) => x.id === u.id),
+              dying: h.units.find((x) => x.id === u.id)?.flight?.dying,
+              crashed: h.units.find((x) => x.id === u.id)?.flight?.crashed,
+            })),
+            scene.time,
+            u.flight.parts,
+          );
+          t.flight = f;
+        }
+        return t;
+      });
+      const projectiles = scene.world.projectiles.map((p) => ({
+          ...p,
+          position: vec(p.position),
+          velocity: vec(p.velocity),
+          profile: data.profiles[p.profile] || data.profiles.aim7m,
+        })),
+        effects = scene.explosions
+          .map((e, i) => {
+            const effect = explosionEffect(vec(e.position), {
+              ground: e.ground,
+              heavy: e.heavy,
+              seed: i + 1,
+            });
+            effect.age = scene.time - e.t;
+            effect.life -= effect.age;
+            return effect;
+          })
+          .filter((e) => e.life > 0),
+        w = { selected: 'aam', projectiles, effects, trails: [] },
+        aim = { id: scene.target.id, locked: scene.target.locked };
+      const samples = [];
+      document.getElementById('report').textContent = 'Mérés…';
+      for (let frame = 0; frame < 35; frame++) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        if (id !== generation) return;
+        counts = {};
+        timing = {};
+        const start = performance.now();
+        r.render(s, targets, w, aim);
+        if (frame >= 5)
+          samples.push({
+            total: performance.now() - start,
+            ...counts,
+            ...timing,
+            features: r.featureMs,
+            effects: r.effectsMs,
+          });
+      }
+      const mean = (key) =>
+          +(samples.reduce((n, s) => n + (s[key] || 0), 0) / samples.length).toFixed(2),
+        values = samples.map((s) => s.total).sort((a, b) => a - b);
+      document.getElementById('report').textContent = JSON.stringify(
+        {
+          time,
+          view: s.dying ? 'external' : 'cockpit',
+          totalMs: mean('total'),
+          p95Ms: +values[Math.floor(values.length * 0.95)].toFixed(2),
+          terrainMs: mean('terrain'),
+          featuresMs: mean('features'),
+          modelsMs: mean('paintMeshes'),
+          effectsMs: mean('effects'),
+          visibilityChecks: mean('worldVisible'),
+          lines: mean('line'),
+          projectedEffects: mean('projectWorld'),
+          smokePuffs: targets.reduce(
+            (n, t) => n + (t.flight?.condition.smoke.length || 0),
+            s.condition.smoke.length,
+          ),
+          effects: effects.length,
+          projectiles: projectiles.length,
+          models: r.modelMetrics,
+        },
+        null,
+        2,
+      );
+    }
+    for (const b of document.querySelectorAll('button'))
+      b.onclick = () => run(Number(b.dataset.time));
+    run(Number(new URLSearchParams(location.search).get('time') || 84)).catch(
+      (e) => (document.getElementById('report').textContent = e.stack),
+    );
+  </script>
+</html>

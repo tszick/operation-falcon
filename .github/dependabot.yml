@@ -1,0 +1,20 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: cron
+      cronjob: '30 22 * * *'
+      timezone: Europe/Budapest
+    open-pull-requests-limit: 5
+    groups:
+      development-tools:
+        dependency-type: development
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: cron
+      cronjob: '40 22 * * *'
+      timezone: Europe/Budapest
+    open-pull-requests-limit: 5

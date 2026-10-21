@@ -1,25 +1,269 @@
-<!doctype html><html lang="hu"><meta charset="utf-8"><title>Operation Falcon · Textúrák élvonalak nélkül</title><style>body{margin:0;overflow:hidden;background:#17222a;color:#ebf0e8;font:14px system-ui}canvas{display:block;width:100vw;height:100vh}header{position:absolute;top:0;left:0;right:0;padding:15px 24px;background:#10202ce8;display:flex;gap:12px;flex-wrap:wrap;align-items:center}strong{font-size:18px}select,button{font:inherit;padding:6px;color:inherit;background:#263c47;border:1px solid #607780}footer{position:absolute;bottom:18px;left:24px;text-shadow:0 1px 3px #000;max-width:800px}#report{white-space:pre-wrap;font-size:12px}</style><canvas id="world"></canvas><header><strong>OPERATION FALCON: REDLINE</strong><select id="scene" aria-label="Jelenet"><option value="terrain">Táj · füves hegyvidék</option><option value="aircraft">F–16 Fighting Falcon</option><option value="hangar">Repülőtéri hangár</option><option value="sam">Légvédelmi rakétarendszer</option><option value="airfield">Kifutó és céljelölések</option><option value="city">Város és utcák</option><option value="busy">Terhelés · 32 repülő</option></select><select id="style" aria-label="Tájváltozat"></select><label><input type="checkbox" id="lines"> Vektorvonalak</label><button id="measure">Vonalakkal / nélkül mérés</button></header><footer><div id="caption"></div><div id="status"></div><div id="report"></div></footer><script type="module">
-import {renderCityVisuals} from '/src/cityVisuals.js';import {createBattleTargets} from '/src/scenarioSpawn.js';import {missions,aircraft} from '/src/aircraftSpec.js';
-import {surfaceStyles} from '/src/surfaceStyle.js';import {renderEnvironmentSky} from '/src/environmentSky.js';
-import {Renderer,aircraftMesh} from '/src/renderer.js';import {groundMesh,renderGroundTarget} from '/src/groundModels.js';import {Vec3,Quat} from '/src/math.js';import {configureTerrain,terrainWorld} from '/src/terrain.js';import {renderTerrainFeatures} from '/src/terrainFeatures.js';
-const $=id=>document.getElementById(id),r=new Renderer($('world'));r.surfaceMode='grass';r.surfaceLines=false;r.debugMetrics=true;
-$('style').innerHTML=Object.entries(surfaceStyles).map(([id,p])=>`<option value="${id}">${p.label}</option>`).join('');$('style').value='grass';
-configureTerrain({id:'sam'},new Vec3(22000,0,20000),()=>.35);
-function look(camera,point){const d=point.clone().sub(camera);r.setup(camera,Quat.euler(Math.atan2(d.x,d.z),Math.atan2(d.y,Math.hypot(d.x,d.z)),0));}
-let cityTargets=null;
-const fleet=Array.from({length:32},(_,i)=>({p:new Vec3((i%8-3.5)*65,850+(i%3)*22,150+Math.floor(i/8)*110),q:Quat.euler(.7,0,.1),mesh:aircraftMesh(i%2?'mig29':'f16')}));
-function draw(){const scene=$('scene').value,c=r.ctx,{w,h}=r;r.surfaceMode=$('style').value;r.surfaceLines=$('lines').checked;r.worldOcclusion=false;r.meshQueue=[];
-const sky=c.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#245482');sky.addColorStop(.6,'#8ab4c3');sky.addColorStop(1,'#b6c6b4');c.fillStyle=sky;c.fillRect(0,0,w,h);
-if(scene==='city'){if(!cityTargets)cityTargets=createBattleTargets(missions.find(m=>m.id==='defend-city'),aircraft.find(a=>a.id==='f16'),{rng:()=>.99});look(new Vec3(-2600,1800,12700),new Vec3(0,250,16000));renderEnvironmentSky(r);r.worldOcclusion=true;r.gpuModels?.renderHorizon(r,true);r.terrain();renderTerrainFeatures(r);renderCityVisuals(r,cityTargets);}
-else if(scene==='airfield'){look(new Vec3(-15,12,-1430),new Vec3(10,5,50));renderEnvironmentSky(r);r.worldOcclusion=true;r.gpuModels?.renderHorizon(r,true);r.terrain();renderTerrainFeatures(r);r.runway(true);}
-else if(scene==='terrain'){look(new Vec3(20000,850,17500),new Vec3(22000,600,20000));renderEnvironmentSky(r);r.skyStars();r.worldOcclusion=true;r.gpuModels?.renderHorizon(r,true);r.terrain();renderTerrainFeatures(r);}
-else if(scene==='busy'){look(new Vec3(0,940,-160),new Vec3(0,880,430));renderEnvironmentSky(r);r.skyStars();r.worldOcclusion=true;r.gpuModels?.renderHorizon(r,true);r.terrain();renderTerrainFeatures(r);for(const f of fleet)r.mesh(f.mesh,f.p,f.q,1,'#a8bf9b',null,'aircraft');}
-else{const bg=c.createLinearGradient(0,0,0,h);bg.addColorStop(0,'#273844');bg.addColorStop(1,'#72817b');c.fillStyle=bg;c.fillRect(0,0,w,h);
-if(scene==='aircraft'){look(new Vec3(8.8,6.05,10.45),new Vec3(0,0,0));r.mesh(aircraftMesh('f16'),new Vec3(),Quat.euler(.12,0,0),1,'#a8bf9b',null,'aircraft');}
-if(scene==='hangar'){look(new Vec3(165,90,-220),new Vec3(0,11,0));r.box(new Vec3(),60,22,100,'#a8bf9b');}
-if(scene==='sam'){look(new Vec3(36,26,-42),new Vec3(0,8,0));renderGroundTarget(r,{type:'sam-system',kind:'ground',position:new Vec3(),heading:0,alive:true,team:'enemy'});}}
-r.flushMeshes();if(scene==='airfield'){r.markerLabels=[];r.marker(new Vec3(-30,80,1400),'FALCON TWO 2.8 KM','#64d7ff');r.marker(new Vec3(100,110,1800),'MiG-29 3.2 KM','#ff9875');} $('caption').textContent=({city:'25 önálló épület · összevont rajzolás · 12 városi utca',airfield:'Aszfaltos kifutó · élesebb hangárkapuk · kontrasztos céljelek',terrain:surfaceStyles[r.surfaceMode].label+' · tömör, textúrázott felületek',aircraft:'F–16 Fighting Falcon · a játék eredeti 3D modellje',hangar:'Repülőtéri épületek · beton és fémfelület',sam:'Légvédelmi rakétarendszer · katonai festés',busy:'32 repülő · azonos jelenet mindkét beállításban'})[scene];$('status').textContent=`${r.surfaceLines?'Vektorvonalakkal':'Vektorvonalak nélkül'} · ${r.gpuModels?'WebGL2':'Canvas2D'} · valódi játékbeli renderelés · hang nélkül`;
-}
-let run=null;function frame(now){if(!run)return;const start=performance.now();draw();const ms=performance.now()-start;if(run.frames>=40){run.samples.push(ms);run.intervals.push(now-run.previous);}run.previous=now;if(++run.frames>=180){const avg=a=>a.reduce((s,x)=>s+x,0)/a.length;run.results.push({lines:$('lines').checked,submitMs:+avg(run.samples).toFixed(3),fps:+(1000/avg(run.intervals)).toFixed(2),modelEdges:r.modelMetrics?.edges,terrainEdges:r.terrainMetrics?.edges});if(run.results.length===2){$('report').textContent=JSON.stringify({scene:$('scene').value,viewport:[r.w,r.h],results:run.results},null,2);$('lines').checked=false;run=null;$('measure').disabled=false;draw();return;}$('lines').checked=false;run.frames=0;run.samples=[];run.intervals=[];}requestAnimationFrame(frame);}
-$('measure').onclick=()=>{$('lines').checked=true;run={frames:0,samples:[],intervals:[],results:[],previous:0};$('measure').disabled=true;$('report').textContent='Mérés…';requestAnimationFrame(frame);};$('style').onchange=draw;$('lines').onchange=draw;$('scene').onchange=()=>{$('report').textContent='';if($('scene').value!=='city'){configureTerrain({id:'sam'},new Vec3(22000,0,20000),()=>.35);cityTargets=null;}draw();};addEventListener('resize',()=>{r.resize();draw();});draw();
-</script></html>
+<!doctype html>
+<html lang="hu">
+  <meta charset="utf-8" /><title>Operation Falcon · Textúrák élvonalak nélkül</title
+  ><style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #17222a;
+      color: #ebf0e8;
+      font: 14px system-ui;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 15px 24px;
+      background: #10202ce8;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    strong {
+      font-size: 18px;
+    }
+    select,
+    button {
+      font: inherit;
+      padding: 6px;
+      color: inherit;
+      background: #263c47;
+      border: 1px solid #607780;
+    }
+    footer {
+      position: absolute;
+      bottom: 18px;
+      left: 24px;
+      text-shadow: 0 1px 3px #000;
+      max-width: 800px;
+    }
+    #report {
+      white-space: pre-wrap;
+      font-size: 12px;
+    }</style
+  ><canvas id="world"></canvas>
+  <header>
+    <strong>OPERATION FALCON: REDLINE</strong
+    ><select id="scene" aria-label="Jelenet">
+      <option value="terrain">Táj · füves hegyvidék</option>
+      <option value="aircraft">F–16 Fighting Falcon</option>
+      <option value="hangar">Repülőtéri hangár</option>
+      <option value="sam">Légvédelmi rakétarendszer</option>
+      <option value="airfield">Kifutó és céljelölések</option>
+      <option value="city">Város és utcák</option>
+      <option value="busy">Terhelés · 32 repülő</option></select
+    ><select id="style" aria-label="Tájváltozat"></select
+    ><label><input type="checkbox" id="lines" /> Vektorvonalak</label
+    ><button id="measure">Vonalakkal / nélkül mérés</button>
+  </header>
+  <footer>
+    <div id="caption"></div>
+    <div id="status"></div>
+    <div id="report"></div>
+  </footer>
+  <script type="module">
+    import { renderCityVisuals } from '/src/cityVisuals.js';
+    import { createBattleTargets } from '/src/scenarioSpawn.js';
+    import { missions, aircraft } from '/src/aircraftSpec.js';
+    import { surfaceStyles } from '/src/surfaceStyle.js';
+    import { renderEnvironmentSky } from '/src/environmentSky.js';
+    import { Renderer, aircraftMesh } from '/src/renderer.js';
+    import { groundMesh, renderGroundTarget } from '/src/groundModels.js';
+    import { Vec3, Quat } from '/src/math.js';
+    import { configureTerrain, terrainWorld } from '/src/terrain.js';
+    import { renderTerrainFeatures } from '/src/terrainFeatures.js';
+    const $ = (id) => document.getElementById(id),
+      r = new Renderer($('world'));
+    r.surfaceMode = 'grass';
+    r.surfaceLines = false;
+    r.debugMetrics = true;
+    $('style').innerHTML = Object.entries(surfaceStyles)
+      .map(([id, p]) => `<option value="${id}">${p.label}</option>`)
+      .join('');
+    $('style').value = 'grass';
+    configureTerrain({ id: 'sam' }, new Vec3(22000, 0, 20000), () => 0.35);
+    function look(camera, point) {
+      const d = point.clone().sub(camera);
+      r.setup(camera, Quat.euler(Math.atan2(d.x, d.z), Math.atan2(d.y, Math.hypot(d.x, d.z)), 0));
+    }
+    let cityTargets = null;
+    const fleet = Array.from({ length: 32 }, (_, i) => ({
+      p: new Vec3(((i % 8) - 3.5) * 65, 850 + (i % 3) * 22, 150 + Math.floor(i / 8) * 110),
+      q: Quat.euler(0.7, 0, 0.1),
+      mesh: aircraftMesh(i % 2 ? 'mig29' : 'f16'),
+    }));
+    function draw() {
+      const scene = $('scene').value,
+        c = r.ctx,
+        { w, h } = r;
+      r.surfaceMode = $('style').value;
+      r.surfaceLines = $('lines').checked;
+      r.worldOcclusion = false;
+      r.meshQueue = [];
+      const sky = c.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0, '#245482');
+      sky.addColorStop(0.6, '#8ab4c3');
+      sky.addColorStop(1, '#b6c6b4');
+      c.fillStyle = sky;
+      c.fillRect(0, 0, w, h);
+      if (scene === 'city') {
+        if (!cityTargets)
+          cityTargets = createBattleTargets(
+            missions.find((m) => m.id === 'defend-city'),
+            aircraft.find((a) => a.id === 'f16'),
+            { rng: () => 0.99 },
+          );
+        look(new Vec3(-2600, 1800, 12700), new Vec3(0, 250, 16000));
+        renderEnvironmentSky(r);
+        r.worldOcclusion = true;
+        r.gpuModels?.renderHorizon(r, true);
+        r.terrain();
+        renderTerrainFeatures(r);
+        renderCityVisuals(r, cityTargets);
+      } else if (scene === 'airfield') {
+        look(new Vec3(-15, 12, -1430), new Vec3(10, 5, 50));
+        renderEnvironmentSky(r);
+        r.worldOcclusion = true;
+        r.gpuModels?.renderHorizon(r, true);
+        r.terrain();
+        renderTerrainFeatures(r);
+        r.runway(true);
+      } else if (scene === 'terrain') {
+        look(new Vec3(20000, 850, 17500), new Vec3(22000, 600, 20000));
+        renderEnvironmentSky(r);
+        r.skyStars();
+        r.worldOcclusion = true;
+        r.gpuModels?.renderHorizon(r, true);
+        r.terrain();
+        renderTerrainFeatures(r);
+      } else if (scene === 'busy') {
+        look(new Vec3(0, 940, -160), new Vec3(0, 880, 430));
+        renderEnvironmentSky(r);
+        r.skyStars();
+        r.worldOcclusion = true;
+        r.gpuModels?.renderHorizon(r, true);
+        r.terrain();
+        renderTerrainFeatures(r);
+        for (const f of fleet) r.mesh(f.mesh, f.p, f.q, 1, '#a8bf9b', null, 'aircraft');
+      } else {
+        const bg = c.createLinearGradient(0, 0, 0, h);
+        bg.addColorStop(0, '#273844');
+        bg.addColorStop(1, '#72817b');
+        c.fillStyle = bg;
+        c.fillRect(0, 0, w, h);
+        if (scene === 'aircraft') {
+          look(new Vec3(8.8, 6.05, 10.45), new Vec3(0, 0, 0));
+          r.mesh(
+            aircraftMesh('f16'),
+            new Vec3(),
+            Quat.euler(0.12, 0, 0),
+            1,
+            '#a8bf9b',
+            null,
+            'aircraft',
+          );
+        }
+        if (scene === 'hangar') {
+          look(new Vec3(165, 90, -220), new Vec3(0, 11, 0));
+          r.box(new Vec3(), 60, 22, 100, '#a8bf9b');
+        }
+        if (scene === 'sam') {
+          look(new Vec3(36, 26, -42), new Vec3(0, 8, 0));
+          renderGroundTarget(r, {
+            type: 'sam-system',
+            kind: 'ground',
+            position: new Vec3(),
+            heading: 0,
+            alive: true,
+            team: 'enemy',
+          });
+        }
+      }
+      r.flushMeshes();
+      if (scene === 'airfield') {
+        r.markerLabels = [];
+        r.marker(new Vec3(-30, 80, 1400), 'FALCON TWO 2.8 KM', '#64d7ff');
+        r.marker(new Vec3(100, 110, 1800), 'MiG-29 3.2 KM', '#ff9875');
+      }
+      $('caption').textContent = {
+        city: '25 önálló épület · összevont rajzolás · 12 városi utca',
+        airfield: 'Aszfaltos kifutó · élesebb hangárkapuk · kontrasztos céljelek',
+        terrain: surfaceStyles[r.surfaceMode].label + ' · tömör, textúrázott felületek',
+        aircraft: 'F–16 Fighting Falcon · a játék eredeti 3D modellje',
+        hangar: 'Repülőtéri épületek · beton és fémfelület',
+        sam: 'Légvédelmi rakétarendszer · katonai festés',
+        busy: '32 repülő · azonos jelenet mindkét beállításban',
+      }[scene];
+      $('status').textContent =
+        `${r.surfaceLines ? 'Vektorvonalakkal' : 'Vektorvonalak nélkül'} · ${r.gpuModels ? 'WebGL2' : 'Canvas2D'} · valódi játékbeli renderelés · hang nélkül`;
+    }
+    let run = null;
+    function frame(now) {
+      if (!run) return;
+      const start = performance.now();
+      draw();
+      const ms = performance.now() - start;
+      if (run.frames >= 40) {
+        run.samples.push(ms);
+        run.intervals.push(now - run.previous);
+      }
+      run.previous = now;
+      if (++run.frames >= 180) {
+        const avg = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+        run.results.push({
+          lines: $('lines').checked,
+          submitMs: +avg(run.samples).toFixed(3),
+          fps: +(1000 / avg(run.intervals)).toFixed(2),
+          modelEdges: r.modelMetrics?.edges,
+          terrainEdges: r.terrainMetrics?.edges,
+        });
+        if (run.results.length === 2) {
+          $('report').textContent = JSON.stringify(
+            { scene: $('scene').value, viewport: [r.w, r.h], results: run.results },
+            null,
+            2,
+          );
+          $('lines').checked = false;
+          run = null;
+          $('measure').disabled = false;
+          draw();
+          return;
+        }
+        $('lines').checked = false;
+        run.frames = 0;
+        run.samples = [];
+        run.intervals = [];
+      }
+      requestAnimationFrame(frame);
+    }
+    $('measure').onclick = () => {
+      $('lines').checked = true;
+      run = { frames: 0, samples: [], intervals: [], results: [], previous: 0 };
+      $('measure').disabled = true;
+      $('report').textContent = 'Mérés…';
+      requestAnimationFrame(frame);
+    };
+    $('style').onchange = draw;
+    $('lines').onchange = draw;
+    $('scene').onchange = () => {
+      $('report').textContent = '';
+      if ($('scene').value !== 'city') {
+        configureTerrain({ id: 'sam' }, new Vec3(22000, 0, 20000), () => 0.35);
+        cityTargets = null;
+      }
+      draw();
+    };
+    addEventListener('resize', () => {
+      r.resize();
+      draw();
+    });
+    draw();
+  </script>
+</html>

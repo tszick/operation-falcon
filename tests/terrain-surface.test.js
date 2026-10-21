@@ -1,77 +1,224 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Vec3,Quat} from '../src/math.js';
-import {configureTerrain,terrainWorld} from '../src/terrain.js';
-import {buildTerrainSurface,renderTerrainSurface,terrainAxis,terrainGridCenter} from '../src/terrainSurface.js';
-import {Renderer} from '../src/renderer.js';
-import {terrainBuffers} from '../src/gpuTerrain.js';
+import { Vec3, Quat } from '../src/math.js';
+import { configureTerrain, terrainWorld } from '../src/terrain.js';
+import {
+  buildTerrainSurface,
+  renderTerrainSurface,
+  terrainAxis,
+  terrainGridCenter,
+} from '../src/terrainSurface.js';
+import { Renderer } from '../src/renderer.js';
+import { terrainBuffers } from '../src/gpuTerrain.js';
 
-test('terrain uses a connected opaque triangle surface with shared edges and slope shading',()=>{
- const faces=buildTerrainSurface(0,0,(x,z)=>Math.max(0,1500-Math.hypot(x-3000,z-3000)*.5));
- const n=terrainAxis(0).length-1;assert.equal(faces.length,n*n*2);
- const colors=new Set(faces.map(f=>f.color));assert.ok(colors.size>5);
- assert.ok(faces.every(f=>/^rgb\(/.test(f.color)&&f.points.every(p=>Number.isFinite(p.y))));
- // Each internal edge is shared twice; only the perimeter is open.
- const edges=new Map();for(const f of faces)for(let i=0;i<3;i++){const key=[f.points[i],f.points[(i+1)%3]].map(p=>`${p.x},${p.y},${p.z}`).sort().join('|');edges.set(key,(edges.get(key)||0)+1);}
- assert.ok([...edges.values()].every(n=>n===1||n===2));assert.equal([...edges.values()].filter(n=>n===1).length,n*4);
+test('terrain uses a connected opaque triangle surface with shared edges and slope shading', () => {
+  const faces = buildTerrainSurface(0, 0, (x, z) =>
+    Math.max(0, 1500 - Math.hypot(x - 3000, z - 3000) * 0.5),
+  );
+  const n = terrainAxis(0).length - 1;
+  assert.equal(faces.length, n * n * 2);
+  const colors = new Set(faces.map((f) => f.color));
+  assert.ok(colors.size > 5);
+  assert.ok(
+    faces.every((f) => /^rgb\(/.test(f.color) && f.points.every((p) => Number.isFinite(p.y))),
+  );
+  // Each internal edge is shared twice; only the perimeter is open.
+  const edges = new Map();
+  for (const f of faces)
+    for (let i = 0; i < 3; i++) {
+      const key = [f.points[i], f.points[(i + 1) % 3]]
+        .map((p) => `${p.x},${p.y},${p.z}`)
+        .sort()
+        .join('|');
+      edges.set(key, (edges.get(key) || 0) + 1);
+    }
+  assert.ok([...edges.values()].every((n) => n === 1 || n === 2));
+  assert.equal([...edges.values()].filter((n) => n === 1).length, n * 4);
 });
 
-test('terrain polygons paint solid fills before visible wire edges and clip across the camera plane',()=>{
- configureTerrain({id:'none'},new Vec3(22000,0,0),()=>.99);
- const r=Object.create(Renderer.prototype);r.w=1200;r.h=800;r.focal=640;r.setup(new Vec3(12000,600,0),Quat.euler(0,-.1,0));
- let fills=0,strokes=0;r.ctx={save(){},restore(){},beginPath(){},moveTo(x,y){assert.ok(Number.isFinite(x)&&Number.isFinite(y));},lineTo(x,y){assert.ok(Number.isFinite(x)&&Number.isFinite(y));},closePath(){},fill(){assert.match(this.fillStyle,/^rgb\(/);fills++;},stroke(){strokes++;}};
- renderTerrainSurface(r);assert.ok(fills>100);assert.equal(strokes,fills*2);
- const cached=r.terrainSurface;renderTerrainSurface(r);assert.equal(r.terrainSurface,cached);
+test('terrain polygons paint solid fills before visible wire edges and clip across the camera plane', () => {
+  configureTerrain({ id: 'none' }, new Vec3(22000, 0, 0), () => 0.99);
+  const r = Object.create(Renderer.prototype);
+  r.w = 1200;
+  r.h = 800;
+  r.focal = 640;
+  r.setup(new Vec3(12000, 600, 0), Quat.euler(0, -0.1, 0));
+  let fills = 0,
+    strokes = 0;
+  r.ctx = {
+    save() {},
+    restore() {},
+    beginPath() {},
+    moveTo(x, y) {
+      assert.ok(Number.isFinite(x) && Number.isFinite(y));
+    },
+    lineTo(x, y) {
+      assert.ok(Number.isFinite(x) && Number.isFinite(y));
+    },
+    closePath() {},
+    fill() {
+      assert.match(this.fillStyle, /^rgb\(/);
+      fills++;
+    },
+    stroke() {
+      strokes++;
+    },
+  };
+  renderTerrainSurface(r);
+  assert.ok(fills > 100);
+  assert.equal(strokes, fills * 2);
+  const cached = r.terrainSurface;
+  renderTerrainSurface(r);
+  assert.equal(r.terrainSurface, cached);
 });
 
-test('a ridge hides physical targets while the HUD target frame keeps its projected position',()=>{
- configureTerrain({id:'none'},new Vec3(22000,0,0),()=>.99);terrainWorld.peaks.push({x:12000,z:3000,height:1800,radius:1700,platform:0});
- const r=Object.create(Renderer.prototype);r.w=1200;r.h=800;r.focal=640;r.setup(new Vec3(12000,600,0),Quat.euler(0,0,0));
- const hidden=new Vec3(12000,600,6000),above=new Vec3(12000,4000,6000);
- assert.equal(r.projectWorld(hidden),null);assert.ok(r.projectWorld(above));assert.ok(r.project(hidden));
- let frame=null;r.ctx={strokeRect(...args){frame=args;},fillText(){}};
- const marker=r.marker(hidden,'TARGET',undefined,false);assert.deepEqual(marker,r.project(hidden));assert.ok(frame);
+test('a ridge hides physical targets while the HUD target frame keeps its projected position', () => {
+  configureTerrain({ id: 'none' }, new Vec3(22000, 0, 0), () => 0.99);
+  terrainWorld.peaks.push({ x: 12000, z: 3000, height: 1800, radius: 1700, platform: 0 });
+  const r = Object.create(Renderer.prototype);
+  r.w = 1200;
+  r.h = 800;
+  r.focal = 640;
+  r.setup(new Vec3(12000, 600, 0), Quat.euler(0, 0, 0));
+  const hidden = new Vec3(12000, 600, 6000),
+    above = new Vec3(12000, 4000, 6000);
+  assert.equal(r.projectWorld(hidden), null);
+  assert.ok(r.projectWorld(above));
+  assert.ok(r.project(hidden));
+  let frame = null;
+  r.ctx = {
+    strokeRect(...args) {
+      frame = args;
+    },
+    fillText() {},
+  };
+  const marker = r.marker(hidden, 'TARGET', undefined, false);
+  assert.deepEqual(marker, r.project(hidden));
+  assert.ok(frame);
 });
 
-test('world edges are clipped at a ridge instead of drawing the hidden end of a line',()=>{
- const r=Object.create(Renderer.prototype),parts=[];r.worldOcclusion=true;r.worldVisible=p=>p.x<=0;r.rawLine=(a,b)=>parts.push([a,b]);
- r.line(new Vec3(-1000,20,0),new Vec3(1000,20,0));
- assert.ok(parts.length>0);assert.ok(parts.every(([a,b])=>a.x<=0&&b.x<=0));assert.ok(parts.at(-1)[1].x> -2);
+test('world edges are clipped at a ridge instead of drawing the hidden end of a line', () => {
+  const r = Object.create(Renderer.prototype),
+    parts = [];
+  r.worldOcclusion = true;
+  r.worldVisible = (p) => p.x <= 0;
+  r.rawLine = (a, b) => parts.push([a, b]);
+  r.line(new Vec3(-1000, 20, 0), new Vec3(1000, 20, 0));
+  assert.ok(parts.length > 0);
+  assert.ok(parts.every(([a, b]) => a.x <= 0 && b.x <= 0));
+  assert.ok(parts.at(-1)[1].x > -2);
 });
 
-
-test('GPU terrain retains every shaded face and each unique grid edge without changing physical heights',()=>{
- const faces=buildTerrainSurface(0,0,(x,z)=>200+100*Math.sin(x/1000)*Math.cos(z/1000)),data=terrainBuffers(faces);
- assert.equal(data.fills.length,faces.length*3*6);assert.equal(data.lines.length/6,(faces.length*3+(terrainAxis(0).length-1)*4)/2);
- assert.ok([...data.fills,...data.lines].every(Number.isFinite));
- for(let i=0;i<faces.length;i++)for(let j=0;j<3;j++){const p=faces[i].points[j],offset=(i*3+j)*6;assert.equal(data.fills[offset],p.x);assert.ok(Math.abs(data.fills[offset+1]-p.y)<.0001);assert.equal(data.fills[offset+2],p.z);for(let c=3;c<6;c++)assert.ok(data.fills[offset+c]>=0&&data.fills[offset+c]<=1);}
+test('GPU terrain retains every shaded face and each unique grid edge without changing physical heights', () => {
+  const faces = buildTerrainSurface(
+      0,
+      0,
+      (x, z) => 200 + 100 * Math.sin(x / 1000) * Math.cos(z / 1000),
+    ),
+    data = terrainBuffers(faces);
+  assert.equal(data.fills.length, faces.length * 3 * 6);
+  assert.equal(data.lines.length / 6, (faces.length * 3 + (terrainAxis(0).length - 1) * 4) / 2);
+  assert.ok([...data.fills, ...data.lines].every(Number.isFinite));
+  for (let i = 0; i < faces.length; i++)
+    for (let j = 0; j < 3; j++) {
+      const p = faces[i].points[j],
+        offset = (i * 3 + j) * 6;
+      assert.equal(data.fills[offset], p.x);
+      assert.ok(Math.abs(data.fills[offset + 1] - p.y) < 0.0001);
+      assert.equal(data.fills[offset + 2], p.z);
+      for (let c = 3; c < 6; c++)
+        assert.ok(data.fills[offset + c] >= 0 && data.fills[offset + c] <= 1);
+    }
 });
 
-test('GPU terrain uses the cached mission surface, and unavailability falls back to opaque Canvas drawing',()=>{
- configureTerrain({id:'none'},new Vec3(22000,0,0),()=>.99);
- const r=Object.create(Renderer.prototype);r.w=1200;r.h=800;r.focal=640;r.setup(new Vec3(0,600,0),Quat.euler(0,-.1,0));let calls=0,fills=0;
- r.gpuModels={renderTerrain(renderer){calls++;assert.ok(renderer.terrainSurface.length>0);return true;}};renderTerrainSurface(r);const first=r.terrainSurface;renderTerrainSurface(r);assert.equal(r.terrainSurface,first);assert.equal(calls,2);
- configureTerrain({id:'none'},new Vec3(22000,0,0),()=>.99);renderTerrainSurface(r);assert.notEqual(r.terrainSurface,first);
- r.gpuModels.renderTerrain=()=>false;r.ctx={save(){},restore(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},fill(){fills++;},stroke(){}};renderTerrainSurface(r);assert.ok(fills>0);
+test('GPU terrain uses the cached mission surface, and unavailability falls back to opaque Canvas drawing', () => {
+  configureTerrain({ id: 'none' }, new Vec3(22000, 0, 0), () => 0.99);
+  const r = Object.create(Renderer.prototype);
+  r.w = 1200;
+  r.h = 800;
+  r.focal = 640;
+  r.setup(new Vec3(0, 600, 0), Quat.euler(0, -0.1, 0));
+  let calls = 0,
+    fills = 0;
+  r.gpuModels = {
+    renderTerrain(renderer) {
+      calls++;
+      assert.ok(renderer.terrainSurface.length > 0);
+      return true;
+    },
+  };
+  renderTerrainSurface(r);
+  const first = r.terrainSurface;
+  renderTerrainSurface(r);
+  assert.equal(r.terrainSurface, first);
+  assert.equal(calls, 2);
+  configureTerrain({ id: 'none' }, new Vec3(22000, 0, 0), () => 0.99);
+  renderTerrainSurface(r);
+  assert.notEqual(r.terrainSurface, first);
+  r.gpuModels.renderTerrain = () => false;
+  r.ctx = {
+    save() {},
+    restore() {},
+    beginPath() {},
+    moveTo() {},
+    lineTo() {},
+    closePath() {},
+    fill() {
+      fills++;
+    },
+    stroke() {},
+  };
+  renderTerrainSurface(r);
+  assert.ok(fills > 0);
 });
 
-
-test('coarse terrain coordinates stay fixed when the camera crosses a 450 metre rebuild boundary',()=>{
- const a=terrainAxis(0),b=terrainAxis(450);assert.deepEqual(a.filter(x=>x>22000&&x<33000),b.filter(x=>x>22000&&x<33000));
- for(const center of [-1350,0,450,900]){const coords=terrainAxis(center);assert.equal(new Set(coords).size,coords.length);assert.ok(coords.every((x,i)=>i===0||x>coords[i-1]));assert.ok(coords[0]<center-40000&&coords.at(-1)>center+40000);}
+test('coarse terrain coordinates stay fixed when the camera crosses a 450 metre rebuild boundary', () => {
+  const a = terrainAxis(0),
+    b = terrainAxis(450);
+  assert.deepEqual(
+    a.filter((x) => x > 22000 && x < 33000),
+    b.filter((x) => x > 22000 && x < 33000),
+  );
+  for (const center of [-1350, 0, 450, 900]) {
+    const coords = terrainAxis(center);
+    assert.equal(new Set(coords).size, coords.length);
+    assert.ok(coords.every((x, i) => i === 0 || x > coords[i - 1]));
+    assert.ok(coords[0] < center - 40000 && coords.at(-1) > center + 40000);
+  }
 });
 
-test('a distant prominent summit keeps its world position and height in successive terrain meshes',()=>{
- configureTerrain({id:'none'},new Vec3(22000,0,0),()=>.99);const peak={x:27250,z:23030,height:2100,radius:2200,platform:0};terrainWorld.peaks.push(peak);
- const a=buildTerrainSurface(0,0),b=buildTerrainSurface(450,450),summit=faces=>faces.flatMap(f=>f.points).find(p=>p.x===peak.x&&p.z===peak.z);
- assert.ok(summit(a));assert.deepEqual(summit(a),summit(b));assert.ok(summit(a).y>=2000);
- const shared=a.flatMap(f=>f.points).filter(p=>p.x>22000&&p.z>22000),points=new Set(b.flatMap(f=>f.points));assert.ok(shared.some(p=>points.has(p)),'unchanged world points reuse cached height samples');
+test('a distant prominent summit keeps its world position and height in successive terrain meshes', () => {
+  configureTerrain({ id: 'none' }, new Vec3(22000, 0, 0), () => 0.99);
+  const peak = { x: 27250, z: 23030, height: 2100, radius: 2200, platform: 0 };
+  terrainWorld.peaks.push(peak);
+  const a = buildTerrainSurface(0, 0),
+    b = buildTerrainSurface(450, 450),
+    summit = (faces) =>
+      faces.flatMap((f) => f.points).find((p) => p.x === peak.x && p.z === peak.z);
+  assert.ok(summit(a));
+  assert.deepEqual(summit(a), summit(b));
+  assert.ok(summit(a).y >= 2000);
+  const shared = a.flatMap((f) => f.points).filter((p) => p.x > 22000 && p.z > 22000),
+    points = new Set(b.flatMap((f) => f.points));
+  assert.ok(
+    shared.some((p) => points.has(p)),
+    'unchanged world points reuse cached height samples',
+  );
 });
 
-
-test('terrain centre hysteresis prevents tiny camera movements from alternating two different LOD grids',()=>{
- configureTerrain({id:'none'},new Vec3(22000,0,0),()=>.99);let center=terrainGridCenter(new Vec3(0,1000,0));
- for(const x of [220,230,224,226,220,230]){center=terrainGridCenter(new Vec3(x,1000,0),center);assert.equal(center.x,0);}
- center=terrainGridCenter(new Vec3(350,1000,0),center);assert.equal(center.x,450);for(const x of [330,220,230]){center=terrainGridCenter(new Vec3(x,1000,0),center);assert.equal(center.x,450);}
- configureTerrain({id:'none'},new Vec3(22000,0,0),()=>.99);assert.equal(terrainGridCenter(new Vec3(0,1000,0),center).x,0);
+test('terrain centre hysteresis prevents tiny camera movements from alternating two different LOD grids', () => {
+  configureTerrain({ id: 'none' }, new Vec3(22000, 0, 0), () => 0.99);
+  let center = terrainGridCenter(new Vec3(0, 1000, 0));
+  for (const x of [220, 230, 224, 226, 220, 230]) {
+    center = terrainGridCenter(new Vec3(x, 1000, 0), center);
+    assert.equal(center.x, 0);
+  }
+  center = terrainGridCenter(new Vec3(350, 1000, 0), center);
+  assert.equal(center.x, 450);
+  for (const x of [330, 220, 230]) {
+    center = terrainGridCenter(new Vec3(x, 1000, 0), center);
+    assert.equal(center.x, 450);
+  }
+  configureTerrain({ id: 'none' }, new Vec3(22000, 0, 0), () => 0.99);
+  assert.equal(terrainGridCenter(new Vec3(0, 1000, 0), center).x, 0);
 });

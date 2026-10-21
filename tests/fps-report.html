@@ -1,3 +1,192 @@
-<!doctype html><html lang="hu"><meta charset="utf-8"><title>Operation Falcon · FPS és lag mérés</title><style>*{box-sizing:border-box}body{margin:0;padding:38px;background:#0b161b;color:#deece4;font:15px system-ui}main{max-width:1180px;margin:auto}small{color:#9eb7ad}h1{font-size:30px;margin:8px 0 12px}h2{font-size:19px;margin:26px 0 12px}p{line-height:1.65;max-width:1080px}table{width:100%;border-collapse:collapse;background:#122329}th,td{text-align:left;padding:15px 12px;border-bottom:1px solid #2b4446}th{color:#acccad;font-size:13px}td{font-variant-numeric:tabular-nums}strong{color:#bef58d}.cards{display:flex;gap:20px;margin:25px 0}.card{flex:1;padding:18px;background:#142a2b;border-left:3px solid #b0db86}.value{font-size:27px;display:block;color:#bef58d}footer{color:#9bb3ae;font-size:13px;margin-top:24px}@media(max-width:800px){body{padding:20px;font-size:12px}h1{font-size:24px}h2{font-size:16px;margin-top:18px}.cards{gap:10px;margin:16px 0}.card{padding:12px}.value{font-size:19px}th,td{padding:10px 6px}th{font-size:11px}footer{font-size:10px;margin-top:14px}}</style><main><small>OPERATION FALCON: REDLINE · TELJESÍTMÉNYELLENŐRZÉS</small><h1>FPS és rövid megakadások</h1><p id="intro">A mérési összesítő a címben átadott helyi adatokból jelenik meg.</p><div class="cards"><div class="card"><small>VIZSGÁLAT</small><span class="value">Hang nélkül</span>Valódi fizika, AI, fegyverek, műszerek</div><div class="card"><small>JAVÍTOTT RÉSZ</small><span class="value">Üres célkijelölés</span>Felesleges radarszámítás kihagyása</div><div class="card"><small>ELLENŐRZÉS</small><span class="value">556 sikeres teszt</span>Aktív célbefogás továbbra is működik</div></div><h2>Azonos kontrollpróbák · javítás előtt → után</h2><table><thead><tr><th>Jelenet</th><th>Átlag FPS</th><th>P99 képkocka</th><th>Legnagyobb szünet</th><th>50 ms felett</th><th>Átlag CPU</th></tr></thead><tbody id="rows"></tbody></table><p id="finding"></p><footer id="method"></footer></main><script>
-try{const data=JSON.parse(decodeURIComponent(location.hash.slice(1)));if(data.title){document.querySelector('h1').textContent=data.title;document.title=data.title;}if(data.heading)document.querySelector('h2').textContent=data.heading;if(data.cards)for(const [i,card]of data.cards.entries()){const node=document.querySelectorAll('.card')[i];node.replaceChildren();for(const [tag,text]of [['small',card.label],['span',card.value],['div',card.detail]]){const child=document.createElement(tag);child.textContent=text;if(tag==='span')child.className='value';node.append(child);}}if(data.columns){const row=document.querySelector('thead tr');row.replaceChildren();for(const label of data.columns){const th=document.createElement('th');th.textContent=label;row.append(th);}}document.getElementById('intro').textContent=data.intro;document.getElementById('finding').textContent=data.finding;document.getElementById('method').textContent=data.method;for(const row of data.rows){const tr=document.createElement('tr');for(const value of row){const td=document.createElement('td');td.textContent=value;tr.append(td);}document.getElementById('rows').append(tr);}}catch{}
-</script></html>
+<!doctype html>
+<html lang="hu">
+  <meta charset="utf-8" /><title>Operation Falcon · FPS és lag mérés</title
+  ><style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 38px;
+      background: #0b161b;
+      color: #deece4;
+      font: 15px system-ui;
+    }
+    main {
+      max-width: 1180px;
+      margin: auto;
+    }
+    small {
+      color: #9eb7ad;
+    }
+    h1 {
+      font-size: 30px;
+      margin: 8px 0 12px;
+    }
+    h2 {
+      font-size: 19px;
+      margin: 26px 0 12px;
+    }
+    p {
+      line-height: 1.65;
+      max-width: 1080px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #122329;
+    }
+    th,
+    td {
+      text-align: left;
+      padding: 15px 12px;
+      border-bottom: 1px solid #2b4446;
+    }
+    th {
+      color: #acccad;
+      font-size: 13px;
+    }
+    td {
+      font-variant-numeric: tabular-nums;
+    }
+    strong {
+      color: #bef58d;
+    }
+    .cards {
+      display: flex;
+      gap: 20px;
+      margin: 25px 0;
+    }
+    .card {
+      flex: 1;
+      padding: 18px;
+      background: #142a2b;
+      border-left: 3px solid #b0db86;
+    }
+    .value {
+      font-size: 27px;
+      display: block;
+      color: #bef58d;
+    }
+    footer {
+      color: #9bb3ae;
+      font-size: 13px;
+      margin-top: 24px;
+    }
+    @media (max-width: 800px) {
+      body {
+        padding: 20px;
+        font-size: 12px;
+      }
+      h1 {
+        font-size: 24px;
+      }
+      h2 {
+        font-size: 16px;
+        margin-top: 18px;
+      }
+      .cards {
+        gap: 10px;
+        margin: 16px 0;
+      }
+      .card {
+        padding: 12px;
+      }
+      .value {
+        font-size: 19px;
+      }
+      th,
+      td {
+        padding: 10px 6px;
+      }
+      th {
+        font-size: 11px;
+      }
+      footer {
+        font-size: 10px;
+        margin-top: 14px;
+      }
+    }
+  </style>
+  <main>
+    <small>OPERATION FALCON: REDLINE · TELJESÍTMÉNYELLENŐRZÉS</small>
+    <h1>FPS és rövid megakadások</h1>
+    <p id="intro">A mérési összesítő a címben átadott helyi adatokból jelenik meg.</p>
+    <div class="cards">
+      <div class="card">
+        <small>VIZSGÁLAT</small><span class="value">Hang nélkül</span>Valódi fizika, AI, fegyverek,
+        műszerek
+      </div>
+      <div class="card">
+        <small>JAVÍTOTT RÉSZ</small><span class="value">Üres célkijelölés</span>Felesleges
+        radarszámítás kihagyása
+      </div>
+      <div class="card">
+        <small>ELLENŐRZÉS</small><span class="value">556 sikeres teszt</span>Aktív célbefogás
+        továbbra is működik
+      </div>
+    </div>
+    <h2>Azonos kontrollpróbák · javítás előtt → után</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Jelenet</th>
+          <th>Átlag FPS</th>
+          <th>P99 képkocka</th>
+          <th>Legnagyobb szünet</th>
+          <th>50 ms felett</th>
+          <th>Átlag CPU</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p id="finding"></p>
+    <footer id="method"></footer>
+  </main>
+  <script>
+    try {
+      const data = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+      if (data.title) {
+        document.querySelector('h1').textContent = data.title;
+        document.title = data.title;
+      }
+      if (data.heading) document.querySelector('h2').textContent = data.heading;
+      if (data.cards)
+        for (const [i, card] of data.cards.entries()) {
+          const node = document.querySelectorAll('.card')[i];
+          node.replaceChildren();
+          for (const [tag, text] of [
+            ['small', card.label],
+            ['span', card.value],
+            ['div', card.detail],
+          ]) {
+            const child = document.createElement(tag);
+            child.textContent = text;
+            if (tag === 'span') child.className = 'value';
+            node.append(child);
+          }
+        }
+      if (data.columns) {
+        const row = document.querySelector('thead tr');
+        row.replaceChildren();
+        for (const label of data.columns) {
+          const th = document.createElement('th');
+          th.textContent = label;
+          row.append(th);
+        }
+      }
+      document.getElementById('intro').textContent = data.intro;
+      document.getElementById('finding').textContent = data.finding;
+      document.getElementById('method').textContent = data.method;
+      for (const row of data.rows) {
+        const tr = document.createElement('tr');
+        for (const value of row) {
+          const td = document.createElement('td');
+          td.textContent = value;
+          tr.append(td);
+        }
+        document.getElementById('rows').append(tr);
+      }
+    } catch {}
+  </script>
+</html>

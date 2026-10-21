@@ -1,22 +1,236 @@
-<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sérülési próba — VECTOR FLIGHT</title><style>body{margin:0;background:#071211;color:#d9e7c5;font:13px/1.6 monospace}#world{position:fixed;inset:0;width:100%;height:100%;z-index:-1}.controls{position:fixed;top:15px;left:20px;right:20px;padding:12px;background:#071211e8;border:1px solid #74954c}button,a{font:12px monospace;color:#c9ed9c}button{background:#192b1c;border:1px solid #68874b;padding:8px;margin:4px;cursor:pointer}#status{position:fixed;bottom:20px;left:20px;background:#071211ed;padding:12px;max-width:65%;white-space:pre-line}#radar{position:fixed;right:20px;bottom:20px;width:200px;border:1px solid #446239}#report{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);padding:24px;background:#111b14ee;border:1px solid #e0ab6b;max-width:400px}[hidden]{display:none!important}</style></head><body>
-<canvas id="world"></canvas><div class="controls"><a href="/">← Játék</a> · Sérülési próba · A/D: bedöntés, W/S: orrhelyzet<br><button data-level="0">Ép gép</button><button data-level="20">Enyhe sérülés</button><button data-level="50">Rendszerhibák</button><button data-level="80">Súlyos sérülés</button><button data-level="100">Végzetes sérülés</button><button id="gear">Futómű</button><button id="brake">Légfék</button><button id="missile">Rakétaindítás</button><button id="view">Nézetváltás</button><button id="pause">Szünet</button></div><div id="status" role="status"></div><canvas id="radar" width="240" height="240" aria-label="Radar több ellenséggel és irányjelzéssel"></canvas><div id="report" hidden>A becsapódás és a robbanás lezajlott. A jelentés csak ezután jelenik meg. Fent választhatsz új sérülési helyzetet.</div>
-<script type="module">
-import {aircraft} from '/src/aircraftSpec.js';
-import {createAircraft,stepAircraft,STEP} from '/src/physics.js';
-import {Vec3,Quat} from '/src/math.js';
-import {Renderer} from '/src/renderer.js';
-import {Weapons} from '/src/weapons.js';
-import {Targeting} from '/src/targeting.js';
-import {createDamage,applyDamage,damageStage,damageWarnings,toggleActuator,advanceCrashSequence} from '/src/damage.js';
-import {renderTacticalMap} from '/src/tacticalMap.js';
-const renderer=new Renderer(document.getElementById('world')),aim=new Targeting(),keys=new Set();renderer.thirdPerson=true;
-let s,w,last=performance.now(),acc=0,paused=false,message='';
-const targets=[{id:'A',name:'Légi cél A',kind:'air',alive:true,aircraftId:'mig29',position:new Vec3(-1500,900,5500),velocity:new Vec3(80,0,-50),heading:0},{id:'B',name:'Légi cél B',kind:'air',alive:true,aircraftId:'su35',position:new Vec3(1600,900,6500),velocity:new Vec3(-80,0,-50),heading:0},{id:'C',name:'Hátul lévő cél',kind:'air',alive:true,aircraftId:'su27',position:new Vec3(0,900,-5000),velocity:new Vec3(0,0,80),heading:0}];
-function reset(level){s=createAircraft(aircraft.find(a=>a.id==='f16'));s.condition=createDamage(1);s.position=new Vec3(0,900,0);s.velocity=new Vec3(0,0,160);s.orientation=Quat.euler(0,.04,0);s.onGround=false;s.airborne=true;s.gear=false;s.flaps=false;s.throttle=.7;s.fuel=1600;s.speed=160;s.ias=155;s.agl=900;s.landingMode='off';applyDamage(s,level);w=new Weapons();aim.id='A';aim.locked=true;document.getElementById('report').hidden=true;renderer.wreckOffset=null;acc=0;paused=false;message='';}
-for(const b of document.querySelectorAll('[data-level]'))b.onclick=()=>reset(Number(b.dataset.level));
-document.getElementById('gear').onclick=()=>{message=toggleActuator(s,'gear')||`Futómű ${s.gear?'kinn':'benn'}`;};document.getElementById('brake').onclick=()=>{message=toggleActuator(s,'airbrake')||`Légfék ${s.airbrake?'nyitva':'zárva'}`;};document.getElementById('missile').onclick=()=>{message=w.fire(s,targets,aim)||'';};document.getElementById('view').onclick=()=>{renderer.thirdPerson=!renderer.thirdPerson;};document.getElementById('pause').onclick=()=>{paused=!paused;};
-addEventListener('keydown',e=>{keys.add(e.code);});addEventListener('keyup',e=>keys.delete(e.code));addEventListener('resize',()=>renderer.resize());
-function frame(now){const delta=Math.min(.1,(now-last)/1000);last=now;if(!paused){acc+=delta;while(acc>=STEP){stepAircraft(s,{roll:Number(keys.has('KeyD'))-Number(keys.has('KeyA')),pitch:Number(keys.has('KeyS'))-Number(keys.has('KeyW'))},STEP);w.update(s,targets,STEP);w.drainEvents();if(advanceCrashSequence(s,STEP)){document.getElementById('report').hidden=false;paused=true;}acc-=STEP;}}
-renderer.render(s,targets,w,aim);const map=renderTacticalMap(document.getElementById('radar'),s,targets,aim);document.getElementById('status').textContent=`${damageStage(s).label} · szerkezet ${Math.max(0,Math.round(100-s.damage))}%\n${Math.round(s.speed*3.6)} km/h · AGL ${Math.round(s.agl)} m · V/S ${s.velocity.y.toFixed(1)} m/s\n${damageWarnings(s).join('\n')}\n${message}\nRadar: ${map.contacts.length} kontakt · térképszélesség ${map.halfExtent*2/1000} km`;requestAnimationFrame(frame);}
-reset(0);requestAnimationFrame(frame);
-</script></body></html>
+<!doctype html>
+<html lang="hu">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sérülési próba — VECTOR FLIGHT</title>
+    <style>
+      body {
+        margin: 0;
+        background: #071211;
+        color: #d9e7c5;
+        font: 13px/1.6 monospace;
+      }
+      #world {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+      }
+      .controls {
+        position: fixed;
+        top: 15px;
+        left: 20px;
+        right: 20px;
+        padding: 12px;
+        background: #071211e8;
+        border: 1px solid #74954c;
+      }
+      button,
+      a {
+        font: 12px monospace;
+        color: #c9ed9c;
+      }
+      button {
+        background: #192b1c;
+        border: 1px solid #68874b;
+        padding: 8px;
+        margin: 4px;
+        cursor: pointer;
+      }
+      #status {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        background: #071211ed;
+        padding: 12px;
+        max-width: 65%;
+        white-space: pre-line;
+      }
+      #radar {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        width: 200px;
+        border: 1px solid #446239;
+      }
+      #report {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        padding: 24px;
+        background: #111b14ee;
+        border: 1px solid #e0ab6b;
+        max-width: 400px;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="world"></canvas>
+    <div class="controls">
+      <a href="/">← Játék</a> · Sérülési próba · A/D: bedöntés, W/S: orrhelyzet<br /><button
+        data-level="0"
+      >
+        Ép gép</button
+      ><button data-level="20">Enyhe sérülés</button><button data-level="50">Rendszerhibák</button
+      ><button data-level="80">Súlyos sérülés</button
+      ><button data-level="100">Végzetes sérülés</button><button id="gear">Futómű</button
+      ><button id="brake">Légfék</button><button id="missile">Rakétaindítás</button
+      ><button id="view">Nézetváltás</button><button id="pause">Szünet</button>
+    </div>
+    <div id="status" role="status"></div>
+    <canvas
+      id="radar"
+      width="240"
+      height="240"
+      aria-label="Radar több ellenséggel és irányjelzéssel"
+    ></canvas>
+    <div id="report" hidden>
+      A becsapódás és a robbanás lezajlott. A jelentés csak ezután jelenik meg. Fent választhatsz új
+      sérülési helyzetet.
+    </div>
+    <script type="module">
+      import { aircraft } from '/src/aircraftSpec.js';
+      import { createAircraft, stepAircraft, STEP } from '/src/physics.js';
+      import { Vec3, Quat } from '/src/math.js';
+      import { Renderer } from '/src/renderer.js';
+      import { Weapons } from '/src/weapons.js';
+      import { Targeting } from '/src/targeting.js';
+      import {
+        createDamage,
+        applyDamage,
+        damageStage,
+        damageWarnings,
+        toggleActuator,
+        advanceCrashSequence,
+      } from '/src/damage.js';
+      import { renderTacticalMap } from '/src/tacticalMap.js';
+      const renderer = new Renderer(document.getElementById('world')),
+        aim = new Targeting(),
+        keys = new Set();
+      renderer.thirdPerson = true;
+      let s,
+        w,
+        last = performance.now(),
+        acc = 0,
+        paused = false,
+        message = '';
+      const targets = [
+        {
+          id: 'A',
+          name: 'Légi cél A',
+          kind: 'air',
+          alive: true,
+          aircraftId: 'mig29',
+          position: new Vec3(-1500, 900, 5500),
+          velocity: new Vec3(80, 0, -50),
+          heading: 0,
+        },
+        {
+          id: 'B',
+          name: 'Légi cél B',
+          kind: 'air',
+          alive: true,
+          aircraftId: 'su35',
+          position: new Vec3(1600, 900, 6500),
+          velocity: new Vec3(-80, 0, -50),
+          heading: 0,
+        },
+        {
+          id: 'C',
+          name: 'Hátul lévő cél',
+          kind: 'air',
+          alive: true,
+          aircraftId: 'su27',
+          position: new Vec3(0, 900, -5000),
+          velocity: new Vec3(0, 0, 80),
+          heading: 0,
+        },
+      ];
+      function reset(level) {
+        s = createAircraft(aircraft.find((a) => a.id === 'f16'));
+        s.condition = createDamage(1);
+        s.position = new Vec3(0, 900, 0);
+        s.velocity = new Vec3(0, 0, 160);
+        s.orientation = Quat.euler(0, 0.04, 0);
+        s.onGround = false;
+        s.airborne = true;
+        s.gear = false;
+        s.flaps = false;
+        s.throttle = 0.7;
+        s.fuel = 1600;
+        s.speed = 160;
+        s.ias = 155;
+        s.agl = 900;
+        s.landingMode = 'off';
+        applyDamage(s, level);
+        w = new Weapons();
+        aim.id = 'A';
+        aim.locked = true;
+        document.getElementById('report').hidden = true;
+        renderer.wreckOffset = null;
+        acc = 0;
+        paused = false;
+        message = '';
+      }
+      for (const b of document.querySelectorAll('[data-level]'))
+        b.onclick = () => reset(Number(b.dataset.level));
+      document.getElementById('gear').onclick = () => {
+        message = toggleActuator(s, 'gear') || `Futómű ${s.gear ? 'kinn' : 'benn'}`;
+      };
+      document.getElementById('brake').onclick = () => {
+        message = toggleActuator(s, 'airbrake') || `Légfék ${s.airbrake ? 'nyitva' : 'zárva'}`;
+      };
+      document.getElementById('missile').onclick = () => {
+        message = w.fire(s, targets, aim) || '';
+      };
+      document.getElementById('view').onclick = () => {
+        renderer.thirdPerson = !renderer.thirdPerson;
+      };
+      document.getElementById('pause').onclick = () => {
+        paused = !paused;
+      };
+      addEventListener('keydown', (e) => {
+        keys.add(e.code);
+      });
+      addEventListener('keyup', (e) => keys.delete(e.code));
+      addEventListener('resize', () => renderer.resize());
+      function frame(now) {
+        const delta = Math.min(0.1, (now - last) / 1000);
+        last = now;
+        if (!paused) {
+          acc += delta;
+          while (acc >= STEP) {
+            stepAircraft(
+              s,
+              {
+                roll: Number(keys.has('KeyD')) - Number(keys.has('KeyA')),
+                pitch: Number(keys.has('KeyS')) - Number(keys.has('KeyW')),
+              },
+              STEP,
+            );
+            w.update(s, targets, STEP);
+            w.drainEvents();
+            if (advanceCrashSequence(s, STEP)) {
+              document.getElementById('report').hidden = false;
+              paused = true;
+            }
+            acc -= STEP;
+          }
+        }
+        renderer.render(s, targets, w, aim);
+        const map = renderTacticalMap(document.getElementById('radar'), s, targets, aim);
+        document.getElementById('status').textContent =
+          `${damageStage(s).label} · szerkezet ${Math.max(0, Math.round(100 - s.damage))}%\n${Math.round(s.speed * 3.6)} km/h · AGL ${Math.round(s.agl)} m · V/S ${s.velocity.y.toFixed(1)} m/s\n${damageWarnings(s).join('\n')}\n${message}\nRadar: ${map.contacts.length} kontakt · térképszélesség ${(map.halfExtent * 2) / 1000} km`;
+        requestAnimationFrame(frame);
+      }
+      reset(0);
+      requestAnimationFrame(frame);
+    </script>
+  </body>
+</html>

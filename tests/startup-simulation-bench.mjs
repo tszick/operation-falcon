@@ -1,11 +1,168 @@
 // Run explicitly with a saved flight log; no user log is copied into the repository.
-import {readFile} from 'node:fs/promises';import {performance} from 'node:perf_hooks';import {aircraft} from '../src/aircraftSpec.js';import {createAircraft,stepAircraft} from '../src/physics.js';import {Vec3,Quat,DEG} from '../src/math.js';import {terrainWorld,terrainHeight} from '../src/terrain.js';import {clearWeaponLine} from '../src/weaponDynamics.js';import {updateTargets,Targeting} from '../src/targeting.js';import {Weapons} from '../src/weapons.js';import {Mission} from '../src/mission.js';import {FlightRecorder} from '../src/flightRecorder.js';
-const file=process.argv[2];if(!file)throw new Error('Pass the saved flight-log JSON path');const log=JSON.parse(await readFile(file,'utf8')),samples=log.entries.filter(e=>e.kind==='sample'),worlds=log.entries.filter(e=>e.kind==='world'),vec=p=>new Vec3(p.x,p.y,p.z),quat=p=>new Quat(p.x,p.y,p.z,p.w),launches=new Map(log.entries.filter(e=>e.kind==='combat'&&e.data.projectileId).map(e=>[e.data.projectileId,e.data]));
-function setup(time){Object.assign(terrainWorld,log.metadata.terrain);const p=samples.reduce((a,b)=>Math.abs(a.t-time)<Math.abs(b.t-time)?a:b).data.player,world=worlds.reduce((a,b)=>Math.abs(a.t-time)<Math.abs(b.t-time)?a:b).data,s=createAircraft(log.metadata.aircraft);Object.assign(s,p,{position:vec(p.position),previousPosition:vec(p.position),velocity:vec(p.velocity),orientation:quat(p.orientation),elapsed:time,speed:p.tasKmh/3.6,ias:p.iasKmh/3.6,agl:p.aglM,fuel:p.fuelKg});s.condition.parts=p.parts;s.condition.rates=p.damageRates;s.countermeasures.decoys=[];
- const targets=world.units.map(u=>({...log.metadata.initialUnits.find(t=>t.id===u.id),...u,position:vec(u.position),previousPosition:vec(u.position),velocity:vec(u.velocity),heading:u.headingDeg*DEG,pitch:u.pitchDeg*DEG,bank:u.bankDeg*DEG})),w=new Weapons({enemyFire:true,random:()=>.5});w.enemyCombat.activeTime=time;w.enemyCombat.units=new Map(world.units.filter(u=>u.ai).map(u=>[u.id,structuredClone(u.ai)]));w.projectiles=world.projectiles.map(p=>({...p,position:vec(p.position),previous:vec(p.position),velocity:vec(p.velocity),targetEntityId:p.targetId,profile:log.metadata.weaponProfiles[launches.get(p.id).profile],damage:50,trailTimer:0,trailAnchor:vec(p.position),targetPlayer:p.targetId==='PLAYER'}));
- const m=new Mission(log.metadata.mission),aim=new Targeting(),recorder=new FlightRecorder();recorder.start(s,m,targets,w,aim);return {s,targets,w,m,aim,recorder};}
-for(const time of [2,8,12,20]){const results=[];for(let run=0;run<3;run++){const {s,targets,w,m,aim,recorder}=setup(time);let ai=0,physics=0,weapons=0,records=0;const aiUpdate=w.enemyCombat.update.bind(w.enemyCombat);w.enemyCombat.update=(...args)=>{const start=performance.now();aiUpdate(...args);ai+=performance.now()-start;};const start=performance.now();for(let i=0;i<120;i++){let tick=performance.now();stepAircraft(s,{},1/120);updateTargets(targets,1/120);physics+=performance.now()-tick;tick=performance.now();w.update(s,targets,1/120);weapons+=performance.now()-tick;tick=performance.now();m.update(s,targets,w,aim);recorder.time=s.elapsed;for(const e of w.drainEvents())recorder.event('combat',e);recorder.capture(s,m,targets,w,aim);records+=performance.now()-tick;}results.push({total:performance.now()-start,ai,projectiles:weapons-ai,physics,records});}const mean=key=>+(results.slice(1).reduce((n,r)=>n+r[key],0)/2).toFixed(2);console.log(JSON.stringify({time,unit:'CPU ms per simulated second (120 ticks), no graphics/audio',total:mean('total'),ai:mean('ai'),projectiles:mean('projectiles'),physics:mean('physics'),records:mean('records')}));}
+import { readFile } from 'node:fs/promises';
+import { performance } from 'node:perf_hooks';
+import { createAircraft, stepAircraft } from '../src/physics.js';
+import { Vec3, Quat, DEG } from '../src/math.js';
+import { terrainWorld, terrainHeight } from '../src/terrain.js';
+import { clearWeaponLine } from '../src/weaponDynamics.js';
+import { updateTargets, Targeting } from '../src/targeting.js';
+import { Weapons } from '../src/weapons.js';
+import { Mission } from '../src/mission.js';
+import { FlightRecorder } from '../src/flightRecorder.js';
+const file = process.argv[2];
+if (!file) throw new Error('Pass the saved flight-log JSON path');
+const log = JSON.parse(await readFile(file, 'utf8')),
+  samples = log.entries.filter((e) => e.kind === 'sample'),
+  worlds = log.entries.filter((e) => e.kind === 'world'),
+  vec = (p) => new Vec3(p.x, p.y, p.z),
+  quat = (p) => new Quat(p.x, p.y, p.z, p.w),
+  launches = new Map(
+    log.entries
+      .filter((e) => e.kind === 'combat' && e.data.projectileId)
+      .map((e) => [e.data.projectileId, e.data]),
+  );
+function setup(time) {
+  Object.assign(terrainWorld, log.metadata.terrain);
+  const p = samples.reduce((a, b) => (Math.abs(a.t - time) < Math.abs(b.t - time) ? a : b)).data
+      .player,
+    world = worlds.reduce((a, b) => (Math.abs(a.t - time) < Math.abs(b.t - time) ? a : b)).data,
+    s = createAircraft(log.metadata.aircraft);
+  Object.assign(s, p, {
+    position: vec(p.position),
+    previousPosition: vec(p.position),
+    velocity: vec(p.velocity),
+    orientation: quat(p.orientation),
+    elapsed: time,
+    speed: p.tasKmh / 3.6,
+    ias: p.iasKmh / 3.6,
+    agl: p.aglM,
+    fuel: p.fuelKg,
+  });
+  s.condition.parts = p.parts;
+  s.condition.rates = p.damageRates;
+  s.countermeasures.decoys = [];
+  const targets = world.units.map((u) => ({
+      ...log.metadata.initialUnits.find((t) => t.id === u.id),
+      ...u,
+      position: vec(u.position),
+      previousPosition: vec(u.position),
+      velocity: vec(u.velocity),
+      heading: u.headingDeg * DEG,
+      pitch: u.pitchDeg * DEG,
+      bank: u.bankDeg * DEG,
+    })),
+    w = new Weapons({ enemyFire: true, random: () => 0.5 });
+  w.enemyCombat.activeTime = time;
+  w.enemyCombat.units = new Map(
+    world.units.filter((u) => u.ai).map((u) => [u.id, structuredClone(u.ai)]),
+  );
+  w.projectiles = world.projectiles.map((p) => ({
+    ...p,
+    position: vec(p.position),
+    previous: vec(p.position),
+    velocity: vec(p.velocity),
+    targetEntityId: p.targetId,
+    profile: log.metadata.weaponProfiles[launches.get(p.id).profile],
+    damage: 50,
+    trailTimer: 0,
+    trailAnchor: vec(p.position),
+    targetPlayer: p.targetId === 'PLAYER',
+  }));
+  const m = new Mission(log.metadata.mission),
+    aim = new Targeting(),
+    recorder = new FlightRecorder();
+  recorder.start(s, m, targets, w, aim);
+  return { s, targets, w, m, aim, recorder };
+}
+for (const time of [2, 8, 12, 20]) {
+  const results = [];
+  for (let run = 0; run < 3; run++) {
+    const { s, targets, w, m, aim, recorder } = setup(time);
+    let ai = 0,
+      physics = 0,
+      weapons = 0,
+      records = 0;
+    const aiUpdate = w.enemyCombat.update.bind(w.enemyCombat);
+    w.enemyCombat.update = (...args) => {
+      const start = performance.now();
+      aiUpdate(...args);
+      ai += performance.now() - start;
+    };
+    const start = performance.now();
+    for (let i = 0; i < 120; i++) {
+      let tick = performance.now();
+      stepAircraft(s, {}, 1 / 120);
+      updateTargets(targets, 1 / 120);
+      physics += performance.now() - tick;
+      tick = performance.now();
+      w.update(s, targets, 1 / 120);
+      weapons += performance.now() - tick;
+      tick = performance.now();
+      m.update(s, targets, w, aim);
+      recorder.time = s.elapsed;
+      for (const e of w.drainEvents()) recorder.event('combat', e);
+      recorder.capture(s, m, targets, w, aim);
+      records += performance.now() - tick;
+    }
+    results.push({
+      total: performance.now() - start,
+      ai,
+      projectiles: weapons - ai,
+      physics,
+      records,
+    });
+  }
+  const mean = (key) => +(results.slice(1).reduce((n, r) => n + r[key], 0) / 2).toFixed(2);
+  console.log(
+    JSON.stringify({
+      time,
+      unit: 'CPU ms per simulated second (120 ticks), no graphics/audio',
+      total: mean('total'),
+      ai: mean('ai'),
+      projectiles: mean('projectiles'),
+      physics: mean('physics'),
+      records: mean('records'),
+    }),
+  );
+}
 
-const missileEvents=log.entries.filter(e=>e.kind==='combat'&&e.data.type==='missile-launch'),paths=missileEvents.map(e=>{const world=worlds.reduce((a,b)=>Math.abs(a.t-e.t)<Math.abs(b.t-e.t)?a:b);return [vec(e.data.position),vec(world.data.units.find(t=>t.id===e.data.targetId).position)];});
-const legacy=(a,b)=>{const steps=Math.min(100,Math.max(6,Math.ceil(a.distance(b)/250)));for(let i=1;i<steps;i++){const p=a.clone().add(b.clone().sub(a).scale(i/steps));if(p.y<terrainHeight(p.x,p.z)+2)return false;}return true;};
-for(const [name,fn]of [['previous',legacy],['optimized',clearWeaponLine]]){let visible=0;const start=performance.now();for(let i=0;i<400;i++)for(const [a,b]of paths)visible+=Number(fn(a,b));console.log(JSON.stringify({test:'actual missile launch sight rays',implementation:name,checks:400*paths.length,visible,cpuMs:+(performance.now()-start).toFixed(2)}));}
+const missileEvents = log.entries.filter(
+    (e) => e.kind === 'combat' && e.data.type === 'missile-launch',
+  ),
+  paths = missileEvents.map((e) => {
+    const world = worlds.reduce((a, b) => (Math.abs(a.t - e.t) < Math.abs(b.t - e.t) ? a : b));
+    return [
+      vec(e.data.position),
+      vec(world.data.units.find((t) => t.id === e.data.targetId).position),
+    ];
+  });
+const legacy = (a, b) => {
+  const steps = Math.min(100, Math.max(6, Math.ceil(a.distance(b) / 250)));
+  for (let i = 1; i < steps; i++) {
+    const p = a.clone().add(
+      b
+        .clone()
+        .sub(a)
+        .scale(i / steps),
+    );
+    if (p.y < terrainHeight(p.x, p.z) + 2) return false;
+  }
+  return true;
+};
+for (const [name, fn] of [
+  ['previous', legacy],
+  ['optimized', clearWeaponLine],
+]) {
+  let visible = 0;
+  const start = performance.now();
+  for (let i = 0; i < 400; i++) for (const [a, b] of paths) visible += Number(fn(a, b));
+  console.log(
+    JSON.stringify({
+      test: 'actual missile launch sight rays',
+      implementation: name,
+      checks: 400 * paths.length,
+      visible,
+      cpuMs: +(performance.now() - start).toFixed(2),
+    }),
+  );
+}

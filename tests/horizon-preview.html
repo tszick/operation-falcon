@@ -1,6 +1,78 @@
-<!doctype html><html lang="hu"><meta charset="utf-8"><title>Hegypanoráma · horizontpróba</title><style>body{margin:0;overflow:hidden;background:#071211;color:#baf37d;font:14px monospace}aside{position:fixed;top:14px;left:14px;background:#071211dc;padding:10px}button{padding:8px;color:#baf37d;background:#1d3528;border:1px solid #536a48}</style><canvas id="world"></canvas><aside><button id="north">Észak</button> <button id="east">Kelet</button> <button id="seam">Körbezárás</button> <button id="bank">Bedöntés</button> <button id="high">Magasan</button><p id="status"></p></aside><script type="module">
-import {Renderer} from '/src/renderer.js';import {configureTerrain} from '/src/terrain.js';import {aircraft} from '/src/aircraftSpec.js';import {createAircraft} from '/src/physics.js';import {Weapons} from '/src/weapons.js';import {Targeting} from '/src/targeting.js';import {Vec3,Quat} from '/src/math.js';import {horizonImage} from '/src/horizon.js';
-configureTerrain({id:'none'},new Vec3(22000,0,0),()=>.99);const r=new Renderer(document.getElementById('world')),s=createAircraft(aircraft[0]),w=new Weapons(),aim=new Targeting();s.position=new Vec3(0,6000,0);s.onGround=false;s.airborne=true;s.gear=false;s.flaps=false;s.flapPosition=0;s.velocity=new Vec3(0,0,180);s.speed=s.ias=180;s.agl=6000;s.orientation=Quat.euler(0,-.06,0);
-function view(yaw=0,bank=0,alt=6000){s.position.y=alt;s.agl=alt;s.orientation=Quat.euler(yaw,-.06,bank);}for(const [id,args]of Object.entries({north:[0],east:[Math.PI/2],seam:[Math.PI],bank:[.5,.5],high:[0,0,12000]}))document.getElementById(id).onclick=()=>view(...args);
-function frame(){r.render(s,[],w,aim);document.getElementById('status').textContent=horizonImage()?'Hegypanoráma betöltve · '+Math.round(s.position.y)+' m':'Panoráma betöltése…';requestAnimationFrame(frame);}frame();
-</script></html>
+<!doctype html>
+<html lang="hu">
+  <meta charset="utf-8" /><title>Hegypanoráma · horizontpróba</title
+  ><style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #071211;
+      color: #baf37d;
+      font: 14px monospace;
+    }
+    aside {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      background: #071211dc;
+      padding: 10px;
+    }
+    button {
+      padding: 8px;
+      color: #baf37d;
+      background: #1d3528;
+      border: 1px solid #536a48;
+    }</style
+  ><canvas id="world"></canvas>
+  <aside>
+    <button id="north">Észak</button> <button id="east">Kelet</button>
+    <button id="seam">Körbezárás</button> <button id="bank">Bedöntés</button>
+    <button id="high">Magasan</button>
+    <p id="status"></p>
+  </aside>
+  <script type="module">
+    import { Renderer } from '/src/renderer.js';
+    import { configureTerrain } from '/src/terrain.js';
+    import { aircraft } from '/src/aircraftSpec.js';
+    import { createAircraft } from '/src/physics.js';
+    import { Weapons } from '/src/weapons.js';
+    import { Targeting } from '/src/targeting.js';
+    import { Vec3, Quat } from '/src/math.js';
+    import { horizonImage } from '/src/horizon.js';
+    configureTerrain({ id: 'none' }, new Vec3(22000, 0, 0), () => 0.99);
+    const r = new Renderer(document.getElementById('world')),
+      s = createAircraft(aircraft[0]),
+      w = new Weapons(),
+      aim = new Targeting();
+    s.position = new Vec3(0, 6000, 0);
+    s.onGround = false;
+    s.airborne = true;
+    s.gear = false;
+    s.flaps = false;
+    s.flapPosition = 0;
+    s.velocity = new Vec3(0, 0, 180);
+    s.speed = s.ias = 180;
+    s.agl = 6000;
+    s.orientation = Quat.euler(0, -0.06, 0);
+    function view(yaw = 0, bank = 0, alt = 6000) {
+      s.position.y = alt;
+      s.agl = alt;
+      s.orientation = Quat.euler(yaw, -0.06, bank);
+    }
+    for (const [id, args] of Object.entries({
+      north: [0],
+      east: [Math.PI / 2],
+      seam: [Math.PI],
+      bank: [0.5, 0.5],
+      high: [0, 0, 12000],
+    }))
+      document.getElementById(id).onclick = () => view(...args);
+    function frame() {
+      r.render(s, [], w, aim);
+      document.getElementById('status').textContent = horizonImage()
+        ? 'Hegypanoráma betöltve · ' + Math.round(s.position.y) + ' m'
+        : 'Panoráma betöltése…';
+      requestAnimationFrame(frame);
+    }
+    frame();
+  </script>
+</html>

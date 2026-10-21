@@ -1,14 +1,183 @@
-import {debriefMarkup} from './flightDebrief.js';
-import {loadCurrentFlight,downloadFlightLog} from './flightLogStorage.js';
-import {analyzeFlight} from './flightLogAnalysis.js';
-const $=id=>document.getElementById(id),escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmt=x=>Number.isFinite(x)?x.toFixed(1):'—',time=x=>`${Math.floor(x/60)}:${Math.floor(x%60).toString().padStart(2,'0')}`;
-const names={'mission-start':'Küldetés kezdete','phase':'Fázis','controls':'Irányítás','key':'Billentyű','configuration':'Konfiguráció','warning':'Figyelmeztetés','threat-warning':'Fenyegetés','unit-state':'Egység állapota','projectile-start':'Lövedék indul','projectile-end':'Lövedék megszűnt','touchdown':'Földetérés','damage':'Sérülés','combat':'Harc','pause':'Szünet','resume':'Folytatás','mission-end':'Küldetés vége','target-lock':'Befogás','objectives':'Feladatok','jamming':'Zavarás','message':'Fedélzeti üzenet','flight-state':'Repülési állapot'};
-let log=null,analysis=null,busy=false,session=null;
-const rows=(id,data)=>{$(id).innerHTML=data.map(([key,value])=>`<tr><th>${escape(key)}</th><td>${escape(value)}</td></tr>`).join('');};
-function draw(){const canvas=$('log-plot'),w=canvas.width=Math.max(300,Math.round(canvas.getBoundingClientRect().width)),h=canvas.height=190,c=canvas.getContext('2d'),samples=analysis.samples;c.clearRect(0,0,w,h);c.fillStyle='#071511';c.fillRect(0,0,w,h);for(const [key,color]of [['iasKmh','#d9cc79'],['aglM','#76c3d8']]){const max=samples.reduce((max,e)=>Math.max(max,e.data.player[key]||0),1);c.beginPath();c.strokeStyle=color;samples.forEach((e,i)=>{const x=20+e.t/Math.max(1,analysis.end)*(w-40),y=h-25-(e.data.player[key]||0)/max*(h-45);i?c.lineTo(x,y):c.moveTo(x,y);});c.stroke();c.fillStyle=color;c.font='10px Consolas';c.fillText(`${key==='iasKmh'?'IAS':'AGL'} max ${max.toFixed(0)} ${key==='iasKmh'?'km/h':'m'}`,20,key==='iasKmh'?13:27);}}
-function selectSample(){const e=analysis.samples[Number($('log-time').value)];if(!e)return;const p=e.data.player,t=e.t;$('log-time-label').textContent=time(t)+` (${t.toFixed(2)} s)`;rows('log-player',[["Fázis",e.data.phase],['IAS / TAS',`${fmt(p.iasKmh)} / ${fmt(p.tasKmh)} km/h`],['MSL / AGL',`${fmt(p.position.y)} / ${fmt(p.aglM)} m`],['V/S',`${fmt(p.verticalSpeedMps)} m/s`],['Orr / bedöntés',`${fmt(p.pitchDeg)}° / ${fmt(p.bankDeg)}°`],['Irány / G',`${fmt(p.headingDeg)}° / ${fmt(p.g)}`],['Gáz / utánégető',`${fmt(p.throttle*100)}% / ${p.afterburner?'BE':'KI'}`],['Tömeg / üzemanyag',`${fmt(p.massKg)} / ${fmt(p.fuelKg)} kg`],['Sérülés',`${fmt(p.damage)}%`],['Futó / fékszárny',`${p.gear?'KINN':'BENN'} / ${fmt(p.flapPosition*100)}%`],['Légfék',p.airbrake?'NYITVA':'ZÁRVA'],['Célsebesség',`${fmt(p.approach?.targetSpeed)} km/h`],['Siklópálya-eltérés',`${fmt(p.approach?.glideError)} m`],['Figyelmeztetés',p.warning||'—']]);$('log-raw-player').textContent=JSON.stringify(p,null,2);
- const worlds=log.entries.filter(x=>x.kind==='world');let world=null;for(const w of worlds){if(w.t>t)break;world=w;}const units=world?.data.units||[];$('log-units').innerHTML=units.map(u=>`<tr><td>${escape(u.name||u.id)}</td><td>${escape({ally:'Baráti',enemy:'Ellenség',neutral:'Semleges'}[u.team]||u.team)}</td><td>${escape(u.exited?'Kijutott':u.alive===false?'Megsemmisült':`${fmt(u.damage)}% sérülés · ${u.ai?.targetId||u.assignedTarget||'—'}`)}</td></tr>`).join('');$('log-raw-world').textContent=JSON.stringify(world?.data||{},null,2);}
-function events(){const filter=$('log-event-filter').value,all=analysis.events.filter(e=>filter==='all'||e.kind===filter),shown=all.slice(-500);$('log-events').innerHTML=shown.map(e=>`<tr><td>${e.t.toFixed(3)} s</td><td>${escape(names[e.kind]||e.kind)}</td><td><details><summary>${escape(typeof e.data==='string'?(e.data||'Nincs figyelmeztetés'):e.data?.label||e.data?.name||e.data?.reason||e.data?.type||e.data?.code||e.data?.result||'Részletek')}</summary><pre>${escape(JSON.stringify(e.data,null,2))}</pre></details></td></tr>`).join('');$('log-event-count').textContent=`${all.length} esemény; a táblázat a legutóbbi ${shown.length} találatot mutatja. A letöltés a teljes naplót tartalmazza.`;}
-async function refresh(){if(busy)return;busy=true;try{const next=await loadCurrentFlight();if(!next){$('log-status').textContent='Még nincs napló. Frissítsd a játékot, indíts egy küldetést, majd nyomj itt Frissítést.';$('log-content').hidden=true;return;}log=next;analysis=analyzeFlight(log);const changed=session!==log.metadata.id;session=log.metadata.id;$('log-content').hidden=false;$('log-download').disabled=false;$('log-status').textContent=`${log.entries.length} bejegyzés · 10 Hz saját gép, 2 Hz világállapot; események a 120 Hz-es szimulációból. Helyben tárolva, előzmények nélkül.`;$('log-title').textContent=log.metadata.mission.name+' · '+log.metadata.aircraft.name;$('log-meta').textContent=`${new Date(log.metadata.startedAt).toLocaleString('hu-HU',{timeZone:'Europe/Budapest'})} · ${time(analysis.end)} repülési idő · ${analysis.result?.result||'folyamatban / szünet'}`;$('log-debrief').innerHTML=debriefMarkup(log);$('log-observations').innerHTML=analysis.observations.map(x=>`<li>${escape(x)}</li>`).join('');$('log-phases').innerHTML=analysis.phases.map(p=>`<tr><td>${escape(p.label)}</td><td>${time(p.start)}</td><td>${time(p.end)}</td><td>${p.duration.toFixed(1)} s</td></tr>`).join('');const old=Number($('log-time').value);$('log-time').max=Math.max(0,analysis.samples.length-1);$('log-time').value=changed||$('log-live').checked?Math.max(0,analysis.samples.length-1):Math.min(old,analysis.samples.length-1);draw();selectSample();events();}catch(error){$('log-status').textContent='A helyi napló nem olvasható: '+error.message;}finally{busy=false;}}
-$('log-refresh').onclick=refresh;$('log-download').onclick=()=>log&&downloadFlightLog(log);$('log-time').oninput=()=>{$('log-live').checked=false;selectSample();};$('log-event-filter').onchange=events;addEventListener('resize',()=>analysis&&draw());setInterval(()=>{if($('log-live').checked&&!document.hidden)refresh();},3000);refresh();
+import { escapeHtml as escape } from './ui/html.js';
+import { debriefMarkup } from './flightDebrief.js';
+import { loadCurrentFlight, downloadFlightLog } from './flightLogStorage.js';
+import { analyzeFlight } from './flightLogAnalysis.js';
+const $ = (id) => document.getElementById(id);
+const fmt = (x) => (Number.isFinite(x) ? x.toFixed(1) : '—'),
+  time = (x) =>
+    `${Math.floor(x / 60)}:${Math.floor(x % 60)
+      .toString()
+      .padStart(2, '0')}`;
+const names = {
+  'mission-start': 'Küldetés kezdete',
+  phase: 'Fázis',
+  controls: 'Irányítás',
+  key: 'Billentyű',
+  configuration: 'Konfiguráció',
+  warning: 'Figyelmeztetés',
+  'threat-warning': 'Fenyegetés',
+  'unit-state': 'Egység állapota',
+  'projectile-start': 'Lövedék indul',
+  'projectile-end': 'Lövedék megszűnt',
+  touchdown: 'Földetérés',
+  damage: 'Sérülés',
+  combat: 'Harc',
+  pause: 'Szünet',
+  resume: 'Folytatás',
+  'mission-end': 'Küldetés vége',
+  'target-lock': 'Befogás',
+  objectives: 'Feladatok',
+  jamming: 'Zavarás',
+  message: 'Fedélzeti üzenet',
+  'flight-state': 'Repülési állapot',
+};
+let log = null,
+  analysis = null,
+  busy = false,
+  session = null;
+const rows = (id, data) => {
+  $(id).innerHTML = data
+    .map(([key, value]) => `<tr><th>${escape(key)}</th><td>${escape(value)}</td></tr>`)
+    .join('');
+};
+function draw() {
+  const canvas = $('log-plot'),
+    w = (canvas.width = Math.max(300, Math.round(canvas.getBoundingClientRect().width))),
+    h = (canvas.height = 190),
+    c = canvas.getContext('2d'),
+    samples = analysis.samples;
+  c.clearRect(0, 0, w, h);
+  c.fillStyle = '#071511';
+  c.fillRect(0, 0, w, h);
+  for (const [key, color] of [
+    ['iasKmh', '#d9cc79'],
+    ['aglM', '#76c3d8'],
+  ]) {
+    const max = samples.reduce((max, e) => Math.max(max, e.data.player[key] || 0), 1);
+    c.beginPath();
+    c.strokeStyle = color;
+    samples.forEach((e, i) => {
+      const x = 20 + (e.t / Math.max(1, analysis.end)) * (w - 40),
+        y = h - 25 - ((e.data.player[key] || 0) / max) * (h - 45);
+      i ? c.lineTo(x, y) : c.moveTo(x, y);
+    });
+    c.stroke();
+    c.fillStyle = color;
+    c.font = '10px Consolas';
+    c.fillText(
+      `${key === 'iasKmh' ? 'IAS' : 'AGL'} max ${max.toFixed(0)} ${key === 'iasKmh' ? 'km/h' : 'm'}`,
+      20,
+      key === 'iasKmh' ? 13 : 27,
+    );
+  }
+}
+function selectSample() {
+  const e = analysis.samples[Number($('log-time').value)];
+  if (!e) return;
+  const p = e.data.player,
+    t = e.t;
+  $('log-time-label').textContent = time(t) + ` (${t.toFixed(2)} s)`;
+  rows('log-player', [
+    ['Fázis', e.data.phase],
+    ['IAS / TAS', `${fmt(p.iasKmh)} / ${fmt(p.tasKmh)} km/h`],
+    ['MSL / AGL', `${fmt(p.position.y)} / ${fmt(p.aglM)} m`],
+    ['V/S', `${fmt(p.verticalSpeedMps)} m/s`],
+    ['Orr / bedöntés', `${fmt(p.pitchDeg)}° / ${fmt(p.bankDeg)}°`],
+    ['Irány / G', `${fmt(p.headingDeg)}° / ${fmt(p.g)}`],
+    ['Gáz / utánégető', `${fmt(p.throttle * 100)}% / ${p.afterburner ? 'BE' : 'KI'}`],
+    ['Tömeg / üzemanyag', `${fmt(p.massKg)} / ${fmt(p.fuelKg)} kg`],
+    ['Sérülés', `${fmt(p.damage)}%`],
+    ['Futó / fékszárny', `${p.gear ? 'KINN' : 'BENN'} / ${fmt(p.flapPosition * 100)}%`],
+    ['Légfék', p.airbrake ? 'NYITVA' : 'ZÁRVA'],
+    ['Célsebesség', `${fmt(p.approach?.targetSpeed)} km/h`],
+    ['Siklópálya-eltérés', `${fmt(p.approach?.glideError)} m`],
+    ['Figyelmeztetés', p.warning || '—'],
+  ]);
+  $('log-raw-player').textContent = JSON.stringify(p, null, 2);
+  const worlds = log.entries.filter((x) => x.kind === 'world');
+  let world = null;
+  for (const w of worlds) {
+    if (w.t > t) break;
+    world = w;
+  }
+  const units = world?.data.units || [];
+  $('log-units').innerHTML = units
+    .map(
+      (u) =>
+        `<tr><td>${escape(u.name || u.id)}</td><td>${escape({ ally: 'Baráti', enemy: 'Ellenség', neutral: 'Semleges' }[u.team] || u.team)}</td><td>${escape(u.exited ? 'Kijutott' : u.alive === false ? 'Megsemmisült' : `${fmt(u.damage)}% sérülés · ${u.ai?.targetId || u.assignedTarget || '—'}`)}</td></tr>`,
+    )
+    .join('');
+  $('log-raw-world').textContent = JSON.stringify(world?.data || {}, null, 2);
+}
+function events() {
+  const filter = $('log-event-filter').value,
+    all = analysis.events.filter((e) => filter === 'all' || e.kind === filter),
+    shown = all.slice(-500);
+  $('log-events').innerHTML = shown
+    .map(
+      (e) =>
+        `<tr><td>${e.t.toFixed(3)} s</td><td>${escape(names[e.kind] || e.kind)}</td><td><details><summary>${escape(typeof e.data === 'string' ? e.data || 'Nincs figyelmeztetés' : e.data?.label || e.data?.name || e.data?.reason || e.data?.type || e.data?.code || e.data?.result || 'Részletek')}</summary><pre>${escape(JSON.stringify(e.data, null, 2))}</pre></details></td></tr>`,
+    )
+    .join('');
+  $('log-event-count').textContent =
+    `${all.length} esemény; a táblázat a legutóbbi ${shown.length} találatot mutatja. A letöltés a teljes naplót tartalmazza.`;
+}
+async function refresh() {
+  if (busy) return;
+  busy = true;
+  try {
+    const next = await loadCurrentFlight();
+    if (!next) {
+      $('log-status').textContent =
+        'Még nincs napló. Frissítsd a játékot, indíts egy küldetést, majd nyomj itt Frissítést.';
+      $('log-content').hidden = true;
+      return;
+    }
+    log = next;
+    analysis = analyzeFlight(log);
+    const changed = session !== log.metadata.id;
+    session = log.metadata.id;
+    $('log-content').hidden = false;
+    $('log-download').disabled = false;
+    $('log-status').textContent =
+      `${log.entries.length} bejegyzés · 10 Hz saját gép, 2 Hz világállapot; események a 120 Hz-es szimulációból. Helyben tárolva, előzmények nélkül.`;
+    $('log-title').textContent = log.metadata.mission.name + ' · ' + log.metadata.aircraft.name;
+    $('log-meta').textContent =
+      `${new Date(log.metadata.startedAt).toLocaleString('hu-HU', { timeZone: 'Europe/Budapest' })} · ${time(analysis.end)} repülési idő · ${analysis.result?.result || 'folyamatban / szünet'}`;
+    $('log-debrief').innerHTML = debriefMarkup(log);
+    $('log-observations').innerHTML = analysis.observations
+      .map((x) => `<li>${escape(x)}</li>`)
+      .join('');
+    $('log-phases').innerHTML = analysis.phases
+      .map(
+        (p) =>
+          `<tr><td>${escape(p.label)}</td><td>${time(p.start)}</td><td>${time(p.end)}</td><td>${p.duration.toFixed(1)} s</td></tr>`,
+      )
+      .join('');
+    const old = Number($('log-time').value);
+    $('log-time').max = Math.max(0, analysis.samples.length - 1);
+    $('log-time').value =
+      changed || $('log-live').checked
+        ? Math.max(0, analysis.samples.length - 1)
+        : Math.min(old, analysis.samples.length - 1);
+    draw();
+    selectSample();
+    events();
+  } catch (error) {
+    $('log-status').textContent = 'A helyi napló nem olvasható: ' + error.message;
+  } finally {
+    busy = false;
+  }
+}
+$('log-refresh').onclick = refresh;
+$('log-download').onclick = () => log && downloadFlightLog(log);
+$('log-time').oninput = () => {
+  $('log-live').checked = false;
+  selectSample();
+};
+$('log-event-filter').onchange = events;
+addEventListener('resize', () => analysis && draw());
+setInterval(() => {
+  if ($('log-live').checked && !document.hidden) refresh();
+}, 3000);
+refresh();

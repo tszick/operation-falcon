@@ -1,193 +1,1153 @@
-import {missions} from './missionCatalog.js';
-const guide=(id,name,description,steps,watch,pitfalls,related=[],sections=[])=>({id:'guide-'+id,name,description,kind:'guide',category:'Repülési fázis / pilótaútmutató',steps,watch,pitfalls,related,sections});
-export const pilotEntries=[
- guide('low-flight','Alacsony repülés · radar és tereptakarás','Az alacsony repülés csökkentheti a radaros észlelhetőséget. Nem kapcsolható láthatatlanság és nem garantált rakétavédelem.',[
- ['AGL','A talaj feletti magasságot nézd, ne az MSL-t. Keress biztonságos útvonalat a völgyekben, hagyj időt a felhúzásra.'],
- ['TEREP','A közted és a radar között lévő hegy elvághatja az érzékelést és a hordozói radaros támogatást. Ugyanez a saját radarodra is érvényes.'],
- ['SZÖG','A játék általános földi rakétaradarjának alsó nyalábszéle +0,15° az antennához képest. A túl lapos vagy lefelé eső célirány nem ad befogást vagy új rakétaindítást. Ez játékprofil, nem minden valós légvédelem tulajdonsága.'],
- ['VESZÉLY','A közeli radar, a felülről rád néző repülő és az optikailag célzó gépágyú továbbra is veszélyes. A földközeli repülés önmagában nem állít meg egy már önállóan követő rakétát.'],
- ['C','Rakéta közeledésekor időzíts elterelőt és kitérést. A saját és az ellenséges radarokra ugyanazok a korlátok vonatkoznak.']
- ],['Radarhatótáv és látókúp; talaj- és dombtakarás; a földgörbülethez tartozó radarhorizont is számít.','A radarhorizont szabványos légköri törést közelítő 4/3 Föld-sugárral készül. Nincs univerzális biztonságos repülési magasság.'],['A generikus SAM +0,15°-os alsó szöge és az egység referenciapontjától mért 6 m-es antenna játékhangolás, nem minősített típusadat.','A domb mögötti, korábbról ismert HUD-jel nem bizonyít friss radaros befogást. Alacsonyan a terepnek ütközés kockázata nő.'],['sam-system','guide-air-combat','cm-chaff'],[{title:'A fizikai elv forrása',paragraphs:['US Navy radar-leírás: https://www.history.navy.mil/research/library/online-reading-room/title-list-alphabetically/u/operational-characteristics-of-radar-classified-by-tactical-application.html — a radar rálátási és horizontkorlátja. A játék alsó nyalábszöge önálló közelítés.']}]),
- guide('transport-flight','Szállítórepülés · Nomad One','A szállítós feladatnál vadászkísérő helyett magát a védendő gépet is vezetheted.',[
- ['HANGÁR','Védd meg a szállítógépet: válassz C-130H, C-130J, Il-76, Il-76MD-90A vagy Y-20 típust az országcsoportban. A játék két Falcon vadászt ad melléd.'],
- ['KIJÁRAT','Már a levegőből indulsz. Kövesd a kék KIJÁRAT jelzést észak felé. A kijárat vonalát a tervezett útvonaltól legfeljebb 5 km oldaleltéréssel, repülve kell átlépned.'],
- ['C / 5 / 6','A gép fegyvertelen, de kap vegyes elterelőt, infracsapdát és dipólköteget. A készlet véges. A kísérők a téged fenyegető vadászt részesítik előnyben.'],
- ['MANŐVER','Nagy tömeg és kis terhelési határ: enyhe bedöntés, elegendő sebesség és magasságtartalék. A szállító nem vadászgép.'],
- ['HAZATÉRÉS','A kijárat elérése után fordulj vissza a BASE felé. A sikerhez le is kell szállnod és megállnod.']
- ],['A feladatsor a saját szállítód állapotát és a kijáratig hátralévő utat mutatja.','Vasfátyol: szállítót választva külön, a hangárban jelzett kimenekítési szakaszt repülsz. Fegyveres géppel az eredeti teljes művelet indul.'],['A szállító 45 km-es taktikai érzékelője játékbeli helyzetkép, nem a valódi időjárásradar harci képességének állítása.','A repülési együtthatók, ekvivalens légcsavaros tolóerő, elterelőkészlet és kitérési döntések közelítések.','A gépi szállítók mindkét oldalon késleltetve elterelőznek és korlátozott bedöntéssel kitérnek, majd visszaállnak a kijárati útvonalra. A súlyos sérülés továbbra is ronthatja a kormányozhatóságot.'],['transport','friendly-transport','guide-return','guide-landing']),
+import { escapeHtml as escape } from './ui/html.js';
+import { missions } from './missionCatalog.js';
+const guide = (id, name, description, steps, watch, pitfalls, related = [], sections = []) => ({
+  id: 'guide-' + id,
+  name,
+  description,
+  kind: 'guide',
+  category: 'Repülési fázis / pilótaútmutató',
+  steps,
+  watch,
+  pitfalls,
+  related,
+  sections,
+});
+export const pilotEntries = [
+  guide(
+    'low-flight',
+    'Alacsony repülés · radar és tereptakarás',
+    'Az alacsony repülés csökkentheti a radaros észlelhetőséget. Nem kapcsolható láthatatlanság és nem garantált rakétavédelem.',
+    [
+      [
+        'AGL',
+        'A talaj feletti magasságot nézd, ne az MSL-t. Keress biztonságos útvonalat a völgyekben, hagyj időt a felhúzásra.',
+      ],
+      [
+        'TEREP',
+        'A közted és a radar között lévő hegy elvághatja az érzékelést és a hordozói radaros támogatást. Ugyanez a saját radarodra is érvényes.',
+      ],
+      [
+        'SZÖG',
+        'A játék általános földi rakétaradarjának alsó nyalábszéle +0,15° az antennához képest. A túl lapos vagy lefelé eső célirány nem ad befogást vagy új rakétaindítást. Ez játékprofil, nem minden valós légvédelem tulajdonsága.',
+      ],
+      [
+        'VESZÉLY',
+        'A közeli radar, a felülről rád néző repülő és az optikailag célzó gépágyú továbbra is veszélyes. A földközeli repülés önmagában nem állít meg egy már önállóan követő rakétát.',
+      ],
+      [
+        'C',
+        'Rakéta közeledésekor időzíts elterelőt és kitérést. A saját és az ellenséges radarokra ugyanazok a korlátok vonatkoznak.',
+      ],
+    ],
+    [
+      'Radarhatótáv és látókúp; talaj- és dombtakarás; a földgörbülethez tartozó radarhorizont is számít.',
+      'A radarhorizont szabványos légköri törést közelítő 4/3 Föld-sugárral készül. Nincs univerzális biztonságos repülési magasság.',
+    ],
+    [
+      'A generikus SAM +0,15°-os alsó szöge és az egység referenciapontjától mért 6 m-es antenna játékhangolás, nem minősített típusadat.',
+      'A domb mögötti, korábbról ismert HUD-jel nem bizonyít friss radaros befogást. Alacsonyan a terepnek ütközés kockázata nő.',
+    ],
+    ['sam-system', 'guide-air-combat', 'cm-chaff'],
+    [
+      {
+        title: 'A fizikai elv forrása',
+        paragraphs: [
+          'US Navy radar-leírás: https://www.history.navy.mil/research/library/online-reading-room/title-list-alphabetically/u/operational-characteristics-of-radar-classified-by-tactical-application.html — a radar rálátási és horizontkorlátja. A játék alsó nyalábszöge önálló közelítés.',
+        ],
+      },
+    ],
+  ),
+  guide(
+    'transport-flight',
+    'Szállítórepülés · Nomad One',
+    'A szállítós feladatnál vadászkísérő helyett magát a védendő gépet is vezetheted.',
+    [
+      [
+        'HANGÁR',
+        'Védd meg a szállítógépet: válassz C-130H, C-130J, Il-76, Il-76MD-90A vagy Y-20 típust az országcsoportban. A játék két Falcon vadászt ad melléd.',
+      ],
+      [
+        'KIJÁRAT',
+        'Már a levegőből indulsz. Kövesd a kék KIJÁRAT jelzést észak felé. A kijárat vonalát a tervezett útvonaltól legfeljebb 5 km oldaleltéréssel, repülve kell átlépned.',
+      ],
+      [
+        'C / 5 / 6',
+        'A gép fegyvertelen, de kap vegyes elterelőt, infracsapdát és dipólköteget. A készlet véges. A kísérők a téged fenyegető vadászt részesítik előnyben.',
+      ],
+      [
+        'MANŐVER',
+        'Nagy tömeg és kis terhelési határ: enyhe bedöntés, elegendő sebesség és magasságtartalék. A szállító nem vadászgép.',
+      ],
+      [
+        'HAZATÉRÉS',
+        'A kijárat elérése után fordulj vissza a BASE felé. A sikerhez le is kell szállnod és megállnod.',
+      ],
+    ],
+    [
+      'A feladatsor a saját szállítód állapotát és a kijáratig hátralévő utat mutatja.',
+      'Vasfátyol: szállítót választva külön, a hangárban jelzett kimenekítési szakaszt repülsz. Fegyveres géppel az eredeti teljes művelet indul.',
+    ],
+    [
+      'A szállító 45 km-es taktikai érzékelője játékbeli helyzetkép, nem a valódi időjárásradar harci képességének állítása.',
+      'A repülési együtthatók, ekvivalens légcsavaros tolóerő, elterelőkészlet és kitérési döntések közelítések.',
+      'A gépi szállítók mindkét oldalon késleltetve elterelőznek és korlátozott bedöntéssel kitérnek, majd visszaállnak a kijárati útvonalra. A súlyos sérülés továbbra is ronthatja a kormányozhatóságot.',
+    ],
+    ['transport', 'friendly-transport', 'guide-return', 'guide-landing'],
+  ),
 
- guide('practice-bombing','Gyakorlóbombázás · T–45C és inert bombák','Negyedik gyakorlat: kifutóról indulás, három bombából legalább két célkör-találat, majd sikeres leszállás és megállás.',[
- ['GÉP','Mind a négy gyakorlópálya rögzített típusa a T–45C Goshawk. Egy sugárhajtómű, utánégető nélkül; harci küldetéshez nem választható. Az első három gyakorlat fegyvertelen. Felszálláskor a Mission Control aktuális, tömegtől függő sebességtartományát kövesd.'],
- ['FELSZÁLLÁS','R: teljes gáz. Fokozatosan emeld az orrot, emelkedés után G: futómű, X: fékszárny be. A gyakorlócél körülbelül 10 km-re északkeletre van a bázistól.'],
- ['RÁREPÜLÉS','Keress egyenes rárepülést a kiszuperált tank körüli körre, nagyjából 400–700 m talaj feletti magasságból. Figyeld az IAS-t és az AGL-t. 4: inert bomba; a CCIP a várható becsapódást mutatja.'],
- ['OLDÁS','Amikor a CCIP a külső célkör belsejébe ér, röviden nyomj Szóközt. Ne tartsd nyomva: gyorsan elhasználhatod a három bombát. Elhibázott rárepülésnél fordulj vissza kellő magasságban; ne zuhanj utána a jelnek.'],
- ['PONTOZÁS','A külső kör 50 m sugarú. A tényleges talajbecsapódás számít, nem a tank eltalálása vagy a befogás. Ugyanabba a körbe legalább két bombának kell érkeznie. A tank és a célkör megmarad, a bombának nincs sebzése vagy robbanása.'],
- ['HAZATÉRÉS','Két találat után fordulj a BASE felé, N: leszállási segéd, G: futómű, X: fékszárny. Szállj le és Ctrl-lal állj meg. A két találat önmagában még nem győzelem. Nincs újratöltés; ha már nem érhető el két találat, a gyakorlat sikertelen.']
- ],['CCIP helyzete, AGL, stabil IAS, célkör-találatok és megmaradt bombák.'],['A tankon kívüli, de körön belüli becsapódás is jó. A körön kívüli közeli mellé nem számít találatnak.','A valós Mk 76 használhat jelzőpatront; a játék teljesen inert változatot és képernyős becsapódásjelölést használ.','A T–45C a haditengerészeti alapkiképzés valós típusa; a pályák nem egy hivatalos TOPGUN tanterv másolatai.'],['t45','target-range','weapon-mk76','guide-takeoff','guide-landing']),
- guide('engine-damage','Hajtóműhibák és leváló alkatrészek','Minden hajtóműnek külön állapota van; nem egy teljes bal vagy jobb oldali motorcsoport sérül egyszerre.',[
- ['ÁLLAPOTRAJZ','A sárga–piros sérülésrajz a konkrét hajtóművet mutatja. Egy motor teljes kiesése önmagában nem feltétlenül jelent végzetes szerkezeti kárt. A naplóban a motorok állapota és a találat helye is szerepel.'],
- ['TOLÓERŐ','A tolóerő a működő motorok együttes teljesítménye. Kétmotoros gépnél egy ép motor kiesése 50%, nyolcmotoros B–52-nél 12,5% névleges veszteség. A részlegesen sérült motor gyengülhet.'],
- ['ELLENKORMÁNYZÁS','Az eltérő bal–jobb tolóerő elfordítja a gépet; a külső motor kiesése nagyobb nyomatékot okoz. Finom oldalkormány és bedöntés segíthet, de a maradék teljesítmény nem mindig elég a magasságtartáshoz. A saját és ellenséges AI is ellenkormányoz.'],
- ['SZÁRNYVESZTESÉG','A szárnyra szerelt gondolák, légcsavarok és tartók a szárnnyal együtt leválnak. A törzsre szerelt motorok megmaradnak. Végzetes kárnál a külső kamera a becsapódásig követi a gépet.'],
- ['REMEGÉS','Súlyos károsodás erősebb fizikai billegést és pilótanézeti remegést okoz. A csökkentett mozgás beállítás kikapcsolja a kameraremegést, a fizikai sérülést nem.']
- ],['Működő motorok száma, IAS, V/S és sérülésrajz; a gázállás nem a ténylegesen megmaradt tolóerő százaléka.'],['Kerüld a nagy G-t és a meredek emelkedést. Ha még kormányozható a gép, tervezz visszatérést.','A számítás játékmeneti közelítés, nem hitelesített sérültgép-repülési eljárás.'],['guide-damage','guide-return','guide-landing']),
+  guide(
+    'practice-bombing',
+    'Gyakorlóbombázás · T–45C és inert bombák',
+    'Negyedik gyakorlat: kifutóról indulás, három bombából legalább két célkör-találat, majd sikeres leszállás és megállás.',
+    [
+      [
+        'GÉP',
+        'Mind a négy gyakorlópálya rögzített típusa a T–45C Goshawk. Egy sugárhajtómű, utánégető nélkül; harci küldetéshez nem választható. Az első három gyakorlat fegyvertelen. Felszálláskor a Mission Control aktuális, tömegtől függő sebességtartományát kövesd.',
+      ],
+      [
+        'FELSZÁLLÁS',
+        'R: teljes gáz. Fokozatosan emeld az orrot, emelkedés után G: futómű, X: fékszárny be. A gyakorlócél körülbelül 10 km-re északkeletre van a bázistól.',
+      ],
+      [
+        'RÁREPÜLÉS',
+        'Keress egyenes rárepülést a kiszuperált tank körüli körre, nagyjából 400–700 m talaj feletti magasságból. Figyeld az IAS-t és az AGL-t. 4: inert bomba; a CCIP a várható becsapódást mutatja.',
+      ],
+      [
+        'OLDÁS',
+        'Amikor a CCIP a külső célkör belsejébe ér, röviden nyomj Szóközt. Ne tartsd nyomva: gyorsan elhasználhatod a három bombát. Elhibázott rárepülésnél fordulj vissza kellő magasságban; ne zuhanj utána a jelnek.',
+      ],
+      [
+        'PONTOZÁS',
+        'A külső kör 50 m sugarú. A tényleges talajbecsapódás számít, nem a tank eltalálása vagy a befogás. Ugyanabba a körbe legalább két bombának kell érkeznie. A tank és a célkör megmarad, a bombának nincs sebzése vagy robbanása.',
+      ],
+      [
+        'HAZATÉRÉS',
+        'Két találat után fordulj a BASE felé, N: leszállási segéd, G: futómű, X: fékszárny. Szállj le és Ctrl-lal állj meg. A két találat önmagában még nem győzelem. Nincs újratöltés; ha már nem érhető el két találat, a gyakorlat sikertelen.',
+      ],
+    ],
+    ['CCIP helyzete, AGL, stabil IAS, célkör-találatok és megmaradt bombák.'],
+    [
+      'A tankon kívüli, de körön belüli becsapódás is jó. A körön kívüli közeli mellé nem számít találatnak.',
+      'A valós Mk 76 használhat jelzőpatront; a játék teljesen inert változatot és képernyős becsapódásjelölést használ.',
+      'A T–45C a haditengerészeti alapkiképzés valós típusa; a pályák nem egy hivatalos TOPGUN tanterv másolatai.',
+    ],
+    ['t45', 'target-range', 'weapon-mk76', 'guide-takeoff', 'guide-landing'],
+  ),
+  guide(
+    'engine-damage',
+    'Hajtóműhibák és leváló alkatrészek',
+    'Minden hajtóműnek külön állapota van; nem egy teljes bal vagy jobb oldali motorcsoport sérül egyszerre.',
+    [
+      [
+        'ÁLLAPOTRAJZ',
+        'A sárga–piros sérülésrajz a konkrét hajtóművet mutatja. Egy motor teljes kiesése önmagában nem feltétlenül jelent végzetes szerkezeti kárt. A naplóban a motorok állapota és a találat helye is szerepel.',
+      ],
+      [
+        'TOLÓERŐ',
+        'A tolóerő a működő motorok együttes teljesítménye. Kétmotoros gépnél egy ép motor kiesése 50%, nyolcmotoros B–52-nél 12,5% névleges veszteség. A részlegesen sérült motor gyengülhet.',
+      ],
+      [
+        'ELLENKORMÁNYZÁS',
+        'Az eltérő bal–jobb tolóerő elfordítja a gépet; a külső motor kiesése nagyobb nyomatékot okoz. Finom oldalkormány és bedöntés segíthet, de a maradék teljesítmény nem mindig elég a magasságtartáshoz. A saját és ellenséges AI is ellenkormányoz.',
+      ],
+      [
+        'SZÁRNYVESZTESÉG',
+        'A szárnyra szerelt gondolák, légcsavarok és tartók a szárnnyal együtt leválnak. A törzsre szerelt motorok megmaradnak. Végzetes kárnál a külső kamera a becsapódásig követi a gépet.',
+      ],
+      [
+        'REMEGÉS',
+        'Súlyos károsodás erősebb fizikai billegést és pilótanézeti remegést okoz. A csökkentett mozgás beállítás kikapcsolja a kameraremegést, a fizikai sérülést nem.',
+      ],
+    ],
+    [
+      'Működő motorok száma, IAS, V/S és sérülésrajz; a gázállás nem a ténylegesen megmaradt tolóerő százaléka.',
+    ],
+    [
+      'Kerüld a nagy G-t és a meredek emelkedést. Ha még kormányozható a gép, tervezz visszatérést.',
+      'A számítás játékmeneti közelítés, nem hitelesített sérültgép-repülési eljárás.',
+    ],
+    ['guide-damage', 'guide-return', 'guide-landing'],
+  ),
 
- guide('iron-veil','Vasfátyol · összetett művelet','Top-gun hadművelet több kirepüléssel. Az első csapás után kötelező egy köztes leszállás és feltöltés; a további ellátásokat te ütemezed.',[
- ['FOLYOSÓ','Semmisítsd meg a két SAM-rendszert. Az erősítés megállításához a híd VAGY a konvoj elegendő, de még az átkelés előtt: nagyjából 13 perced van.'],
- ['MELLÉKCÉLOK','A jelzavaró megsemmisítése visszaadja a radar/GPS használatát. Az üteg kiiktatása védi a szállító útvonalát. Ha a parancsnoki bunker a végső hullám előtt elpusztul, nem indul el a két kísérő vadász.'],
- ['FELTÖLTÉS','A folyosó megnyitása után térj a BASE-re, szállj le és állj meg. A korábban tett látogatás nem váltja ki ezt. Nomad One és a két Viper addig biztonságban vár.'],
- ['KÍSÉRÉS','Nomad One délről észak felé repül, a konvojt kívülről megkerülve és az üteg lőtávjának szélét érintve. Viper One és Two külön elfogóra kap feladatot. Az útvonal északi részén két ellenséges elfogó indul ellene. A szállító megsemmisülése végleges kudarc.'],
- ['ELLENCSAPÁS','Nomad kijutása után két bombázó oldalról indul a saját bázisod ellen. A kísérő vadászok csak akkor hiányoznak, ha időben romboltad le a bunkert. Az ép Viper gépek ilyenkor új bombázóelfogási parancsot kapnak; a saját rakétavédelem a bázist támadó, radarján észlelt bombázókat részesíti előnyben. A bombázók visszavonulása is semlegesíti a támadásukat, de a már kioldott fegyvereiket még ki kell várni.'],
- ['HAZATÉRÉS','A bázis túlélése és az ellencsapás visszaverése után a sikerhez még szállj le és állj meg. Útközben további leszállás és feltöltés is lehetséges; a világ és az idő közben tovább halad.']
- ],['Vegyes fegyverzetet tervezz: földi csapásmérés és légiharc is vár rád. Az ellátás az induláskor választott készletet állítja vissza.','A műszerfal az aktuális fázis legfontosabb céljait mutatja; a teljes feladatlista a kiértékelésben is megmarad.'],['A konvoj kilövése a híd lerombolása után külön mellékcél.','Mindkét Viper túlélése opcionális; egyikük elvesztése nem jelenti a küldetés végét.','Ne maradj a kijáratnál: a végső bombázók a saját repülőtér ellen indulnak.'],['guide-rearm','guide-jamming','guide-air-combat','guide-ground-unit','guide-landing']),
- guide('air-superiority','Légifölény · rajok és feladatok','Top-gun összecsapás: saját oldalon három, az ellenségnél négy négygépes raj, rajonként három vadász és egy bombázó. A saját oldalon te vagy az egyik gép; a többit a gép vezeti.',[
- ['HÍVÓJELEK','A saját rajad mindig Falcon, te Falcon One vagy. A másik két saját raj Ironfist és Viper, saját One–Four számozással. A bombázó is a raj tagja és rádiózik.'],
- ['2 / T','A vadászokkal szerezd meg a légifölényt: minden ellenséges repülőt le kell küzdeni. A baráti találatok és lelövések is beleszámítanak.'],
- ['3 / 4','Az ellenséges repteret is meg kell semmisíteni. A bombázóink erre tartanak; segíthetsz földi rakétával vagy bombával.'],
- ['BASE / N','A saját bázisnak túl kell élnie, végül térj haza és szállj le. A még teljesíthető feladatok közben köztes leszállással újratölthetsz.']
- ],['A kijelzőn külön látszik a 16 ellenséges gép, a reptér, a saját bázis és az opcionális rakétavédelem állapota.','A rajok már induláskor a levegőben vannak. A saját rajba véletlenszerűen kerülsz.'],['A rakétás légvédelem kiiktatása opcionális, de túlélve továbbra is veszélyes.','A hangár csapásmérő és közvetlen támogató gépei a saját raj bombázóhelyét foglalják el.'],['guide-air-combat','guide-ground-object','friendly-fighter','guide-rearm']),
- guide('canyon','A kanyon · gyakorlórepülés','Fegyvertelen, levegőből induló gyakorlat. Öt alacsony kapu után három kapu vezet át a záró gerincen. Nincs időlimit; a kijárati kapunál a gyakorlat sikeresen véget ér.',[
- ['A / D','Kis bedöntésekkel kövesd a völgyet. Az ellenkező gombbal hozd vissza a szárnyakat; a bedöntés nem áll vissza magától.'],
- ['W / S','Repülj sorban a türkiz kapukon: a völgyben 40–350 méter AGL a cél. Ha kihagysz egy kaput, biztonságos magasságban térj vissza, és az eredeti haladási irányban repülj át rajta.'],
- ['R / S','A gerinc előtt gyűjts sebességet, majd időben kezdd meg a fokozatos felhúzást. Kövesd a magas kapukat. A T–45-ön nincs utánégető: időben adj gázt, és ne húzd túl meredeken az orrát.'],
- ['W','A gerinc túloldalán finoman engedd vissza az orrot, és repülj át a kijáraton. Nem kell leszállni a gyakorlat befejezéséhez.']
- ],['AGL: a talaj a gerinc előtt gyorsan emelkedik.','IAS: a felhúzás sebességet fogyaszt; ne várd meg az átesést.','G: fokozatosan húzz, ne rántsd fel az orrot.','A radaron a türkiz útvonal és az aktuális kapu jelölése segít.'],['A dugóhúzó áteséses állapot, nem kötelező akadálykerülő manőver. Kis magasságon ne provokáld.','A kapuk sorrendje és haladási iránya számít; fölöttük elrepülve nem teljesülnek.'],['guide-instruments','guide-maneuvers']),
- guide('instruments','Alapkezelés és műszerek','Először tudd, mit állítasz, és mit jelez a kijelző. Az útmutató minden gépen ugyanarra a kezelési rendre épül.',[
- ['R / F','A gázállást növeled vagy csökkented. Elengedéskor a beállítás megmarad, de a sebesség tovább változhat az emelkedés, süllyedés és légellenállás miatt.'],
- ['A / D','A gépet döntöd. A bedöntés megmarad, ezért a gép tovább fordul. Az ellenkező gombbal hozd vissza vízszintbe.'],
- ['W / S','Orr le / orr fel. Apró mozdulatokkal dolgozz; a túl nagy orremelés elfogyaszthatja a sebességet.'],
- ['Q / E','Finom oldalkormány; gurulásnál kis iránykorrekcióhoz is használható.'],
- ['EGÉR','Belső nézetben a pilóta fejét fordítod, a gép iránya és a fegyverek nem fordulnak vele. Az egér megállása után a nézet visszatér előre; a következő mozdulat innen indul, a kurzor helyétől függetlenül. Alt: kurzor a műszerfalhoz; kattintás a tájra: nézelődés folytatása. Oldalra és fel/le korlátozottan nézhetsz; a V a farokgépágyús B–52 és Tu–95 hátsó lövészállására vált. Ott az egérrel a hátsó gépágyút célzod, Szóközzel tüzelhetsz, V-vel visszatérsz. Más típusnál nincs kézi külső nézet.'],
- ['0 / O','0: a minimap nagyítása 1×, 2× és 4× között körbelép; a nagyított nézet a saját gépen marad. O vagy kattintás a minimapre: Mission Control térkép, megállított idővel és teljes céljegyzékkel. Ott is használható a 0; O vagy Esc visszalép. A radarhatótáv, látókúp és zavarás ezen a térképen is számít.'],
- ['H / P','H: részletes súgó. P vagy Esc: szünet. A Mission Control a következő teendőket mutatja.']
- ],['IAS: manőverezésnél és leszállásnál a kijelzett sebességet figyeld.','MSL: tengerszint feletti magasság. AGL: terep feletti magasság, ez mutatja a talaj közelségét.','V/S: pozitív érték emelkedés, negatív süllyedés. A horizont a bedöntést, a G a terhelést mutatja.','FUEL TOT: maradék üzemanyag, ezer kilogrammban. 3,20 = 3200 kg. A műszer fölött az egérrel fogyasztási becslést is láthatsz.'],['A gáz megtartása nem sebességtartó automatika.','A gép nem szintez ki automatikusan.'],['guide-takeoff','guide-aiming','guide-landing'],[{title:'A három különböző célzójel',paragraphs:['A sebességirány-jel azt mutatja, merre haladsz ténylegesen, ami eltérhet az orr irányától. Nem ezt kell mindenáron középre kormányozni.','A gépágyú előretartási köre egy kijelölt mozgó célhoz becsül célzási irányt. A CCIP-kör pedig a bomba várható talajbecsapódását jelzi. Ezek eltérő feladatot látnak el.']}]),
- guide('rearm','Köztes leszállás és újraindulás','Ha a küldetés még teljesíthető, biztonságos leszállás és megállás után új, kijavított gépet kapsz teljes üzemanyaggal és az induláskor választott fegyverzettel.',[
- ['LESZÁLLÁS','Térj a saját bázisra, szállj le biztonságosan, gáz alapjáratra, Ctrl: állj meg. Nem elég csak hozzáérni a pályához.'],
- ['ELLÁTÁS','A sérülések megszűnnek, a tank, a lőszer, a rakéták és az elterelők feltöltődnek. A hangárban választott fegyver-összeállítás marad.'],
- ['R','A gép újra a kifutón áll, felszállásra készen. R-rel növelheted a gázt.'],
- ['KÜLDETÉS','Az idő és az ellenfelek nem indulnak újra. A következő hullám vagy a siló visszaszámlálása ellátás közben is folytatódik.'],
- ['CÉLOK','Ha az elsődleges cél már teljesült, a leszállás lezárja a küldetést. Elbukott kötelező cél vagy megsemmisült gép nem javítható vissza ezzel.']
- ],['A sikeres ellátás és a támadó hullámok a küldetésnaplóba is bekerülnek.'],['A leszállás és újabb kirepülés ideje alatt a védendő cél továbbra is veszélyben lehet.'],['guide-landing','guide-takeoff']),
- guide('maneuvers','Orsó, átfordulás és dugóhúzó','A játék térbeli fizikája kezeli a háton repülést, a bukfencet és az átesésből kialakuló dugóhúzót. A sebesség, tömeg, sérülés és magasság ténylegesen befolyásolja a sikerüket.',[
- ['ELŐKÉSZÍTÉS','A játékban nagy terep feletti magassággal gyakorolj. Futó, fékszárny és légfék behúzva; könnyebb fegyverzet és kevesebb üzemanyag több tartalékot hagy.'],
- ['A / D','Orsó: a hossztengely körül fordítod a gépet. Ez önmagában nem 180 fokos irányváltás; közben a repülési pálya és a magasság is változhat.'],
- ['S','Bukfenc: elegendő kezdősebességgel finoman húzd végig. Fent lassulsz, lefelé gyorsulsz; figyeld az IAS-t, AGL-t és G-t. L: a rásegítés a G mellett a túl nagy állásszöget is korlátozza.'],
- ['A / D → S','Split-S: félorsóval a hátára fordítod a gépet, majd pozitív húzással fél bukfencet repülsz lefelé. Visszafordít, de sok magasságot fogyaszt.'],
- ['S → A / D','Immelmann: felfelé végzett fél bukfenc, majd félorsóval vissza vízszintesbe. Emelkedés közben energiát veszítesz; kevés sebességgel ne erőltesd.'],
- ['W + Q / E','Dugóhúzóból kijövetel a játékban: engedd el a húzást és az orsózást, csökkentsd a gázt, orr le, a forgással ellentétes oldalkormány. Amint a forgás megszűnt, oldalkormány középre; gyorsulás után finoman vedd fel.'],
- ['KANYON','Kövesd a völgy vonalát, a fordulót időben kezdd. Az AGL és a tényleges sebességirány a fontos; a terep fölé rajzolt navigációs jel nem szabad repülési folyosó.']
- ],['A dugóhúzó áteséshez társuló önforgás; nem azonos az irányított orsóval.','Nehéz gépnél és nagy G-nél több sebesség kell ugyanahhoz a manőverhez.','A szimuláció egyszerűsített: nem egyes valódi típusok kiképzési eljárása.'],['A tartós teljes húzás rásegítés nélkül átesést okozhat.','A Split-S talaj közelében akkor is veszélyes, ha a gép még jól kormányozható.'],['guide-instruments','guide-air-combat']),
- guide('takeoff','Felszállás és emelkedés','Gyorsíts a pályán, emelkedj el, majd tisztítsd le a gépet a további repüléshez.',[
- ['R','Növeld a gázt. Ha a gép rendelkezik utánégetővel és szükség van rá, Shift-tel kapcsolhatod be.'],
- ['Q / E','Maradj a pálya középvonalán; csak apró gurulási korrekciókat adj.'],
- ['S','A felszállási jelzésnél finoman emeld az orrot. Ha még nem emelkedik, engedd el, és hagyd gyorsulni.'],
- ['G','Növekvő AGL és pozitív V/S mellett húzd be a futóművet.'],
- ['X','Stabil emelkedés és elegendő sebesség után húzd be a fékszárnyat. Ellenőrizd, hogy befejeződött-e a mozgás.'],
- ['W / R / F','Enyhíts a túl meredek emelkedésen, és állítsd be az utazáshoz szükséges gázt.']
- ],['IAS → AGL és V/S → futómű és fékszárny állapota.','A bal felső konfigurációs jelzés mutatja a kiengedett, mozgó és behúzott fékszárnyat.'],['Ne húzd az orrot folyamatosan csak azért, mert még nem emelkedik a gép.','Az X és a G kapcsoló: ismételt megnyomás megfordítja a parancsot.','Levegőből induló küldetésnél ez a fázis kimarad.'],['guide-intercept','guide-instruments']),
- guide('intercept','Elfogás és megközelítés','Juttasd magad elé a célt, mielőtt befogással vagy fegyverhasználattal próbálkozol.',[
- ['A / D','Keresd a célt a radaron és az irányjelzésen, majd rövid billentéssel kezdj ráfordulni.'],
- ['W / S','Igazíts a magasságon, közben figyeld a sebességet és a terep távolságát.'],
- ['ELLENBILLENTÉS','Mielőtt eléred a cél irányát, az ellenkező A/D gombbal hozd vízszintbe a szárnyakat.'],
- ['T / TAB','A célkereszt közelében lévő célt választja; egymáshoz közeli irányoknál a közelebbit. Újabb nyomás: a raj többi gépe, majd a többi raj, végül a földi célok, távolság szerint. Tartsd a célt a gép előtt, amíg felépül a befogás.']
- ],['A radar csak a saját látókúpján és hatótávján belüli célokat mutatja.','Céltávolság, irányskála, horizont, IAS és AGL.'],['A világban vagy irányjelzésen látható cél még nem feltétlen radarkontakt.','A T ismételgetése több cél esetén másik célra vált, és új befogást kezd.','Zavarózónában nincs működő célbefogás.'],['guide-aiming','guide-civil','guide-air-combat','guide-jamming']),
- guide('civil','Civil gép békés elfogása','A civil gépet visszafordítani kell, bármilyen sérülése küldetéskudarc.',[
- ['A / D / W / S','Közelíts a világoskék jelölésű civil repülőhöz; ne keverd össze a kék baráti egységekkel.'],
- ['T','Fogd be, és várd meg a sikeres elfogás jelzését.'],
- ['TŰZTILALOM','Ne indíts rakétát és ne lőj gépágyúval. A békés befogáshoz nem kell tüzelni.'],
- ['BASE','A visszafordulás megkezdése után elindulhatsz haza. Várd meg a biztonságos légtérelhagyást, majd szállj le és állj meg.']
- ],['Mission Control: befogás, visszafordulás és távozás állapota.'],['A befogás után nem szükséges folyamatosan célon tartani a civilt.','A civil távozása az elfogási feladat vége; a saját leszállás még szükséges a teljes sikerhez.'],['civil','guide-return','guide-landing']),
- guide('aiming','Célzás, befogás és indítási engedély','A radaros befogás, a lőtáv és a fegyver indíthatósága három külön feltétel.',[
- ['T / TAB','Válaszd ki az észlelt ellenséget, és várd meg a befogás felépülését. A támadási sorrendet te döntöd el.'],
- ['1 / 2 / 3 / 4','Válassz gépágyút, légiharc-rakétát, földi rakétát vagy bombát a ténylegesen felszerelt készletből.'],
- ['KIJELZŐ','Olvasd el a célbefogási panel üzenetét: a tiltás konkrét oka ott jelenik meg.'],
- ['SZÓKÖZ','A megfelelő fegyverrel és helyzetben indíts. Ágyúval rövid sorozatot, bombával időzített kioldást használj.']
- ],['BECSÜLT LŐTÁV: sebesség, magasság és célmozgás alapján változik; a névleges maximum nem garantált találat.','A KEDVEZŐ helyzet jobb tartalékot jelent. A HATÁRESET engedélyezett lehet, de könnyebben meghiúsul.','Gépágyúnál az előretartási kör, bombánál a CCIP segít; ezekhez nem kötelező a rakétás befogás.'],['Légiharc-rakéta nem indítható földi célra, földi rakéta repülőre.','Indítást tilthat a túl közeli/távoli cél, nagy szög, tereptakarás, zavarás, sérülés, kifogyott készlet vagy előkészítési idő.','A baráti egység nem választható irányított célként, de az irányítatlan fegyverektől megsérülhet.'],['guide-air-combat','guide-ground-object','guide-ground-unit','weapon-maverick','weapon-aim9m']),
- guide('air-combat','Támadás: légiharc','Rakétával megfelelő indítási helyzetet, gépágyúval közeli és stabil előretartást keress.',[
- ['2','Válaszd a légiharc-rakétát, majd T-vel fogj be egy ellenséges repülőt.'],
- ['A / D / W / S','Tartsd a célt a gép előtt. Ne a maximális lőtáv határáról várj biztos találatot.'],
- ['SZÓKÖZ','Indíts tűzkész helyzetben. A rávezetést igénylő fegyvernél tartsd a célt az érzékelő látómezejében; a fegyverlap megmondja, mikor válik önállóvá.'],
- ['1','Közelharcban választhatsz gépágyút. A mozgó cél elé célozz, az előretartási kör alapján; rövid sorozatokkal lőj.'],
- ['C / 5 / 6','Beérkező rakétánál használj megfelelő elterelőt és kitérő manővert, közben őrizd meg a sebességet és a tereptávolságot.']
- ],['Cél és lőtáv → IAS, G, horizont és AGL → újra a cél.','A rakéta motorjának kiégése után lassul; a nagy kanyarok további energiát emésztenek fel.'],['Egy találat nem mindig jelent megsemmisítést: nézd meg a cél és a feladat állapotát.','Ne próbálj elvesztett sebességgel, erős bedöntésben azonnal visszafordulni.'],['guide-aiming','guide-damage','cm-flare','cm-chaff'],[{title:'Ha az ellenség elment melletted',steps:[['ELLENŐRZÉS','Nézd meg az IAS-t, az AGL-t és a cél eltűnésének irányát. Ne rántsd fel rögtön az orrot.'],['A / D','Dönts a cél felé. Elengedve is fordulsz; finom W/S mozdulatokkal és gázzal tarts biztonságos repülési helyzetet.'],['R / F','Ha fogy a sebesség vagy túl nagy a süllyedés, enyhíts a manőveren és szükség szerint adj gázt. Ha túlszaladsz, utánégető ki és visszafogott gáz segíthet.'],['ELLENBILLENTÉS','A cél újra előre érkezésekor szintezz ki. Elvesztett befogásnál T, majd várd meg újra a feltöltődést.']]}]),
- guide('ground-object','Támadás: földi objektum','Álló építményre vagy telepítésre tervezz egyenes, biztonságosan megszakítható rárepülést.',[
- ['CÉLVÁLASZTÁS','Azonosítsd az objektumot: reptér, híd, bunker vagy jelzavaró. A reptér és a híd önmagában nem tüzel; a bunker igen. Külön védelmi egységek is lehetnek mellettük.'],
- ['3','Földi rakétával: cél a gép elé, T, befogás és megfelelő lőtáv, majd Szóköz. A rávezetés feltételeit a fegyver adatlapján ellenőrizd.'],
- ['4','Bombával: nyugodt támadóirány, CCIP a célra, majd Szóköz. A bomba a kioldás után nem korrigál, befogás nem kell.'],
- ['1','Gépágyúval közelről, rövid sorozatokkal támadj. Hagyj magasságot és helyet a felvételhez.'],
- ['S / A / D','Indítás vagy kioldás után időben vedd fel a gépet, hagyd el a cél környékét, és ellenőrizd az eredményt.']
- ],['AGL és V/S a rárepülés teljes ideje alatt.','CCIP, céltávolság, fegyverkészlet, tereptakarás és légvédelmi fenyegetés.'],['A BASE a saját reptered; ne téveszd össze az ellenséges repülőtérrel.','A jelzavaró zónáján belül új irányított rakétát nem indíthatsz.','Nagy objektum vagy erős bunker több találatot igényelhet. Sikertelen rárepülés után inkább új kör, mint az utolsó lövés a talaj előtt.'],['guide-ground-unit','guide-jamming','weapon-maverick','weapon-mk82'],[{title:'Híd és reptér: a feladatot olvasd el',paragraphs:['A kezdő konvojküldetésben a hidat még az átkelés előtt kell lerombolni; a konvoj megsemmisítése opcionális. A Top-gun feladatban az ellenséges reptér mellett a saját bázis felé tartó konvoj is kötelező cél.','A kijelölés sorrendje szabad, de az időkritikus feladatot ne hagyd a végére.']}]),
- guide('ground-unit','Támadás: földi egység','Mozgó konvoj és tüzelő légvédelmi egység ellen a cél mozgását és a visszalövést is számítsd bele.',[
- ['AZONOSÍTÁS','A konvoj az úton halad; az üteg és a rakétarendszer telepített állás. Ezek az egységek támadni is tudnak.'],
- ['3 / T','Ha van földi rakétád, fogd be az egységet, és közelíts az indítható tartományba. A rakéta mozgó földi célt is követhet.'],
- ['4','Mozgó konvoj bombázásakor a várható jövőbeli helyére dolgozz. Az aktuális helyére tett CCIP nem garantálja, hogy a becsapódáskor is ott lesz.'],
- ['1','Gépágyúval közelről, rövid és célzott rárepülésben támadj. A szórás és az energiavesztés miatt messziről kevésbé hatásos.'],
- ['KITÉRÉS','Ne maradj hosszan egyenes, kiszámítható rárepülésen. Időben emelkedj ki, fordulj biztonságos távolságra, és csak ezután támadj újra.']
- ],['A konvoj iránynyila és az út vonala segít megbecsülni a mozgást.','Rakétajelzés, robbanógránátok, AGL, IAS és sérült részek.'],['A légvédelmi üteg magasabban gránátokkal, alacsonyan gépágyúval is veszélyes lehet; nincs minden helyzetben biztonságos magasság.','A konvoj több járműből álló cél; az egész egység állapotát és a küldetés céljelzését figyeld.','Ha a konvoj a saját bázisodat támadja, ne halogasd addig, amíg odaér.'],['convoy','sam','sam-system','guide-aiming','guide-damage']),
- guide('return','Hazatérés és ráfordulás','A célok teljesítése után még működő géppel és elegendő üzemanyaggal kell visszaérned a pályához.',[
- ['FELADATOK','Ellenőrizd a Mission Control kötelező céljait. Az opcionális ellenfél miatt ne fogyaszd el a hazatéréshez szükséges üzemanyagot.'],
- ['BASE','Fordulj a saját reptér irányába. Kapcsold ki az utánégetőt, és ellenőrizd az üzemanyagot és a sérült rendszereket.'],
- ['PÁLYATENGELY','Ne közvetlenül a BASE pontjára célozz leszállni: kerülj a pálya egyik vége mögé, több kilométer helyet hagyva az egyenes megközelítéshez.'],
- ['A / D','Dél felől 000°, észak felől 180° irányon állj a pálya tengelyébe. Az irány elérése előtt ellenbillentéssel kezdj szintezni.'],
- ['N','Kapcsold be a leszállási segédet, ha szükséges. A normál küldetés megfelelő megközelítésnél automatikusan is felismerheti; az N-es kikapcsolás után kézzel kapcsold vissza.'],
- ['I','Leszállási módban ki-be kapcsolhatod a kékes-lila segédívet. A térképen a fordulót, a terepen az útvonal magasságát és a végső egyenest is követheted. Ez nem robotpilóta: továbbra is te vezeted a gépet.']
- ],['FUEL TOT, sérülések, radar, irányskála, AGL és V/S.','A pálya két széle szimmetrikusan fusson előtted. A BASE iránya önmagában nem jelenti, hogy pályairányban vagy.'],['A küszöb fölött ne próbálj nagy fordulóval azonnal leszállni.','Nagy oldaltérésnél teremts új megközelítési helyzetet. Zavarásban a navigációs jelek eltűnnek.'],['guide-landing','guide-go-around','guide-jamming','friendly-airbase']),
- guide('landing','Landolás: megközelítés, szintbe vétel, kifutás','Mindig az aktuális gép leszállási segédjének célsebességét kövesd. A harcból visszatérő gép nehezebb vagy sérültebb lehet a gyakorlónál.',[
- ['SHIFT / F','Utánégető ki, gáz vissza. A lassítást még a végső egyenes előtt kezdd meg.'],
- ['G / X','Futómű és fékszárny ki. Várd meg a tényleges kiengedést; a gombnyomás önmagában nem bizonyítja, hogy a rendszer működik.'],
- ['B / R / F','Ha alapgázon túl gyors vagy, nyisd a légféket és enyhíts a süllyedésen. A célsebességnél zárd vissza, majd kis gázkorrekciókkal tartsd a sebességet.'],
- ['A / D / W / S','Tartsd a pályatengelyt, a közel vízszintes szárnyhelyzetet és a siklópályát. Kis korrekciókkal dolgozz.'],
- ['S','A pálya fölött, körülbelül 10–15 méteren finoman kezdd a szintbe vételt. A földetérésre a süllyedés legyen 3 m/s alatt; ne emeld az orrot meredek új emelkedésbe.'],
- ['F / CTRL','Földetérés után gáz teljesen le, Ctrl nyomva: kerékfék. Maradj a pályán, amíg megállsz.']
- ],['IAS és a célsebesség → V/S és AGL → pályatengely, orrhelyzet és bedöntés → futómű és fékszárny.','Az ORR a gép irányát, az IRÁNY a haladás pályához viszonyított eltérését jelzi. Mindkettőt közelítsd a nullához.','A kékes-lila segédív a ráfordulást és a végső egyenest mutatja, I-vel kapcsolható. A szükséges sebességet és süllyedést továbbra is a műszereken ellenőrizd.','A siklásszög és az orrhelyzet eltérhet. A 3° megközelítés még nem elég a puha földetéréshez: a végén szintbe kell venni.'],['Ha a gáz már nulla, az F nem fékez tovább. Az utánégető, légfék és a süllyedés külön ellenőrzendő.','A futómű hiánya, a pályán kívüli érkezés, túl nagy süllyedés, bedöntés vagy rossz orrhelyzet becsapódást okozhat.','A sikerhez a kötelező célok teljesítése után le is kell lassulni; a földetérés önmagában nem a küldetés vége.'],['guide-go-around','guide-damage','guide-return'],[{title:'Miért könnyebb a Leszállás gyakorlat?',paragraphs:['A gyakorlat már a levegőből, pályára állítva, kevés üzemanyaggal és fegyverzet nélkül indul. A normál küldetésben a ráfordulást, magasságot és lassítást neked kell felépíteni; a maradék üzemanyag, fegyverzet és sérülés is számít.','Nincs külön könnyített leszállási fizika. Kövesd az aktuális célsebességet, és sérült gépnél hagyj nagyobb tartalékot a korrekciókra.']},{title:'Ha nem sikerült: nézd meg a naplót',paragraphs:['P → Repülési napló. A földetérési esemény megőrzi a kontaktus előtti sebességet, süllyedést, orrhelyzetet, bedöntést és a konkrét hibákat. A JSON-t még az új küldetés indítása előtt töltsd le, mert az új küldetés nullázza a naplót.']}]),
- guide('go-around','Átstartolás és új megközelítés','Ha alacsonyan még gyors vagy, meredeken süllyedsz vagy nagyot kellene fordulni, szakítsd meg a megközelítést.',[
- ['R / B','Adj gázt, és zárd a nyitott légféket.'],['A / D / S','Szintezd ki a szárnyakat, majd finoman emeld az orrot. Ne fogyjon el az IAS.'],['G / X','Stabil pozitív V/S, növekvő AGL és elegendő sebesség után húzd be a futóművet, majd a fékszárnyat.'],['ÚJ KÖR','Kerülj újra a pálya vége mögé. Előbb az irány és a magasság legyen rendben, utána a végső sebesség.']
- ],['IAS, pozitív V/S, növekvő AGL és horizont.'],['Ne kezdd a kört nagy bedöntéssel közvetlenül a talaj fölött.','Az átstartolás lehetősége függ a maradék üzemanyagtól és a hajtómű állapotától.'],['guide-return','guide-landing']),
- guide('damage','Sérülés és kényszerhelyzet','Először tartsd repülőképes helyzetben a gépet, csak utána folytass feladatot vagy kezdj hazatérni.',[
- ['A / D / W / S','Apró ellenkormányzással csökkentsd a magától kialakuló bedőlést vagy orrmozgást.'],['R / F','Tarts repülhető sebességet; hajtóműkárnál enyhe süllyedésre is szükség lehet.'],['BASE / N','Kerüld a nagy G-t és a meredek emelkedést. Ha még irányítható a gép, készülj hazatérésre és leszállásra.']
- ],['A bal felső gépábra sárga–piros részei, a teljes állapot, IAS, AGL és V/S.','Szárnykárral nőhet a szükséges sebesség, hidraulikahibával beszorulhat a futómű, fékszárny vagy légfék.'],['Az ismételt kapcsolgatás nem javítja meg a mechanikát.','A levegőben nincs automatikus javítás, tankolás vagy újrafegyverzés.','Végzetes szerkezeti kárnál a gép irányíthatatlanná válik; a kamera a becsapódásig követi.'],['guide-landing','guide-return']),
- guide('jamming','Jelzavarás és elvesző navigáció','Az ellenséges zavaró közelében az érzékelők kiesnek, a terepen lévő objektumok és az ellenfelek fegyverei viszont megmaradnak.',[
- ['MŰSZEREK','A tévézajos minimap mellett is figyeld a sebességet, magasságot és a gép helyzetét.'],['1 / 4','Ha szemmel megvan a zavaró, kézzel célzott gépágyúval vagy bombával támadhatod.'],['A / D','Másik lehetőség: repülj ki a zónából, fordulj vissza, és kívülről fogd be a zavarót.'],['3 / T','A zónán kívül megfelelő földi rakétával is indíthatsz; a kijelző lőtávját és tiltásait kövesd.']
- ],['A navigációs jelek, a leszállási segédív és a CCIP eltűnhetnek. Az alapműszerek tovább működnek.'],['A zavaró hatókörén belül új irányított rakéta nem indítható, magára a zavaróra sem.','A zónán kívül bármely észlelt ellenséget kijelölhetsz, nem kötelező először a zavarót támadni.','Az infracsapda és a dipólköteg nem állítja helyre a navigációt.'],['jammer','guide-ground-object','weapon-maverick'])
+  guide(
+    'iron-veil',
+    'Vasfátyol · összetett művelet',
+    'Top-gun hadművelet több kirepüléssel. Az első csapás után kötelező egy köztes leszállás és feltöltés; a további ellátásokat te ütemezed.',
+    [
+      [
+        'FOLYOSÓ',
+        'Semmisítsd meg a két SAM-rendszert. Az erősítés megállításához a híd VAGY a konvoj elegendő, de még az átkelés előtt: nagyjából 13 perced van.',
+      ],
+      [
+        'MELLÉKCÉLOK',
+        'A jelzavaró megsemmisítése visszaadja a radar/GPS használatát. Az üteg kiiktatása védi a szállító útvonalát. Ha a parancsnoki bunker a végső hullám előtt elpusztul, nem indul el a két kísérő vadász.',
+      ],
+      [
+        'FELTÖLTÉS',
+        'A folyosó megnyitása után térj a BASE-re, szállj le és állj meg. A korábban tett látogatás nem váltja ki ezt. Nomad One és a két Viper addig biztonságban vár.',
+      ],
+      [
+        'KÍSÉRÉS',
+        'Nomad One délről észak felé repül, a konvojt kívülről megkerülve és az üteg lőtávjának szélét érintve. Viper One és Two külön elfogóra kap feladatot. Az útvonal északi részén két ellenséges elfogó indul ellene. A szállító megsemmisülése végleges kudarc.',
+      ],
+      [
+        'ELLENCSAPÁS',
+        'Nomad kijutása után két bombázó oldalról indul a saját bázisod ellen. A kísérő vadászok csak akkor hiányoznak, ha időben romboltad le a bunkert. Az ép Viper gépek ilyenkor új bombázóelfogási parancsot kapnak; a saját rakétavédelem a bázist támadó, radarján észlelt bombázókat részesíti előnyben. A bombázók visszavonulása is semlegesíti a támadásukat, de a már kioldott fegyvereiket még ki kell várni.',
+      ],
+      [
+        'HAZATÉRÉS',
+        'A bázis túlélése és az ellencsapás visszaverése után a sikerhez még szállj le és állj meg. Útközben további leszállás és feltöltés is lehetséges; a világ és az idő közben tovább halad.',
+      ],
+    ],
+    [
+      'Vegyes fegyverzetet tervezz: földi csapásmérés és légiharc is vár rád. Az ellátás az induláskor választott készletet állítja vissza.',
+      'A műszerfal az aktuális fázis legfontosabb céljait mutatja; a teljes feladatlista a kiértékelésben is megmarad.',
+    ],
+    [
+      'A konvoj kilövése a híd lerombolása után külön mellékcél.',
+      'Mindkét Viper túlélése opcionális; egyikük elvesztése nem jelenti a küldetés végét.',
+      'Ne maradj a kijáratnál: a végső bombázók a saját repülőtér ellen indulnak.',
+    ],
+    ['guide-rearm', 'guide-jamming', 'guide-air-combat', 'guide-ground-unit', 'guide-landing'],
+  ),
+  guide(
+    'air-superiority',
+    'Légifölény · rajok és feladatok',
+    'Top-gun összecsapás: saját oldalon három, az ellenségnél négy négygépes raj, rajonként három vadász és egy bombázó. A saját oldalon te vagy az egyik gép; a többit a gép vezeti.',
+    [
+      [
+        'HÍVÓJELEK',
+        'A saját rajad mindig Falcon, te Falcon One vagy. A másik két saját raj Ironfist és Viper, saját One–Four számozással. A bombázó is a raj tagja és rádiózik.',
+      ],
+      [
+        '2 / T',
+        'A vadászokkal szerezd meg a légifölényt: minden ellenséges repülőt le kell küzdeni. A baráti találatok és lelövések is beleszámítanak.',
+      ],
+      [
+        '3 / 4',
+        'Az ellenséges repteret is meg kell semmisíteni. A bombázóink erre tartanak; segíthetsz földi rakétával vagy bombával.',
+      ],
+      [
+        'BASE / N',
+        'A saját bázisnak túl kell élnie, végül térj haza és szállj le. A még teljesíthető feladatok közben köztes leszállással újratölthetsz.',
+      ],
+    ],
+    [
+      'A kijelzőn külön látszik a 16 ellenséges gép, a reptér, a saját bázis és az opcionális rakétavédelem állapota.',
+      'A rajok már induláskor a levegőben vannak. A saját rajba véletlenszerűen kerülsz.',
+    ],
+    [
+      'A rakétás légvédelem kiiktatása opcionális, de túlélve továbbra is veszélyes.',
+      'A hangár csapásmérő és közvetlen támogató gépei a saját raj bombázóhelyét foglalják el.',
+    ],
+    ['guide-air-combat', 'guide-ground-object', 'friendly-fighter', 'guide-rearm'],
+  ),
+  guide(
+    'canyon',
+    'A kanyon · gyakorlórepülés',
+    'Fegyvertelen, levegőből induló gyakorlat. Öt alacsony kapu után három kapu vezet át a záró gerincen. Nincs időlimit; a kijárati kapunál a gyakorlat sikeresen véget ér.',
+    [
+      [
+        'A / D',
+        'Kis bedöntésekkel kövesd a völgyet. Az ellenkező gombbal hozd vissza a szárnyakat; a bedöntés nem áll vissza magától.',
+      ],
+      [
+        'W / S',
+        'Repülj sorban a türkiz kapukon: a völgyben 40–350 méter AGL a cél. Ha kihagysz egy kaput, biztonságos magasságban térj vissza, és az eredeti haladási irányban repülj át rajta.',
+      ],
+      [
+        'R / S',
+        'A gerinc előtt gyűjts sebességet, majd időben kezdd meg a fokozatos felhúzást. Kövesd a magas kapukat. A T–45-ön nincs utánégető: időben adj gázt, és ne húzd túl meredeken az orrát.',
+      ],
+      [
+        'W',
+        'A gerinc túloldalán finoman engedd vissza az orrot, és repülj át a kijáraton. Nem kell leszállni a gyakorlat befejezéséhez.',
+      ],
+    ],
+    [
+      'AGL: a talaj a gerinc előtt gyorsan emelkedik.',
+      'IAS: a felhúzás sebességet fogyaszt; ne várd meg az átesést.',
+      'G: fokozatosan húzz, ne rántsd fel az orrot.',
+      'A radaron a türkiz útvonal és az aktuális kapu jelölése segít.',
+    ],
+    [
+      'A dugóhúzó áteséses állapot, nem kötelező akadálykerülő manőver. Kis magasságon ne provokáld.',
+      'A kapuk sorrendje és haladási iránya számít; fölöttük elrepülve nem teljesülnek.',
+    ],
+    ['guide-instruments', 'guide-maneuvers'],
+  ),
+  guide(
+    'instruments',
+    'Alapkezelés és műszerek',
+    'Először tudd, mit állítasz, és mit jelez a kijelző. Az útmutató minden gépen ugyanarra a kezelési rendre épül.',
+    [
+      [
+        'R / F',
+        'A gázállást növeled vagy csökkented. Elengedéskor a beállítás megmarad, de a sebesség tovább változhat az emelkedés, süllyedés és légellenállás miatt.',
+      ],
+      [
+        'A / D',
+        'A gépet döntöd. A bedöntés megmarad, ezért a gép tovább fordul. Az ellenkező gombbal hozd vissza vízszintbe.',
+      ],
+      [
+        'W / S',
+        'Orr le / orr fel. Apró mozdulatokkal dolgozz; a túl nagy orremelés elfogyaszthatja a sebességet.',
+      ],
+      ['Q / E', 'Finom oldalkormány; gurulásnál kis iránykorrekcióhoz is használható.'],
+      [
+        'EGÉR',
+        'Belső nézetben a pilóta fejét fordítod, a gép iránya és a fegyverek nem fordulnak vele. Az egér megállása után a nézet visszatér előre; a következő mozdulat innen indul, a kurzor helyétől függetlenül. Alt: kurzor a műszerfalhoz; kattintás a tájra: nézelődés folytatása. Oldalra és fel/le korlátozottan nézhetsz; a V a farokgépágyús B–52 és Tu–95 hátsó lövészállására vált. Ott az egérrel a hátsó gépágyút célzod, Szóközzel tüzelhetsz, V-vel visszatérsz. Más típusnál nincs kézi külső nézet.',
+      ],
+      [
+        '0 / O',
+        '0: a minimap nagyítása 1×, 2× és 4× között körbelép; a nagyított nézet a saját gépen marad. O vagy kattintás a minimapre: Mission Control térkép, megállított idővel és teljes céljegyzékkel. Ott is használható a 0; O vagy Esc visszalép. A radarhatótáv, látókúp és zavarás ezen a térképen is számít.',
+      ],
+      [
+        'H / P',
+        'H: részletes súgó. P vagy Esc: szünet. A Mission Control a következő teendőket mutatja.',
+      ],
+    ],
+    [
+      'IAS: manőverezésnél és leszállásnál a kijelzett sebességet figyeld.',
+      'MSL: tengerszint feletti magasság. AGL: terep feletti magasság, ez mutatja a talaj közelségét.',
+      'V/S: pozitív érték emelkedés, negatív süllyedés. A horizont a bedöntést, a G a terhelést mutatja.',
+      'FUEL TOT: maradék üzemanyag, ezer kilogrammban. 3,20 = 3200 kg. A műszer fölött az egérrel fogyasztási becslést is láthatsz.',
+    ],
+    ['A gáz megtartása nem sebességtartó automatika.', 'A gép nem szintez ki automatikusan.'],
+    ['guide-takeoff', 'guide-aiming', 'guide-landing'],
+    [
+      {
+        title: 'A három különböző célzójel',
+        paragraphs: [
+          'A sebességirány-jel azt mutatja, merre haladsz ténylegesen, ami eltérhet az orr irányától. Nem ezt kell mindenáron középre kormányozni.',
+          'A gépágyú előretartási köre egy kijelölt mozgó célhoz becsül célzási irányt. A CCIP-kör pedig a bomba várható talajbecsapódását jelzi. Ezek eltérő feladatot látnak el.',
+        ],
+      },
+    ],
+  ),
+  guide(
+    'rearm',
+    'Köztes leszállás és újraindulás',
+    'Ha a küldetés még teljesíthető, biztonságos leszállás és megállás után új, kijavított gépet kapsz teljes üzemanyaggal és az induláskor választott fegyverzettel.',
+    [
+      [
+        'LESZÁLLÁS',
+        'Térj a saját bázisra, szállj le biztonságosan, gáz alapjáratra, Ctrl: állj meg. Nem elég csak hozzáérni a pályához.',
+      ],
+      [
+        'ELLÁTÁS',
+        'A sérülések megszűnnek, a tank, a lőszer, a rakéták és az elterelők feltöltődnek. A hangárban választott fegyver-összeállítás marad.',
+      ],
+      ['R', 'A gép újra a kifutón áll, felszállásra készen. R-rel növelheted a gázt.'],
+      [
+        'KÜLDETÉS',
+        'Az idő és az ellenfelek nem indulnak újra. A következő hullám vagy a siló visszaszámlálása ellátás közben is folytatódik.',
+      ],
+      [
+        'CÉLOK',
+        'Ha az elsődleges cél már teljesült, a leszállás lezárja a küldetést. Elbukott kötelező cél vagy megsemmisült gép nem javítható vissza ezzel.',
+      ],
+    ],
+    ['A sikeres ellátás és a támadó hullámok a küldetésnaplóba is bekerülnek.'],
+    ['A leszállás és újabb kirepülés ideje alatt a védendő cél továbbra is veszélyben lehet.'],
+    ['guide-landing', 'guide-takeoff'],
+  ),
+  guide(
+    'maneuvers',
+    'Orsó, átfordulás és dugóhúzó',
+    'A játék térbeli fizikája kezeli a háton repülést, a bukfencet és az átesésből kialakuló dugóhúzót. A sebesség, tömeg, sérülés és magasság ténylegesen befolyásolja a sikerüket.',
+    [
+      [
+        'ELŐKÉSZÍTÉS',
+        'A játékban nagy terep feletti magassággal gyakorolj. Futó, fékszárny és légfék behúzva; könnyebb fegyverzet és kevesebb üzemanyag több tartalékot hagy.',
+      ],
+      [
+        'A / D',
+        'Orsó: a hossztengely körül fordítod a gépet. Ez önmagában nem 180 fokos irányváltás; közben a repülési pálya és a magasság is változhat.',
+      ],
+      [
+        'S',
+        'Bukfenc: elegendő kezdősebességgel finoman húzd végig. Fent lassulsz, lefelé gyorsulsz; figyeld az IAS-t, AGL-t és G-t. L: a rásegítés a G mellett a túl nagy állásszöget is korlátozza.',
+      ],
+      [
+        'A / D → S',
+        'Split-S: félorsóval a hátára fordítod a gépet, majd pozitív húzással fél bukfencet repülsz lefelé. Visszafordít, de sok magasságot fogyaszt.',
+      ],
+      [
+        'S → A / D',
+        'Immelmann: felfelé végzett fél bukfenc, majd félorsóval vissza vízszintesbe. Emelkedés közben energiát veszítesz; kevés sebességgel ne erőltesd.',
+      ],
+      [
+        'W + Q / E',
+        'Dugóhúzóból kijövetel a játékban: engedd el a húzást és az orsózást, csökkentsd a gázt, orr le, a forgással ellentétes oldalkormány. Amint a forgás megszűnt, oldalkormány középre; gyorsulás után finoman vedd fel.',
+      ],
+      [
+        'KANYON',
+        'Kövesd a völgy vonalát, a fordulót időben kezdd. Az AGL és a tényleges sebességirány a fontos; a terep fölé rajzolt navigációs jel nem szabad repülési folyosó.',
+      ],
+    ],
+    [
+      'A dugóhúzó áteséshez társuló önforgás; nem azonos az irányított orsóval.',
+      'Nehéz gépnél és nagy G-nél több sebesség kell ugyanahhoz a manőverhez.',
+      'A szimuláció egyszerűsített: nem egyes valódi típusok kiképzési eljárása.',
+    ],
+    [
+      'A tartós teljes húzás rásegítés nélkül átesést okozhat.',
+      'A Split-S talaj közelében akkor is veszélyes, ha a gép még jól kormányozható.',
+    ],
+    ['guide-instruments', 'guide-air-combat'],
+  ),
+  guide(
+    'takeoff',
+    'Felszállás és emelkedés',
+    'Gyorsíts a pályán, emelkedj el, majd tisztítsd le a gépet a további repüléshez.',
+    [
+      [
+        'R',
+        'Növeld a gázt. Ha a gép rendelkezik utánégetővel és szükség van rá, Shift-tel kapcsolhatod be.',
+      ],
+      ['Q / E', 'Maradj a pálya középvonalán; csak apró gurulási korrekciókat adj.'],
+      [
+        'S',
+        'A felszállási jelzésnél finoman emeld az orrot. Ha még nem emelkedik, engedd el, és hagyd gyorsulni.',
+      ],
+      ['G', 'Növekvő AGL és pozitív V/S mellett húzd be a futóművet.'],
+      [
+        'X',
+        'Stabil emelkedés és elegendő sebesség után húzd be a fékszárnyat. Ellenőrizd, hogy befejeződött-e a mozgás.',
+      ],
+      [
+        'W / R / F',
+        'Enyhíts a túl meredek emelkedésen, és állítsd be az utazáshoz szükséges gázt.',
+      ],
+    ],
+    [
+      'IAS → AGL és V/S → futómű és fékszárny állapota.',
+      'A bal felső konfigurációs jelzés mutatja a kiengedett, mozgó és behúzott fékszárnyat.',
+    ],
+    [
+      'Ne húzd az orrot folyamatosan csak azért, mert még nem emelkedik a gép.',
+      'Az X és a G kapcsoló: ismételt megnyomás megfordítja a parancsot.',
+      'Levegőből induló küldetésnél ez a fázis kimarad.',
+    ],
+    ['guide-intercept', 'guide-instruments'],
+  ),
+  guide(
+    'intercept',
+    'Elfogás és megközelítés',
+    'Juttasd magad elé a célt, mielőtt befogással vagy fegyverhasználattal próbálkozol.',
+    [
+      [
+        'A / D',
+        'Keresd a célt a radaron és az irányjelzésen, majd rövid billentéssel kezdj ráfordulni.',
+      ],
+      ['W / S', 'Igazíts a magasságon, közben figyeld a sebességet és a terep távolságát.'],
+      [
+        'ELLENBILLENTÉS',
+        'Mielőtt eléred a cél irányát, az ellenkező A/D gombbal hozd vízszintbe a szárnyakat.',
+      ],
+      [
+        'T / TAB',
+        'A célkereszt közelében lévő célt választja; egymáshoz közeli irányoknál a közelebbit. Újabb nyomás: a raj többi gépe, majd a többi raj, végül a földi célok, távolság szerint. Tartsd a célt a gép előtt, amíg felépül a befogás.',
+      ],
+    ],
+    [
+      'A radar csak a saját látókúpján és hatótávján belüli célokat mutatja.',
+      'Céltávolság, irányskála, horizont, IAS és AGL.',
+    ],
+    [
+      'A világban vagy irányjelzésen látható cél még nem feltétlen radarkontakt.',
+      'A T ismételgetése több cél esetén másik célra vált, és új befogást kezd.',
+      'Zavarózónában nincs működő célbefogás.',
+    ],
+    ['guide-aiming', 'guide-civil', 'guide-air-combat', 'guide-jamming'],
+  ),
+  guide(
+    'civil',
+    'Civil gép békés elfogása',
+    'A civil gépet visszafordítani kell, bármilyen sérülése küldetéskudarc.',
+    [
+      [
+        'A / D / W / S',
+        'Közelíts a világoskék jelölésű civil repülőhöz; ne keverd össze a kék baráti egységekkel.',
+      ],
+      ['T', 'Fogd be, és várd meg a sikeres elfogás jelzését.'],
+      [
+        'TŰZTILALOM',
+        'Ne indíts rakétát és ne lőj gépágyúval. A békés befogáshoz nem kell tüzelni.',
+      ],
+      [
+        'BASE',
+        'A visszafordulás megkezdése után elindulhatsz haza. Várd meg a biztonságos légtérelhagyást, majd szállj le és állj meg.',
+      ],
+    ],
+    ['Mission Control: befogás, visszafordulás és távozás állapota.'],
+    [
+      'A befogás után nem szükséges folyamatosan célon tartani a civilt.',
+      'A civil távozása az elfogási feladat vége; a saját leszállás még szükséges a teljes sikerhez.',
+    ],
+    ['civil', 'guide-return', 'guide-landing'],
+  ),
+  guide(
+    'aiming',
+    'Célzás, befogás és indítási engedély',
+    'A radaros befogás, a lőtáv és a fegyver indíthatósága három külön feltétel.',
+    [
+      [
+        'T / TAB',
+        'Válaszd ki az észlelt ellenséget, és várd meg a befogás felépülését. A támadási sorrendet te döntöd el.',
+      ],
+      [
+        '1 / 2 / 3 / 4',
+        'Válassz gépágyút, légiharc-rakétát, földi rakétát vagy bombát a ténylegesen felszerelt készletből.',
+      ],
+      ['KIJELZŐ', 'Olvasd el a célbefogási panel üzenetét: a tiltás konkrét oka ott jelenik meg.'],
+      [
+        'SZÓKÖZ',
+        'A megfelelő fegyverrel és helyzetben indíts. Ágyúval rövid sorozatot, bombával időzített kioldást használj.',
+      ],
+    ],
+    [
+      'BECSÜLT LŐTÁV: sebesség, magasság és célmozgás alapján változik; a névleges maximum nem garantált találat.',
+      'A KEDVEZŐ helyzet jobb tartalékot jelent. A HATÁRESET engedélyezett lehet, de könnyebben meghiúsul.',
+      'Gépágyúnál az előretartási kör, bombánál a CCIP segít; ezekhez nem kötelező a rakétás befogás.',
+    ],
+    [
+      'Légiharc-rakéta nem indítható földi célra, földi rakéta repülőre.',
+      'Indítást tilthat a túl közeli/távoli cél, nagy szög, tereptakarás, zavarás, sérülés, kifogyott készlet vagy előkészítési idő.',
+      'A baráti egység nem választható irányított célként, de az irányítatlan fegyverektől megsérülhet.',
+    ],
+    [
+      'guide-air-combat',
+      'guide-ground-object',
+      'guide-ground-unit',
+      'weapon-maverick',
+      'weapon-aim9m',
+    ],
+  ),
+  guide(
+    'air-combat',
+    'Támadás: légiharc',
+    'Rakétával megfelelő indítási helyzetet, gépágyúval közeli és stabil előretartást keress.',
+    [
+      ['2', 'Válaszd a légiharc-rakétát, majd T-vel fogj be egy ellenséges repülőt.'],
+      [
+        'A / D / W / S',
+        'Tartsd a célt a gép előtt. Ne a maximális lőtáv határáról várj biztos találatot.',
+      ],
+      [
+        'SZÓKÖZ',
+        'Indíts tűzkész helyzetben. A rávezetést igénylő fegyvernél tartsd a célt az érzékelő látómezejében; a fegyverlap megmondja, mikor válik önállóvá.',
+      ],
+      [
+        '1',
+        'Közelharcban választhatsz gépágyút. A mozgó cél elé célozz, az előretartási kör alapján; rövid sorozatokkal lőj.',
+      ],
+      [
+        'C / 5 / 6',
+        'Beérkező rakétánál használj megfelelő elterelőt és kitérő manővert, közben őrizd meg a sebességet és a tereptávolságot.',
+      ],
+    ],
+    [
+      'Cél és lőtáv → IAS, G, horizont és AGL → újra a cél.',
+      'A rakéta motorjának kiégése után lassul; a nagy kanyarok további energiát emésztenek fel.',
+    ],
+    [
+      'Egy találat nem mindig jelent megsemmisítést: nézd meg a cél és a feladat állapotát.',
+      'Ne próbálj elvesztett sebességgel, erős bedöntésben azonnal visszafordulni.',
+    ],
+    ['guide-aiming', 'guide-damage', 'cm-flare', 'cm-chaff'],
+    [
+      {
+        title: 'Ha az ellenség elment melletted',
+        steps: [
+          [
+            'ELLENŐRZÉS',
+            'Nézd meg az IAS-t, az AGL-t és a cél eltűnésének irányát. Ne rántsd fel rögtön az orrot.',
+          ],
+          [
+            'A / D',
+            'Dönts a cél felé. Elengedve is fordulsz; finom W/S mozdulatokkal és gázzal tarts biztonságos repülési helyzetet.',
+          ],
+          [
+            'R / F',
+            'Ha fogy a sebesség vagy túl nagy a süllyedés, enyhíts a manőveren és szükség szerint adj gázt. Ha túlszaladsz, utánégető ki és visszafogott gáz segíthet.',
+          ],
+          [
+            'ELLENBILLENTÉS',
+            'A cél újra előre érkezésekor szintezz ki. Elvesztett befogásnál T, majd várd meg újra a feltöltődést.',
+          ],
+        ],
+      },
+    ],
+  ),
+  guide(
+    'ground-object',
+    'Támadás: földi objektum',
+    'Álló építményre vagy telepítésre tervezz egyenes, biztonságosan megszakítható rárepülést.',
+    [
+      [
+        'CÉLVÁLASZTÁS',
+        'Azonosítsd az objektumot: reptér, híd, bunker vagy jelzavaró. A reptér és a híd önmagában nem tüzel; a bunker igen. Külön védelmi egységek is lehetnek mellettük.',
+      ],
+      [
+        '3',
+        'Földi rakétával: cél a gép elé, T, befogás és megfelelő lőtáv, majd Szóköz. A rávezetés feltételeit a fegyver adatlapján ellenőrizd.',
+      ],
+      [
+        '4',
+        'Bombával: nyugodt támadóirány, CCIP a célra, majd Szóköz. A bomba a kioldás után nem korrigál, befogás nem kell.',
+      ],
+      [
+        '1',
+        'Gépágyúval közelről, rövid sorozatokkal támadj. Hagyj magasságot és helyet a felvételhez.',
+      ],
+      [
+        'S / A / D',
+        'Indítás vagy kioldás után időben vedd fel a gépet, hagyd el a cél környékét, és ellenőrizd az eredményt.',
+      ],
+    ],
+    [
+      'AGL és V/S a rárepülés teljes ideje alatt.',
+      'CCIP, céltávolság, fegyverkészlet, tereptakarás és légvédelmi fenyegetés.',
+    ],
+    [
+      'A BASE a saját reptered; ne téveszd össze az ellenséges repülőtérrel.',
+      'A jelzavaró zónáján belül új irányított rakétát nem indíthatsz.',
+      'Nagy objektum vagy erős bunker több találatot igényelhet. Sikertelen rárepülés után inkább új kör, mint az utolsó lövés a talaj előtt.',
+    ],
+    ['guide-ground-unit', 'guide-jamming', 'weapon-maverick', 'weapon-mk82'],
+    [
+      {
+        title: 'Híd és reptér: a feladatot olvasd el',
+        paragraphs: [
+          'A kezdő konvojküldetésben a hidat még az átkelés előtt kell lerombolni; a konvoj megsemmisítése opcionális. A Top-gun feladatban az ellenséges reptér mellett a saját bázis felé tartó konvoj is kötelező cél.',
+          'A kijelölés sorrendje szabad, de az időkritikus feladatot ne hagyd a végére.',
+        ],
+      },
+    ],
+  ),
+  guide(
+    'ground-unit',
+    'Támadás: földi egység',
+    'Mozgó konvoj és tüzelő légvédelmi egység ellen a cél mozgását és a visszalövést is számítsd bele.',
+    [
+      [
+        'AZONOSÍTÁS',
+        'A konvoj az úton halad; az üteg és a rakétarendszer telepített állás. Ezek az egységek támadni is tudnak.',
+      ],
+      [
+        '3 / T',
+        'Ha van földi rakétád, fogd be az egységet, és közelíts az indítható tartományba. A rakéta mozgó földi célt is követhet.',
+      ],
+      [
+        '4',
+        'Mozgó konvoj bombázásakor a várható jövőbeli helyére dolgozz. Az aktuális helyére tett CCIP nem garantálja, hogy a becsapódáskor is ott lesz.',
+      ],
+      [
+        '1',
+        'Gépágyúval közelről, rövid és célzott rárepülésben támadj. A szórás és az energiavesztés miatt messziről kevésbé hatásos.',
+      ],
+      [
+        'KITÉRÉS',
+        'Ne maradj hosszan egyenes, kiszámítható rárepülésen. Időben emelkedj ki, fordulj biztonságos távolságra, és csak ezután támadj újra.',
+      ],
+    ],
+    [
+      'A konvoj iránynyila és az út vonala segít megbecsülni a mozgást.',
+      'Rakétajelzés, robbanógránátok, AGL, IAS és sérült részek.',
+    ],
+    [
+      'A légvédelmi üteg magasabban gránátokkal, alacsonyan gépágyúval is veszélyes lehet; nincs minden helyzetben biztonságos magasság.',
+      'A konvoj több járműből álló cél; az egész egység állapotát és a küldetés céljelzését figyeld.',
+      'Ha a konvoj a saját bázisodat támadja, ne halogasd addig, amíg odaér.',
+    ],
+    ['convoy', 'sam', 'sam-system', 'guide-aiming', 'guide-damage'],
+  ),
+  guide(
+    'return',
+    'Hazatérés és ráfordulás',
+    'A célok teljesítése után még működő géppel és elegendő üzemanyaggal kell visszaérned a pályához.',
+    [
+      [
+        'FELADATOK',
+        'Ellenőrizd a Mission Control kötelező céljait. Az opcionális ellenfél miatt ne fogyaszd el a hazatéréshez szükséges üzemanyagot.',
+      ],
+      [
+        'BASE',
+        'Fordulj a saját reptér irányába. Kapcsold ki az utánégetőt, és ellenőrizd az üzemanyagot és a sérült rendszereket.',
+      ],
+      [
+        'PÁLYATENGELY',
+        'Ne közvetlenül a BASE pontjára célozz leszállni: kerülj a pálya egyik vége mögé, több kilométer helyet hagyva az egyenes megközelítéshez.',
+      ],
+      [
+        'A / D',
+        'Dél felől 000°, észak felől 180° irányon állj a pálya tengelyébe. Az irány elérése előtt ellenbillentéssel kezdj szintezni.',
+      ],
+      [
+        'N',
+        'Kapcsold be a leszállási segédet, ha szükséges. A normál küldetés megfelelő megközelítésnél automatikusan is felismerheti; az N-es kikapcsolás után kézzel kapcsold vissza.',
+      ],
+      [
+        'I',
+        'Leszállási módban ki-be kapcsolhatod a kékes-lila segédívet. A térképen a fordulót, a terepen az útvonal magasságát és a végső egyenest is követheted. Ez nem robotpilóta: továbbra is te vezeted a gépet.',
+      ],
+    ],
+    [
+      'FUEL TOT, sérülések, radar, irányskála, AGL és V/S.',
+      'A pálya két széle szimmetrikusan fusson előtted. A BASE iránya önmagában nem jelenti, hogy pályairányban vagy.',
+    ],
+    [
+      'A küszöb fölött ne próbálj nagy fordulóval azonnal leszállni.',
+      'Nagy oldaltérésnél teremts új megközelítési helyzetet. Zavarásban a navigációs jelek eltűnnek.',
+    ],
+    ['guide-landing', 'guide-go-around', 'guide-jamming', 'friendly-airbase'],
+  ),
+  guide(
+    'landing',
+    'Landolás: megközelítés, szintbe vétel, kifutás',
+    'Mindig az aktuális gép leszállási segédjének célsebességét kövesd. A harcból visszatérő gép nehezebb vagy sérültebb lehet a gyakorlónál.',
+    [
+      ['SHIFT / F', 'Utánégető ki, gáz vissza. A lassítást még a végső egyenes előtt kezdd meg.'],
+      [
+        'G / X',
+        'Futómű és fékszárny ki. Várd meg a tényleges kiengedést; a gombnyomás önmagában nem bizonyítja, hogy a rendszer működik.',
+      ],
+      [
+        'B / R / F',
+        'Ha alapgázon túl gyors vagy, nyisd a légféket és enyhíts a süllyedésen. A célsebességnél zárd vissza, majd kis gázkorrekciókkal tartsd a sebességet.',
+      ],
+      [
+        'A / D / W / S',
+        'Tartsd a pályatengelyt, a közel vízszintes szárnyhelyzetet és a siklópályát. Kis korrekciókkal dolgozz.',
+      ],
+      [
+        'S',
+        'A pálya fölött, körülbelül 10–15 méteren finoman kezdd a szintbe vételt. A földetérésre a süllyedés legyen 3 m/s alatt; ne emeld az orrot meredek új emelkedésbe.',
+      ],
+      [
+        'F / CTRL',
+        'Földetérés után gáz teljesen le, Ctrl nyomva: kerékfék. Maradj a pályán, amíg megállsz.',
+      ],
+    ],
+    [
+      'IAS és a célsebesség → V/S és AGL → pályatengely, orrhelyzet és bedöntés → futómű és fékszárny.',
+      'Az ORR a gép irányát, az IRÁNY a haladás pályához viszonyított eltérését jelzi. Mindkettőt közelítsd a nullához.',
+      'A kékes-lila segédív a ráfordulást és a végső egyenest mutatja, I-vel kapcsolható. A szükséges sebességet és süllyedést továbbra is a műszereken ellenőrizd.',
+      'A siklásszög és az orrhelyzet eltérhet. A 3° megközelítés még nem elég a puha földetéréshez: a végén szintbe kell venni.',
+    ],
+    [
+      'Ha a gáz már nulla, az F nem fékez tovább. Az utánégető, légfék és a süllyedés külön ellenőrzendő.',
+      'A futómű hiánya, a pályán kívüli érkezés, túl nagy süllyedés, bedöntés vagy rossz orrhelyzet becsapódást okozhat.',
+      'A sikerhez a kötelező célok teljesítése után le is kell lassulni; a földetérés önmagában nem a küldetés vége.',
+    ],
+    ['guide-go-around', 'guide-damage', 'guide-return'],
+    [
+      {
+        title: 'Miért könnyebb a Leszállás gyakorlat?',
+        paragraphs: [
+          'A gyakorlat már a levegőből, pályára állítva, kevés üzemanyaggal és fegyverzet nélkül indul. A normál küldetésben a ráfordulást, magasságot és lassítást neked kell felépíteni; a maradék üzemanyag, fegyverzet és sérülés is számít.',
+          'Nincs külön könnyített leszállási fizika. Kövesd az aktuális célsebességet, és sérült gépnél hagyj nagyobb tartalékot a korrekciókra.',
+        ],
+      },
+      {
+        title: 'Ha nem sikerült: nézd meg a naplót',
+        paragraphs: [
+          'P → Repülési napló. A földetérési esemény megőrzi a kontaktus előtti sebességet, süllyedést, orrhelyzetet, bedöntést és a konkrét hibákat. A JSON-t még az új küldetés indítása előtt töltsd le, mert az új küldetés nullázza a naplót.',
+        ],
+      },
+    ],
+  ),
+  guide(
+    'go-around',
+    'Átstartolás és új megközelítés',
+    'Ha alacsonyan még gyors vagy, meredeken süllyedsz vagy nagyot kellene fordulni, szakítsd meg a megközelítést.',
+    [
+      ['R / B', 'Adj gázt, és zárd a nyitott légféket.'],
+      ['A / D / S', 'Szintezd ki a szárnyakat, majd finoman emeld az orrot. Ne fogyjon el az IAS.'],
+      [
+        'G / X',
+        'Stabil pozitív V/S, növekvő AGL és elegendő sebesség után húzd be a futóművet, majd a fékszárnyat.',
+      ],
+      [
+        'ÚJ KÖR',
+        'Kerülj újra a pálya vége mögé. Előbb az irány és a magasság legyen rendben, utána a végső sebesség.',
+      ],
+    ],
+    ['IAS, pozitív V/S, növekvő AGL és horizont.'],
+    [
+      'Ne kezdd a kört nagy bedöntéssel közvetlenül a talaj fölött.',
+      'Az átstartolás lehetősége függ a maradék üzemanyagtól és a hajtómű állapotától.',
+    ],
+    ['guide-return', 'guide-landing'],
+  ),
+  guide(
+    'damage',
+    'Sérülés és kényszerhelyzet',
+    'Először tartsd repülőképes helyzetben a gépet, csak utána folytass feladatot vagy kezdj hazatérni.',
+    [
+      [
+        'A / D / W / S',
+        'Apró ellenkormányzással csökkentsd a magától kialakuló bedőlést vagy orrmozgást.',
+      ],
+      ['R / F', 'Tarts repülhető sebességet; hajtóműkárnál enyhe süllyedésre is szükség lehet.'],
+      [
+        'BASE / N',
+        'Kerüld a nagy G-t és a meredek emelkedést. Ha még irányítható a gép, készülj hazatérésre és leszállásra.',
+      ],
+    ],
+    [
+      'A bal felső gépábra sárga–piros részei, a teljes állapot, IAS, AGL és V/S.',
+      'Szárnykárral nőhet a szükséges sebesség, hidraulikahibával beszorulhat a futómű, fékszárny vagy légfék.',
+    ],
+    [
+      'Az ismételt kapcsolgatás nem javítja meg a mechanikát.',
+      'A levegőben nincs automatikus javítás, tankolás vagy újrafegyverzés.',
+      'Végzetes szerkezeti kárnál a gép irányíthatatlanná válik; a kamera a becsapódásig követi.',
+    ],
+    ['guide-landing', 'guide-return'],
+  ),
+  guide(
+    'jamming',
+    'Jelzavarás és elvesző navigáció',
+    'Az ellenséges zavaró közelében az érzékelők kiesnek, a terepen lévő objektumok és az ellenfelek fegyverei viszont megmaradnak.',
+    [
+      [
+        'MŰSZEREK',
+        'A tévézajos minimap mellett is figyeld a sebességet, magasságot és a gép helyzetét.',
+      ],
+      ['1 / 4', 'Ha szemmel megvan a zavaró, kézzel célzott gépágyúval vagy bombával támadhatod.'],
+      [
+        'A / D',
+        'Másik lehetőség: repülj ki a zónából, fordulj vissza, és kívülről fogd be a zavarót.',
+      ],
+      [
+        '3 / T',
+        'A zónán kívül megfelelő földi rakétával is indíthatsz; a kijelző lőtávját és tiltásait kövesd.',
+      ],
+    ],
+    [
+      'A navigációs jelek, a leszállási segédív és a CCIP eltűnhetnek. Az alapműszerek tovább működnek.',
+    ],
+    [
+      'A zavaró hatókörén belül új irányított rakéta nem indítható, magára a zavaróra sem.',
+      'A zónán kívül bármely észlelt ellenséget kijelölhetsz, nem kötelező először a zavarót támadni.',
+      'Az infracsapda és a dipólköteg nem állítja helyre a navigációt.',
+    ],
+    ['jammer', 'guide-ground-object', 'weapon-maverick'],
+  ),
 ];
-pilotEntries.push(guide('formation','Kötelékrepülés és vadászkíséret','A raj gépei a saját One hívójelű vezérükhöz igazodnak. A szabály a baráti és az ellenséges rajokra is érvényes.',[
- ['RAJVEZÉR','One vezeti a rajt. Ha te vagy Falcon One, a társaid a te helyzetedhez és sebességedhez igazodnak, elkülönített kötelékhelyeken.'],
- ['SEBESSÉG','Lemaradáskor felzárkóznak, közel érve csökkentik a sebességkülönbséget. Nem ugranak a helyükre: a gyorsulás, forduló és típus szerinti sebességhatár számít. Nagyobb lemaradásnál utánégetőt is használhatnak, ha a típus tudja.'],
- ['HARC','Észlelt közeli fenyegetésnél kiválhatnak harcolni vagy kitérni. A fenyegetés megszűnése, eltávolodása vagy visszavonulása után megpróbálnak újra kötelékbe állni.'],
- ['JÁRŐRÖZÉS','Észlelt harci cél nélkül a rajtagok tovább követik a repülőképes vezért. Az egyedül maradt vezér saját működő reptér körül, ennek hiányában a várakozás kezdetének térségében járőrözik; nem repül tovább korlátlanul az utolsó irányon.'],
- ['KÍSÉRET','A szállítót védő vadászok előretolt, oldalt eltolt pozíciót vesznek fel. A védett gépre törő, radarjuk által észlelt támadót előre elfogják, de nem üldözik korlátlanul messzire a szállítótól.'],
- ['SÉRÜLÉS','Súlyos sérülésnél a hazatérés, közvetlen rakétaveszélynél a kitérés elsőbbséget élvez a köteléktartással szemben. A repülőképes sérült AI saját működő reptéren megpróbál leszállni, javítás után újra felszállhat. Saját reptér híján súlyos sérüléssel a fenyegetéstől távolodva végleg elhagyja a harcot. A kieső vagy hazatérő vezér helyett a következő repülőképes rajtagot követik.']
- ],['A hívójel, irány és távolság jelzi a társak helyzetét. A napló a kötelék módját, vezérét és célsebességét is rögzíti.','Lassú vagy földön álló vezér körül a kísérők biztonságos körözést próbálnak; nem tudnak a levegőben megállni.'],['Egy nehéz bombázó nem képes egy maximális sebességgel repülő vadásszal azonos tempót tartani. A vezérnek a raj típusait is figyelembe kell vennie.','A köteléktartás nem teszi sérthetetlenné a kísért gépet, és nem növeli a fegyverek vagy a radar hatótávját.'],['guide-air-combat','guide-transport-flight','friendly-fighter','guide-damage']));
-pilotEntries.push(guide('ai-target-priority','A kísérők célválasztása és földi támadása','A baráti és az ellenséges vadászok a feladatot, a veszélyt és a megmaradt fegyverzetet együtt mérlegelik.',[
- ['VÉDELEM','A kísért gépre közvetlenül támadó repülő sürgős cél. Az útvonal elé települt légvédelem is elsőbbséget kaphat, akár egy korábbi légi cél helyett.'],
- ['FEGYVERZET','Levegő–levegő rakéta csak légi célra használható. Földi rakéta csak olyan gépen van, amelynek alapfegyverzetében tényleg szerepel; külön, véges készletből fogy.'],
- ['RÁCSAPÁS','Földi rakéta híján előretartással célzott gépágyús támadómenetet repülhetnek. A cél előtt felhúznak, kifordulnak, majd megfelelő ráfordulásból ismételnek. Bombát a becsült becsapódási pont alapján oldanak.'],
- ['HELYZET','A közelben tisztán elérhető cél, a szállító felé tartó támadó és a védett útvonalat lefedő üteg módosítja a célok sorrendjét. A városvédők elsőbbséget adnak a várost támadó bombázóknak, de a rájuk közvetlen közelről támadó gép miatt önvédelemre válthatnak. Hasonló helyzetben megtartják az aktuális célt, hogy ne váltogassanak folyton.'],
- ['BOMBÁZÓK','A várost támadó bombázók megosztják az épületcélokat. A már becsapódás felé tartó bombával lefedett cél helyett másik épületet keresnek; nem oldják a teljes készletet ugyanarra a toronyra.']
- ],['A napló AI-adatainál a targetDecision mutatja a választott célt és okát. A ground-attack mód jelzi a földi támadómenetet.','A szállítót játékosként vezetve nyugati oldalon F-15E, orosz oldalon Su-35S, kínai oldalon J-10C kísér. A kínai típus jelenlegi alapfegyverzetében nincs földi rakéta: gépágyúval támadhat földi célt.'],['A kísérők nem garantálnak sértetlenséget: a felderítés, tereptakarás, lőtáv, célzási szög, elterelők és véges lőszer számítanak.','A már felderített álló földi cél helyét visszaforduláskor is megjegyzik; ettől még takaráson keresztül nem tüzelhetnek.','Az AI repülőgépágyú ugyanolyan lövésenkénti alapsebzéssel és tüzelési időközzel működik, mint a játékosé; az AI rövid sorozatokat és szüneteket használ.'],['guide-formation','guide-transport-flight','guide-ground-unit','guide-air-combat']));
-pilotEntries.push(guide('ai-service','AI javítás, tankolás és újrafegyverzés','A baráti és ellenséges katonai gépek ugyanazt az utánpótlási szabályt használják.',[
- ['VISSZATÉRÉS','A harcban használt rakéta- vagy bombakészlet elfogyása, repülőképes súlyos sérülés vagy a ténylegesen számolt üzemanyag 12% alá csökkenése kiszolgálást kérhet. A hordozói támogatást igénylő, már indított rakétát normál lőszerhiánynál előbb kiszolgálja.'],
- ['SAJÁT REPTÉR','Működő saját reptérnél sorba áll, megközelít, futót és fékszárnyat nyit, ténylegesen leszáll és lefékez. A megállás után 60 másodperces földi kiszolgálás következik.'],
- ['ÚJ FELSZÁLLÁS','A gép teljes üzemanyagot, eredeti típus szerinti fegyverkészletet és új elterelőket kap; a javítható károk megszűnnek. Visszagurul a küszöbhöz, felszáll, majd visszaáll a feladatára.'],
- ['REPTÉR NÉLKÜL','Lőszerhiánynál kifelé repül, a harctéren kívüli 60 másodperces kiszolgálás után visszatér. Súlyos sérülésnél viszont végleg kivonul; végzetes sérülés vagy lezuhanás után nincs visszatérés.']
- ],['A napló ai-service-request, ai-approach, ai-service-start, ai-service-complete és ai-return-to-combat eseményei mutatják a ciklust.','Az átmenetileg kiszolgált ellenség továbbra is része a küldetésnek: nem számít lelőttnek. A pályán kívüli kiszolgálás alatt nem jelenik meg az érzékelőkön.'],['Levegőben nem kap ingyen javítást vagy lőszert. A repülőtérig továbbra is lelőhető, és a leszállás sérülten meghiúsulhat.','Egy kifutón egyszerre egy AI-gép leszállási és újraindulási ciklusa zajlik; a többiek várakoznak.','A földön kiszolgáló reptér megsemmisülése megszünteti az ott parkoló gép visszatérését.','A küldetés lezárása vagy a játékos kiesése után nincs további feltöltés és visszatérés.'],['guide-formation','guide-ai-target-priority','guide-landing','guide-damage']));
-const friendly=(type,name,description,steps,watch,pitfalls,related=[],modelId=null)=>({id:'friendly-'+type,name,description,kind:'friendly',category:'Baráti egység / objektum',type,modelId,steps,watch,pitfalls,related,sections:[]});
-export const friendlyEntries=[
- friendly('airbase','Saját repülőtér / BASE','A hazai kifutópálya a visszatérés és leszállás helye. Maga a reptér fegyvertelen, külön egységek védhetik.',[['BASE','A jelzés hazavezet, de neked kell a pálya végére és tengelyébe ráfordulni.'],['VÉDELEM','A reptérvédő és Top-gun küldetésben a saját bázis túlélése is kötelező. A támadó bombázót vagy konvojt időben állítsd meg.']],['A saját bázis állapotát a Mission Control feladatsorában is követheted.'],['A bázis nem tüzel magától. Harci küldetésen, amíg van teljesíthető kötelező cél, sikeres leszállás és megállás után új gépet, teljes tankot és fegyverzetet kapsz. A három bombás gyakorlaton nincs utánpótlás.','A saját pályára ne dobj bombát és ne lőj gépágyúval.'],['guide-return','guide-landing','friendly-sam-system']),
- friendly('fighter','Baráti vadászgép','Önállóan célzó és tüzelő segítő repülő. A gépi vezérlés vezeti, te továbbra is csak a saját gépedet irányítod.',[['TÁMOGATÁS','A segítő vadász az ellenséges légi célokra fordul, és a saját fegyverzetével támad. A típusa a saját oldaladhoz igazodik. A gépi egységek mindkét oldalon általában a becsült kedvező lőtávot várják meg. Távolról célonként egy követő rakéta eredményét figyelik; közelharcban vagy sürgős védelemben legfeljebb két rakéta tarthat ugyanarra a célra. Az elterelt vagy célt vesztett rakéta nem foglalja a támadási helyet. A készlet második felét közelebbi helyzetre tartalékolják, és kitérés közben nem kezdenek új, hordozói támogatást igénylő indítást.'],['EGYÜTTMŰKÖDÉS','A saját célodat te választod: foglalkozhatsz a bombázóval, miközben a baráti gép másik támadót köt le.']],['Kék jelölés és haladási irány. A baráti találatok és lelövések is segítenek a feladat teljesítésében.'],['Nem adhatsz neki kézi parancsot. Neki is véges a fegyverkészlete, és megsérülhet.','Baráti gépre nem jelölhetsz irányított célt, de a gépágyúval még kárt okozhatsz benne.'],['guide-air-combat','friendly-airbase'],'f15'),
- friendly('sam-system','Baráti légvédelmi rakétarendszer','A saját bázis környékén telepített rakétás légvédelem, amely önállóan küzdi le az ellenséges légi célokat.',[['TÁMOGATÁS','A rendszer befogás és megfelelő lőtáv esetén követő rakétát indít; közeli cél ellen gépágyút is használhat.'],['VÉDELEM','Hagyd dolgozni, közben a saját repülőddel a veszélyesebb vagy elérhető támadót válaszd.']],['Kék jelölés, beérkező támadók és a saját reptér állapota.'],['A tereptakarás, a távolság és a lőszer korlátozza; önmagában nem garantálja a bázis megvédését.','Nincs kézi célkijelölés vagy parancsadás a baráti rendszernek.'],['sam-system','friendly-bunker','guide-air-combat']),
- friendly('bunker','Baráti bunker','Megerősített saját objektum, amely közeli célok ellen gépágyúval segíti a védelmet.',[['TÁMOGATÁS','Automatikusan tüzel az elérhető ellenséges célokra. Közelvédelemként számíts rá, nem nagy távolságú rakétás légvédelemként.'],['VÉDELEM','Az érkező bombázót és vadászokat ne hagyd pusztán a bunkerre; saját repülővel és a rakétarendszerekkel együtt védd a bázist.']],['Kék jelölés és a küldetés elsődleges céljai.'],['Nem vezérelheted, és a terep vagy a kis lőtáv akadályozhatja a tüzelését.','Az irányítatlan fegyvereiddel a saját bunkert is megsebezheted.'],['bunker','friendly-sam-system','friendly-airbase']),
- friendly('transport','Védendő baráti szállítógép','Fegyvertelen gép, amelyet ki kell kísérned a műveleti légtérből. Saját maga nem tudja lelőni a támadóit.',[['KÍSÉRÉS','A küldetésben mellette, már a levegőben kezdesz. Keress veszélyes támadókat, ne a szállítót próbáld befogni.'],['2 / 3','Az ellenséges vadász ellen légiharc-rakéta, a légvédelmi üteg ellen földi fegyver szükséges. Csak a felszerelt fegyvereidből választhatsz.'],['FELADAT','A szállító kijutása az elsődleges cél; minden ellenfél megsemmisítése opcionális. Kijutás után térj haza és szállj le.']],['Kék jel, mozgási irány, a szállító állapota és a kijáratig hátralévő távolság a Mission Controlban.'],['Ha a szállítót megsemmisítik, a küldetés sikertelen. Repülőképesen sérülten is kijuthat.','Ne keresd a szállítót a T/Tab célváltásban: szövetségesre nincs irányított célkijelölés.'],['transport','guide-air-combat','guide-ground-unit','guide-return'],'c130')
+pilotEntries.push(
+  guide(
+    'formation',
+    'Kötelékrepülés és vadászkíséret',
+    'A raj gépei a saját One hívójelű vezérükhöz igazodnak. A szabály a baráti és az ellenséges rajokra is érvényes.',
+    [
+      [
+        'RAJVEZÉR',
+        'One vezeti a rajt. Ha te vagy Falcon One, a társaid a te helyzetedhez és sebességedhez igazodnak, elkülönített kötelékhelyeken.',
+      ],
+      [
+        'SEBESSÉG',
+        'Lemaradáskor felzárkóznak, közel érve csökkentik a sebességkülönbséget. Nem ugranak a helyükre: a gyorsulás, forduló és típus szerinti sebességhatár számít. Nagyobb lemaradásnál utánégetőt is használhatnak, ha a típus tudja.',
+      ],
+      [
+        'HARC',
+        'Észlelt közeli fenyegetésnél kiválhatnak harcolni vagy kitérni. A fenyegetés megszűnése, eltávolodása vagy visszavonulása után megpróbálnak újra kötelékbe állni.',
+      ],
+      [
+        'JÁRŐRÖZÉS',
+        'Észlelt harci cél nélkül a rajtagok tovább követik a repülőképes vezért. Az egyedül maradt vezér saját működő reptér körül, ennek hiányában a várakozás kezdetének térségében járőrözik; nem repül tovább korlátlanul az utolsó irányon.',
+      ],
+      [
+        'KÍSÉRET',
+        'A szállítót védő vadászok előretolt, oldalt eltolt pozíciót vesznek fel. A védett gépre törő, radarjuk által észlelt támadót előre elfogják, de nem üldözik korlátlanul messzire a szállítótól.',
+      ],
+      [
+        'SÉRÜLÉS',
+        'Súlyos sérülésnél a hazatérés, közvetlen rakétaveszélynél a kitérés elsőbbséget élvez a köteléktartással szemben. A repülőképes sérült AI saját működő reptéren megpróbál leszállni, javítás után újra felszállhat. Saját reptér híján súlyos sérüléssel a fenyegetéstől távolodva végleg elhagyja a harcot. A kieső vagy hazatérő vezér helyett a következő repülőképes rajtagot követik.',
+      ],
+    ],
+    [
+      'A hívójel, irány és távolság jelzi a társak helyzetét. A napló a kötelék módját, vezérét és célsebességét is rögzíti.',
+      'Lassú vagy földön álló vezér körül a kísérők biztonságos körözést próbálnak; nem tudnak a levegőben megállni.',
+    ],
+    [
+      'Egy nehéz bombázó nem képes egy maximális sebességgel repülő vadásszal azonos tempót tartani. A vezérnek a raj típusait is figyelembe kell vennie.',
+      'A köteléktartás nem teszi sérthetetlenné a kísért gépet, és nem növeli a fegyverek vagy a radar hatótávját.',
+    ],
+    ['guide-air-combat', 'guide-transport-flight', 'friendly-fighter', 'guide-damage'],
+  ),
+);
+pilotEntries.push(
+  guide(
+    'ai-target-priority',
+    'A kísérők célválasztása és földi támadása',
+    'A baráti és az ellenséges vadászok a feladatot, a veszélyt és a megmaradt fegyverzetet együtt mérlegelik.',
+    [
+      [
+        'VÉDELEM',
+        'A kísért gépre közvetlenül támadó repülő sürgős cél. Az útvonal elé települt légvédelem is elsőbbséget kaphat, akár egy korábbi légi cél helyett.',
+      ],
+      [
+        'FEGYVERZET',
+        'Levegő–levegő rakéta csak légi célra használható. Földi rakéta csak olyan gépen van, amelynek alapfegyverzetében tényleg szerepel; külön, véges készletből fogy.',
+      ],
+      [
+        'RÁCSAPÁS',
+        'Földi rakéta híján előretartással célzott gépágyús támadómenetet repülhetnek. A cél előtt felhúznak, kifordulnak, majd megfelelő ráfordulásból ismételnek. Bombát a becsült becsapódási pont alapján oldanak.',
+      ],
+      [
+        'HELYZET',
+        'A közelben tisztán elérhető cél, a szállító felé tartó támadó és a védett útvonalat lefedő üteg módosítja a célok sorrendjét. A városvédők elsőbbséget adnak a várost támadó bombázóknak, de a rájuk közvetlen közelről támadó gép miatt önvédelemre válthatnak. Hasonló helyzetben megtartják az aktuális célt, hogy ne váltogassanak folyton.',
+      ],
+      [
+        'BOMBÁZÓK',
+        'A várost támadó bombázók megosztják az épületcélokat. A már becsapódás felé tartó bombával lefedett cél helyett másik épületet keresnek; nem oldják a teljes készletet ugyanarra a toronyra.',
+      ],
+    ],
+    [
+      'A napló AI-adatainál a targetDecision mutatja a választott célt és okát. A ground-attack mód jelzi a földi támadómenetet.',
+      'A szállítót játékosként vezetve nyugati oldalon F-15E, orosz oldalon Su-35S, kínai oldalon J-10C kísér. A kínai típus jelenlegi alapfegyverzetében nincs földi rakéta: gépágyúval támadhat földi célt.',
+    ],
+    [
+      'A kísérők nem garantálnak sértetlenséget: a felderítés, tereptakarás, lőtáv, célzási szög, elterelők és véges lőszer számítanak.',
+      'A már felderített álló földi cél helyét visszaforduláskor is megjegyzik; ettől még takaráson keresztül nem tüzelhetnek.',
+      'Az AI repülőgépágyú ugyanolyan lövésenkénti alapsebzéssel és tüzelési időközzel működik, mint a játékosé; az AI rövid sorozatokat és szüneteket használ.',
+    ],
+    ['guide-formation', 'guide-transport-flight', 'guide-ground-unit', 'guide-air-combat'],
+  ),
+);
+pilotEntries.push(
+  guide(
+    'ai-service',
+    'AI javítás, tankolás és újrafegyverzés',
+    'A baráti és ellenséges katonai gépek ugyanazt az utánpótlási szabályt használják.',
+    [
+      [
+        'VISSZATÉRÉS',
+        'A harcban használt rakéta- vagy bombakészlet elfogyása, repülőképes súlyos sérülés vagy a ténylegesen számolt üzemanyag 12% alá csökkenése kiszolgálást kérhet. A hordozói támogatást igénylő, már indított rakétát normál lőszerhiánynál előbb kiszolgálja.',
+      ],
+      [
+        'SAJÁT REPTÉR',
+        'Működő saját reptérnél sorba áll, megközelít, futót és fékszárnyat nyit, ténylegesen leszáll és lefékez. A megállás után 60 másodperces földi kiszolgálás következik.',
+      ],
+      [
+        'ÚJ FELSZÁLLÁS',
+        'A gép teljes üzemanyagot, eredeti típus szerinti fegyverkészletet és új elterelőket kap; a javítható károk megszűnnek. Visszagurul a küszöbhöz, felszáll, majd visszaáll a feladatára.',
+      ],
+      [
+        'REPTÉR NÉLKÜL',
+        'Lőszerhiánynál kifelé repül, a harctéren kívüli 60 másodperces kiszolgálás után visszatér. Súlyos sérülésnél viszont végleg kivonul; végzetes sérülés vagy lezuhanás után nincs visszatérés.',
+      ],
+    ],
+    [
+      'A napló ai-service-request, ai-approach, ai-service-start, ai-service-complete és ai-return-to-combat eseményei mutatják a ciklust.',
+      'Az átmenetileg kiszolgált ellenség továbbra is része a küldetésnek: nem számít lelőttnek. A pályán kívüli kiszolgálás alatt nem jelenik meg az érzékelőkön.',
+    ],
+    [
+      'Levegőben nem kap ingyen javítást vagy lőszert. A repülőtérig továbbra is lelőhető, és a leszállás sérülten meghiúsulhat.',
+      'Egy kifutón egyszerre egy AI-gép leszállási és újraindulási ciklusa zajlik; a többiek várakoznak.',
+      'A földön kiszolgáló reptér megsemmisülése megszünteti az ott parkoló gép visszatérését.',
+      'A küldetés lezárása vagy a játékos kiesése után nincs további feltöltés és visszatérés.',
+    ],
+    ['guide-formation', 'guide-ai-target-priority', 'guide-landing', 'guide-damage'],
+  ),
+);
+const friendly = (
+  type,
+  name,
+  description,
+  steps,
+  watch,
+  pitfalls,
+  related = [],
+  modelId = null,
+) => ({
+  id: 'friendly-' + type,
+  name,
+  description,
+  kind: 'friendly',
+  category: 'Baráti egység / objektum',
+  type,
+  modelId,
+  steps,
+  watch,
+  pitfalls,
+  related,
+  sections: [],
+});
+export const friendlyEntries = [
+  friendly(
+    'airbase',
+    'Saját repülőtér / BASE',
+    'A hazai kifutópálya a visszatérés és leszállás helye. Maga a reptér fegyvertelen, külön egységek védhetik.',
+    [
+      ['BASE', 'A jelzés hazavezet, de neked kell a pálya végére és tengelyébe ráfordulni.'],
+      [
+        'VÉDELEM',
+        'A reptérvédő és Top-gun küldetésben a saját bázis túlélése is kötelező. A támadó bombázót vagy konvojt időben állítsd meg.',
+      ],
+    ],
+    ['A saját bázis állapotát a Mission Control feladatsorában is követheted.'],
+    [
+      'A bázis nem tüzel magától. Harci küldetésen, amíg van teljesíthető kötelező cél, sikeres leszállás és megállás után új gépet, teljes tankot és fegyverzetet kapsz. A három bombás gyakorlaton nincs utánpótlás.',
+      'A saját pályára ne dobj bombát és ne lőj gépágyúval.',
+    ],
+    ['guide-return', 'guide-landing', 'friendly-sam-system'],
+  ),
+  friendly(
+    'fighter',
+    'Baráti vadászgép',
+    'Önállóan célzó és tüzelő segítő repülő. A gépi vezérlés vezeti, te továbbra is csak a saját gépedet irányítod.',
+    [
+      [
+        'TÁMOGATÁS',
+        'A segítő vadász az ellenséges légi célokra fordul, és a saját fegyverzetével támad. A típusa a saját oldaladhoz igazodik. A gépi egységek mindkét oldalon általában a becsült kedvező lőtávot várják meg. Távolról célonként egy követő rakéta eredményét figyelik; közelharcban vagy sürgős védelemben legfeljebb két rakéta tarthat ugyanarra a célra. Az elterelt vagy célt vesztett rakéta nem foglalja a támadási helyet. A készlet második felét közelebbi helyzetre tartalékolják, és kitérés közben nem kezdenek új, hordozói támogatást igénylő indítást.',
+      ],
+      [
+        'EGYÜTTMŰKÖDÉS',
+        'A saját célodat te választod: foglalkozhatsz a bombázóval, miközben a baráti gép másik támadót köt le.',
+      ],
+    ],
+    [
+      'Kék jelölés és haladási irány. A baráti találatok és lelövések is segítenek a feladat teljesítésében.',
+    ],
+    [
+      'Nem adhatsz neki kézi parancsot. Neki is véges a fegyverkészlete, és megsérülhet.',
+      'Baráti gépre nem jelölhetsz irányított célt, de a gépágyúval még kárt okozhatsz benne.',
+    ],
+    ['guide-air-combat', 'friendly-airbase'],
+    'f15',
+  ),
+  friendly(
+    'sam-system',
+    'Baráti légvédelmi rakétarendszer',
+    'A saját bázis környékén telepített rakétás légvédelem, amely önállóan küzdi le az ellenséges légi célokat.',
+    [
+      [
+        'TÁMOGATÁS',
+        'A rendszer befogás és megfelelő lőtáv esetén követő rakétát indít; közeli cél ellen gépágyút is használhat.',
+      ],
+      [
+        'VÉDELEM',
+        'Hagyd dolgozni, közben a saját repülőddel a veszélyesebb vagy elérhető támadót válaszd.',
+      ],
+    ],
+    ['Kék jelölés, beérkező támadók és a saját reptér állapota.'],
+    [
+      'A tereptakarás, a távolság és a lőszer korlátozza; önmagában nem garantálja a bázis megvédését.',
+      'Nincs kézi célkijelölés vagy parancsadás a baráti rendszernek.',
+    ],
+    ['sam-system', 'friendly-bunker', 'guide-air-combat'],
+  ),
+  friendly(
+    'bunker',
+    'Baráti bunker',
+    'Megerősített saját objektum, amely közeli célok ellen gépágyúval segíti a védelmet.',
+    [
+      [
+        'TÁMOGATÁS',
+        'Automatikusan tüzel az elérhető ellenséges célokra. Közelvédelemként számíts rá, nem nagy távolságú rakétás légvédelemként.',
+      ],
+      [
+        'VÉDELEM',
+        'Az érkező bombázót és vadászokat ne hagyd pusztán a bunkerre; saját repülővel és a rakétarendszerekkel együtt védd a bázist.',
+      ],
+    ],
+    ['Kék jelölés és a küldetés elsődleges céljai.'],
+    [
+      'Nem vezérelheted, és a terep vagy a kis lőtáv akadályozhatja a tüzelését.',
+      'Az irányítatlan fegyvereiddel a saját bunkert is megsebezheted.',
+    ],
+    ['bunker', 'friendly-sam-system', 'friendly-airbase'],
+  ),
+  friendly(
+    'transport',
+    'Védendő baráti szállítógép',
+    'Fegyvertelen gép, amelyet ki kell kísérned a műveleti légtérből. Saját maga nem tudja lelőni a támadóit.',
+    [
+      [
+        'KÍSÉRÉS',
+        'A küldetésben mellette, már a levegőben kezdesz. Keress veszélyes támadókat, ne a szállítót próbáld befogni.',
+      ],
+      [
+        '2 / 3',
+        'Az ellenséges vadász ellen légiharc-rakéta, a légvédelmi üteg ellen földi fegyver szükséges. Csak a felszerelt fegyvereidből választhatsz.',
+      ],
+      [
+        'FELADAT',
+        'A szállító kijutása az elsődleges cél; minden ellenfél megsemmisítése opcionális. Kijutás után térj haza és szállj le.',
+      ],
+    ],
+    [
+      'Kék jel, mozgási irány, a szállító állapota és a kijáratig hátralévő távolság a Mission Controlban.',
+    ],
+    [
+      'Ha a szállítót megsemmisítik, a küldetés sikertelen. Repülőképesen sérülten is kijuthat.',
+      'Ne keresd a szállítót a T/Tab célváltásban: szövetségesre nincs irányított célkijelölés.',
+    ],
+    ['transport', 'guide-air-combat', 'guide-ground-unit', 'guide-return'],
+    'c130',
+  ),
 ];
-export function friendlyMissionRows(entry){if(entry.type==='airbase')return missions.filter(m=>m.objective!=='landing').map(m=>[m.name,'Saját bázis / leszállóhely']);return missions.flatMap(m=>{const units=m.roster.filter(r=>r.team==='ally'&&r.type===entry.type);return units.length?[[m.name,units.reduce((n,r)=>n+r.count,0)+' baráti egység']]:[];});}
-const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const stepsMarkup=steps=>`<ol class="pilot-steps">${steps.map(([key,text])=>`<li><kbd>${escape(key)}</kbd><span>${escape(text)}</span></li>`).join('')}</ol>`;
-export function pilotMarkup(entry){return `<section><h3>Mit csinálj, sorrendben?</h3>${stepsMarkup(entry.steps)}</section><section><h3>Mit figyelj a kijelzőn?</h3><ul>${entry.watch.map(t=>`<li>${escape(t)}</li>`).join('')}</ul></section>${entry.sections.map(s=>`<section><h3>${escape(s.title)}</h3>${(s.paragraphs||[]).map(p=>`<p>${escape(p)}</p>`).join('')}${s.steps?stepsMarkup(s.steps):''}</section>`).join('')}<section class="pilot-pitfalls"><h3>Gyakori hibák és korlátok</h3><ul>${entry.pitfalls.map(t=>`<li>${escape(t)}</li>`).join('')}</ul></section>`;}
+export function friendlyMissionRows(entry) {
+  if (entry.type === 'airbase')
+    return missions
+      .filter((m) => m.objective !== 'landing')
+      .map((m) => [m.name, 'Saját bázis / leszállóhely']);
+  return missions.flatMap((m) => {
+    const units = m.roster.filter((r) => r.team === 'ally' && r.type === entry.type);
+    return units.length
+      ? [[m.name, units.reduce((n, r) => n + r.count, 0) + ' baráti egység']]
+      : [];
+  });
+}
 
-pilotEntries.push(guide('carrier','Anyahajós üzem és Harrier','Nappali tengeri bevetés: egy támadó raj, rakétás romboló és fedélzeti visszatérés.',[
- ['FELSZÁLLÁS','F/A-18C vagy F-14: várd meg Falcon Two indulását; Falcon Three és Falcon Four már a levegőből fedez. R teljes gáz, U katapult (öt másodperc után). Emelkedj, majd G futó be. Harrier: Z 45° rövid felszállás; könnyű gépnél 90° függőleges. Emelkedés után fokozatosan 0°-ra állítsd a fúvócsövet.'],
- ['HARCFELADAT','Egyetlen támadó raj: három vadász és egy bombázó. Nincs második hullám. A lőszerért kivonuló gépek feltöltve visszatérhetnek, ezért továbbra is az első hullámhoz tartoznak; a saját reptér nélkül sérülten végleg távozók nem jönnek vissza. A kijelző jelzi az újratöltőket. A romboló 23,4 km-ről indul, meg kell semmisíteni. Anyahajó: 2 Sea Sparrow + 2 RAM, romboló: 6 Sea Sparrow + 2 RAM. A Sea Sparrow repülőket támad, a SeaRAM/RAM beérkező rakétákat fog el; a gépágyúk lőtávja 1,8 km.'],
- ['HAGYOMÁNYOS LESZÁLLÁS','N segéd, G futó, X fékszárny, K fékezőhorog. Igazodj a 352°-os ferde fedélzethez, 3,5° siklásban. Tarts stabil orrhelyzetet; ne lebegtesd ki. A négy kötél egyikének elkapása fokozatosan fékez. Elvétett kötél esetén bolter: teljes gáz és átstartolás.'],
- ['HARRIER LESZÁLLÁS','Lassíts, Z 90° fúvócső, futó ki. Kis döntésekkel tartsd a helyzetet, Q/E az orrirány. R/F finom gázzal szabályozd a magasságot; függőleges süllyedés 3 m/s alatt, vízszintes sebesség 43 km/h alatt. Fékezőhorog és katapult nincs.'],
- ['TÖMEG ÉS ÚJRATÖLTÉS','A Harrier lebegése csak akkor lehetséges, ha a rendelkezésre álló függőleges tolóerő nagyobb a súlyánál. Teljes tankkal és fegyverzettel rövid nekifutás kellhet. Biztonságos köztes megállás feltöltést ad, a győzelemhez minden elsődleges célt teljesíts.']
-],['Fedélzethez mért magasság, süllyedés, irány és sebesség.','A Mission Control mutatja az aktuális kezelési sorrendet.','A naplóban horog-, fúvócső-, katapult-, kötélfogási és átstartolási állapot is szerepel.'],['A tenger nem leszállópálya: a vízre érés elveszíti a gépet.','A hagyományos gépnek a leszállósávra kell érkeznie; az anyahajó mellett nincs pályaszéli tűrés.','A Harriernek nincs fékezőköteles leszállása; lebegésben nincs garantált automatikus magasságtartás.'],['carrier','destroyer','harrier','fa18','guide-landing']));
+const stepsMarkup = (steps) =>
+  `<ol class="pilot-steps">${steps.map(([key, text]) => `<li><kbd>${escape(key)}</kbd><span>${escape(text)}</span></li>`).join('')}</ol>`;
+export function pilotMarkup(entry) {
+  return `<section><h3>Mit csinálj, sorrendben?</h3>${stepsMarkup(entry.steps)}</section><section><h3>Mit figyelj a kijelzőn?</h3><ul>${entry.watch.map((t) => `<li>${escape(t)}</li>`).join('')}</ul></section>${entry.sections.map((s) => `<section><h3>${escape(s.title)}</h3>${(s.paragraphs || []).map((p) => `<p>${escape(p)}</p>`).join('')}${s.steps ? stepsMarkup(s.steps) : ''}</section>`).join('')}<section class="pilot-pitfalls"><h3>Gyakori hibák és korlátok</h3><ul>${entry.pitfalls.map((t) => `<li>${escape(t)}</li>`).join('')}</ul></section>`;
+}
+
+pilotEntries.push(
+  guide(
+    'carrier',
+    'Anyahajós üzem és Harrier',
+    'Nappali tengeri bevetés: egy támadó raj, rakétás romboló és fedélzeti visszatérés.',
+    [
+      [
+        'FELSZÁLLÁS',
+        'F/A-18C vagy F-14: várd meg Falcon Two indulását; Falcon Three és Falcon Four már a levegőből fedez. R teljes gáz, U katapult (öt másodperc után). Emelkedj, majd G futó be. Harrier: Z 45° rövid felszállás; könnyű gépnél 90° függőleges. Emelkedés után fokozatosan 0°-ra állítsd a fúvócsövet.',
+      ],
+      [
+        'HARCFELADAT',
+        'Egyetlen támadó raj: három vadász és egy bombázó. Nincs második hullám. A lőszerért kivonuló gépek feltöltve visszatérhetnek, ezért továbbra is az első hullámhoz tartoznak; a saját reptér nélkül sérülten végleg távozók nem jönnek vissza. A kijelző jelzi az újratöltőket. A romboló 23,4 km-ről indul, meg kell semmisíteni. Anyahajó: 2 Sea Sparrow + 2 RAM, romboló: 6 Sea Sparrow + 2 RAM. A Sea Sparrow repülőket támad, a SeaRAM/RAM beérkező rakétákat fog el; a gépágyúk lőtávja 1,8 km.',
+      ],
+      [
+        'HAGYOMÁNYOS LESZÁLLÁS',
+        'N segéd, G futó, X fékszárny, K fékezőhorog. Igazodj a 352°-os ferde fedélzethez, 3,5° siklásban. Tarts stabil orrhelyzetet; ne lebegtesd ki. A négy kötél egyikének elkapása fokozatosan fékez. Elvétett kötél esetén bolter: teljes gáz és átstartolás.',
+      ],
+      [
+        'HARRIER LESZÁLLÁS',
+        'Lassíts, Z 90° fúvócső, futó ki. Kis döntésekkel tartsd a helyzetet, Q/E az orrirány. R/F finom gázzal szabályozd a magasságot; függőleges süllyedés 3 m/s alatt, vízszintes sebesség 43 km/h alatt. Fékezőhorog és katapult nincs.',
+      ],
+      [
+        'TÖMEG ÉS ÚJRATÖLTÉS',
+        'A Harrier lebegése csak akkor lehetséges, ha a rendelkezésre álló függőleges tolóerő nagyobb a súlyánál. Teljes tankkal és fegyverzettel rövid nekifutás kellhet. Biztonságos köztes megállás feltöltést ad, a győzelemhez minden elsődleges célt teljesíts.',
+      ],
+    ],
+    [
+      'Fedélzethez mért magasság, süllyedés, irány és sebesség.',
+      'A Mission Control mutatja az aktuális kezelési sorrendet.',
+      'A naplóban horog-, fúvócső-, katapult-, kötélfogási és átstartolási állapot is szerepel.',
+    ],
+    [
+      'A tenger nem leszállópálya: a vízre érés elveszíti a gépet.',
+      'A hagyományos gépnek a leszállósávra kell érkeznie; az anyahajó mellett nincs pályaszéli tűrés.',
+      'A Harriernek nincs fékezőköteles leszállása; lebegésben nincs garantált automatikus magasságtartás.',
+    ],
+    ['carrier', 'destroyer', 'harrier', 'fa18', 'guide-landing'],
+  ),
+);
