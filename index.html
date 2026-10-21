@@ -7,6 +7,9 @@
     <title>Operation Falcon: Redline — Harcászati repülőszimulátor</title>
     <link rel="stylesheet" href="/style.css" />
     <link rel="stylesheet" href="/flight.css" />
+    <link rel="stylesheet" href="/src/ui/briefing.css" />
+    <link rel="stylesheet" href="/src/ui/nationality.css" />
+    <link rel="stylesheet" href="/src/ui/aircraftCatalog.css" />
   </head>
   <body>
     <canvas id="world" aria-label="A szimulátor háromdimenziós repülési nézete"></canvas>
@@ -20,65 +23,136 @@
         ><span class="version">PROTO / 0.1</span>
       </div>
     </header>
-    <main id="hangar">
-      <section class="intro">
-        <div class="eyebrow">REPÜLÉSI KÖZPONT <span>01 / KÜLDETÉSTERVEZÉS</span></div>
-        <h1>Operation Falcon:<br /><em>Redline</em></h1>
-        <p>
-          Válassz feladatot és repülőgépet. Szállj fel, találd meg a célpontot, és hozd haza a
-          gépet.
-        </p>
-        <div class="intro-stats">
-          <span><b id="aircraft-count">25</b> REPÜLŐGÉP</span
-          ><span><b id="mission-count">6</b> KÜLDETÉS</span><span><b>120 Hz</b> FIZIKA</span>
+    <main id="hangar" class="briefing" data-step="missions">
+      <nav class="briefing-steps" aria-label="Bevetés előkészítése">
+        <button data-planner-step="missions" aria-current="step"><b>01</b> MŰVELETI TÉRKÉP</button>
+        <button data-planner-step="aircraft" disabled><b>02</b> REPÜLŐGÉP</button>
+        <button data-planner-step="equipment" disabled><b>03</b> FELSZERELÉS</button>
+        <button class="wiki-link" data-wiki="guide-briefing">ⓘ PILÓTAKÉZIKÖNYV</button>
+      </nav>
+      <section id="mission-stage" class="briefing-stage">
+        <div class="briefing-title">
+          <div>
+            <div class="eyebrow">GLOBAL OPERATIONS / MISSION SELECT</div>
+            <h1>Válassz műveleti területet.</h1>
+          </div>
+          <span><b id="mission-count"></b> MŰVELET ELÉRHETŐ</span>
+        </div>
+        <div class="mission-layout">
+          <div class="map-column">
+            <div id="missions" class="world-map" aria-label="Küldetések a világtérképen">
+              <img src="/assets/planner/world-land.svg" alt="" draggable="false" />
+              <div class="map-caption">FALCON COMMAND / WORLD SITUATION</div>
+              <div id="mission-markers"></div>
+              <div id="map-tooltip" role="tooltip" hidden></div>
+              <span class="map-coordinate">90°N<br />00°<br />90°S</span>
+            </div>
+            <div class="map-legend">
+              <span>⊡ GYAKORLÁS</span><span>⊡ MŰVELET</span
+              ><span class="chosen">⊡ KIVÁLASZTVA</span>
+            </div>
+            <p class="map-instruction">
+              Mutass egy jelölőre a felderítési adatokhoz. Kattintással jelöld ki a bevetést.
+            </p>
+            <div
+              id="map-mission-list"
+              class="map-mission-list"
+              aria-label="Küldetések listája"
+            ></div>
+          </div>
+          <aside class="briefing-intel">
+            <div id="mission-empty">
+              <div class="eyebrow">VÁRAKOZÁS A KIJELÖLÉSRE</div>
+              <h2>A következő bevetésed itt kezdődik.</h2>
+              <p>
+                A térkép négyzetei a kiképzések és műveletek helyét jelölik. A részletekhez mutass
+                egy jelölőre.
+              </p>
+              <span class="intel-crosshair" aria-hidden="true">⊡</span>
+            </div>
+            <div id="mission-details" hidden>
+              <div class="mission-brief">
+                <span id="mission-code"></span>
+                <h2 id="mission-name"></h2>
+                <p id="mission-location"></p>
+                <div id="mission-threat-icons"></div>
+                <p id="mission-description"></p>
+                <small id="mission-threats"></small>
+                <div id="mission-goals"></div>
+              </div>
+              <details class="recon-section">
+                <summary>EGYSÉGKÁRTYÁK ÉS WIKI-ADATLAPOK</summary>
+                <div id="mission-gallery" class="mission-gallery"></div>
+                <div id="mission-allies"></div>
+              </details>
+            </div>
+          </aside>
+        </div>
+        <div class="briefing-actions">
+          <span id="mission-selection-status" role="status">Nincs kiválasztott küldetés</span
+          ><button id="mission-next" class="primary" disabled>TOVÁBB · REPÜLŐGÉP →</button>
         </div>
       </section>
-      <section class="planner">
-        <div class="panel-heading">
-          <span>01</span>
-          <h2>Küldetés kiválasztása</h2>
-          <a class="unit-library-link" href="/encyclopedia.html" target="_blank" rel="noopener"
-            >EGYSÉGTÁR ↗</a
-          >
+      <section id="aircraft-stage" class="briefing-stage aircraft-config" hidden>
+        <div class="briefing-title">
+          <div>
+            <div class="eyebrow">02 / AIRCRAFT ASSIGNMENT</div>
+            <h1>Lapozz. Válassz. Repülj.</h1>
+            <p id="aircraft-mission-context"></p>
+          </div>
+          <span><b id="aircraft-count"></b> <span id="aircraft-side-label">REPÜLŐGÉP</span></span>
         </div>
-        <div id="missions" class="missions"></div>
-        <div class="mission-brief">
-          <span id="mission-code"></span>
-          <h3 id="mission-name"></h3>
-          <p id="mission-description"></p>
-          <small id="mission-threats"></small>
-          <div id="mission-goals"></div>
+        <div class="aircraft-stage-layout">
+          <div class="aircraft-carousel">
+            <div class="carousel-tools">
+              <button id="aircraft-prev" class="secondary" aria-label="Előző gépkártyák">←</button
+              ><span id="aircraft-page" aria-live="polite"></span
+              ><button id="aircraft-next" class="secondary" aria-label="Következő gépkártyák">
+                →
+              </button>
+            </div>
+            <div class="catalogue-tabs">
+              <button data-catalogue-section="west" aria-pressed="true">01 / NYUGAT</button
+              ><button data-catalogue-section="east" aria-pressed="false">02 / KELET</button>
+            </div>
+            <div
+              id="aircraft-list"
+              class="aircraft-cards"
+              tabindex="0"
+              role="region"
+              aria-roledescription="lapozható gépkártyák"
+              aria-label="Választható repülőgépek"
+            ></div>
+            <p class="map-instruction">
+              Lapozz a nyilakkal, a ← → billentyűkkel vagy húzd oldalra a lapot. A gép választja ki
+              az oldalt.
+            </p>
+          </div>
+          <aside class="aircraft-preview" aria-label="A kiválasztott gép adatai">
+            <div class="aircraft-data-heading">
+              <span id="preview-role"></span><span id="preview-rating" class="rating"></span>
+            </div>
+            <h2 id="preview-designation"></h2>
+            <div id="specs" class="spec-grid"></div>
+            <button id="aircraft-wiki" class="wiki-card-link">ⓘ TELJES GÉPADATLAP</button>
+          </aside>
         </div>
-        <section class="recon-section">
-          <div class="eyebrow">FELDERÍTÉSI KÉPEK / ELLENFÉL</div>
-          <div id="mission-gallery" class="mission-gallery"></div>
-          <div id="mission-allies"></div>
-        </section>
+        <div class="briefing-actions">
+          <button class="secondary" data-planner-step="missions">← TÉRKÉP</button>
+          <div><small>KIVÁLASZTOTT GÉP</small><strong id="selected-name"></strong></div>
+          <button id="aircraft-continue" class="primary">TOVÁBB · FELSZERELÉS →</button>
+        </div>
       </section>
-      <section class="aircraft-config">
-        <div class="panel-heading">
-          <span>02</span>
-          <h2>Saját repülőgép</h2>
+      <section id="equipment-stage" class="briefing-stage" hidden>
+        <div class="briefing-title">
+          <div>
+            <div class="eyebrow">03 / LOADOUT &amp; FLIGHT READINESS</div>
+            <h1>Fegyverezd fel. Hozd haza.</h1>
+            <p id="equipment-context"></p>
+          </div>
+          <button id="equipment-wiki" class="wiki-link">ⓘ GÉP ÉS FEGYVEREK</button>
         </div>
-        <div
-          id="hangar-tabs"
-          class="faction-tabs"
-          role="tablist"
-          aria-label="Repülőgépek csoportjai"
-        ></div>
-        <div id="aircraft-list" class="aircraft-list"></div>
-        <aside class="aircraft-preview">
-          <div class="preview-top">
-            <span id="preview-role"></span><span>SAJÁT GÉP / ÉLŐ NÉZET</span>
-          </div>
-          <canvas
-            id="aircraft-art"
-            aria-label="A kiválasztott gép forgó térbeli előnézete"
-          ></canvas>
-          <div class="preview-bottom">
-            <span id="preview-designation"></span><span>PILÓTA: TE <i>●</i></span>
-          </div>
-          <div id="specs" class="spec-grid"></div>
+        <div class="equipment-layout">
           <div class="planner-armament">
             <strong id="planner-variant"></strong>
             <p id="planner-stores"></p>
@@ -112,13 +186,36 @@
               </p>
             </section>
           </div>
-        </aside>
-        <div class="selection-footer">
-          <div><small>KIVÁLASZTOTT REPÜLŐGÉP</small><strong id="selected-name"></strong></div>
-          <button id="launch" class="primary">FELSZÁLLÁS ↗</button>
+          <aside class="equipment-summary">
+            <div class="eyebrow">BEVETÉSI TERV</div>
+            <h2 id="equipment-mission-name"></h2>
+            <p id="equipment-brief"></p>
+            <div id="equipment-objectives"></div>
+            <div id="equipment-stores-info"></div>
+            <button class="wiki-link" data-wiki="guide-aiming">ⓘ FEGYVERHASZNÁLAT ÉS CÉLZÁS</button
+            ><button class="wiki-link" data-wiki="cm-chaff">ⓘ ELTERELŐK</button>
+            <p>
+              A megmaradó üres helyek csökkentik az induló tömeget. A fegyverzet és üzemanyag a
+              repülési tulajdonságokat is befolyásolja.
+            </p>
+          </aside>
+        </div>
+        <div class="briefing-actions">
+          <button class="secondary" data-planner-step="aircraft">← REPÜLŐGÉP</button
+          ><span id="launch-summary"></span
+          ><button id="launch" class="primary">KÉSZ · BEVETÉS INDÍTÁSA ↗</button>
         </div>
       </section>
     </main>
+    <dialog id="planner-wiki" aria-labelledby="planner-wiki-title">
+      <div class="wiki-dialog-heading">
+        <strong id="planner-wiki-title">PILÓTAKÉZIKÖNYV / EGYSÉGTÁR</strong
+        ><button id="wiki-close" class="secondary" aria-label="Kézikönyv bezárása">
+          BEZÁRÁS ×
+        </button>
+      </div>
+      <iframe id="wiki-frame" title="Gépek, fegyverek és repülési útmutató"></iframe>
+    </dialog>
     <div id="flight-ui" hidden>
       <div class="flight-top">
         <span id="flight-name"></span>

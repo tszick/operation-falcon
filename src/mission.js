@@ -63,7 +63,9 @@ export class Mission {
       this.setPhase(
         'recovered',
         'HAZATÉRÉS TELJESÍTVE',
-        'A megszakított küldetés után biztonságosan leszálltál.',
+        s.recoveryExit
+          ? 'A megszakított küldetés után biztonságosan kivonultál.'
+          : 'A megszakított küldetés után biztonságosan leszálltál.',
       );
     } else if (s.onGround && s.landing?.success)
       this.setPhase('rollout', 'KIFUTÁS', 'Gáz le, Ctrl: kerékfék.');
@@ -73,7 +75,14 @@ export class Mission {
         `LESZÁLLÁS · ${s.approach.stage}`,
         s.approach.instruction,
       );
-    else this.setPhase('emergency', 'HAZATÉRÉS', 'Térj a BASE felé, majd szállj le.');
+    else
+      this.setPhase(
+        'emergency',
+        s.recoveryExit ? 'KIVONULÁS' : 'HAZATÉRÉS',
+        s.recoveryExit
+          ? 'Kövesd a KIVONULÁS pontot; nincs saját fedélzet.'
+          : 'Térj a BASE felé, majd szállj le.',
+      );
   }
   service(s) {
     this.lastServiceLanding = s.lastTouchdown || s.landing;
@@ -117,7 +126,7 @@ export class Mission {
       const report = this.spec.composition
         ? battleObjectives(this, s, targets, w)
         : { failure: '' };
-      if (recoveryComplete(s) && !report.failure && !this.failed) {
+      if (recoveryComplete(s) && !s.recoveryExit && !report.failure && !this.failed) {
         this.aborted = false;
         this.interruptedObjectives = [];
         this.recovered = false;
@@ -202,7 +211,9 @@ export class Mission {
           ? 'Biztonságos földetérés és megállás. Sikeres leszállási gyakorlat.'
           : civil
             ? 'A civil gép biztonságban elhagyta a légteret; sikeres hazatérés.'
-            : 'Cél megsemmisítve, biztonságos hazatérés.',
+            : s.recoveryExit
+              ? 'Ellenséges célok megsemmisítve, biztonságos kivonulás.'
+              : 'Cél megsemmisítve, biztonságos hazatérés.',
       );
       this.score = Math.max(
         0,
@@ -210,8 +221,8 @@ export class Mission {
           1000 +
             (s.fuel / s.spec.fuelCapacity) * 500 +
             (100 - s.damage) * 5 +
-            Math.max(0, 3 - s.landing.descent) * 100 +
-            Math.max(0, 45 - s.landing.offset) * 3 -
+            (s.landing ? Math.max(0, 3 - s.landing.descent) * 100 : 0) +
+            (s.landing ? Math.max(0, 45 - s.landing.offset) * 3 : 0) -
             w.used * 5 -
             w.misses * 20 -
             s.elapsed * 0.2 +
@@ -220,7 +231,7 @@ export class Mission {
       );
       return;
     }
-    if (!this.objectiveComplete && recoveryComplete(s) && !practice) {
+    if (!this.objectiveComplete && recoveryComplete(s) && !practice && !s.recoveryExit) {
       this.service(s);
       return;
     }
@@ -270,7 +281,13 @@ export class Mission {
       return;
     }
     if (this.objectiveComplete) {
-      this.setPhase('return', 'HAZATÉRÉS', 'Kövesd a BASE jelzést; készülj a leszállásra.');
+      this.setPhase(
+        'return',
+        s.recoveryExit ? 'KIVONULÁS' : 'HAZATÉRÉS',
+        s.recoveryExit
+          ? 'Repülj a KIVONULÁS pontjához; a romboló nem leszállóhely.'
+          : 'Kövesd a BASE jelzést; készülj a leszállásra.',
+      );
       return;
     }
     if (!s.airborne) {
@@ -288,7 +305,7 @@ export class Mission {
       this.setPhase('climb', 'FELSZÁLLÁS · EMELKEDÉS', 'Emelkedj 150 m fölé; húzd be a futóművet.');
       return;
     }
-    if (this.spec.objective === 'iron-veil') {
+    if (this.spec.objective === 'iron-veil' && !this.spec.mirrored) {
       const stage = this.ironVeil?.stage || 'breach',
         [label, hint] = ironVeilStages[stage];
       this.setPhase('iron-' + stage, label, hint);

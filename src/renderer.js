@@ -38,7 +38,8 @@ import { renderCountermeasures } from './countermeasureVisuals.js';
 export { aircraftMesh } from './airframes.js';
 // Carrier navigation marks the physical deck, not the old land-runway approach point.
 export function baseMarkerPosition(targets, ocean = false) {
-  const home = targets.find((t) => t.home && t.type === 'carrier');
+  const home = targets.find((t) => t.home);
+  if (home?.remoteHome) return home.position.clone().add(new Vec3(0, 10, -1000));
   return ocean
     ? (home?.position.clone() || new Vec3()).add(new Vec3(0, 20, 0))
     : new Vec3(0, 10, -1000);
@@ -694,7 +695,13 @@ export class Renderer {
     renderCityVisuals(this, targets);
     for (const t of targets
       .filter(
-        (t) => !t.city && !t.exited && !t.playerControlled && !t.home && (t.alive || t.falling),
+        (t) =>
+          !t.city &&
+          !t.exited &&
+          !t.playerControlled &&
+          (!t.home || t.remoteHome) &&
+          !t.renderedAsOriginBase &&
+          (t.alive || t.falling),
       )
       .sort((a, b) => this.local(b.position).z - this.local(a.position).z)) {
       if (t.type === 'ballistic') {
@@ -796,13 +803,15 @@ export class Renderer {
     }
     if (
       !jammed &&
-      (targets.every((t) => !t.alive) ||
+      (s.recoveryExit ||
+        s.airfield ||
+        targets.every((t) => !t.alive) ||
         targets.some((t) => t.civilian && t.withdrawing) ||
         s.position.length() > 3500)
     )
       this.marker(
-        baseMarkerPosition(targets, terrainWorld.ocean),
-        `${terrainWorld.ocean ? 'ANYAHAJÓ' : 'BASE'} ${(s.position.distance(new Vec3(0, 0, 0)) / 1000).toFixed(1)} KM`,
+        s.recoveryExit || baseMarkerPosition(targets, terrainWorld.ocean),
+        `${s.recoveryExit ? 'KIVONULÁS' : terrainWorld.ocean ? 'ANYAHAJÓ' : 'BASE'} ${(s.position.distance(s.recoveryExit || s.airfield?.position || new Vec3()) / 1000).toFixed(1)} KM`,
         '#baf37d',
         false,
         { offscreenLabel: true },
@@ -1041,7 +1050,14 @@ export class Renderer {
     c.globalAlpha = 1;
   }
 }
-export function renderAircraftPreview(canvas, spec, time, model = null, mode = 'vector') {
+export function renderAircraftPreview(
+  canvas,
+  spec,
+  time,
+  model = null,
+  mode = 'vector',
+  { decorations = true } = {},
+) {
   const rect = canvas.getBoundingClientRect(),
     d = Math.min(devicePixelRatio || 1, 2),
     w = rect.width,
@@ -1053,24 +1069,26 @@ export function renderAircraftPreview(canvas, spec, time, model = null, mode = '
   const c = canvas.getContext('2d');
   c.setTransform(d, 0, 0, d, 0, 0);
   c.clearRect(0, 0, w, h);
-  c.strokeStyle = '#294032';
-  c.lineWidth = 0.6;
-  for (let x = 0; x < w; x += 32) {
+  if (decorations) {
+    c.strokeStyle = '#294032';
+    c.lineWidth = 0.6;
+    for (let x = 0; x < w; x += 32) {
+      c.beginPath();
+      c.moveTo(x, 0);
+      c.lineTo(x, h);
+      c.stroke();
+    }
+    for (let y = 0; y < h; y += 32) {
+      c.beginPath();
+      c.moveTo(0, y);
+      c.lineTo(w, y);
+      c.stroke();
+    }
+    c.strokeStyle = '#57764a';
     c.beginPath();
-    c.moveTo(x, 0);
-    c.lineTo(x, h);
+    c.ellipse(w / 2, h * 0.76, w * 0.32, h * 0.12, 0, 0, Math.PI * 2);
     c.stroke();
   }
-  for (let y = 0; y < h; y += 32) {
-    c.beginPath();
-    c.moveTo(0, y);
-    c.lineTo(w, y);
-    c.stroke();
-  }
-  c.strokeStyle = '#57764a';
-  c.beginPath();
-  c.ellipse(w / 2, h * 0.76, w * 0.32, h * 0.12, 0, 0, Math.PI * 2);
-  c.stroke();
   const mesh = model || aircraftMesh(spec.id),
     q = Quat.euler(0.6 + time * 0.14, 0, 0),
     scale = Math.min((w - 44) / (mesh.radius * 2.3), (h - 30) / (mesh.radius * 1.85));
@@ -1113,13 +1131,15 @@ export function renderAircraftPreview(canvas, spec, time, model = null, mode = '
     c.lineTo(b.x, b.y);
   }
   c.stroke();
-  c.fillStyle = '#759268';
-  c.font = '10px Consolas,monospace';
-  c.textAlign = 'left';
-  c.fillText((model ? 'TARGET / ' : 'AIRFRAME / ') + spec.id.toUpperCase(), 15, h - 15);
-  c.textAlign = 'right';
-  c.fillText(mode === 'vector' ? 'VECTOR MODEL' : 'SURFACE PREVIEW', w - 15, h - 15);
-  c.textAlign = 'left';
+  if (decorations) {
+    c.fillStyle = '#759268';
+    c.font = '10px Consolas,monospace';
+    c.textAlign = 'left';
+    c.fillText((model ? 'TARGET / ' : 'AIRFRAME / ') + spec.id.toUpperCase(), 15, h - 15);
+    c.textAlign = 'right';
+    c.fillText(mode === 'vector' ? 'VECTOR MODEL' : 'SURFACE PREVIEW', w - 15, h - 15);
+    c.textAlign = 'left';
+  }
 }
 
 export function renderTargetPreview(canvas, mission, player, time, mode = 'vector') {

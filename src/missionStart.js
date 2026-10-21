@@ -24,7 +24,7 @@ export function createMissionAircraft(
 ) {
   if (mission.naval && spec.trainingOnly)
     throw new Error('A kiképzőgép csak gyakorlópályán használható.');
-  if (mission.naval && !spec.carrierCapable)
+  if (mission.naval && !mission.mirrored && !spec.carrierCapable)
     throw new Error('Ehhez a bevetéshez fedélzeti repülőgép szükséges.');
   if (isPracticeMission(mission)) spec = trainingAircraft;
   else if (spec.transport && !['escort-transport', 'iron-veil'].includes(mission.objective))
@@ -48,6 +48,36 @@ export function createMissionAircraft(
     s.training = true;
     s.ammo = { gun: 0, aam: 0, agm: 0, bomb: 0 };
     s.canyonTraining = createCanyonCourse();
+  }
+  if (mission.mirrored) {
+    const start = terrainWorld.sideStart;
+    if (!start) throw new Error('Előbb a tükrözött hadszínteret kell létrehozni.');
+    s.onGround = false;
+    s.airborne = true;
+    s.gear = false;
+    s.flaps = false;
+    s.flapPosition = 0;
+    s.landingMode = 'off';
+    s.position = start.position.clone();
+    s.previousPosition = s.position.clone();
+    const v = start.speed,
+      air = atmosphere(s.position.y),
+      q = 0.5 * air.density * v * v;
+    const alpha = clamp(((mass(s) * 9.81) / (q * spec.wingArea) - 0.22) / spec.clSlope, 0, 0.16);
+    s.orientation = Quat.euler(start.heading, alpha, 0);
+    s.velocity = new Vec3(Math.sin(start.heading) * v, 0, Math.cos(start.heading) * v);
+    s.throttle = 0.7;
+    s.speed = v;
+    s.ias = v * Math.sqrt(air.density / 1.225);
+    s.mach = v / air.soundSpeed;
+    s.alpha = alpha;
+    s.agl = s.position.y - terrainHeight(s.position.x, s.position.z);
+    s.airfield = start.airfield;
+    s.recoveryExit = start.recoveryExit?.clone();
+    s.radioCallSign = { flight: 'Falcon', number: 1 };
+    s.squad = start.squad;
+    s.formationSlot = start.formationSlot;
+    return s;
   }
   if (mission.airStart) {
     s.onGround = false;
@@ -137,6 +167,8 @@ export function serviceAircraft(s) {
   const naval = !!s.airfield?.carrier,
     fresh = createAircraft(s.spec),
     keep = {
+      airfield: s.airfield,
+      recoveryExit: s.recoveryExit,
       practice: s.practice,
       training: s.training,
       elapsed: s.elapsed,
@@ -152,6 +184,12 @@ export function serviceAircraft(s) {
   for (const key of Object.keys(s)) delete s[key];
   Object.assign(s, fresh, keep);
   if (naval) initialiseNaval(s);
+  else if (s.airfield) {
+    s.position = s.airfield.position.clone();
+    s.position.y = s.airfield.elevation + 2;
+    s.previousPosition = s.position.clone();
+    s.orientation = Quat.euler(s.airfield.heading || 0, 0, 0);
+  }
   if (s.training) s.ammo = { gun: 0, aam: 0, agm: 0, bomb: 0 };
   return s;
 }

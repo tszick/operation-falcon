@@ -34,14 +34,9 @@ test('naval hangar allows only carrier-capable types and provides a single-engin
   assert.equal(h.hasAB, false);
   assert.equal(h.thrust, 98750);
 });
-test('terrain is selected per launch, excludes manual/vector/ocean styles on land and forces daytime sea offshore', () => {
-  assert.equal(
-    missionSurface({ naval: true }, () => 0.5),
-    'ocean',
-  );
-  for (const previous of ['grass', 'desert', 'rocky', 'sunset', 'night', 'winter'])
-    for (const n of [0, 0.5, 0.999])
-      assert.ok(!['vector', 'ocean', previous].includes(missionSurface({}, () => n, previous)));
+test('naval terrain stays daytime ocean and unnamed land missions use grass', () => {
+  assert.equal(missionSurface({ naval: true }), 'ocean');
+  assert.equal(missionSurface({}), 'grass');
 });
 test('catapult launch accelerates the actual physics aircraft and clears the deck', () => {
   const x = navalScenario('catapult');

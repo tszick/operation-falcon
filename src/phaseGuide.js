@@ -10,6 +10,19 @@ import { sensorTargets, navigationJammed } from './electronicWarfare.js';
 // Short, ordered cockpit reminders. Detailed instructions remain in H.
 export function phaseGuide(s, mission, aim, weapons, targets) {
   const step = (key, text, done = false) => ({ key, text, done });
+  if (s.recoveryExit && (mission.aborted || ['return', 'emergency'].includes(mission.phaseId))) {
+    const delta = s.recoveryExit.clone().sub(s.position),
+      heading = (Math.atan2(delta.x, delta.z) / DEG + 360) % 360;
+    return [
+      step(
+        'A / D',
+        `KIVONULÁS: ${Math.round(heading)}° · ${(delta.length() / 1000).toFixed(1)} km`,
+      ),
+      step('W / S', 'Tarts biztonságos magasságot a tenger felett'),
+      step('—', 'Nincs saját fedélzet; repülj a kijelölt pontba'),
+    ].map((v, i) => ({ ...v, active: i === 0 }));
+  }
+
   if (mission.spec.naval && (!s.airborne || (s.onGround && !s.landing?.success)))
     return (
       s.spec.vtol
@@ -150,7 +163,14 @@ export function phaseGuide(s, mission, aim, weapons, targets) {
       ];
       break;
     case 'civil-departure': {
-      const home = (Math.atan2(-s.position.x, -s.position.z) / DEG + 360) % 360;
+      const home =
+        (Math.atan2(
+          (s.recoveryExit?.x ?? s.airfield?.position.x ?? 0) - s.position.x,
+          (s.recoveryExit?.z ?? s.airfield?.position.z ?? 0) - s.position.z,
+        ) /
+          DEG +
+          360) %
+        360;
       steps = [
         step('✓', 'Befogás sikeres; a civil visszafordul', true),
         step('—', 'Ne lőj; hagyd elhagyni a légteret'),
@@ -241,12 +261,28 @@ export function phaseGuide(s, mission, aim, weapons, targets) {
       ];
       break;
     case 'return': {
-      const home = ((Math.atan2(-s.position.x, -s.position.z) * 180) / Math.PI + 360) % 360;
+      const home =
+        ((Math.atan2(
+          (s.recoveryExit?.x ?? s.airfield?.position.x ?? 0) - s.position.x,
+          (s.recoveryExit?.z ?? s.airfield?.position.z ?? 0) - s.position.z,
+        ) *
+          180) /
+          Math.PI +
+          360) %
+        360;
       steps = [
-        step('A / D', `BASE irány: ${Math.round(home).toString().padStart(3, '0')}°`),
+        step(
+          'A / D',
+          `${s.recoveryExit ? 'KIVONULÁS' : 'BASE'} irány: ${Math.round(home).toString().padStart(3, '0')}°`,
+        ),
         ...(s.spec.hasAB ? [step('SHIFT', 'Utánégető kikapcsolása', !s.afterburner)] : []),
         step(speedAction.key, speedAction.text, speedAction.done),
-        step('N', 'Leszállási segéd, ha szükséges'),
+        step(
+          s.recoveryExit ? '—' : 'N',
+          s.recoveryExit
+            ? 'Repülj a kijelölt kivonulási ponthoz'
+            : 'Leszállási segéd, ha szükséges',
+        ),
       ];
       break;
     }

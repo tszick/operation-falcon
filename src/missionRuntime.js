@@ -1,7 +1,9 @@
+import { updateMirroredRuntime } from './sideRuntime.js';
 import { updateIronVeil } from './ironVeil.js';
 import { launchBallistic } from './ballisticFlight.js';
 export function updateMissionRuntime(s, m, targets, w) {
-  if (m.spec.objective === 'iron-veil') updateIronVeil(s, m, targets, w);
+  if (m.spec.mirrored) updateMirroredRuntime(s, m, targets, w);
+  else if (m.spec.objective === 'iron-veil') updateIronVeil(s, m, targets, w);
   if (m.spec.naval) m.wave = 1;
   if (m.spec.objective === 'defend-city') {
     const pending = targets.filter((t) => t.pending),
@@ -18,7 +20,7 @@ export function updateMissionRuntime(s, m, targets, w) {
   }
   if (m.spec.objective === 'ballistic-strike') {
     const silo = targets.find((t) => t.id === 'SILO'),
-      base = targets.find((t) => t.home);
+      base = targets.find((t) => t.id === (silo?.targetId || 'BASE'));
     if (silo?.alive && !silo.launched && s.elapsed >= silo.launchAt && base?.alive) {
       silo.launched = true;
       targets.push(launchBallistic(silo, base));

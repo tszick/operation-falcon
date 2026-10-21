@@ -1,3 +1,5 @@
+import { mirrorBattle } from './sideBattle.js';
+import { assignCoalitionRoster } from './coalitionRoster.js';
 import { transportAircraft } from './heavyAircraftData.js';
 import { spawnIronVeil } from './ironVeil.js';
 import { superiorityPlan, formatCallSign } from './airSuperiority.js';
@@ -12,6 +14,15 @@ import {
 import { unitDefinition } from './unitTypes.js';
 import { enemyAircraft } from './enemies.js';
 export function createBattleTargets(m, player, { rng = Math.random } = {}) {
+  const canonical = m.mirrored
+    ? { ...player, faction: 'west', id: m.naval ? 'fa18' : 'f16' }
+    : player;
+  const units = createCanonicalTargets(m, canonical, rng);
+  if (m.mirrored) mirrorBattle(units, m, player);
+  if (m.side) assignCoalitionRoster(units, player, rng);
+  return units;
+}
+function createCanonicalTargets(m, player, rng) {
   const airBattle = m.objective === 'air-superiority' ? superiorityPlan(player, rng) : null;
   const bearing = rng() * Math.PI * 2,
     radius = 22000 + rng() * 6000,

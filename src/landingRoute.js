@@ -92,11 +92,16 @@ export function dubinsPath(start, heading, end, endHeading, radius) {
   }
   return { ...best, radius, points, endHeading: Math.PI / 2 - angle };
 }
-function verticalClearance(point, desired, final = false, distance = 0) {
+function verticalClearance(point, desired, final = false, distance = 0, heightAt = terrainHeight) {
   const clearance = final ? clamp((distance - 500) / 2500, 0, 1) * 120 : 120;
-  return Math.max(desired, terrainHeight(point.x, point.z) + clearance);
+  return Math.max(desired, heightAt(point.x, point.z) + clearance);
 }
-function planLocalLandingRoute(s, direction = s.approach?.direction || 1, strip = runway) {
+function planLocalLandingRoute(
+  s,
+  direction = s.approach?.direction || 1,
+  strip = runway,
+  heightAt = terrainHeight,
+) {
   const speed = Math.max(60, Math.hypot(s.velocity.x, s.velocity.z)),
     radius = clamp((speed * speed) / (9.81 * Math.tan(30 * DEG)), 700, 12000),
     heading =
@@ -147,14 +152,14 @@ function planLocalLandingRoute(s, direction = s.approach?.direction || 1, strip 
       const point = join.points[i].clone(),
         fraction = clamp(travelled / Math.max(1, join.total), 0, 1),
         height = s.position.y + (2 + entryDistance * slope - s.position.y) * fraction;
-      point.y = verticalClearance(point, height);
+      point.y = verticalClearance(point, height, false, 0, heightAt);
       points.push(point);
     }
   }
   const finalStart = points.length;
   for (let distance = entryDistance; distance > 0; distance -= Math.max(100, entryDistance / 300)) {
     const point = new Vec3(0, 0, -direction * (strip.halfLength + distance));
-    point.y = verticalClearance(point, 2 + distance * slope, true, distance);
+    point.y = verticalClearance(point, 2 + distance * slope, true, distance, heightAt);
     points.push(point);
   }
   points.push(new Vec3(0, 2, -direction * strip.halfLength));
@@ -247,14 +252,23 @@ export function renderLandingRoute(renderer, route) {
 }
 
 export function planLandingRoute(s, direction = s.approach?.direction || 1) {
-  if (!s.airfield?.carrier) return planLocalLandingRoute(s, direction);
+  if (!s.airfield) return planLocalLandingRoute(s, direction);
   const f = s.airfield,
     q = Quat.euler(f.heading, 0, 0),
     local = runwayState(s),
-    route = planLocalLandingRoute(local, 1, { ...f, halfLength: f.touchdownOffset });
+    heightAt = (x, z) => {
+      const p = q.rotate(new Vec3(x, 0, z)).add(f.position);
+      return terrainHeight(p.x, p.z) - f.elevation;
+    },
+    route = planLocalLandingRoute(
+      local,
+      f.carrier ? 1 : direction,
+      f.carrier ? { ...f, halfLength: f.touchdownOffset } : f,
+      f.carrier ? terrainHeight : heightAt,
+    );
   route.points = route.points.map((p) => {
     const v = q.rotate(p).add(f.position);
-    v.y += f.elevation;
+    v.y = p.y + f.elevation;
     return v;
   });
   return route;

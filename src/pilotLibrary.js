@@ -14,6 +14,74 @@ const guide = (id, name, description, steps, watch, pitfalls, related = [], sect
 });
 export const pilotEntries = [
   guide(
+    'coalitions',
+    'Oldalválasztás · nyugati és keleti hadviselés',
+    'A gépkatalógus Nyugat és Kelet fejezetekre tagolódik, oldalanként három, magasabb asztali ablakban hat géppel. A kiválasztott gép automatikusan meghatározza az oldaladat; külön oldalválasztó nincs. A zászlók a típus fejlesztő országát vagy a közös program országait mutatják. A gyakorlatok továbbra is T–45C-vel indulnak.',
+    [
+      [
+        'OLDAL',
+        'Nyugat: nyugati gépek, szovjet/orosz/kínai ellenfelek. Kelet: keleti gépek és nyugati ellenfelek. A keleti vadászraj lehet szovjet, orosz, kínai vagy vegyes. Kínai önálló bombázótípus nincs a játékban, ezért bombázós egynemzetiségű raj szovjet/orosz.',
+      ],
+      [
+        'SZEREPCSERE',
+        'A repteret védő feladat keleti oldalon reptértámadás. A szállítókísérésből ellenséges szállító elfogása, a városvédelemből a város támadása, a siló elleni csapásból a siló védelme lesz. A célokat mindig a bevetési tervben olvasd.',
+      ],
+      [
+        'ANYAHAJÓ',
+        'Nyugati oldalon fedélzetről indulsz és oda térsz vissza. Keleti oldalon te és három rajtársad a levegőből támadtok egy baráti romboló támogatásával. Az anyahajó és négy nyugati védőgép megsemmisítése után a KIVONULÁS pontjához repülj. A romboló nem leszállóhely.',
+      ],
+      [
+        'HAZATÉRÉS',
+        'A szárazföldi szerepcserés bevetéseken a saját hátsó repülőtér a BASE. A leszállási segéd és a radar ezt követi. A leszállás javít és feltölt, amíg a feladat folytatható.',
+      ],
+      [
+        'ADATLAP',
+        'A kiválasztott gép adatpaneljén találod a ⓘ TELJES GÉPADATLAP gombot. A térképes felderítés egységkártyáin és a fegyverhelyeken is találsz adatlapgombot; nem nyit külön böngészőablakot.',
+      ],
+    ],
+    [
+      'Oldalváltáskor a baráti/ellenséges besorolás, az induló géphely és a célfeltételek is változnak; a radar- és fegyverszabályok mindkét oldalra azonosak.',
+      'Konvoj megállítása és a légi ellenfél nélküli reptérbombázás: ugyanaz a feladat és indulás, csak a saját gépválaszték oldala változik.',
+    ],
+    [
+      'Keleti tengeri támadásban nincs saját fedélzet: ne próbálj az ellenséges anyahajóra vagy a rombolóra leszállni.',
+      'A piros cél a kiválasztott oldaladhoz képest ellenség; a kínai és orosz/szovjet gépek ugyanazon keleti koalícióban lehetnek.',
+    ],
+    ['guide-briefing', 'guide-carrier', 'guide-return'],
+  ),
+  guide(
+    'briefing',
+    'Bevetés előkészítése · világtérkép, gép, felszerelés',
+    'A kezdőképernyő három lépésben készít fel a repülésre. Minden küldetéshez rögzített helyszín és táj tartozik.',
+    [
+      [
+        '01 TÉRKÉP',
+        'Mutass egy négyzetre: megjelenik a küldetés neve, mellette a feladat és a célok. Kattintással kijelölöd; a sárga jelölő és a Tovább gomb jelzi a választást. A térkép alatti listából is választhatsz.',
+      ],
+      [
+        '02 REPÜLŐGÉP',
+        'Hármasával, magasabb asztali ablakban 2×3-as elrendezésben lapozható gépkártyák: először nyugati gépek ajánlási sorrendben, majd szovjet, orosz, kínai típusok. A kártyákon csak zászló, gépnév és kitöltött térbeli modell van. A kiválasztott gép műszaki adatai és wiki-linkje a külön adatpanelen olvashatók. Lapozz a nyilakkal, a bal/jobb billentyűkkel vagy oldalra húzással. Kattints a kártyák egyikére a gép kiválasztásához; lapozáskor az új oldal első gépe lesz kijelölve. A gyakorlásokat T–45C-vel repülöd. A nyugati tengeri védelem fedélzeti típust igényel; a keleti tengeri támadás levegőből indul.',
+      ],
+      [
+        '03 FELSZERELÉS',
+        'Válassz a géphez engedélyezett függesztményekből és állítsd be a lőszert, üzemanyagot. Az üres hely könnyebb gépet jelent. A tömeg és fegyverkorlátokat az összesítés mutatja. Kész: indul a küldetés.',
+      ],
+      [
+        'ⓘ ADATLAP',
+        'A gép és a fegyverek mellett elérhető kézikönyv az oldalon belül nyílik meg. Bal oldali listájából minden fejezetet elérsz. Bezárás vagy Escape: vissza a felszereléshez, a választásaid megmaradnak.',
+      ],
+    ],
+    [
+      'A helyszínek fiktív műveletek valós földrajzi térségekben; a repülés továbbra is eljárással generált helyi terepen zajlik.',
+      'A táj nem véletlenszerű: az amerikai gyakorlatok füves, kanyonos vagy sziklás környezetet, a finn bázisvédés havat, az Arab-tenger nappali nyílt vizet kap.',
+    ],
+    [
+      'A használhatónak jelölt típus fegyverzetét is igazítsd a feladathoz. A saját összeállításból hiányozhat szükséges rakéta vagy bomba.',
+      'A T–45C gyakorló-fegyverzetét a feladat rögzíti; bombagyakorlaton pontosan három inert bombát viszel.',
+    ],
+    ['guide-takeoff', 'guide-aiming', 'guide-carrier'],
+  ),
+  guide(
     'low-flight',
     'Alacsony repülés · radar és tereptakarás',
     'Az alacsony repülés csökkentheti a radaros észlelhetőséget. Nem kapcsolható láthatatlanság és nem garantált rakétavédelem.',
@@ -64,7 +132,7 @@ export const pilotEntries = [
     [
       [
         'HANGÁR',
-        'Védd meg a szállítógépet: válassz C-130H, C-130J, Il-76, Il-76MD-90A vagy Y-20 típust az országcsoportban. A játék két Falcon vadászt ad melléd.',
+        'Védd meg a szállítógépet: válassz C-130H vagy C-130J típust a nyugati gépek listájában. A játék két Falcon vadászt ad melléd.',
       ],
       [
         'KIJÁRAT',
@@ -296,7 +364,7 @@ export const pilotEntries = [
       ['Q / E', 'Finom oldalkormány; gurulásnál kis iránykorrekcióhoz is használható.'],
       [
         'EGÉR',
-        'Belső nézetben a pilóta fejét fordítod, a gép iránya és a fegyverek nem fordulnak vele. Az egér megállása után a nézet visszatér előre; a következő mozdulat innen indul, a kurzor helyétől függetlenül. Alt: kurzor a műszerfalhoz; kattintás a tájra: nézelődés folytatása. Oldalra és fel/le korlátozottan nézhetsz; a V a farokgépágyús B–52 és Tu–95 hátsó lövészállására vált. Ott az egérrel a hátsó gépágyút célzod, Szóközzel tüzelhetsz, V-vel visszatérsz. Más típusnál nincs kézi külső nézet.',
+        'Belső nézetben a pilóta fejét fordítod, a gép iránya és a fegyverek nem fordulnak vele. Az egér megállása után a nézet visszatér előre; a következő mozdulat innen indul, a kurzor helyétől függetlenül. Alt: kurzor a műszerfalhoz; kattintás a tájra: nézelődés folytatása. Oldalra és fel/le korlátozottan nézhetsz; a V a farokgépágyús B–52 hátsó lövészállására vált. Ott az egérrel a hátsó gépágyút célzod, Szóközzel tüzelhetsz, V-vel visszatérsz. Más típusnál nincs kézi külső nézet.',
       ],
       [
         '0 / O',

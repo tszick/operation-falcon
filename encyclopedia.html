@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Pilótakézikönyv és egységtár — Operation Falcon: Redline</title>
     <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/src/ui/nationality.css" />
     <style>
       body {
         background: #071211;
@@ -229,6 +230,33 @@
           max-height: 240px;
         }
       }
+      .embedded-library header,
+      .embedded-library .library-intro {
+        display: none;
+      }
+      .embedded-library .library {
+        padding: 20px;
+        max-width: none;
+        grid-template-columns: 260px minmax(0, 1fr);
+        gap: 20px;
+      }
+      .embedded-library .library nav {
+        top: 0;
+      }
+      .embedded-library .library-list {
+        max-height: calc(100vh - 120px);
+      }
+      @media (max-width: 680px) {
+        .embedded-library .library {
+          grid-template-columns: 1fr;
+        }
+        .embedded-library .library nav {
+          position: static;
+        }
+        .embedded-library .library-list {
+          max-height: 160px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -268,6 +296,7 @@
       <section class="library-detail" aria-label="A kiválasztott fejezet vagy egység adatlapja">
         <div id="unit-category" class="eyebrow"></div>
         <h2 id="unit-name"></h2>
+        <div id="unit-nationality"></div>
         <canvas id="unit-art" aria-label="Forgó térbeli előnézet"></canvas>
         <p id="unit-description" class="unit-description"></p>
         <table id="unit-table" class="unit-data">

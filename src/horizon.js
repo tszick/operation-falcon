@@ -40,13 +40,13 @@ void main(){vec3 ray=basis*vec3((gl_FragCoord.x-screen.x*0.5)/screen.z,(gl_FragC
   sea+=vec3(0.006,0.009,0.011)*sin(e*1800.0+sin(turn*25.132741)*0.4)*smoothstep(-0.11,-0.025,e)*(1.0-smoothstep(-0.025,0.0,e));
   vec3 tone=mix(sea,vec3(0.48,0.65,0.73),band*0.55);
   float alpha=e<=0.0?1.0:1.0-smoothstep(0.0,0.14,e);
-  // A 240-degree coast with a broad city skyline, fading into the open-sea third.
+  // A distant 240-degree coast: low dunes and small towers fade into the open sea.
   float bearing=atan(ray.x,ray.z),shoreAngle=atan(sin(bearing-3.14159265359),cos(bearing-3.14159265359));
   float coast=1.0-smoothstep(1.45,2.0943951,abs(shoreAngle));
-  float dunes=0.009+0.004*sin(bearing*11.0)+0.003*sin(bearing*23.0);
+  float dunes=0.004+0.002*sin(bearing*11.0)+0.001*sin(bearing*23.0);
   float city=1.0-smoothstep(0.85,1.90,abs(shoreAngle));
-  float block=floor((shoreAngle+0.5)*90.0),seed=fract(sin(block*127.1)*43758.5453);
-  float tower=city*(0.012+0.050*seed*seed);
+  float block=floor((shoreAngle+0.5)*180.0),seed=fract(sin(block*127.1)*43758.5453);
+  float tower=city*(0.004+0.015*seed*seed);
   float roof=coast*(dunes+tower),edge=max(fwidth(e),0.00006);
   float land=coast*(1.0-smoothstep(roof-edge,roof+edge,e))*smoothstep(-0.004,0.001,e);
   vec3 sand=mix(vec3(0.53,0.56,0.50),vec3(0.65,0.64,0.52),smoothstep(0.001,0.006,e));

@@ -17,6 +17,23 @@
 
 A szerver nem importálja és nem futtatja a böngészős játékot; a böngészős forrás nem függ Node-kiszolgálómodultól. A harci és shader-életciklus réteg nem használ DOM-ot. A fő alkalmazás és a renderer koordinátor: a kapcsolódó alrendszereket hívja, nem külön másolatot tart a fizikából vagy a fegyverszabályokból.
 
+## Bevetés-előkészítő felület
+
+- `missionLocations`: földrajzi koordináták és küldetésenként rögzített táj; ugyanebből készülnek a térképes jelölők és az induló megjelenés.
+- `aircraftCatalog`: mindkét oldal eredeti küldetésből képzett, kompatibilis géplistája, oldalanként három vagy hat géppel, a koalícióhatárokat megtartva. A gép származása határozza meg az oldalt; a lapozó pozíciója nem függ az oldalfrissítéstől. `aircraftNations`: közös fejlesztőország-adatok és helyi SVG-zászlók a katalógushoz és wikihez.
+- `plannerSelection`: a játékos oldal szerinti, küldetéskompatibilis géplistája és ajánlási sorrendje. Nem módosítja az AI vagy a wiki teljes típusadatbázisát.
+- `ui/briefing`: háromlépéses navigáció, térképes előnézet/kijelölés, lapozható gépkártyák és helyi wiki-dialógus. A `main` visszahívásokon keresztül kapcsolja a választásokat a meglévő felszerelési és indítási szabályokhoz.
+- A wiki ugyanazt az enciklopédiaoldalt használja beágyazott módban, teljes fejezetlistával; nincs párhuzamos adatkészlet vagy külső popupablak.
+- A világtérkép helyi SVG, forrása és public-domain felhasználása az `assets/planner/README.txt` fájlban szerepel.
+
+## Oldalfüggő hadszíntér
+
+- `missionSides`: tiszta adatréteg az oldalválasztáshoz és az ellenoldali célokhoz; az eredeti katalógust nem módosítja.
+- `sideBattle`: a kanonikus hadszíntéren cserél csapatot, valódi AI-géphelyet vált ki a játékossal és visszateszi a korábbi játékos AI-helyettesét. Az eredeti objektumazonosítók megmaradnak a célhivatkozásokhoz.
+- `coalitionRoster`: a hadviselő oldalhoz illő konkrét típusokat rendeli a gépekhez. A kínai és orosz/szovjet típusok csapatszinten ugyanahhoz a keleti koalícióhoz tartoznak.
+- `sideObjectives` és `sideRuntime`: a tükrözött célok/történetszakaszok; nem futnak egyszerre az ellentétes győzelmi szabályokkal.
+- `terrainWorld.sideStart`: kizárólag az aktuálisan létrehozott hadszíntér játékos-kezdőhelye és saját reptere/kivonulási pontja; az indulás ezt másolja a repülési állapotba.
+
 ## Kiemelt szabályok
 
 - A fizikai fegyverprofil a `weaponDynamics` modulban azonos a játékos, a barát és az ellenfél számára. A wiki ebből olvassa a számokat.

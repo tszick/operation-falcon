@@ -40,6 +40,8 @@ export function landingGroundHeight(s, terrain) {
 }
 // Approach detection is independent of mission completion and works from both ends.
 export function evaluateApproach(s) {
+  if (s.recoveryExit)
+    return { active: false, instruction: 'Kivonulási pont: nincs saját fedélzeti leszállás.' };
   if (navalFlight(s) && s.spec.vtol && (s.naval?.nozzle || 0) >= 75) return vtolApproach(s);
   s = runwayState(s);
   const strip = s.airfield || runway;
@@ -259,6 +261,13 @@ export function touchdownProblems(s, descent, speed) {
 // Contact energy grows with sink speed squared. The old 3 m/s boundary is
 // a quality threshold; only catastrophic contacts stop the simulation.
 export function assessTouchdown(s, descent, speed) {
+  if (s.recoveryExit)
+    return {
+      fatal: true,
+      damage: 100,
+      grade: 'crash',
+      problems: ['Nincs saját leszállóhely: tengerbe csapódás.'],
+    };
   if (navalFlight(s)) return carrierTouchdown(s, descent, speed);
   s = runwayState(s);
   const a = attitude(s.orientation),

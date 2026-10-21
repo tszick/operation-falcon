@@ -1,3 +1,4 @@
+import { missionLocation } from './missionLocations.js';
 // Experimental palettes and small local textures. No network assets or geometry changes.
 const style = (options) => ({
   texture: 'terrain',
@@ -226,10 +227,7 @@ export function terrainTint(id, normalY, height, light = 1) {
   });
 }
 
-export function missionSurface(mission, random = Math.random, previous = null) {
+export function missionSurface(mission) {
   if (mission.naval) return 'ocean';
-  const options = Object.keys(surfaceStyles).filter(
-    (k) => !['vector', 'ocean', previous].includes(k),
-  );
-  return options[Math.min(options.length - 1, Math.max(0, Math.floor(random() * options.length)))];
+  return missionLocation(mission)?.surface || 'grass';
 }

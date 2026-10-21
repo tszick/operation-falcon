@@ -1,3 +1,4 @@
+import { nationalityMarkup } from './aircraftNations.js';
 import { escapeHtml as escape } from './ui/html.js';
 import { trainingAircraft, trainerReferences } from './trainingAircraft.js';
 import { defensiveGunRows } from './defensiveGunnery.js';
@@ -11,6 +12,8 @@ import { aircraft, transportAircraft } from './aircraftSpec.js';
 import { renderAircraftPreview, renderTargetPreview } from './renderer.js';
 import { armament } from './armament.js';
 import { threatTypes } from './threats.js';
+const embedded = new URLSearchParams(location.search).get('embedded') === '1';
+if (embedded) document.body.classList.add('embedded-library');
 const $ = (id) => document.getElementById(id),
   player = aircraft.find((a) => a.id === 'f16');
 const entries = [
@@ -45,9 +48,11 @@ const entries = [
     name: spec.name,
     category: spec.trainingOnly
       ? 'Kizárólag gyakorlópályákon'
-      : spec.transport
-        ? 'Szállítós küldetésen választható'
-        : 'Választható repülőgép',
+      : spec.faction !== 'west'
+        ? 'Keleti repülőgép · oldaltól és feladattól függően választható'
+        : spec.transport
+          ? 'Szállítós küldetésen választható'
+          : 'Nyugati repülőgép · küldetéstől függően választható',
   })),
   ...weaponEntries,
   ...countermeasureEntries,
@@ -61,7 +66,7 @@ function hashId() {
   }
 }
 let selected = entries.find((e) => e.id === hashId()) || entries[0];
-if (location.hash) $('library-filter').value = selected.kind;
+if (location.hash && !embedded) $('library-filter').value = selected.kind;
 function list() {
   const filter = $('library-filter').value;
   $('library-list').innerHTML = entries
@@ -110,6 +115,7 @@ function relatedIds(entry) {
 function detail() {
   $('unit-category').textContent = selected.category;
   $('unit-name').textContent = selected.name;
+  $('unit-nationality').innerHTML = selected.spec ? nationalityMarkup(selected.spec) : '';
   $('unit-art').hidden = selected.kind === 'guide';
   $('unit-art').setAttribute('aria-label', selected.name + ' forgó térbeli előnézete');
   const extra = strategicArticles[selected.id],

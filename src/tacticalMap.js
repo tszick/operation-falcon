@@ -19,7 +19,10 @@ export function tacticalMapState(
   const base = s.approach?.active ? 10000 : 30000,
     jammed = navigationJammed(s, targets),
     landingRoute = getLandingRoute(s, { jammed });
+  const homePoint = s.recoveryExit || s.airfield?.position || { x: 0, z: 0 };
   const reach = Math.max(
+    Math.abs(homePoint.x),
+    Math.abs(homePoint.z),
     Math.abs(s.position.x),
     Math.abs(s.position.z),
     ...contacts.flatMap((c) => [Math.abs(c.target.position.x), Math.abs(c.target.position.z)]),
@@ -214,24 +217,33 @@ export function renderTacticalMap(canvas, s, targets, aim, options = {}) {
   c.moveTo(0, cy);
   c.lineTo(width, cy);
   c.stroke();
-  c.strokeStyle = '#9fc37388';
-  c.setLineDash([3, 4]);
-  c.beginPath();
   const approach = 13000 * map.scale,
-    base = mapPoint({ x: 0, z: 0 }, map);
-  c.moveTo(base.x, base.y - approach);
-  c.lineTo(base.x, base.y + approach);
-  c.stroke();
-  c.setLineDash([]);
-  c.strokeStyle = '#d1efa8';
-  const baseLength = terrainWorld.ocean ? 160 : runway.halfLength;
-  c.strokeRect(base.x - 1.5, base.y - baseLength * map.scale, 3, baseLength * 2 * map.scale);
+    base = mapPoint(s.recoveryExit || s.airfield?.position || { x: 0, z: 0 }, map);
   c.fillStyle = '#a9c88d';
   c.font = '12px Consolas,monospace';
   c.fillText('N', cx + 4, 13);
-  c.fillText(terrainWorld.ocean ? 'ANYAHAJÓ' : 'BASE', base.x + 6, base.y + 12);
-  c.fillText(terrainWorld.ocean ? '352°' : '000°', base.x + 5, base.y - approach + 9);
-  c.fillText(terrainWorld.ocean ? '' : '180°', base.x + 5, base.y + approach - 3);
+  if (s.recoveryExit) {
+    c.strokeStyle = '#a497ff';
+    c.fillStyle = '#c1b7ff';
+    c.beginPath();
+    c.arc(base.x, base.y, Math.max(5, 2500 * map.scale), 0, Math.PI * 2);
+    c.stroke();
+    c.fillText('KIVONULÁS', base.x + 7, base.y + 12);
+  } else {
+    c.strokeStyle = '#9fc37388';
+    c.setLineDash([3, 4]);
+    c.beginPath();
+    c.moveTo(base.x, base.y - approach);
+    c.lineTo(base.x, base.y + approach);
+    c.stroke();
+    c.setLineDash([]);
+    c.strokeStyle = '#d1efa8';
+    const baseLength = terrainWorld.ocean ? 160 : runway.halfLength;
+    c.strokeRect(base.x - 1.5, base.y - baseLength * map.scale, 3, baseLength * 2 * map.scale);
+    c.fillText(terrainWorld.ocean ? 'ANYAHAJÓ' : 'BASE', base.x + 6, base.y + 12);
+    c.fillText(terrainWorld.ocean ? '352°' : '000°', base.x + 5, base.y - approach + 9);
+    c.fillText(terrainWorld.ocean ? '' : '180°', base.x + 5, base.y + approach - 3);
+  }
   if (s.spec.transport) {
     const t = targets.find((t) => t.playerControlled && !t.exited);
     if (t) {

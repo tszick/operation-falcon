@@ -215,6 +215,9 @@ export function vtolApproach(s) {
 }
 
 export function recoveryComplete(s) {
+  if (s.recoveryExit)
+    return !s.crashed && !s.dying && !s.onGround && s.position.distance(s.recoveryExit) < 2500;
+
   return !!(
     s.onGround &&
     s.landing?.success &&

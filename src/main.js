@@ -1,16 +1,20 @@
+import { missionForSide } from './missionSides.js';
+import { Briefing } from './ui/briefing.js';
+import { catalogueAircraft } from './aircraftCatalog.js';
+import { aircraftSide } from './aircraftNations.js';
+import { missionLocation } from './missionLocations.js';
+import { weaponProfile } from './weaponDynamics.js';
 import { readPreference, writePreference } from './ui/preferences.js';
 import { requestCatapult } from './navalOps.js';
 import { surfaceStyles, missionSurface } from './surfaceStyle.js';
 import { missionForAircraft } from './transportRole.js';
-import { trainingAircraft, isPracticeMission, unarmedPractice } from './trainingAircraft.js';
-import { missionAircraftChoices } from './aircraftSpec.js';
+import { isPracticeMission, unarmedPractice } from './trainingAircraft.js';
 import { MissionControlView } from './missionControl.js';
 import { nextMapZoom } from './tacticalMap.js';
 import { hasTailGun, setRearView } from './tailGunnery.js';
 import { afterburnerStatus } from './engineState.js';
 import { FrameTelemetry } from './frameTelemetry.js';
 import { superiorityRoster } from './airSuperiority.js';
-import { missionGroups } from './missionCatalog.js';
 import { HeadLookInput } from './headLookInput.js';
 import { postRadioMessage, postFlightMessage, resetFlightMessages } from './flightMessages.js';
 import { mountCockpit } from './cockpit.js';
@@ -29,14 +33,14 @@ import { FlightRecorder } from './flightRecorder.js';
 import { FlightLogStorage, downloadFlightLog } from './flightLogStorage.js';
 import { unitDefinition } from './unitTypes.js';
 import { navigationJammed } from './electronicWarfare.js';
-import { aircraft, missions, suitability, hangarGroups } from './aircraftSpec.js';
+import { aircraft, missions, suitability } from './aircraftSpec.js';
 import { stepAircraft, STEP } from './physics.js';
 import { createMissionAircraft, defaultMissionFuel } from './missionStart.js';
 import { createTargets, updateTargets, Targeting } from './targeting.js';
 import { Weapons } from './weapons.js';
 import { Mission } from './mission.js';
 import { AudioSystem } from './audio.js';
-import { Renderer, renderAircraftPreview, renderTargetPreview } from './renderer.js';
+import { Renderer, renderTargetPreview } from './renderer.js';
 import { updateHUD } from './hud.js';
 import { evaluateApproach } from './landing.js';
 import { armament, weaponLabel } from './armament.js';
@@ -72,7 +76,7 @@ let landingRouteEnabled = readPreference('falcon-landing-route') !== 'off';
 let guideVisible = readPreference('vector-flight-guide') !== 'closed';
 let selected = aircraft.find((a) => a.id === 'f16'),
   selectedMission = missions[0],
-  hangarGroup = 'nato-classic',
+  selectedSide = 'west',
   state = null,
   targets = [],
   weapons = null,
@@ -256,6 +260,12 @@ function updateLoadout() {
     training = unarmedPractice(selectedMission),
     check = validateLoadout(selected, choice);
   $('loadout-editor').hidden = isPracticeMission(selectedMission) || !!selected.transport;
+  $('equipment-stores-info').innerHTML = Object.entries(preset.weapons)
+    .map(
+      ([type, w]) =>
+        `<button class="wiki-card-link" data-wiki="weapon-${weaponProfile(selected, type).id}">ⓘ ${w.name}</button>`,
+    )
+    .join('');
   updateDeparture();
   $('loadout-gun').innerHTML = preset.weapons.gun
     ? `<label><input id="loadout-cannon" type="checkbox" ${choice.gun ? 'checked' : ''}> Gépágyúlőszer: ${preset.weapons.gun.name} · ${preset.weapons.gun.quantity} db</label>`
@@ -277,16 +287,32 @@ function updateLoadout() {
           .join('')}</select></label>`,
     )
     .join('');
+  for (const label of $('loadout-stations').querySelectorAll('label')) {
+    const select = label.querySelector('select');
+    const info = document.createElement('button');
+    info.type = 'button';
+    info.className = 'wiki-card-link station-info';
+    info.textContent = 'ⓘ Fegyveradatlap';
+    info.disabled = !select.value;
+    info.onclick = () => briefing.openWiki('weapon-' + weaponProfile(selected, select.value).id);
+    label.append(info);
+  }
+  if (preset.weapons.gun) {
+    const info = document.createElement('button');
+    info.type = 'button';
+    info.className = 'wiki-card-link';
+    info.textContent = 'ⓘ Gépágyú';
+    info.onclick = () => briefing.openWiki('weapon-' + weaponProfile(selected, 'gun').id);
+    $('loadout-gun').append(info);
+  }
   $('loadout-capacity').textContent =
     `${check.count} / ${check.limits.maxStores} függesztmény · ${Math.round(check.payloadKg)} / ${check.limits.maxPayloadKg} kg engedélyezett játékbeli fegyverterhelés`;
   $('loadout-errors').textContent = check.errors.join(' ');
   $('launch').disabled = !training && !check.valid;
   const configured = check.valid ? configureAircraft(selected, choice) : selected;
-  const selectedRating = $('aircraft-list').querySelector(
-    `[data-aircraft="${selected.id}"] .rating`,
-  );
+  const selectedRating = $('preview-rating');
   if (selectedRating) {
-    const rating = suitability(configured, selectedMission);
+    const rating = suitability(configured, missionForSide(selectedMission, selectedSide));
     selectedRating.className = 'rating ' + rating;
     selectedRating.textContent = ratingLabels[rating];
   }
@@ -336,85 +362,74 @@ $('loadout-reset').onclick = () => {
   loadoutChoices.set(selected.id, defaultLoadout(selected));
   updateLoadout();
 };
-let lastCombatAircraft = selected;
-function updatePlanner() {
-  const practice = isPracticeMission(selectedMission);
-  if (practice) {
-    if (!selected.trainingOnly) lastCombatAircraft = selected;
-    selected = trainingAircraft;
-  } else if (
-    selected.trainingOnly ||
-    !missionAircraftChoices(selectedMission).some((a) => a.id === selected.id)
-  ) {
-    selected =
-      missionAircraftChoices(selectedMission).find((a) => a.id === lastCombatAircraft.id) ||
-      missionAircraftChoices(selectedMission)[0];
-    hangarGroup = selected.group;
+const briefing = new Briefing({
+  missions,
+  onPreview: renderMissionBrief,
+  onMission: (m) => {
+    selectedMission = m;
+    selected = catalogueAircraft(m)[0];
+    selectedSide = aircraftSide(selected);
+    updatePlanner();
+  },
+  onAircraft: (a) => {
+    selected = a;
+    selectedSide = aircraftSide(a);
+    updatePlanner();
+  },
+});
+function renderMissionBrief(briefMission) {
+  if (!briefMission) {
+    $('mission-empty').hidden = false;
+    $('mission-details').hidden = true;
+    return;
   }
-  $('hangar-tabs').hidden = practice;
-
-  $('missions').innerHTML = missionGroups
-    .map(
-      (group) =>
-        `<section class="mission-group" aria-label="${group.name}"><h3>${group.name}</h3><div class="mission-group-cards">${missions
-          .filter((m) => m.group === group.id)
-          .map(
-            (m) =>
-              `<button class="mission-card ${m === selectedMission ? 'selected' : ''}" data-mission="${m.id}" aria-pressed="${m === selectedMission}">${threatMarkup(m)}<small>${m.difficulty}</small><span class="icon" aria-hidden="true">${m.icon}</span><strong>${m.order}. ${m.name}</strong></button>`,
-          )
-          .join('')}</div></section>`,
-    )
-    .join('');
-  $('mission-count').textContent = missions.length;
-  $('mission-code').textContent = selectedMission.code;
-  $('mission-name').textContent = selectedMission.name;
-  $('mission-description').textContent = missionForAircraft(selectedMission, selected).description;
+  briefMission = missionForSide(briefMission, selectedSide);
+  $('mission-empty').hidden = true;
+  $('mission-details').hidden = false;
+  const location = missionLocation(briefMission);
+  $('mission-location').textContent = location.name + ' · ' + surfaceStyles[location.surface].label;
+  $('mission-threat-icons').innerHTML = threatMarkup(briefMission);
+  $('mission-code').textContent = briefMission.difficulty + ' / ' + briefMission.code;
+  $('mission-name').textContent = briefMission.name;
+  $('mission-description').textContent = missionForAircraft(briefMission, selected).description;
   $('mission-threats').textContent =
-    missionThreatsFor(selectedMission)
+    missionThreatsFor(briefMission)
       .map((type) => threatTypes[type].name)
       .join(' · ') || 'NINCS FEGYVERES ELLENFÉL';
   $('mission-goals').innerHTML = `<h4>ELSŐDLEGES CÉLOK</h4><ol>${missionForAircraft(
-    selectedMission,
+    briefMission,
     selected,
   )
     .primary.map((text) => `<li>${text}</li>`)
     .join('')}</ol>${
-    selectedMission.optional.length
-      ? `<h4>OPCIONÁLIS</h4><ul>${missionForAircraft(selectedMission, selected)
+    briefMission.optional.length
+      ? `<h4>OPCIONÁLIS</h4><ul>${missionForAircraft(briefMission, selected)
           .optional.map((text) => `<li>${text}</li>`)
           .join('')}</ul>`
       : ''
   }`;
-  const roster = superiorityRoster(missionForAircraft(selectedMission, selected), selected),
+  const roster = superiorityRoster(missionForAircraft(briefMission, selected), selected),
     opponents = roster.filter((r) => r.team !== 'ally'),
     allies = roster.filter((r) => r.team === 'ally');
   $('mission-gallery').innerHTML =
     opponents
       .map(
         (r) =>
-          `<figure class="unit-preview"><canvas data-preview-unit="${r.type}" aria-label="${unitDefinition(r.type).name} forgó térbeli előnézete"></canvas><figcaption><strong>${r.count} × ${unitDefinition(r.type).name}</strong><small>${unitDefinition(r.type).category}</small></figcaption></figure>`,
+          `<figure class="unit-preview"><canvas data-preview-unit="${r.type}" aria-label="${unitDefinition(r.type).name} forgó térbeli előnézete"></canvas><figcaption><strong>${r.count} × ${unitDefinition(r.type).name}</strong><small>${unitDefinition(r.type).category}</small><button type="button" class="wiki-card-link" data-wiki="${r.type}">ⓘ ADATLAP</button></figcaption></figure>`,
       )
       .join('') ||
-    `<p class="empty-recon">${selectedMission.objective === 'canyon' ? 'Nincs ellenség. Kanyonrepülés és gerinc feletti kijutás.' : 'Nincs ellenség. Csak te és a leszállópálya.'}</p>`;
+    `<p class="empty-recon">${briefMission.objective === 'canyon' ? 'Nincs ellenség. Kanyonrepülés és gerinc feletti kijutás.' : 'Nincs ellenség. Csak te és a leszállópálya.'}</p>`;
   $('mission-allies').innerHTML = allies.length
-    ? `<h4>SZÖVETSÉGES TÁMOGATÁS / VÉDENDŐ EGYSÉGEK</h4><p>${allies.map((r) => `${r.count} × ${unitDefinition(r.type).name}`).join(' · ')}</p><small>A gép vezeti őket; te a saját repülődet irányítod.</small>`
+    ? `<h4>SZÖVETSÉGES TÁMOGATÁS / VÉDENDŐ EGYSÉGEK</h4><p>${allies.map((r) => `<button class="wiki-card-link" data-wiki="${r.type}">${r.count} × ${unitDefinition(r.type).name} ⓘ ADATLAP</button>`).join(' ')}</p><small>A gép vezeti őket; te a saját repülődet irányítod.</small>`
     : '';
-  $('aircraft-list').innerHTML = missionAircraftChoices(selectedMission)
-    .filter((a) => practice || a.group === hangarGroup)
-    .map((a) => {
-      const rating = suitability(a, selectedMission);
-      return `<button class="aircraft-row ${a === selected ? 'selected' : ''}" data-aircraft="${a.id}" aria-pressed="${a === selected}"><span class="radio" aria-hidden="true"></span><span><strong>${a.name}</strong><small>${a.role.toUpperCase()} · MACH ${a.maxMach.toFixed(2)}</small></span><span class="rating ${rating}">${ratingLabels[rating]}</span></button>`;
-    })
-    .join('');
-  $('launch').innerHTML = selected.transport
-    ? 'SZÁLLÍTÓREPÜLÉS INDÍTÁSA ↗'
-    : unarmedPractice(selectedMission)
-      ? 'GYAKORLÁS INDÍTÁSA ↘'
-      : selectedMission.objective === 'air-superiority'
-        ? 'LÉGIFÖLÉNY INDÍTÁSA ↗'
-        : selectedMission.airStart
-          ? 'KÍSÉRÉS INDÍTÁSA ↗'
-          : 'FELSZÁLLÁS ↗';
+}
+function updatePlanner() {
+  const choices = catalogueAircraft(selectedMission);
+  if (!choices.includes(selected)) selected = choices[0];
+  selectedSide = aircraftSide(selected);
+  const sideMission = missionForSide(selectedMission, selectedSide);
+  $('mission-count').textContent = missions.length;
+  $('launch').textContent = 'KÉSZ · BEVETÉS INDÍTÁSA ↗';
   $('planner-stores').textContent = unarmedPractice(selectedMission)
     ? `FEGYVERZET NÉLKÜL · ${Math.round(selectedFuel() * 100)}% ÜZEMANYAG`
     : Object.entries(armament(selected).weapons)
@@ -440,69 +455,10 @@ function updatePlanner() {
     .map(([l, v, u]) => `<div><small>${l}</small><b>${v}<span>${u}</span></b></div>`)
     .join('');
   updateLoadout();
-  $('aircraft-count').textContent = missionAircraftChoices(selectedMission).length;
-  for (const group of hangarGroups) {
-    const button = $(group.id);
-    button.classList.toggle('active', group.id === hangarGroup);
-    button.setAttribute('aria-selected', String(group.id === hangarGroup));
-    button.tabIndex = group.id === hangarGroup ? 0 : -1;
-    const count = missionAircraftChoices(selectedMission).filter(
-      (a) => a.group === group.id,
-    ).length;
-    button.querySelector('span').textContent = count;
-    button.disabled = count === 0;
-  }
+  $('aircraft-count').textContent = choices.length;
+  briefing.update(missionForAircraft(sideMission, selected), selected, choices);
+  renderMissionBrief(briefing.confirmed ? selectedMission : null);
 }
-$('missions').addEventListener('click', (e) => {
-  const b = e.target.closest('[data-mission]');
-  if (b) {
-    selectedMission = missions.find((m) => m.id === b.dataset.mission);
-    updatePlanner();
-  }
-});
-$('aircraft-list').addEventListener('click', (e) => {
-  const b = e.target.closest('[data-aircraft]');
-  if (b) {
-    selected = missionAircraftChoices(selectedMission).find((a) => a.id === b.dataset.aircraft);
-    updatePlanner();
-  }
-});
-const groupSelections = new Map([[hangarGroup, selected.id]]);
-for (const group of hangarGroups) {
-  const button = document.createElement('button');
-  button.id = group.id;
-  button.type = 'button';
-  button.setAttribute('role', 'tab');
-  button.innerHTML = `${group.name}<span>${aircraft.filter((a) => a.group === group.id).length}</span>`;
-  button.onclick = () => {
-    groupSelections.set(hangarGroup, selected.id);
-    hangarGroup = group.id;
-    selected =
-      missionAircraftChoices(selectedMission).find((a) => a.id === groupSelections.get(group.id)) ||
-      missionAircraftChoices(selectedMission).find((a) => a.group === group.id);
-    updatePlanner();
-  };
-  $('hangar-tabs').append(button);
-}
-$('hangar-tabs').addEventListener('keydown', (e) => {
-  const index = hangarGroups.findIndex((g) => g.id === e.target.id);
-  if (index < 0) return;
-  const next =
-    e.key === 'ArrowRight'
-      ? (index + 1) % hangarGroups.length
-      : e.key === 'ArrowLeft'
-        ? (index + hangarGroups.length - 1) % hangarGroups.length
-        : e.key === 'Home'
-          ? 0
-          : e.key === 'End'
-            ? hangarGroups.length - 1
-            : -1;
-  if (next < 0) return;
-  e.preventDefault();
-  const button = $(hangarGroups[next].id);
-  button.click();
-  button.focus();
-});
 function setGuideVisible(visible) {
   guideVisible = visible;
   $('phase-guide').hidden = !visible;
@@ -521,6 +477,10 @@ function toggleLandingRoute() {
 }
 function toggleApproach() {
   if (!state || paused || state.onGround) return;
+  if (state.recoveryExit) {
+    toast('NINCS SAJÁT FEDÉLZET · KÖVESD A KIVONULÁS PONTOT');
+    return;
+  }
   state.landingMode = state.approach?.active || state.landingMode === 'on' ? 'off' : 'on';
   state.approach = evaluateApproach(state);
   clearLandingRoute(state);
@@ -657,8 +617,8 @@ function launch() {
   headLook.limits = null;
   document.body.classList.remove('external-view', 'rear-view');
   audio.clearEffects();
-  const flightMission = missionForAircraft(selectedMission, selected);
-  setSurfaceMode(missionSurface(flightMission, Math.random, renderer.surfaceMode));
+  const flightMission = missionForAircraft(missionForSide(selectedMission, selectedSide), selected);
+  setSurfaceMode(missionSurface(flightMission));
   targets = createTargets(flightMission, selected);
   state = createMissionAircraft(
     configureAircraft(
@@ -749,7 +709,9 @@ function showOverlay(kind) {
               ? 'A három inert bombából legalább kettő a célkörbe talált, majd biztonságosan leszálltál és megálltál.'
               : mission.spec.objective === 'escort'
                 ? 'A civil gép sértetlenül elhagyta a légteret. Sikeresen hazahoztad a gépedet.'
-                : 'Az elsődleges feladatokat teljesítetted és sikeresen leszálltál.'
+                : state.recoveryExit
+                  ? 'Az elsődleges feladatokat teljesítetted és biztonságosan kivonultál.'
+                  : 'Az elsődleges feladatokat teljesítetted és sikeresen leszálltál.'
         : kind === 'failure'
           ? mission.failureReason
           : kind === 'aborted'
@@ -758,7 +720,7 @@ function showOverlay(kind) {
               'Indítsd újra a feladatot, vagy válassz másik gépet a hangárban.';
   $('overlay-stats').textContent =
     kind === 'success'
-      ? `${mission.score} PONT · REKORD ${best}${mission.spec.objective === 'canyon' ? ' · KANYONGYAKORLAT' : ` · FÖLDETÉRÉS ${state.landing?.descent?.toFixed(1) || '—'} M/S`}`
+      ? `${mission.score} PONT · REKORD ${best}${mission.spec.objective === 'canyon' ? ' · KANYONGYAKORLAT' : state.recoveryExit ? ' · KIVONULÁS' : ` · FÖLDETÉRÉS ${state.landing?.descent?.toFixed(1) || '—'} M/S`}`
       : kind === 'crash'
         ? `REPÜLT IDŐ ${Math.round(state.elapsed)} S · ${state.practice ? 'GYAKORLÓREPÜLÉS' : mission.destroyed ? 'CÉL MEGSEMMISÍTVE' : 'CÉL AKTÍV'}`
         : '';
@@ -812,6 +774,7 @@ function hangar() {
   audio.suspend();
   pointerWheelBrake = false;
   $('hangar').hidden = false;
+  briefing.show('missions');
   $('hangar-footer').hidden = false;
   $('flight-ui').hidden = true;
   $('overlay').hidden = true;
@@ -1112,15 +1075,9 @@ function frame(time) {
         }),
       );
   } else {
-    renderer.idle(time / 1000);
-    renderAircraftPreview(
-      $('aircraft-art'),
-      selected,
-      matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : time / 1000,
-      null,
-      renderer.surfaceMode,
-    );
+    briefing.renderCards(matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : time / 1000);
     for (const canvas of $('mission-gallery').querySelectorAll('canvas')) {
+      if (!canvas.getBoundingClientRect().width) continue;
       const id = canvas.dataset.previewUnit;
       renderTargetPreview(
         canvas,

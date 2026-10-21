@@ -17,7 +17,7 @@ export function launchBallistic(silo, base) {
     id: 'BALLISTIC',
     type: 'ballistic',
     kind: 'air',
-    team: 'enemy',
+    team: silo.team || 'enemy',
     faction: silo.faction,
     name: 'Interkontinentális rakéta',
     alive: true,

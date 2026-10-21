@@ -1,0 +1,25 @@
+.aircraft-nationality {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #c4d2c2;
+  font: 12px/1.5 var(--mono, monospace);
+}
+.national-flags {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.national-flags img {
+  display: block;
+  width: 30px;
+  height: 20px;
+  object-fit: fill;
+  border: 1px solid #ffffff40;
+  box-shadow: 0 2px 5px #0006;
+}
+#unit-nationality {
+  margin: 0 0 16px;
+}

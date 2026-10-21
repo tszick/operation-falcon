@@ -26,7 +26,12 @@ export function analyzeFlight(log) {
     if (touchdown.afterburner) observations.push('Földetéréskor az utánégető aktív volt.');
     if (touchdown.flapPosition < 0.95)
       observations.push('A fékszárny nem volt teljesen kiengedve.');
-  } else observations.push('Még nincs rögzített földetérési kísérlet.');
+  } else
+    observations.push(
+      log?.metadata?.mission?.recoveryMode === 'egress'
+        ? 'Tengeri támadóbevetés: a saját fedélzet nélküli hazatérést kivonulási pont zárja, leszállás nem szükséges.'
+        : 'Még nincs rögzített földetérési kísérlet.',
+    );
   return {
     samples,
     end,

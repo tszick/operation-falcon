@@ -18,7 +18,7 @@ export function missionCardState(s, m, targets = []) {
     failed.add('landing');
     failed.add('return');
   }
-  if (!m.aborted) {
+  if (!m.aborted && !m.spec.mirrored) {
     if (m.spec.objective === 'bridge-block' && by('CONVOY')?.crossedBridge && !m.bridgeSecured)
       failed.add('bridge');
     if (m.spec.objective === 'defend-base' && by('BASE')?.alive === false) failed.add('base');
