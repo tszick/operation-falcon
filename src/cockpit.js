@@ -1,3 +1,4 @@
+import { tr, trHtml } from './i18n.js';
 import {
   FRAME,
   screenWells,
@@ -14,16 +15,17 @@ export function mountCockpit() {
   if (!ui) return;
   const root = document.createElement('section');
   root.id = 'cockpit';
-  root.setAttribute('aria-label', 'Fedélzeti műszerfal');
-  root.innerHTML =
+  root.setAttribute('aria-label', tr('Fedélzeti műszerfal'));
+  root.innerHTML = trHtml(
     '<div id="cockpit-frame" aria-hidden="true"></div>' +
-    Object.keys(screenWells)
-      .map(
-        (name) =>
-          `<section id="cockpit-${name}" class="cockpit-screen" data-well="${name}"></section>`,
-      )
-      .join('') +
-    '<div id="cockpit-annunciator"></div>';
+      Object.keys(screenWells)
+        .map(
+          (name) =>
+            `<section id="cockpit-${name}" class="cockpit-screen" data-well="${name}"></section>`,
+        )
+        .join('') +
+      '<div id="cockpit-annunciator"></div>',
+  );
   ui.append(root);
   const move = (id, to) => {
     const node = document.getElementById(id);
@@ -47,15 +49,16 @@ export function mountCockpit() {
   move('damage-status', 'cockpit-annunciator');
   const old = document.getElementById('fuel-status');
   old.remove();
-  document.getElementById('cockpit-engine').innerHTML =
-    `<section id="fuel-status" aria-label="Üzemanyag, gázkar és G-terhelés"><div id="fuel-gauge" role="group" aria-label="Üzemanyagszint"><span id="fuel-label">FUEL</span><strong id="fuel-value">100%</strong><div id="fuel-meter" role="meter" aria-label="Üzemanyag" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><span id="fuel-fill"></span></div></div><div class="cockpit-range"><span id="fuel-range">— KM</span><span id="fuel-quantity"></span></div><div id="g-load" role="meter" aria-label="G-terhelés" aria-valuemin="-4" aria-valuemax="9" aria-valuenow="1" data-level="normal"><span>G</span><strong id="g-value">+1.0</strong></div><div id="throttle-status" role="meter" aria-label="Gázkar állása" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span>GÁZ</span><b id="throttle-value">0%</b><div class="throttle-track"><span id="throttle-fill"></span></div></div></section>`;
+  document.getElementById('cockpit-engine').innerHTML = trHtml(
+    `<section id="fuel-status" aria-label="Üzemanyag, gázkar és G-terhelés"><div id="fuel-gauge" role="group" aria-label="Üzemanyagszint"><span id="fuel-label">FUEL</span><strong id="fuel-value">100%</strong><div id="fuel-meter" role="meter" aria-label="Üzemanyag" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><span id="fuel-fill"></span></div></div><div class="cockpit-range"><span id="fuel-range">— KM</span><span id="fuel-quantity"></span></div><div id="g-load" role="meter" aria-label="G-terhelés" aria-valuemin="-4" aria-valuemax="9" aria-valuenow="1" data-level="normal"><span>G</span><strong id="g-value">+1.0</strong></div><div id="throttle-status" role="meter" aria-label="Gázkar állása" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span>GÁZ</span><b id="throttle-value">0%</b><div class="throttle-track"><span id="throttle-fill"></span></div></div></section>`,
+  );
   const oldBrake = document.getElementById('config-wheel-brake'),
     brake = document.createElement('button');
   brake.id = oldBrake.id;
   brake.type = 'button';
-  brake.title = 'Ctrl: tartsd nyomva a kerékfékhez';
+  brake.title = tr('Ctrl: tartsd nyomva a kerékfékhez');
   oldBrake.replaceWith(brake);
-  document.getElementById('phase-guide').setAttribute('aria-label', 'Mission Control');
+  document.getElementById('phase-guide').setAttribute('aria-label', tr('Mission Control'));
   layoutKey = '';
   layoutCockpit();
   window.addEventListener('resize', layoutCockpit);
@@ -127,5 +130,5 @@ export function updateCockpit(s) {
     radar.width = rw;
     radar.height = rh;
   }
-  root.querySelector('#phase-guide').title = document.getElementById('guide-title').textContent;
+  root.querySelector('#phase-guide').title = tr(document.getElementById('guide-title').textContent);
 }

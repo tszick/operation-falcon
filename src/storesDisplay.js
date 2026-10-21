@@ -1,3 +1,4 @@
+import { trHtml } from './i18n.js';
 import { aircraftMesh } from './airframes.js';
 import { armament, loadedStations, weaponKeys } from './armament.js';
 import { faceDamagePart } from './hitGeometry.js';
@@ -83,5 +84,7 @@ export function updateStores(s, weapons, options = {}) {
   ]);
   if (next === signature) return;
   signature = next;
-  document.getElementById('stores-display').innerHTML = storesMarkup(s, weapons.selected, options);
+  document.getElementById('stores-display').innerHTML = trHtml(
+    storesMarkup(s, weapons.selected, options),
+  );
 }

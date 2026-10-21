@@ -1,6 +1,6 @@
 # Operation Falcon: Redline
 
-Böngészős repülőszimulátor magyar kezelőfelülettel, 120 Hz-es repülésfizikával, küldetésekkel és helyben futó gépi ellenfelekkel. A 3D világ WebGL 2-vel, a HUD és a műszerfal Canvas/DOM réteggel jelenik meg. A játékhoz nincs külső futásidejű npm-függőség vagy felhős AI-szolgáltatás; a rádiófelvételek helyi fájlok.
+Böngészős repülőszimulátor magyar és angol kezelőfelülettel, 120 Hz-es repülésfizikával, küldetésekkel és helyben futó gépi ellenfelekkel. A 3D világ WebGL 2-vel, a HUD és a műszerfal Canvas/DOM réteggel jelenik meg. A játékhoz nincs külső futásidejű hálózati függőség vagy felhős AI-szolgáltatás; a rádiófelvételek helyi fájlok.
 
 ## Indítás
 
@@ -63,3 +63,9 @@ Az ütemezések a workflow-fájlok **alapértelmezett ágra történő feltölt�
 - [Archivált fejlesztési feljegyzések](docs/archive/development-notes.md)
 
 A WebGL 2 böngésző-API: nem npm-csomagként frissül. A böngésző és a videóillesztő frissítése adja a legújabb implementációt. A WebGPU külön API, ezért nem része egy WebGL-verziófrissítésnek.
+
+## Nyelvek
+
+A fejlécben magyar és angol felület választható. Első indításkor a böngésző támogatott nyelve érvényes; más nyelvnél angol az alapértelmezés. A kézi választás a `falcon-language` helyi beállításban marad meg. Váltáskor a bevetés, felszerelés és repülési állapot megmarad; a wiki és a naplónézet is követi a választást. A hangfelvételek minden nyelven angolok, a rádiófeliratok fordíthatók.
+
+Az i18next rögzített npm-függőség, helyi ESM-példánya az `assets/vendor/i18next/` alatt van. Az `npm install`/`npm ci` utáni `postinstall` frissíti a böngészős példányt és MIT-licencet; kézzel `npm run vendor:sync` futtatható. Játék közben nincs CDN vagy fordítószolgáltatás. A szótár: `src/locales/messages.json`. Minden forrásszöveghez teljes magyar/angol pár tartozik; a `{{v0}}` jellegű helyőrzőket meg kell őrizni. A megjelenítési réteg fordít, a szimuláció belső azonosítói és a naplóadatok változatlanok. A nyomtatható útmutató és a wiki közös fejezetadatokat használ.

@@ -83,7 +83,7 @@ test('only genuinely offscreen or behind-camera targets become arrows, and only 
   assert.equal(calls.arrows, 5);
   assert.equal(calls.labels.length, 0);
   r.marker(new Vec3(0, 0, -100), 'BASE 12 KM', undefined, false, { offscreenLabel: true });
-  assert.deepEqual(calls.labels, ['BASE 12 KM']);
+  assert.deepEqual(calls.labels, ['BÁZIS 12 KM']);
 });
 
 test('carrier base marker stays on its deck center under banking, rather than one kilometre astern', () => {

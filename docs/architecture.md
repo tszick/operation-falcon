@@ -49,3 +49,9 @@ A szerver nem importálja és nem futtatja a böngészős játékot; a böngész
 Futtasd az `npm run verify` parancsot. Új modul importálásakor a körkörös függőséget és a hibás helyi importot automatikusan jelzi az architektúrateszt. Adatváltozáshoz a meglévő profil-/küldetéstesztet, viselkedésváltozáshoz érdemi regressziót használj. Nagy modulból az összetartozó felelősséget emeld ki; a fájl puszta többfelé vágása vagy azonos működés másolása nem rétegezés.
 
 A teljes forrás Prettierrel formázott, ESLint recommended és kiegészítő biztonsági szabályok ellenőrzik. A fejlesztői függőségek pontos verzióval és integritásellenőrzött lockfájllal települnek. Futásidőben a játék saját ES-modulokat és böngésző-API-kat használ.
+
+## Lokalizáció
+
+Az `i18n` modul i18next-példányt, böngészőnyelv-felismerést és tárolt kézi választást kezel. A meglévő, adatvezérelt magyar forrásszövegek természetes kulcsok; a megjelenítési határon `tr` fordít szöveget és `trHtml` a biztonságosan összeállított jelölés szövegcsomópontjait. A DOM-attribútumok, a statikus feliratok és a canvas-szövegek ugyanazt a szótárt használják. Szöveg-/jelöléscache és WeakMap őrzi a már lokalizált csomópontok forrását; nincs képkockánkénti teljes DOM-keresés vagy MutationObserver. A nyelvváltás egyszer újralokalizálja a felületet, a folyamatos műszerek közvetlenül az aktív nyelven rajzolnak. A szimulációs feltételek és azonosítók nem fordulnak le.
+
+A helyi, MIT-licencű i18next-csomag az egyetlen kivétel a böngészőmodulok `src/` alatti importhatára alól; az architektúrateszt konkrétan ezt és a nyelvi JSON-adatot engedi. A függőség és a kiszolgált példány verzióegyezését külön teszt ellenőrzi.

@@ -1,3 +1,4 @@
+import { tr, trHtml } from './i18n.js';
 import { escapeHtml as esc } from './ui/html.js';
 import { renderTacticalMap, tacticalMapState, mapPoint, mapZoomLevel } from './tacticalMap.js';
 import { missionCardState, missionGoalsMarkup } from './flightPanels.js';
@@ -64,21 +65,25 @@ export class MissionControlView {
     const options = { width: this.canvas.width, height: this.canvas.height, zoom: this.zoom },
       snapshot = missionControlSnapshot(s, m, targets, aim, options),
       map = renderTacticalMap(this.canvas, s, targets, aim, options);
-    $('control-mission-name').textContent = snapshot.card.name;
-    $('control-phase').textContent = snapshot.card.phase + ' · ' + snapshot.card.elapsed;
-    $('control-objectives').innerHTML = missionGoalsMarkup(snapshot.card);
-    $('control-map-zoom').textContent = `0 · NAGYÍTÁS ${map.zoomFactor}×`;
-    $('control-map-range').textContent = map.jammed
-      ? 'JELZAVARÁS · NAV / RADAR NEM ELÉRHETŐ'
-      : `${(map.halfExtent * 2) / 1000} KM · ${snapshot.contacts.length} ÉSZLELT EGYSÉG`;
-    $('control-contacts').innerHTML = map.jammed
-      ? '<li>Nincs érzékelőadat a zavarási zónában.</li>'
-      : snapshot.contacts
-          .map(
-            (t) =>
-              `<li style="color:${t.color}"><span>${esc(t.label)}</span><b>${(t.distance / 1000).toFixed(1)} km</b></li>`,
-          )
-          .join('') || '<li>Nincs érzékelt egység ebben a térképkivágásban.</li>';
+    $('control-mission-name').textContent = tr(snapshot.card.name);
+    $('control-phase').textContent = tr(snapshot.card.phase + ' · ' + snapshot.card.elapsed);
+    $('control-objectives').innerHTML = trHtml(missionGoalsMarkup(snapshot.card));
+    $('control-map-zoom').textContent = tr(`0 · NAGYÍTÁS ${map.zoomFactor}×`);
+    $('control-map-range').textContent = tr(
+      map.jammed
+        ? 'JELZAVARÁS · NAV / RADAR NEM ELÉRHETŐ'
+        : `${(map.halfExtent * 2) / 1000} KM · ${snapshot.contacts.length} ÉSZLELT EGYSÉG`,
+    );
+    $('control-contacts').innerHTML = trHtml(
+      map.jammed
+        ? '<li>Nincs érzékelőadat a zavarási zónában.</li>'
+        : snapshot.contacts
+            .map(
+              (t) =>
+                `<li style="color:${t.color}"><span>${esc(t.label)}</span><b>${(t.distance / 1000).toFixed(1)} km</b></li>`,
+            )
+            .join('') || '<li>Nincs érzékelt egység ebben a térképkivágásban.</li>',
+    );
     if (!map.jammed) this.labels(snapshot, s);
   }
   labels(snapshot, s) {
@@ -96,7 +101,7 @@ export class MissionControlView {
       ownX = Math.min(Math.max(10, own.x + 10), map.width - ownWidth - 10),
       ownY = Math.max(24, own.y - 10);
     c.fillStyle = '#c3f18e';
-    c.fillText(ownLabel, ownX, ownY);
+    c.fillText(tr(ownLabel), ownX, ownY);
     rects.push({ x: ownX, y: ownY - 12, w: ownWidth });
     for (const contact of [...snapshot.contacts].sort(
       (a, b) => Number(b.selected) - Number(a.selected),
@@ -119,7 +124,7 @@ export class MissionControlView {
       if (y === null) continue;
       rects.push({ x, y: y - 12, w });
       c.fillStyle = contact.color;
-      c.fillText(text, x, y);
+      c.fillText(tr(text), x, y);
     }
     c.restore();
   }

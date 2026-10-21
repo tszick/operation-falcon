@@ -1,3 +1,4 @@
+import { tr, trHtml, formatNumber } from './i18n.js';
 import { missionForSide } from './missionSides.js';
 import { Briefing } from './ui/briefing.js';
 import { catalogueAircraft } from './aircraftCatalog.js';
@@ -99,12 +100,12 @@ const headInput = new HeadLookInput($('world'), headLook, document, {
 });
 best = Number(readPreference('vector-flight-best')) || 0;
 const logStorage = new FlightLogStorage((error) => {
-  $('log-storage-status').textContent = 'Csak memóriában: ' + error.message;
+  $('log-storage-status').textContent = tr('Csak memóriában: ' + error.message);
 });
 const recorder = new FlightRecorder({
   onReset: (metadata) => {
     logStorage.reset(metadata);
-    $('log-storage-status').textContent = 'Csak az aktuális küldetés';
+    $('log-storage-status').textContent = tr('Csak az aktuális küldetés');
   },
   onBatch: (metadata, entries) => logStorage.append(metadata, entries),
 });
@@ -207,7 +208,7 @@ const fuelKey = () => `${selected.id}:${unarmedPractice(selectedMission) ? 'land
 function selectedFuel() {
   return fuelChoices.get(fuelKey()) ?? defaultMissionFuel(selectedMission, selected);
 }
-const kg = (value) => value.toLocaleString('hu-HU', { maximumFractionDigits: 1 });
+const kg = (value) => formatNumber(value, { maximumFractionDigits: 1 });
 function updateDeparture() {
   const training = unarmedPractice(selectedMission),
     fraction = selectedFuel(),
@@ -217,33 +218,39 @@ function updateDeparture() {
     }),
     full = plannedDeparture(selected, defaultLoadout(selected), { unarmed: training });
   $('start-fuel').value = Math.round(fraction * 100);
-  $('start-fuel-value').textContent =
-    `${Math.round(fraction * 100)}% · ${kg(plan.fuelKg)} / ${kg(selected.fuelCapacity)} kg`;
-  $('departure-mass').innerHTML = [
-    ['Üres gép', plan.emptyKg],
-    ['Üzemanyag', plan.fuelKg],
-    ['Rakéták', plan.missilesKg],
-    ['Bombák', plan.bombsKg],
-    ['Gépágyúlőszer (becsült)', plan.gunAmmoKg],
-    ...(selected.defensiveGun ? [['Farokgépágyú-lőszer (becsült)', plan.tailGunAmmoKg]] : []),
-  ]
-    .map(([label, value]) => `<div><dt>${label}</dt><dd>${kg(value)} kg</dd></div>`)
-    .join('');
-  $('departure-total').textContent = `${kg(plan.totalKg)} kg`;
+  $('start-fuel-value').textContent = tr(
+    `${Math.round(fraction * 100)}% · ${kg(plan.fuelKg)} / ${kg(selected.fuelCapacity)} kg`,
+  );
+  $('departure-mass').innerHTML = trHtml(
+    [
+      ['Üres gép', plan.emptyKg],
+      ['Üzemanyag', plan.fuelKg],
+      ['Rakéták', plan.missilesKg],
+      ['Bombák', plan.bombsKg],
+      ['Gépágyúlőszer (becsült)', plan.gunAmmoKg],
+      ...(selected.defensiveGun ? [['Farokgépágyú-lőszer (becsült)', plan.tailGunAmmoKg]] : []),
+    ]
+      .map(([label, value]) => `<div><dt>${label}</dt><dd>${kg(value)} kg</dd></div>`)
+      .join(''),
+  );
+  $('departure-total').textContent = tr(`${kg(plan.totalKg)} kg`);
   const difference = plan.totalKg - full.totalKg;
-  $('departure-delta').textContent =
+  $('departure-delta').textContent = tr(
     Math.abs(difference) < 0.05
       ? 'Teljes tank és alapfeltöltés.'
-      : `${kg(Math.abs(difference))} kg-mal ${difference < 0 ? 'könnyebb' : 'nehezebb'} a teljes tankkal${training ? '' : ' és alapfegyverzettel'} induló gépnél.`;
-  $('departure-warning').textContent =
+      : `${kg(Math.abs(difference))} kg-mal ${difference < 0 ? 'könnyebb' : 'nehezebb'} a teljes tankkal${training ? '' : ' és alapfegyverzettel'} induló gépnél.`,
+  );
+  $('departure-warning').textContent = tr(
     fraction === 0
       ? 'Üres tank: a hajtómű nem ad tolóerőt.'
       : fraction < 0.1
         ? 'Kevés üzemanyag: a hazatéréshez is hagyj tartalékot.'
-        : '';
+        : '',
+  );
   if (training)
-    $('planner-stores').textContent =
-      `FEGYVERZET NÉLKÜL · ${Math.round(fraction * 100)}% ÜZEMANYAG`;
+    $('planner-stores').textContent = tr(
+      `FEGYVERZET NÉLKÜL · ${Math.round(fraction * 100)}% ÜZEMANYAG`,
+    );
 }
 $('start-fuel').addEventListener('input', () => {
   fuelChoices.set(fuelKey(), Number($('start-fuel').value) / 100);
@@ -260,39 +267,45 @@ function updateLoadout() {
     training = unarmedPractice(selectedMission),
     check = validateLoadout(selected, choice);
   $('loadout-editor').hidden = isPracticeMission(selectedMission) || !!selected.transport;
-  $('equipment-stores-info').innerHTML = Object.entries(preset.weapons)
-    .map(
-      ([type, w]) =>
-        `<button class="wiki-card-link" data-wiki="weapon-${weaponProfile(selected, type).id}">ⓘ ${w.name}</button>`,
-    )
-    .join('');
+  $('equipment-stores-info').innerHTML = trHtml(
+    Object.entries(preset.weapons)
+      .map(
+        ([type, w]) =>
+          `<button class="wiki-card-link" data-wiki="weapon-${weaponProfile(selected, type).id}">ⓘ ${w.name}</button>`,
+      )
+      .join(''),
+  );
   updateDeparture();
-  $('loadout-gun').innerHTML = preset.weapons.gun
-    ? `<label><input id="loadout-cannon" type="checkbox" ${choice.gun ? 'checked' : ''}> Gépágyúlőszer: ${preset.weapons.gun.name} · ${preset.weapons.gun.quantity} db</label>`
-    : 'Ehhez a gépváltozathoz nincs gépágyú.';
+  $('loadout-gun').innerHTML = trHtml(
+    preset.weapons.gun
+      ? `<label><input id="loadout-cannon" type="checkbox" ${choice.gun ? 'checked' : ''}> Gépágyúlőszer: ${preset.weapons.gun.name} · ${preset.weapons.gun.quantity} db</label>`
+      : 'Ehhez a gépváltozathoz nincs gépágyú.',
+  );
   if (preset.tailGun)
     $('loadout-gun').innerHTML +=
       `<label>Farokgépágyú lőszere · ${preset.tailGun.name}<input id="loadout-tail-rounds" type="number" min="0" max="${preset.tailGun.quantity}" step="1" value="${choice.tailGun ?? 0}"> db / ${preset.tailGun.quantity}</label><small>Külön hátsó fegyverállás. V: nézetváltás · a lőszer tömege külön beleszámít.</small>`;
-  $('loadout-stations').innerHTML = preset.stations
-    .map(
-      (station, i) =>
-        `<label>${station.internal ? 'Belső' : 'Függesztési'} hely ${i + 1}<select data-station="${i}" aria-label="Fegyver a(z) ${i + 1}. helyen"><option value="">Üres</option>${stationOptions(
-          selected,
-          i,
-        )
-          .map(
-            (type) =>
-              `<option value="${type}" ${choice.stations[i] === type ? 'selected' : ''}>${preset.weapons[type].name} · ${type === 'aam' ? 'légi cél' : type === 'agm' ? 'földi cél' : 'bomba'}</option>`,
+  $('loadout-stations').innerHTML = trHtml(
+    preset.stations
+      .map(
+        (station, i) =>
+          `<label>${station.internal ? 'Belső' : 'Függesztési'} hely ${i + 1}<select data-station="${i}" aria-label="Fegyver a(z) ${i + 1}. helyen"><option value="">Üres</option>${stationOptions(
+            selected,
+            i,
           )
-          .join('')}</select></label>`,
-    )
-    .join('');
+            .map(
+              (type) =>
+                `<option value="${type}" ${choice.stations[i] === type ? 'selected' : ''}>${preset.weapons[type].name} · ${type === 'aam' ? 'légi cél' : type === 'agm' ? 'földi cél' : 'bomba'}</option>`,
+            )
+            .join('')}</select></label>`,
+      )
+      .join(''),
+  );
   for (const label of $('loadout-stations').querySelectorAll('label')) {
     const select = label.querySelector('select');
     const info = document.createElement('button');
     info.type = 'button';
     info.className = 'wiki-card-link station-info';
-    info.textContent = 'ⓘ Fegyveradatlap';
+    info.textContent = tr('ⓘ Fegyveradatlap');
     info.disabled = !select.value;
     info.onclick = () => briefing.openWiki('weapon-' + weaponProfile(selected, select.value).id);
     label.append(info);
@@ -301,31 +314,34 @@ function updateLoadout() {
     const info = document.createElement('button');
     info.type = 'button';
     info.className = 'wiki-card-link';
-    info.textContent = 'ⓘ Gépágyú';
+    info.textContent = tr('ⓘ Gépágyú');
     info.onclick = () => briefing.openWiki('weapon-' + weaponProfile(selected, 'gun').id);
     $('loadout-gun').append(info);
   }
-  $('loadout-capacity').textContent =
-    `${check.count} / ${check.limits.maxStores} függesztmény · ${Math.round(check.payloadKg)} / ${check.limits.maxPayloadKg} kg engedélyezett játékbeli fegyverterhelés`;
-  $('loadout-errors').textContent = check.errors.join(' ');
+  $('loadout-capacity').textContent = tr(
+    `${check.count} / ${check.limits.maxStores} függesztmény · ${Math.round(check.payloadKg)} / ${check.limits.maxPayloadKg} kg engedélyezett játékbeli fegyverterhelés`,
+  );
+  $('loadout-errors').textContent = tr(check.errors.join(' '));
   $('launch').disabled = !training && !check.valid;
   const configured = check.valid ? configureAircraft(selected, choice) : selected;
   const selectedRating = $('preview-rating');
   if (selectedRating) {
     const rating = suitability(configured, missionForSide(selectedMission, selectedSide));
     selectedRating.className = 'rating ' + rating;
-    selectedRating.textContent = ratingLabels[rating];
+    selectedRating.textContent = tr(ratingLabels[rating]);
   }
-  $('planner-stores').textContent = training
-    ? `FEGYVERZET NÉLKÜL · ${Math.round(selectedFuel() * 100)}% ÜZEMANYAG`
-    : !check.valid
-      ? 'HIBÁS FEGYVERZET — JAVÍTSD A KIOSZTÁST'
-      : [
-          ...Object.values(armament(configured).weapons),
-          ...(armament(configured).tailGun ? [armament(configured).tailGun] : []),
-        ]
-          .map((w) => `${w.name} × ${w.quantity}`)
-          .join(' · ') || 'FEGYVERZET NÉLKÜL';
+  $('planner-stores').textContent = tr(
+    training
+      ? `FEGYVERZET NÉLKÜL · ${Math.round(selectedFuel() * 100)}% ÜZEMANYAG`
+      : !check.valid
+        ? 'HIBÁS FEGYVERZET — JAVÍTSD A KIOSZTÁST'
+        : [
+            ...Object.values(armament(configured).weapons),
+            ...(armament(configured).tailGun ? [armament(configured).tailGun] : []),
+          ]
+            .map((w) => `${w.name} × ${w.quantity}`)
+            .join(' · ') || 'FEGYVERZET NÉLKÜL',
+  );
   if (
     !selected.transport &&
     !training &&
@@ -387,63 +403,70 @@ function renderMissionBrief(briefMission) {
   $('mission-empty').hidden = true;
   $('mission-details').hidden = false;
   const location = missionLocation(briefMission);
-  $('mission-location').textContent = location.name + ' · ' + surfaceStyles[location.surface].label;
-  $('mission-threat-icons').innerHTML = threatMarkup(briefMission);
-  $('mission-code').textContent = briefMission.difficulty + ' / ' + briefMission.code;
-  $('mission-name').textContent = briefMission.name;
-  $('mission-description').textContent = missionForAircraft(briefMission, selected).description;
-  $('mission-threats').textContent =
+  $('mission-location').textContent = tr(
+    location.name + ' · ' + surfaceStyles[location.surface].label,
+  );
+  $('mission-threat-icons').innerHTML = trHtml(threatMarkup(briefMission));
+  $('mission-code').textContent = tr(briefMission.difficulty + ' / ' + briefMission.code);
+  $('mission-name').textContent = tr(briefMission.name);
+  $('mission-description').textContent = tr(missionForAircraft(briefMission, selected).description);
+  $('mission-threats').textContent = tr(
     missionThreatsFor(briefMission)
       .map((type) => threatTypes[type].name)
-      .join(' · ') || 'NINCS FEGYVERES ELLENFÉL';
-  $('mission-goals').innerHTML = `<h4>ELSŐDLEGES CÉLOK</h4><ol>${missionForAircraft(
-    briefMission,
-    selected,
-  )
-    .primary.map((text) => `<li>${text}</li>`)
-    .join('')}</ol>${
-    briefMission.optional.length
-      ? `<h4>OPCIONÁLIS</h4><ul>${missionForAircraft(briefMission, selected)
-          .optional.map((text) => `<li>${text}</li>`)
-          .join('')}</ul>`
-      : ''
-  }`;
+      .join(' · ') || 'NINCS FEGYVERES ELLENFÉL',
+  );
+  $('mission-goals').innerHTML = trHtml(
+    `<h4>ELSŐDLEGES CÉLOK</h4><ol>${missionForAircraft(briefMission, selected)
+      .primary.map((text) => `<li>${text}</li>`)
+      .join('')}</ol>${
+      briefMission.optional.length
+        ? `<h4>OPCIONÁLIS</h4><ul>${missionForAircraft(briefMission, selected)
+            .optional.map((text) => `<li>${text}</li>`)
+            .join('')}</ul>`
+        : ''
+    }`,
+  );
   const roster = superiorityRoster(missionForAircraft(briefMission, selected), selected),
     opponents = roster.filter((r) => r.team !== 'ally'),
     allies = roster.filter((r) => r.team === 'ally');
-  $('mission-gallery').innerHTML =
+  $('mission-gallery').innerHTML = trHtml(
     opponents
       .map(
         (r) =>
           `<figure class="unit-preview"><canvas data-preview-unit="${r.type}" aria-label="${unitDefinition(r.type).name} forgó térbeli előnézete"></canvas><figcaption><strong>${r.count} × ${unitDefinition(r.type).name}</strong><small>${unitDefinition(r.type).category}</small><button type="button" class="wiki-card-link" data-wiki="${r.type}">ⓘ ADATLAP</button></figcaption></figure>`,
       )
       .join('') ||
-    `<p class="empty-recon">${briefMission.objective === 'canyon' ? 'Nincs ellenség. Kanyonrepülés és gerinc feletti kijutás.' : 'Nincs ellenség. Csak te és a leszállópálya.'}</p>`;
-  $('mission-allies').innerHTML = allies.length
-    ? `<h4>SZÖVETSÉGES TÁMOGATÁS / VÉDENDŐ EGYSÉGEK</h4><p>${allies.map((r) => `<button class="wiki-card-link" data-wiki="${r.type}">${r.count} × ${unitDefinition(r.type).name} ⓘ ADATLAP</button>`).join(' ')}</p><small>A gép vezeti őket; te a saját repülődet irányítod.</small>`
-    : '';
+      `<p class="empty-recon">${briefMission.objective === 'canyon' ? 'Nincs ellenség. Kanyonrepülés és gerinc feletti kijutás.' : 'Nincs ellenség. Csak te és a leszállópálya.'}</p>`,
+  );
+  $('mission-allies').innerHTML = trHtml(
+    allies.length
+      ? `<h4>SZÖVETSÉGES TÁMOGATÁS / VÉDENDŐ EGYSÉGEK</h4><p>${allies.map((r) => `<button class="wiki-card-link" data-wiki="${r.type}">${r.count} × ${unitDefinition(r.type).name} ⓘ ADATLAP</button>`).join(' ')}</p><small>A gép vezeti őket; te a saját repülődet irányítod.</small>`
+      : '',
+  );
 }
 function updatePlanner() {
   const choices = catalogueAircraft(selectedMission);
   if (!choices.includes(selected)) selected = choices[0];
   selectedSide = aircraftSide(selected);
   const sideMission = missionForSide(selectedMission, selectedSide);
-  $('mission-count').textContent = missions.length;
-  $('launch').textContent = 'KÉSZ · BEVETÉS INDÍTÁSA ↗';
-  $('planner-stores').textContent = unarmedPractice(selectedMission)
-    ? `FEGYVERZET NÉLKÜL · ${Math.round(selectedFuel() * 100)}% ÜZEMANYAG`
-    : Object.entries(armament(selected).weapons)
-        .map(([type, w]) => `${w.name} × ${w.quantity}`)
-        .join(' · ');
-  $('planner-variant').textContent = armament(selected).variant;
-  $('selected-name').textContent = selected.name;
-  $('preview-role').textContent = selected.role.toUpperCase();
-  $('preview-designation').textContent = selected.name.toUpperCase();
+  $('mission-count').textContent = tr(missions.length);
+  $('launch').textContent = tr('KÉSZ · BEVETÉS INDÍTÁSA ↗');
+  $('planner-stores').textContent = tr(
+    unarmedPractice(selectedMission)
+      ? `FEGYVERZET NÉLKÜL · ${Math.round(selectedFuel() * 100)}% ÜZEMANYAG`
+      : Object.entries(armament(selected).weapons)
+          .map(([type, w]) => `${w.name} × ${w.quantity}`)
+          .join(' · '),
+  );
+  $('planner-variant').textContent = tr(armament(selected).variant);
+  $('selected-name').textContent = tr(selected.name);
+  $('preview-role').textContent = tr(selected.role.toUpperCase());
+  $('preview-designation').textContent = tr(selected.name.toUpperCase());
   const stats = [
     ['MAX. SEBESSÉG', selected.maxMach.toFixed(2), 'MACH'],
     ['TOLÓERŐ', Math.round(selected.abThrust / 1000), 'KN'],
     ['MAX. TERHELÉS', selected.maxG, 'G'],
-    ['ÜZEMANYAG', selected.fuelCapacity.toLocaleString('hu'), 'KG'],
+    ['ÜZEMANYAG', formatNumber(selected.fuelCapacity), 'KG'],
     [
       selected.syntheticRadar ? 'SZIM. RADAR' : 'RADAR',
       Math.round(selected.radarRange / 1000),
@@ -451,11 +474,11 @@ function updatePlanner() {
     ],
     ['CSÚCSMAGASSÁG', (selected.ceiling / 1000).toFixed(1), 'KM'],
   ];
-  $('specs').innerHTML = stats
-    .map(([l, v, u]) => `<div><small>${l}</small><b>${v}<span>${u}</span></b></div>`)
-    .join('');
+  $('specs').innerHTML = trHtml(
+    stats.map(([l, v, u]) => `<div><small>${l}</small><b>${v}<span>${u}</span></b></div>`).join(''),
+  );
   updateLoadout();
-  $('aircraft-count').textContent = choices.length;
+  $('aircraft-count').textContent = tr(choices.length);
   briefing.update(missionForAircraft(sideMission, selected), selected, choices);
   renderMissionBrief(briefing.confirmed ? selectedMission : null);
 }
@@ -655,7 +678,7 @@ function launch() {
   $('help').hidden = true;
   document.body.classList.add('flying');
   setGuideVisible(guideVisible);
-  $('system-state').textContent = 'REPÜLÉS AKTÍV';
+  $('system-state').textContent = tr('REPÜLÉS AKTÍV');
   audio.start();
   audio.radio.startMission(state, mission, targets);
   $('launch').blur();
@@ -686,8 +709,10 @@ function showOverlay(kind) {
   $('overlay').hidden = false;
   $('resume').hidden = kind !== 'pause';
   $('open-mission-control').hidden = kind !== 'pause';
-  $('overlay-label').textContent = kind === 'pause' ? 'REPÜLÉS FELFÜGGESZTVE' : 'REPÜLÉSI JELENTÉS';
-  $('overlay-title').textContent =
+  $('overlay-label').textContent = tr(
+    kind === 'pause' ? 'REPÜLÉS FELFÜGGESZTVE' : 'REPÜLÉSI JELENTÉS',
+  );
+  $('overlay-title').textContent = tr(
     kind === 'pause'
       ? 'Tarts egy szünetet.'
       : kind === 'success'
@@ -696,8 +721,9 @@ function showOverlay(kind) {
           ? 'Küldetés sikertelen.'
           : kind === 'aborted'
             ? 'Sikeres hazatérés.'
-            : 'A gép elveszett.';
-  $('overlay-text').textContent =
+            : 'A gép elveszett.',
+  );
+  $('overlay-text').textContent = tr(
     kind === 'pause'
       ? 'A repülés és a küldetés ideje megállt.'
       : kind === 'success'
@@ -717,18 +743,21 @@ function showOverlay(kind) {
           : kind === 'aborted'
             ? 'A küldetés megszakadt, de biztonságosan hazahoztad a gépet.'
             : state.landing?.reasons?.join(' ') ||
-              'Indítsd újra a feladatot, vagy válassz másik gépet a hangárban.';
-  $('overlay-stats').textContent =
+              'Indítsd újra a feladatot, vagy válassz másik gépet a hangárban.',
+  );
+  $('overlay-stats').textContent = tr(
     kind === 'success'
       ? `${mission.score} PONT · REKORD ${best}${mission.spec.objective === 'canyon' ? ' · KANYONGYAKORLAT' : state.recoveryExit ? ' · KIVONULÁS' : ` · FÖLDETÉRÉS ${state.landing?.descent?.toFixed(1) || '—'} M/S`}`
       : kind === 'crash'
         ? `REPÜLT IDŐ ${Math.round(state.elapsed)} S · ${state.practice ? 'GYAKORLÓREPÜLÉS' : mission.destroyed ? 'CÉL MEGSEMMISÍTVE' : 'CÉL AKTÍV'}`
-        : '';
+        : '',
+  );
   if (kind === 'success' && state.landing?.grade && state.landing.grade !== 'smooth')
-    $('overlay-text').textContent =
-      'A feladatokat teljesítetted és megálltál. A földetérés sérüléssel járt; a részleteket a kiértékelés mutatja.';
+    $('overlay-text').textContent = tr(
+      'A feladatokat teljesítetted és megálltál. A földetérés sérüléssel járt; a részleteket a kiértékelés mutatja.',
+    );
   $('mission-debrief').hidden = kind === 'pause';
-  $('mission-debrief').innerHTML = kind === 'pause' ? '' : debriefMarkup(recorder.export());
+  $('mission-debrief').innerHTML = trHtml(kind === 'pause' ? '' : debriefMarkup(recorder.export()));
   if (kind === 'pause') $('resume').focus();
   else {
     $('overlay-title').focus({ preventScroll: true });
@@ -789,7 +818,7 @@ function hangar() {
     'external-view',
     'rear-view',
   );
-  $('system-state').textContent = 'RENDSZER KÉSZ';
+  $('system-state').textContent = tr('RENDSZER KÉSZ');
   updatePlanner();
 }
 function help() {
@@ -832,6 +861,7 @@ addEventListener('mouseout', (e) => {
   if (!e.relatedTarget && !headInput.locked) headLook.reset();
 });
 addEventListener('keydown', (e) => {
+  if (e.target.closest?.('[data-language-select]')) return;
   const k = e.code;
   if (!playing) return;
   if (!controlView.root.hidden) {
@@ -1092,3 +1122,7 @@ function frame(time) {
 }
 updatePlanner();
 requestAnimationFrame(frame);
+
+addEventListener('falcon:languagechange', () => {
+  if (!playing) updatePlanner();
+});

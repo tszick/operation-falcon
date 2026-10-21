@@ -1,3 +1,4 @@
+import { tr, trHtml } from './i18n.js';
 import { damageWarnings } from './damage.js';
 export class FlightMessages {
   constructor() {
@@ -155,7 +156,7 @@ function messageHost(id, label) {
     host = document.createElement('section');
     host.id = id;
     host.setAttribute('role', 'log');
-    host.setAttribute('aria-label', label);
+    host.setAttribute('aria-label', tr(label));
     host.setAttribute('aria-live', 'polite');
     (
       document.getElementById(id === 'radio-message-feed' ? 'flight-ui' : 'combat-messages') ||
@@ -179,15 +180,16 @@ function renderMessages(host, feed, nodes, now) {
     if (!node) {
       node = document.createElement('article');
       node.className = 'flight-message';
-      node.innerHTML = '<strong></strong><p></p>';
+      node.innerHTML = trHtml('<strong></strong><p></p>');
       node.style.transform = 'translateY(-22px)';
       node.style.opacity = '0';
       host.append(node);
       nodes.set(item.id, node);
     }
-    const title = item.text + (item.count > 1 ? ` ×${item.count}` : '');
+    const title = tr(item.text + (item.count > 1 ? ` ×${item.count}` : ''));
+    const detail = tr(item.detail);
     if (node.firstChild.textContent !== title) node.firstChild.textContent = title;
-    if (node.lastChild.textContent !== item.detail) node.lastChild.textContent = item.detail;
+    if (node.lastChild.textContent !== detail) node.lastChild.textContent = detail;
     node.lastChild.hidden = !item.detail;
     node.dataset.level = item.level;
     node.dataset.active = String(item.active);

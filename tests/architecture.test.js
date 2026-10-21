@@ -14,6 +14,12 @@ async function sources(dir) {
   return list;
 }
 test('browser modules resolve local imports without dependency cycles or server coupling', async () => {
+  // Exact browser-only leaf dependencies: local JSON resources and the pinned MIT vendor bundle.
+  const browserLeaves = new Set(
+    ['../src/locales/messages.json', '../assets/vendor/i18next/i18next.js'].map((p) =>
+      fileURLToPath(new URL(p, import.meta.url)),
+    ),
+  );
   const files = await sources(source),
     graph = new Map();
   for (const file of files) {
@@ -23,10 +29,19 @@ test('browser modules resolve local imports without dependency cycles or server 
         .filter((s) => s.startsWith('.'))
         .map((s) => path.resolve(path.dirname(file), s));
     for (const dependency of imports) {
-      assert.ok(dependency.startsWith(source), `Browser/server boundary: ${file}`);
-      assert.ok(files.includes(dependency), `Missing import: ${dependency}`);
+      assert.ok(
+        dependency.startsWith(source) || browserLeaves.has(dependency),
+        `Browser/server boundary: ${file}`,
+      );
+      assert.ok(
+        files.includes(dependency) || browserLeaves.has(dependency),
+        `Missing import: ${dependency}`,
+      );
     }
-    graph.set(file, imports);
+    graph.set(
+      file,
+      imports.filter((dependency) => !browserLeaves.has(dependency)),
+    );
   }
   const done = new Set(),
     active = new Set();

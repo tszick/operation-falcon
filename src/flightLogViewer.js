@@ -1,3 +1,4 @@
+import { trHtml, tr } from './i18n.js';
 import { escapeHtml as escape } from './ui/html.js';
 import { debriefMarkup } from './flightDebrief.js';
 import { loadCurrentFlight, downloadFlightLog } from './flightLogStorage.js';
@@ -36,9 +37,11 @@ let log = null,
   busy = false,
   session = null;
 const rows = (id, data) => {
-  $(id).innerHTML = data
-    .map(([key, value]) => `<tr><th>${escape(key)}</th><td>${escape(value)}</td></tr>`)
-    .join('');
+  $(id).innerHTML = trHtml(
+    data
+      .map(([key, value]) => `<tr><th>${escape(key)}</th><td>${escape(value)}</td></tr>`)
+      .join(''),
+  );
 };
 function draw() {
   const canvas = $('log-plot'),
@@ -65,7 +68,9 @@ function draw() {
     c.fillStyle = color;
     c.font = '10px Consolas';
     c.fillText(
-      `${key === 'iasKmh' ? 'IAS' : 'AGL'} max ${max.toFixed(0)} ${key === 'iasKmh' ? 'km/h' : 'm'}`,
+      tr(
+        `${key === 'iasKmh' ? 'IAS' : 'AGL'} max ${max.toFixed(0)} ${key === 'iasKmh' ? 'km/h' : 'm'}`,
+      ),
       20,
       key === 'iasKmh' ? 13 : 27,
     );
@@ -76,7 +81,7 @@ function selectSample() {
   if (!e) return;
   const p = e.data.player,
     t = e.t;
-  $('log-time-label').textContent = time(t) + ` (${t.toFixed(2)} s)`;
+  $('log-time-label').textContent = tr(time(t) + ` (${t.toFixed(2)} s)`);
   rows('log-player', [
     ['Fázis', e.data.phase],
     ['IAS / TAS', `${fmt(p.iasKmh)} / ${fmt(p.tasKmh)} km/h`],
@@ -84,7 +89,7 @@ function selectSample() {
     ['V/S', `${fmt(p.verticalSpeedMps)} m/s`],
     ['Orr / bedöntés', `${fmt(p.pitchDeg)}° / ${fmt(p.bankDeg)}°`],
     ['Irány / G', `${fmt(p.headingDeg)}° / ${fmt(p.g)}`],
-    ['Gáz / utánégető', `${fmt(p.throttle * 100)}% / ${p.afterburner ? 'BE' : 'KI'}`],
+    ['Gáz / utánégető', `${fmt(p.throttle * 100)}% / ${tr(p.afterburner ? 'BE' : 'KI')}`],
     ['Tömeg / üzemanyag', `${fmt(p.massKg)} / ${fmt(p.fuelKg)} kg`],
     ['Sérülés', `${fmt(p.damage)}%`],
     ['Futó / fékszárny', `${p.gear ? 'KINN' : 'BENN'} / ${fmt(p.flapPosition * 100)}%`],
@@ -101,26 +106,31 @@ function selectSample() {
     world = w;
   }
   const units = world?.data.units || [];
-  $('log-units').innerHTML = units
-    .map(
-      (u) =>
-        `<tr><td>${escape(u.name || u.id)}</td><td>${escape({ ally: 'Baráti', enemy: 'Ellenség', neutral: 'Semleges' }[u.team] || u.team)}</td><td>${escape(u.exited ? 'Kijutott' : u.alive === false ? 'Megsemmisült' : `${fmt(u.damage)}% sérülés · ${u.ai?.targetId || u.assignedTarget || '—'}`)}</td></tr>`,
-    )
-    .join('');
+  $('log-units').innerHTML = trHtml(
+    units
+      .map(
+        (u) =>
+          `<tr><td>${escape(u.name || u.id)}</td><td>${escape({ ally: 'Baráti', enemy: 'Ellenség', neutral: 'Semleges' }[u.team] || u.team)}</td><td>${escape(u.exited ? 'Kijutott' : u.alive === false ? 'Megsemmisült' : `${fmt(u.damage)}% sérülés · ${u.ai?.targetId || u.assignedTarget || '—'}`)}</td></tr>`,
+      )
+      .join(''),
+  );
   $('log-raw-world').textContent = JSON.stringify(world?.data || {}, null, 2);
 }
 function events() {
   const filter = $('log-event-filter').value,
     all = analysis.events.filter((e) => filter === 'all' || e.kind === filter),
     shown = all.slice(-500);
-  $('log-events').innerHTML = shown
-    .map(
-      (e) =>
-        `<tr><td>${e.t.toFixed(3)} s</td><td>${escape(names[e.kind] || e.kind)}</td><td><details><summary>${escape(typeof e.data === 'string' ? e.data || 'Nincs figyelmeztetés' : e.data?.label || e.data?.name || e.data?.reason || e.data?.type || e.data?.code || e.data?.result || 'Részletek')}</summary><pre>${escape(JSON.stringify(e.data, null, 2))}</pre></details></td></tr>`,
-    )
-    .join('');
-  $('log-event-count').textContent =
-    `${all.length} esemény; a táblázat a legutóbbi ${shown.length} találatot mutatja. A letöltés a teljes naplót tartalmazza.`;
+  $('log-events').innerHTML = trHtml(
+    shown
+      .map(
+        (e) =>
+          `<tr><td>${e.t.toFixed(3)} s</td><td>${escape(names[e.kind] || e.kind)}</td><td><details><summary>${escape(typeof e.data === 'string' ? e.data || 'Nincs figyelmeztetés' : e.data?.label || e.data?.name || e.data?.reason || e.data?.type || e.data?.code || e.data?.result || 'Részletek')}</summary><pre>${escape(JSON.stringify(e.data, null, 2))}</pre></details></td></tr>`,
+      )
+      .join(''),
+  );
+  $('log-event-count').textContent = tr(
+    `${all.length} esemény; a táblázat a legutóbbi ${shown.length} találatot mutatja. A letöltés a teljes naplót tartalmazza.`,
+  );
 }
 async function refresh() {
   if (busy) return;
@@ -128,8 +138,9 @@ async function refresh() {
   try {
     const next = await loadCurrentFlight();
     if (!next) {
-      $('log-status').textContent =
-        'Még nincs napló. Frissítsd a játékot, indíts egy küldetést, majd nyomj itt Frissítést.';
+      $('log-status').textContent = tr(
+        'Még nincs napló. Frissítsd a játékot, indíts egy küldetést, majd nyomj itt Frissítést.',
+      );
       $('log-content').hidden = true;
       return;
     }
@@ -139,21 +150,25 @@ async function refresh() {
     session = log.metadata.id;
     $('log-content').hidden = false;
     $('log-download').disabled = false;
-    $('log-status').textContent =
-      `${log.entries.length} bejegyzés · 10 Hz saját gép, 2 Hz világállapot; események a 120 Hz-es szimulációból. Helyben tárolva, előzmények nélkül.`;
-    $('log-title').textContent = log.metadata.mission.name + ' · ' + log.metadata.aircraft.name;
-    $('log-meta').textContent =
-      `${new Date(log.metadata.startedAt).toLocaleString('hu-HU', { timeZone: 'Europe/Budapest' })} · ${time(analysis.end)} repülési idő · ${analysis.result?.result || 'folyamatban / szünet'}`;
-    $('log-debrief').innerHTML = debriefMarkup(log);
-    $('log-observations').innerHTML = analysis.observations
-      .map((x) => `<li>${escape(x)}</li>`)
-      .join('');
-    $('log-phases').innerHTML = analysis.phases
-      .map(
-        (p) =>
-          `<tr><td>${escape(p.label)}</td><td>${time(p.start)}</td><td>${time(p.end)}</td><td>${p.duration.toFixed(1)} s</td></tr>`,
-      )
-      .join('');
+    $('log-status').textContent = tr(
+      `${log.entries.length} bejegyzés · 10 Hz saját gép, 2 Hz világállapot; események a 120 Hz-es szimulációból. Helyben tárolva, előzmények nélkül.`,
+    );
+    $('log-title').textContent = tr(log.metadata.mission.name + ' · ' + log.metadata.aircraft.name);
+    $('log-meta').textContent = tr(
+      `${new Date(log.metadata.startedAt).toLocaleString('hu-HU', { timeZone: 'Europe/Budapest' })} · ${time(analysis.end)} repülési idő · ${analysis.result?.result || 'folyamatban / szünet'}`,
+    );
+    $('log-debrief').innerHTML = trHtml(debriefMarkup(log));
+    $('log-observations').innerHTML = trHtml(
+      analysis.observations.map((x) => `<li>${escape(x)}</li>`).join(''),
+    );
+    $('log-phases').innerHTML = trHtml(
+      analysis.phases
+        .map(
+          (p) =>
+            `<tr><td>${escape(p.label)}</td><td>${time(p.start)}</td><td>${time(p.end)}</td><td>${p.duration.toFixed(1)} s</td></tr>`,
+        )
+        .join(''),
+    );
     const old = Number($('log-time').value);
     $('log-time').max = Math.max(0, analysis.samples.length - 1);
     $('log-time').value =
@@ -164,7 +179,7 @@ async function refresh() {
     selectSample();
     events();
   } catch (error) {
-    $('log-status').textContent = 'A helyi napló nem olvasható: ' + error.message;
+    $('log-status').textContent = tr('A helyi napló nem olvasható: ' + error.message);
   } finally {
     busy = false;
   }
@@ -181,3 +196,11 @@ setInterval(() => {
   if ($('log-live').checked && !document.hidden) refresh();
 }, 3000);
 refresh();
+
+addEventListener('falcon:languagechange', () => {
+  if (analysis) {
+    draw();
+    selectSample();
+    events();
+  }
+});

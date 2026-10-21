@@ -1,3 +1,4 @@
+import { tr, trHtml } from './i18n.js';
 import { ironVeilVisibleRows } from './ironVeil.js';
 import { tailGunStatus } from './tailGunnery.js';
 import { afterburnerStatus } from './engineState.js';
@@ -18,11 +19,12 @@ const $ = (id) => document.getElementById(id);
 const htmlCache = new WeakMap(),
   controlFit = new WeakMap();
 const text = (element, value) => {
+  value = tr(value);
   if (element.textContent !== value) element.textContent = value;
 };
 const html = (element, value) => {
   if (htmlCache.get(element) !== value) {
-    element.innerHTML = value;
+    element.innerHTML = trHtml(value);
     htmlCache.set(element, value);
   }
 };
@@ -87,28 +89,33 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
     if (element.dataset.state !== indicator.state) element.dataset.state = indicator.state;
     element.setAttribute(
       'aria-label',
-      `${labels[key]} · ${indicator.active ? 'aktív' : 'inaktív'}${indicator.state === 'danger' ? ' · veszélyes állás' : ''}`,
+      tr(
+        `${labels[key]} · ${indicator.active ? 'aktív' : 'inaktív'}${indicator.state === 'danger' ? ' · veszélyes állás' : ''}`,
+      ),
     );
     if (element.tagName === 'BUTTON')
       element.setAttribute('aria-pressed', String(indicator.active));
   }
   $('config-afterburner').hidden = !s.spec.hasAB && !s.spec.vtol;
   if (s.spec.vtol) $('config-afterburner').dataset.state = s.naval?.nozzle ? 'active' : 'off';
-  $('config-afterburner').title = s.spec.vtol
-    ? 'Z: fúvócső 0° / 45° / 90°'
-    : afterburnerStatus(s).message;
+  $('config-afterburner').title = tr(
+    s.spec.vtol ? 'Z: fúvócső 0° / 45° / 90°' : afterburnerStatus(s).message,
+  );
   if (s.spec.vtol)
     $('config-afterburner').setAttribute('aria-pressed', String((s.naval?.nozzle || 0) > 0));
-  $('config-assist').title =
-    s.naval && !s.spec.vtol ? 'K: fékezőhorog ki/be' : 'L: terheléskorlátozás';
+  $('config-assist').title = tr(
+    s.naval && !s.spec.vtol ? 'K: fékezőhorog ki/be' : 'L: terheléskorlátozás',
+  );
   $('config-afterburner').setAttribute(
     'aria-label',
-    s.spec.vtol
-      ? 'Z · fúvócső ' + (s.naval?.nozzle || 0) + ' fok'
-      : 'SHIFT · ' + afterburnerStatus(s).message,
+    tr(
+      s.spec.vtol
+        ? 'Z · fúvócső ' + (s.naval?.nozzle || 0) + ' fok'
+        : 'SHIFT · ' + afterburnerStatus(s).message,
+    ),
   );
   $('config-flaps').dataset.moving = String(flap.moving);
-  $('config-flaps').title = flap.label;
+  $('config-flaps').title = tr(flap.label);
   text($('config-countermeasures'), `C · IR ${cm?.flare || 0} / R ${cm?.chaff || 0}`);
   const damaged = s.damage >= 15 || s.condition?.engines?.some((v) => v < 0.5),
     damagePanel = $('damage-status'),
@@ -116,13 +123,14 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
   damagePanel.hidden = !damaged || s.dying || s.crashed;
   if (damaged) {
     damagePanel.dataset.stage = stage.id;
-    $('damage-title').textContent = stage.label;
-    $('damage-integrity').textContent = `SZERKEZET ${Math.max(0, Math.round(100 - s.damage))}%`;
+    $('damage-title').textContent = tr(stage.label);
+    $('damage-integrity').textContent = tr(`SZERKEZET ${Math.max(0, Math.round(100 - s.damage))}%`);
     $('damage-bar').style.width = `${Math.max(0, 100 - s.damage)}%`;
     const faults = damageWarnings(s);
-    $('damage-faults').textContent =
-      faults.slice(0, 2).join(' · ') || 'SÉRÜLT SZERKEZET · FINOM MANŐVEREK';
-    damagePanel.title = faults.join('\n');
+    $('damage-faults').textContent = tr(
+      faults.slice(0, 2).join(' · ') || 'SÉRÜLT SZERKEZET · FINOM MANŐVEREK',
+    );
+    damagePanel.title = tr(faults.join('\n'));
   }
   const lock = s.rearView
     ? {
@@ -133,26 +141,26 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
       }
     : targetingStatus(s, targets, aim, weapons);
   $('targeting-panel').dataset.state = lock.state;
-  $('lock-label').textContent = lock.label;
-  $('lock-hint').textContent = lock.hint;
+  $('lock-label').textContent = tr(lock.label);
+  $('lock-hint').textContent = tr(lock.hint);
   weapons.solution = lock.solution || null;
-  $('weapon-solution').textContent = lock.solution?.detail || '';
+  $('weapon-solution').textContent = tr(lock.solution?.detail || '');
   $('weapon-solution').hidden = !lock.solution;
   $('targeting-panel').dataset.solution = lock.solution?.status || '';
   $('lock-fill').style.width = `${lock.progress}%`;
   $('lock-progress').setAttribute('aria-valuenow', String(lock.progress));
-  $('flight-name').textContent = s.spec.name.toUpperCase();
-  $('mission-phase').textContent = mission.phase;
-  $('phase-hint').textContent = mission.phaseHint;
-  $('guide-title').textContent = mission.phase;
+  $('flight-name').textContent = tr(s.spec.name.toUpperCase());
+  $('mission-phase').textContent = tr(mission.phase);
+  $('phase-hint').textContent = tr(mission.phaseHint);
+  $('guide-title').textContent = tr(mission.phase);
   const card = missionCardState(s, mission, targets);
   $('mission-card').dataset.operation = mission.spec.objective;
-  $('mission-card-name').textContent = card.name;
-  $('mission-time').textContent = card.elapsed;
-  $('mission-time').title = 'Eltelt küldetésidő';
-  $('mission-card-phase').textContent = card.phase;
+  $('mission-card-name').textContent = tr(card.name);
+  $('mission-time').textContent = tr(card.elapsed);
+  $('mission-time').title = tr('Eltelt küldetésidő');
+  $('mission-card-phase').textContent = tr(card.phase);
   $('mission-priority').hidden = true;
-  $('mission-priority').textContent = card.priority;
+  $('mission-priority').textContent = tr(card.priority);
   html(
     $('mission-objectives'),
     missionGoalsMarkup({
@@ -163,15 +171,15 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
       ).map((row) => ({ ...row, text: compactObjective(row), fullText: row.text })),
     }),
   );
-  $('mission-card').title = card.name + ' · ' + card.phase;
+  $('mission-card').title = tr(card.name + ' · ' + card.phase);
   const guideSteps = phaseGuide(s, mission, aim, weapons, targets);
   fitPhaseGuide(guideSteps);
   const engine = engineInstruments(s),
     gauge = $('g-load');
-  $('throttle-value').textContent = `${engine.throttle}%`;
+  $('throttle-value').textContent = tr(`${engine.throttle}%`);
   $('throttle-fill').style.height = `${engine.throttle}%`;
   $('throttle-status').setAttribute('aria-valuenow', String(engine.throttle));
-  $('g-value').textContent = `${engine.g >= 0 ? '+' : ''}${engine.g.toFixed(1)}`;
+  $('g-value').textContent = tr(`${engine.g >= 0 ? '+' : ''}${engine.g.toFixed(1)}`);
   gauge.dataset.level = engine.level;
   gauge.setAttribute('aria-valuemin', String(engine.limits.negative));
   gauge.setAttribute('aria-valuemax', String(engine.limits.positive));
@@ -180,58 +188,70 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
     'aria-valuetext',
     `${engine.g.toFixed(1)} G · ${{ normal: 'rendben', warning: 'figyelmeztetés', danger: 'veszélyes terhelés' }[engine.level]}`,
   );
-  gauge.title = `G-terhelés · szerkezeti határok: ${engine.limits.negative.toFixed(1)} / +${engine.limits.positive.toFixed(1)} G · sárga a határ 80%-ától`;
+  gauge.title = tr(
+    `G-terhelés · szerkezeti határok: ${engine.limits.negative.toFixed(1)} / +${engine.limits.positive.toFixed(1)} G · sárga a határ 80%-ától`,
+  );
   const fuelInfo = fuelStatus(s);
   $('fuel-status').dataset.level = fuelInfo.level;
-  $('fuel-status').title =
-    `Fogyasztás: ${Math.round(fuelInfo.flowKgMin)} kg/perc${fuelInfo.minutesRemaining !== null ? ` · ezen a gázálláson kb. ${fuelInfo.minutesRemaining.toFixed(1)} perc marad` : ''}`;
-  $('fuel-label').textContent = {
-    normal: 'FUEL TOT',
-    low: 'BINGO',
-    critical: 'FUEL LOW',
-    empty: 'FUEL OUT',
-  }[fuelInfo.level];
-  $('fuel-quantity').textContent = `${fuelInfo.kg.toLocaleString('hu-HU')} KG`;
-  $('fuel-quantity').title = `${fuelInfo.kg} kg üzemanyag`;
-  $('fuel-range').textContent =
-    fuelInfo.rangeKm === null ? '— KM' : `~${Math.round(fuelInfo.rangeKm)} KM`;
-  $('fuel-range').title =
-    'Becslés a pillanatnyi vízszintes sebességgel és fogyasztással, tartalék nélkül. Nem optimális elméleti hatótáv; a szél és a siklás nincs benne.';
-  $('fuel-value').textContent = `${fuelInfo.percent}%`;
+  $('fuel-status').title = tr(
+    `Fogyasztás: ${Math.round(fuelInfo.flowKgMin)} kg/perc${fuelInfo.minutesRemaining !== null ? ` · ezen a gázálláson kb. ${fuelInfo.minutesRemaining.toFixed(1)} perc marad` : ''}`,
+  );
+  $('fuel-label').textContent = tr(
+    {
+      normal: 'FUEL TOT',
+      low: 'BINGO',
+      critical: 'FUEL LOW',
+      empty: 'FUEL OUT',
+    }[fuelInfo.level],
+  );
+  $('fuel-quantity').textContent = tr(`${fuelInfo.kg.toLocaleString('hu-HU')} KG`);
+  $('fuel-quantity').title = tr(`${fuelInfo.kg} kg üzemanyag`);
+  $('fuel-range').textContent = tr(
+    fuelInfo.rangeKm === null ? '— KM' : `~${Math.round(fuelInfo.rangeKm)} KM`,
+  );
+  $('fuel-range').title = tr(
+    'Becslés a pillanatnyi vízszintes sebességgel és fogyasztással, tartalék nélkül. Nem optimális elméleti hatótáv; a szél és a siklás nincs benne.',
+  );
+  $('fuel-value').textContent = tr(`${fuelInfo.percent}%`);
   $('fuel-fill').style.width = String(fuelInfo.percent) + '%';
   $('fuel-gauge').setAttribute(
     'aria-label',
-    `${fuelInfo.percent}% üzemanyag, ${fuelInfo.kg} kg; ${fuelInfo.rangeKm === null ? 'hatótáv még nem becsülhető' : `becsült hatótáv ${Math.round(fuelInfo.rangeKm)} km`}`,
+    tr(
+      `${fuelInfo.percent}% üzemanyag, ${fuelInfo.kg} kg; ${fuelInfo.rangeKm === null ? 'hatótáv még nem becsülhető' : `becsült hatótáv ${Math.round(fuelInfo.rangeKm)} km`}`,
+    ),
   );
   $('fuel-meter').setAttribute('aria-valuenow', String(fuelInfo.percent));
   $('fuel-meter').setAttribute(
     'aria-valuetext',
     `${fuelInfo.percent} százalék, ${fuelInfo.kg} kilogramm. ${fuelInfo.label}`,
   );
-  $('warning').textContent = s.dying || s.crashed ? s.warning : s.threatWarning || s.warning;
-  $('flight-status').textContent =
+  $('warning').textContent = tr(s.dying || s.crashed ? s.warning : s.threatWarning || s.warning);
+  $('flight-status').textContent = tr(
     `${s.assist ? 'G-LIMITER BE' : 'G-LIMITER KI'} · ${s.onGround ? 'FÖLDÖN' : 'REPÜLÉS'} · ${Math.floor(
       s.elapsed / 60,
     )
       .toString()
       .padStart(2, '0')}:${Math.floor(s.elapsed % 60)
       .toString()
-      .padStart(2, '0')} · ${muted ? 'NÉMÍTVA' : 'HANG BE'}`;
+      .padStart(2, '0')} · ${muted ? 'NÉMÍTVA' : 'HANG BE'}`,
+  );
   const contacts = radarContacts(s, targets),
     selected = contacts.find((x) => x.target.id === aim.id);
-  $('target-data').textContent = jammed
-    ? 'JELZAVARÁS · NAVIGÁCIÓ NEM ELÉRHETŐ'
-    : mission.spec.objective === 'landing'
-      ? 'LESZÁLLÁSI GYAKORLAT · BASE'
-      : selected?.visible
-        ? `${selected.target.name.toUpperCase()} · ${(selected.distance / 1000).toFixed(1)} KM · ${aim.locked ? 'BEFOGVA' : lock.state === 'acquiring' ? 'BEFOGÁS' : 'KIJELÖLVE'}`
-        : mission.spec.objective === 'escort' && mission.objectiveComplete
-          ? 'CIVIL TÁVOZOTT · RTB'
-          : mission.civilIntercepted
-            ? 'CIVIL VISSZAFORDUL · TŰZTILALOM'
-            : mission.destroyed
-              ? 'CÉL MEGSEMMISÍTVE · RTB'
-              : `${contacts.filter((c) => c.visible && c.selectable).length} CÉL · ${contacts.filter((c) => c.visible && c.target.team === 'ally' && !c.target.home && !c.target.city).length} SZÖVETSÉGES · TAB: VÁLTÁS`;
+  $('target-data').textContent = tr(
+    jammed
+      ? 'JELZAVARÁS · NAVIGÁCIÓ NEM ELÉRHETŐ'
+      : mission.spec.objective === 'landing'
+        ? 'LESZÁLLÁSI GYAKORLAT · BASE'
+        : selected?.visible
+          ? `${selected.target.name.toUpperCase()} · ${(selected.distance / 1000).toFixed(1)} KM · ${aim.locked ? 'BEFOGVA' : lock.state === 'acquiring' ? 'BEFOGÁS' : 'KIJELÖLVE'}`
+          : mission.spec.objective === 'escort' && mission.objectiveComplete
+            ? 'CIVIL TÁVOZOTT · RTB'
+            : mission.civilIntercepted
+              ? 'CIVIL VISSZAFORDUL · TŰZTILALOM'
+              : mission.destroyed
+                ? 'CÉL MEGSEMMISÍTVE · RTB'
+                : `${contacts.filter((c) => c.visible && c.selectable).length} CÉL · ${contacts.filter((c) => c.visible && c.target.team === 'ally' && !c.target.home && !c.target.city).length} SZÖVETSÉGES · TAB: VÁLTÁS`,
+  );
   $('target-data').dataset.lock =
     jammed || !selected?.visible
       ? 'idle'
@@ -240,17 +260,19 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
         : lock.state === 'acquiring'
           ? 'acquiring'
           : 'idle';
-  $('target-data').title = $('target-data').textContent;
+  $('target-data').title = tr($('target-data').textContent);
   if (!selected?.visible)
-    $('target-data').textContent = jammed
-      ? 'JELZAVARÁS'
-      : mission.spec.objective === 'landing'
-        ? 'BASE / N'
-        : `${contacts.filter((c) => c.visible && c.selectable).length} CÉL · ${contacts.filter((c) => c.visible && c.target.team === 'ally' && !c.target.home && !c.target.city).length} BARÁT`;
+    $('target-data').textContent = tr(
+      jammed
+        ? 'JELZAVARÁS'
+        : mission.spec.objective === 'landing'
+          ? 'BASE / N'
+          : `${contacts.filter((c) => c.visible && c.selectable).length} CÉL · ${contacts.filter((c) => c.visible && c.target.team === 'ally' && !c.target.home && !c.target.city).length} BARÁT`,
+    );
   const map = renderTacticalMap($('radar'), s, targets, aim);
-  $('map-range').textContent = jammed
-    ? 'NINCS JEL'
-    : `${(map.halfExtent * 2) / 1000} KM · ${map.zoomFactor}×`;
+  $('map-range').textContent = tr(
+    jammed ? 'NINCS JEL' : `${(map.halfExtent * 2) / 1000} KM · ${map.zoomFactor}×`,
+  );
   const approach = s.approach,
     landing = !!approach?.active && !s.onGround && !s.crashed && !jammed;
   const wasLanding = document.body.classList.contains('approaching');
@@ -264,18 +286,21 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
   if (routeButton) {
     routeButton.hidden = !landing;
     routeButton.setAttribute('aria-pressed', String(s.landingRouteEnabled !== false));
-    routeButton.textContent = `I SEGÉDÍV ${s.landingRouteEnabled === false ? 'KI' : 'BE'}`;
+    routeButton.textContent = tr(`I SEGÉDÍV ${s.landingRouteEnabled === false ? 'KI' : 'BE'}`);
   }
   const head = $('head-view-status');
   if (head) {
     const yaw = s.headLook?.yawDeg || 0,
       pitch = s.headLook?.pitchDeg || 0;
     head.hidden = Math.abs(yaw) + Math.abs(pitch) < 2;
-    head.textContent = `NÉZET ${yaw < 0 ? 'BAL' : 'JOBB'} ${Math.abs(yaw).toFixed(0)}° · ${pitch < 0 ? 'LE' : 'FEL'} ${Math.abs(pitch).toFixed(0)}°`;
+    head.textContent = tr(
+      `NÉZET ${yaw < 0 ? 'BAL' : 'JOBB'} ${Math.abs(yaw).toFixed(0)}° · ${pitch < 0 ? 'LE' : 'FEL'} ${Math.abs(pitch).toFixed(0)}°`,
+    );
   }
   if (landing) {
-    $('approach-stage').textContent =
-      `${approach.stage} · ${(approach.distance / 1000).toFixed(1)} KM`;
+    $('approach-stage').textContent = tr(
+      `${approach.stage} · ${(approach.distance / 1000).toFixed(1)} KM`,
+    );
     html(
       $('approach-checks'),
       approach.items
@@ -291,8 +316,9 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
         )
         .join(''),
     );
-    $('approach-instruction').textContent =
-      approach.instruction + (map.landingRoute?.advisory ? ' ' + map.landingRoute.advisory : '');
+    $('approach-instruction').textContent = tr(
+      approach.instruction + (map.landingRoute?.advisory ? ' ' + map.landingRoute.advisory : ''),
+    );
   }
   updateCockpit(s);
   fitMissionObjectives();
@@ -314,7 +340,7 @@ function fitPhaseGuide(steps) {
   if (guideLayout.get(list) === key) return;
   const height = list.clientHeight;
   guideLayout.set(list, key);
-  list.innerHTML = html;
+  list.innerHTML = trHtml(html);
   list.style.setProperty('--guide-lines', height >= 24 ? 2 : 1);
   let full = false;
   for (const row of list.children) {

@@ -16,7 +16,6 @@ body.flying .brand > span:last-child {
   letter-spacing: 0.5px;
 }
 body.flying .brand small,
-body.flying .header-right,
 body.flying .flight-bottom,
 body.flying .phase-status,
 body.flying #flight-name,

@@ -1,3 +1,4 @@
+import { trHtml, tr, formatNumber } from './i18n.js';
 import { nationalityMarkup } from './aircraftNations.js';
 import { escapeHtml as escape } from './ui/html.js';
 import { trainingAircraft, trainerReferences } from './trainingAircraft.js';
@@ -69,13 +70,15 @@ let selected = entries.find((e) => e.id === hashId()) || entries[0];
 if (location.hash && !embedded) $('library-filter').value = selected.kind;
 function list() {
   const filter = $('library-filter').value;
-  $('library-list').innerHTML = entries
-    .filter((e) => filter === 'all' || e.kind === filter)
-    .map(
-      (e) =>
-        `<button data-unit="${escape(e.id)}" aria-pressed="${e === selected}">${escape(e.name)}<small>${escape(e.category)}</small></button>`,
-    )
-    .join('');
+  $('library-list').innerHTML = trHtml(
+    entries
+      .filter((e) => filter === 'all' || e.kind === filter)
+      .map(
+        (e) =>
+          `<button data-unit="${escape(e.id)}" aria-pressed="${e === selected}">${escape(e.name)}<small>${escape(e.category)}</small></button>`,
+      )
+      .join(''),
+  );
 }
 function relatedIds(entry) {
   if (['harrier', 'carrier', 'destroyer'].includes(entry.id))
@@ -113,31 +116,33 @@ function relatedIds(entry) {
     : ['guide-ground-object', 'guide-ground-unit'];
 }
 function detail() {
-  $('unit-category').textContent = selected.category;
-  $('unit-name').textContent = selected.name;
-  $('unit-nationality').innerHTML = selected.spec ? nationalityMarkup(selected.spec) : '';
+  $('unit-category').textContent = tr(selected.category);
+  $('unit-name').textContent = tr(selected.name);
+  $('unit-nationality').innerHTML = trHtml(selected.spec ? nationalityMarkup(selected.spec) : '');
   $('unit-art').hidden = selected.kind === 'guide';
-  $('unit-art').setAttribute('aria-label', selected.name + ' forgó térbeli előnézete');
+  $('unit-art').setAttribute('aria-label', tr(selected.name + ' forgó térbeli előnézete'));
   const extra = strategicArticles[selected.id],
     article = selected.kind === 'guide' || selected.kind === 'friendly' || !!extra;
   $('pilot-body').hidden = !article;
-  $('pilot-body').innerHTML = extra
-    ? extra.sections
-        .map(
-          (section) =>
-            `<section><h3>${escape(section.title)}</h3>${section.paragraphs.map((text) => `<p>${escape(text)}</p>`).join('')}</section>`,
-        )
-        .join('') +
-      `<section><h3>Forrás az elnevezéshez</h3><p><a href="${escape(extra.reference.url)}" target="_blank" rel="noopener">${escape(extra.reference.title)} ↗</a></p></section>`
-    : article
-      ? pilotMarkup(selected)
-      : '';
+  $('pilot-body').innerHTML = trHtml(
+    extra
+      ? extra.sections
+          .map(
+            (section) =>
+              `<section><h3>${escape(section.title)}</h3>${section.paragraphs.map((text) => `<p>${escape(text)}</p>`).join('')}</section>`,
+          )
+          .join('') +
+          `<section><h3>Forrás az elnevezéshez</h3><p><a href="${escape(extra.reference.url)}" target="_blank" rel="noopener">${escape(extra.reference.title)} ↗</a></p></section>`
+      : article
+        ? pilotMarkup(selected)
+        : '',
+  );
   let rows = [];
   if (selected.kind === 'guide') {
-    $('unit-description').textContent = selected.description;
+    $('unit-description').textContent = tr(selected.description);
   } else if (selected.kind === 'friendly') {
     const u = unitTypes[selected.type];
-    $('unit-description').textContent = selected.description;
+    $('unit-description').textContent = tr(selected.description);
     rows = [
       ['Oldal', 'Szövetséges / kék jelölés'],
       ['Típus', u.name],
@@ -147,19 +152,35 @@ function detail() {
       ...friendlyMissionRows(selected),
     ];
   } else if (selected.kind === 'weapon' || selected.kind === 'countermeasure') {
-    $('unit-description').textContent = selected.description;
+    $('unit-description').textContent = tr(selected.description);
     rows = weaponLibraryRows(selected);
   } else if (selected.spec) {
     const a = selected.spec,
       preset = armament(a);
-    $('unit-description').textContent =
-      `${a.role}. ${preset.variant}. ${a.transport ? 'Védd meg a szállítógépet vagy a Vasfátyol szállítós szakasza. A két kísérő vadász téged véd. A 45 km-es taktikai érzékelő, a repülési együtthatók, a teher nélküli kiindulás és az önvédelmi készlet játékbeli közelítés; nem hitelesített teljesítménytáblázat. ' : ''} ${a.trainingOnly ? 'A négy gyakorlópálya rögzített gépe. Nincs utánégető vagy harci fegyverzet. A civil elfogáshoz VMTS jellegű szimulált kontaktokat mutatunk, nem valódi fedélzeti harci radart. A tolóerő, méretek és üres tömeg nyilvános típusadatok; a légellenállási, felhajtóerő- és kormányegyütthatók játékbeli közelítések. ' : ''}Ugyanaz a térbeli modell és fegyverkészlet szerepel az adatlapon és a repülésben.`;
+    $('unit-description').textContent = [
+      tr(a.role) + '.',
+      tr(preset.variant) + '.',
+      a.transport
+        ? tr(
+            'Védd meg a szállítógépet vagy a Vasfátyol szállítós szakasza. A két kísérő vadász téged véd. A 45 km-es taktikai érzékelő, a repülési együtthatók, a teher nélküli kiindulás és az önvédelmi készlet játékbeli közelítés; nem hitelesített teljesítménytáblázat.',
+          )
+        : '',
+      a.trainingOnly
+        ? tr(
+            'A négy gyakorlópálya rögzített gépe. Nincs utánégető vagy harci fegyverzet. A civil elfogáshoz VMTS jellegű szimulált kontaktokat mutatunk, nem valódi fedélzeti harci radart. A tolóerő, méretek és üres tömeg nyilvános típusadatok; a légellenállási, felhajtóerő- és kormányegyütthatók játékbeli közelítések.',
+          )
+        : '',
+      tr('Ugyanaz a térbeli modell és fegyverkészlet szerepel az adatlapon és a repülésben.'),
+    ]
+      .filter(Boolean)
+      .join(' ');
+
     rows = [
       ['Szerep', a.role],
       ['Maximális sebesség', `Mach ${a.maxMach.toFixed(2)}`],
       ['Terhelési határ', `${a.maxG} G`],
-      ['Üres tömeg', `${a.emptyMass.toLocaleString('hu')} kg`],
-      ['Üzemanyag', `${a.fuelCapacity.toLocaleString('hu')} kg`],
+      ['Üres tömeg', `${formatNumber(a.emptyMass)} kg`],
+      ['Üzemanyag', `${formatNumber(a.fuelCapacity)} kg`],
       [
         a.syntheticRadar ? 'Szimulált kiképzési érzékelő' : 'Radar',
         `${a.radarRange / 1000} km · ${a.radarCone}° félkúp`,
@@ -230,7 +251,7 @@ function detail() {
     ];
   } else {
     const u = selected.unit;
-    $('unit-description').textContent = u.description;
+    $('unit-description').textContent = tr(u.description);
     rows = [
       ['Osztály', u.category],
       ['Feladat', u.role],
@@ -248,14 +269,20 @@ function detail() {
     ];
   }
   $('unit-table').hidden = !rows.length;
-  $('unit-data').innerHTML = rows
-    .map(([key, value]) => `<tr><th scope="row">${escape(key)}</th><td>${escape(value)}</td></tr>`)
-    .join('');
-  $('library-related').innerHTML = relatedIds(selected)
-    .map((id) => entries.find((e) => e.id === id))
-    .filter(Boolean)
-    .map((e) => `<button data-entry-link="${escape(e.id)}">${escape(e.name)} ↗</button>`)
-    .join('');
+  $('unit-data').innerHTML = trHtml(
+    rows
+      .map(
+        ([key, value]) => `<tr><th scope="row">${escape(key)}</th><td>${escape(value)}</td></tr>`,
+      )
+      .join(''),
+  );
+  $('library-related').innerHTML = trHtml(
+    relatedIds(selected)
+      .map((id) => entries.find((e) => e.id === id))
+      .filter(Boolean)
+      .map((e) => `<button data-entry-link="${escape(e.id)}">${escape(e.name)} ↗</button>`)
+      .join(''),
+  );
   list();
 }
 function choose(id, { scroll = true } = {}) {

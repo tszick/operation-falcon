@@ -1,3 +1,4 @@
+import { trHtml, tr } from '../i18n.js';
 import { missionForSide } from '../missionSides.js';
 import { escapeHtml as escape } from './html.js';
 import { missionLocation, mapPosition } from '../missionLocations.js';
@@ -78,31 +79,35 @@ export class Briefing {
     });
   }
   mountMap() {
-    document.getElementById('mission-markers').innerHTML = this.missions
-      .map((m) => {
-        const location = missionLocation(m),
-          p = mapPosition(location);
-        return `<button class="map-pin ${m.group === 'practice' ? 'practice-pin' : ''}" data-mission="${escape(m.id)}" style="left:${p.x}%;top:${p.y}%" aria-label="${escape(m.name)} — ${escape(location.name)}" aria-pressed="false" aria-describedby="map-tooltip"><span></span></button>`;
-      })
-      .join('');
-    document.getElementById('map-mission-list').innerHTML = ['practice', 'story1']
-      .map(
-        (group) =>
-          `<details ${group === 'practice' ? 'open' : ''}><summary>${group === 'practice' ? 'GYAKORLÁS' : 'KÜLDETÉSEK'}</summary><div>${this.missions
-            .filter((m) => m.group === group)
-            .map(
-              (m) =>
-                `<button data-mission="${escape(m.id)}" aria-pressed="false"><span>${String(m.order).padStart(2, '0')}</span> ${escape(m.name)} <small>${escape(m.difficulty)}</small></button>`,
-            )
-            .join('')}</div></details>`,
-      )
-      .join('');
+    document.getElementById('mission-markers').innerHTML = trHtml(
+      this.missions
+        .map((m) => {
+          const location = missionLocation(m),
+            p = mapPosition(location);
+          return `<button class="map-pin ${m.group === 'practice' ? 'practice-pin' : ''}" data-mission="${escape(m.id)}" style="left:${p.x}%;top:${p.y}%" aria-label="${escape(m.name)} — ${escape(location.name)}" aria-pressed="false" aria-describedby="map-tooltip"><span></span></button>`;
+        })
+        .join(''),
+    );
+    document.getElementById('map-mission-list').innerHTML = trHtml(
+      ['practice', 'story1']
+        .map(
+          (group) =>
+            `<details ${group === 'practice' ? 'open' : ''}><summary>${group === 'practice' ? 'GYAKORLÁS' : 'KÜLDETÉSEK'}</summary><div>${this.missions
+              .filter((m) => m.group === group)
+              .map(
+                (m) =>
+                  `<button data-mission="${escape(m.id)}" aria-pressed="false"><span>${String(m.order).padStart(2, '0')}</span> ${escape(m.name)} <small>${escape(m.difficulty)}</small></button>`,
+              )
+              .join('')}</div></details>`,
+        )
+        .join(''),
+    );
     const map = document.getElementById('missions');
     const preview = (button) => {
       const m = this.missions.find((m) => m.id === button.dataset.mission);
       this.onPreview(m);
       if (button.classList.contains('map-pin')) {
-        this.tooltip.textContent = missionForSide(m, this.side).name;
+        this.tooltip.textContent = tr(missionForSide(m, this.side).name);
         this.tooltip.hidden = false;
         this.tooltip.style.left = button.style.left;
         this.tooltip.style.top = button.style.top;
@@ -138,7 +143,7 @@ export class Briefing {
   update(mission, selected, choices) {
     this.mission = mission;
     this.side = mission.side || 'west';
-    document.getElementById('aircraft-side-label').textContent = 'ELÉRHETŐ TÍPUS';
+    document.getElementById('aircraft-side-label').textContent = tr('ELÉRHETŐ TÍPUS');
     this.selected = selected;
     this.choices = choices;
     for (const pin of this.root.querySelectorAll('[data-mission]')) {
@@ -148,21 +153,27 @@ export class Briefing {
       );
     }
     document.getElementById('mission-next').disabled = !this.confirmed;
-    document.getElementById('mission-selection-status').textContent = this.confirmed
-      ? `KIJELÖLVE / ${mission.name} · ${missionLocation(mission).name}`
-      : 'Nincs kiválasztott küldetés';
-    document.getElementById('aircraft-mission-context').textContent =
-      `${mission.name} / ${missionLocation(mission).name}`;
+    document.getElementById('mission-selection-status').textContent = tr(
+      this.confirmed
+        ? `KIJELÖLVE / ${mission.name} · ${missionLocation(mission).name}`
+        : 'Nincs kiválasztott küldetés',
+    );
+    document.getElementById('aircraft-mission-context').textContent = tr(
+      `${mission.name} / ${missionLocation(mission).name}`,
+    );
     document.getElementById('aircraft-wiki').onclick = () => this.openWiki(selected.id);
     document.getElementById('equipment-wiki').onclick = () => this.openWiki(selected.id);
-    document.getElementById('equipment-context').textContent = selected.name + ' / ' + mission.name;
-    document.getElementById('launch-summary').textContent = selected.name;
-    document.getElementById('equipment-mission-name').textContent = mission.name;
-    document.getElementById('equipment-brief').textContent = mission.description;
-    document.getElementById('equipment-objectives').innerHTML =
+    document.getElementById('equipment-context').textContent = tr(
+      selected.name + ' / ' + mission.name,
+    );
+    document.getElementById('launch-summary').textContent = tr(selected.name);
+    document.getElementById('equipment-mission-name').textContent = tr(mission.name);
+    document.getElementById('equipment-brief').textContent = tr(mission.description);
+    document.getElementById('equipment-objectives').innerHTML = trHtml(
       '<h3>ELSŐDLEGES CÉLOK</h3><ol>' +
-      mission.primary.map((p) => `<li>${escape(p)}</li>`).join('') +
-      '</ol>';
+        mission.primary.map((p) => `<li>${escape(p)}</li>`).join('') +
+        '</ol>',
+    );
     const pageSize = this.largeCatalogue.matches ? 6 : 3;
     const key = mission.id + ':' + pageSize + ':' + choices.map((a) => a.id).join(',');
     if (this.cardsKey !== key) {
@@ -172,17 +183,19 @@ export class Briefing {
         0,
         this.pages.findIndex((p) => p.aircraft.includes(selected)),
       );
-      this.list.innerHTML = this.pages
-        .map(
-          (page, i) =>
-            `<div class="catalogue-page" data-page="${i}" hidden>${page.aircraft
-              .map(
-                (a) =>
-                  `<button type="button" class="aircraft-card" data-aircraft="${escape(a.id)}" aria-pressed="false">${nationalityMarkup(a, { flagsOnly: true })}<canvas data-card-art="${escape(a.id)}" aria-label="${escape(a.name)} kitöltött térbeli modellje"></canvas><strong>${escape(a.name)}</strong></button>`,
-              )
-              .join('')}</div>`,
-        )
-        .join('');
+      this.list.innerHTML = trHtml(
+        this.pages
+          .map(
+            (page, i) =>
+              `<div class="catalogue-page" data-page="${i}" hidden>${page.aircraft
+                .map(
+                  (a) =>
+                    `<button type="button" class="aircraft-card" data-aircraft="${escape(a.id)}" aria-pressed="false">${nationalityMarkup(a, { flagsOnly: true })}<canvas data-card-art="${escape(a.id)}" aria-label="${escape(a.name)} kitöltött térbeli modellje"></canvas><strong>${escape(a.name)}</strong></button>`,
+                )
+                .join('')}</div>`,
+          )
+          .join(''),
+      );
     }
     for (const card of this.list.querySelectorAll('[data-aircraft]')) {
       const active = card.dataset.aircraft === selected.id;
@@ -204,9 +217,10 @@ export class Briefing {
     for (const page of this.list.querySelectorAll('[data-page]'))
       page.hidden = Number(page.dataset.page) !== this.pageIndex;
     const page = this.pages[this.pageIndex];
-    document.getElementById('selected-name').textContent = this.selected.name;
-    document.getElementById('aircraft-page').textContent =
-      `${this.pageIndex + 1} / ${this.pages.length} · ${page.side === 'west' ? 'NYUGAT' : 'KELET'}`;
+    document.getElementById('selected-name').textContent = tr(this.selected.name);
+    document.getElementById('aircraft-page').textContent = tr(
+      `${this.pageIndex + 1} / ${this.pages.length} · ${page.side === 'west' ? 'NYUGAT' : 'KELET'}`,
+    );
     document.getElementById('aircraft-prev').disabled = this.pageIndex === 0;
     document.getElementById('aircraft-next').disabled = this.pageIndex === this.pages.length - 1;
     for (const button of this.root.querySelectorAll('[data-catalogue-section]')) {

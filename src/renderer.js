@@ -1,3 +1,4 @@
+import { tr } from './i18n.js';
 import { renderCarrier } from './carrierVisuals.js';
 import { renderCityVisuals } from './cityVisuals.js';
 import { renderEnvironmentSky } from './environmentSky.js';
@@ -559,7 +560,7 @@ export class Renderer {
     c.lineWidth = 3.5;
     c.lineJoin = 'round';
     c.strokeText?.(label, px, py);
-    c.fillText(label, px, py);
+    c.fillText(tr(label), px, py);
   }
   flakBattery(p) {
     for (const x of [-30, 30]) {
@@ -899,14 +900,14 @@ export class Renderer {
     c.stroke();
     c.textAlign = 'center';
     c.font = 'bold 15px Consolas,monospace';
-    c.fillText(`FAROKGÉPÁGYÚ · ${s.ammo.tailGun || 0} DB`, cx, h - 66);
+    c.fillText(tr(`FAROKGÉPÁGYÚ · ${s.ammo.tailGun || 0} DB`), cx, h - 66);
     c.font = '12px Consolas,monospace';
     c.fillText(
-      status.canFire ? 'EGÉR: CÉLZÁS · SZÓKÖZ: TŰZ · V: PILÓTAFÜLKE' : status.label,
+      tr(status.canFire ? 'EGÉR: CÉLZÁS · SZÓKÖZ: TŰZ · V: PILÓTAFÜLKE' : status.label),
       cx,
       h - 42,
     );
-    c.fillText(`IAS ${Math.round(s.ias * 3.6)} KM/H · AGL ${Math.round(s.agl)} M`, cx, h - 22);
+    c.fillText(tr(`IAS ${Math.round(s.ias * 3.6)} KM/H · AGL ${Math.round(s.agl)} M`), cx, h - 22);
   }
   hud(s, weapons, aim, jammed = false) {
     const c = this.ctx,
@@ -943,8 +944,8 @@ export class Renderer {
       c.lineTo(len, y);
       c.stroke();
       c.setLineDash([]);
-      c.fillText(String(deg), -len - 20, y + 4);
-      c.fillText(String(deg), len + 20, y + 4);
+      c.fillText(tr(String(deg)), -len - 20, y + 4);
+      c.fillText(tr(String(deg)), len + 20, y + 4);
     }
     c.restore();
     c.beginPath();
@@ -976,7 +977,7 @@ export class Renderer {
       const x = cx + side * span,
         value = side < 0 ? speed : alt,
         increment = side < 0 ? 50 : 100;
-      c.fillText(side < 0 ? 'IAS KM/H' : 'MSL M', x, Math.max(162, cy - 155));
+      c.fillText(tr(side < 0 ? 'IAS KM/H' : 'MSL M'), x, Math.max(162, cy - 155));
       for (let i = -3; i <= 3; i++) {
         const tick = Math.floor(value / increment) * increment + i * increment,
           y = cy - (tick - value) * (side < 0 ? 1 : 0.5);
@@ -985,20 +986,20 @@ export class Renderer {
         c.moveTo(x - side * 25, y);
         c.lineTo(x - side * 15, y);
         c.stroke();
-        c.fillText(String(tick), x + side * 10, y + 4);
+        c.fillText(tr(String(tick)), x + side * 10, y + 4);
       }
       c.fillStyle = '#0a1715e8';
       c.fillRect(x - 38, cy - 14, 76, 28);
       c.strokeRect(x - 38, cy - 14, 76, 28);
       c.fillStyle = '#cefa9f';
       c.font = 'bold 20px Consolas,monospace';
-      c.fillText(String(value), x, cy + 7);
+      c.fillText(tr(String(value)), x, cy + 7);
       c.font = '12px Consolas,monospace';
     }
     if (!jammed) {
       const heading = (a.heading / DEG + 360) % 360;
       c.fillText(
-        `${Math.round(heading).toString().padStart(3, '0')}°`,
+        tr(`${Math.round(heading).toString().padStart(3, '0')}°`),
         cx,
         Math.max(140, cy - 207),
       );
@@ -1011,18 +1012,18 @@ export class Renderer {
       for (let i = -3; i <= 3; i++) {
         const deg = (Math.round(heading / 10) * 10 + i * 10 + 360) % 360,
           x = cx + (((deg - heading + 540) % 360) - 180) * 3;
-        c.fillText(String(deg).padStart(3, '0'), x, Math.max(174, cy - 170));
+        c.fillText(tr(String(deg).padStart(3, '0')), x, Math.max(174, cy - 170));
       }
     }
     c.textAlign = 'left';
     c.fillText(
-      `M ${s.mach.toFixed(2)}   G ${s.g.toFixed(1)}`,
+      tr(`M ${s.mach.toFixed(2)}   G ${s.g.toFixed(1)}`),
       cx - span - 30,
       cockpitHudFooterY(w, h),
     );
-    c.fillText(`AGL ${Math.round(s.agl)} M`, cx + span - 40, cockpitHudFooterY(w, h));
+    c.fillText(tr(`AGL ${Math.round(s.agl)} M`), cx + span - 40, cockpitHudFooterY(w, h));
     c.fillText(
-      `V/S ${s.velocity.y >= 0 ? '+' : ''}${s.velocity.y.toFixed(1)} M/S`,
+      tr(`V/S ${s.velocity.y >= 0 ? '+' : ''}${s.velocity.y.toFixed(1)} M/S`),
       cx + span - 40,
       cockpitHudFooterY(w, h) + 20,
     );
@@ -1135,9 +1136,9 @@ export function renderAircraftPreview(
     c.fillStyle = '#759268';
     c.font = '10px Consolas,monospace';
     c.textAlign = 'left';
-    c.fillText((model ? 'TARGET / ' : 'AIRFRAME / ') + spec.id.toUpperCase(), 15, h - 15);
+    c.fillText(tr((model ? 'TARGET / ' : 'AIRFRAME / ') + spec.id.toUpperCase()), 15, h - 15);
     c.textAlign = 'right';
-    c.fillText(mode === 'vector' ? 'VECTOR MODEL' : 'SURFACE PREVIEW', w - 15, h - 15);
+    c.fillText(tr(mode === 'vector' ? 'VECTOR MODEL' : 'SURFACE PREVIEW'), w - 15, h - 15);
     c.textAlign = 'left';
   }
 }

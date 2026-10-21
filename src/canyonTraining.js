@@ -1,3 +1,4 @@
+import { tr } from './i18n.js';
 import { Vec3, clamp } from './math.js';
 import { terrainWorld, terrainHeight, pathPoint } from './terrain.js';
 export const canyonColor = '#7edee7';
@@ -109,7 +110,9 @@ export function renderCanyonCourse(r, s) {
       c.font = 'bold 13px Consolas,monospace';
       c.textAlign = 'center';
       c.fillText(
-        `${i + 1}/${course.gates.length} · ${i < 5 ? 'KANYON' : i === 7 ? 'KIJÁRAT' : 'FELHÚZÁS'}`,
+        tr(
+          `${i + 1}/${course.gates.length} · ${i < 5 ? 'KANYON' : i === 7 ? 'KIJÁRAT' : 'FELHÚZÁS'}`,
+        ),
         label.x,
         label.y,
       );

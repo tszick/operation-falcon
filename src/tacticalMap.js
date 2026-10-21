@@ -1,3 +1,4 @@
+import { tr } from './i18n.js';
 import { transportExitPosition } from './transportRole.js';
 import { getLandingRoute } from './landingRoute.js';
 import { navigationJammed } from './electronicWarfare.js';
@@ -221,14 +222,14 @@ export function renderTacticalMap(canvas, s, targets, aim, options = {}) {
     base = mapPoint(s.recoveryExit || s.airfield?.position || { x: 0, z: 0 }, map);
   c.fillStyle = '#a9c88d';
   c.font = '12px Consolas,monospace';
-  c.fillText('N', cx + 4, 13);
+  c.fillText(tr('N'), cx + 4, 13);
   if (s.recoveryExit) {
     c.strokeStyle = '#a497ff';
     c.fillStyle = '#c1b7ff';
     c.beginPath();
     c.arc(base.x, base.y, Math.max(5, 2500 * map.scale), 0, Math.PI * 2);
     c.stroke();
-    c.fillText('KIVONULÁS', base.x + 7, base.y + 12);
+    c.fillText(tr('KIVONULÁS'), base.x + 7, base.y + 12);
   } else {
     c.strokeStyle = '#9fc37388';
     c.setLineDash([3, 4]);
@@ -240,9 +241,9 @@ export function renderTacticalMap(canvas, s, targets, aim, options = {}) {
     c.strokeStyle = '#d1efa8';
     const baseLength = terrainWorld.ocean ? 160 : runway.halfLength;
     c.strokeRect(base.x - 1.5, base.y - baseLength * map.scale, 3, baseLength * 2 * map.scale);
-    c.fillText(terrainWorld.ocean ? 'ANYAHAJÓ' : 'BASE', base.x + 6, base.y + 12);
-    c.fillText(terrainWorld.ocean ? '352°' : '000°', base.x + 5, base.y - approach + 9);
-    c.fillText(terrainWorld.ocean ? '' : '180°', base.x + 5, base.y + approach - 3);
+    c.fillText(tr(terrainWorld.ocean ? 'ANYAHAJÓ' : 'BASE'), base.x + 6, base.y + 12);
+    c.fillText(tr(terrainWorld.ocean ? '352°' : '000°'), base.x + 5, base.y - approach + 9);
+    c.fillText(tr(terrainWorld.ocean ? '' : '180°'), base.x + 5, base.y + approach - 3);
   }
   if (s.spec.transport) {
     const t = targets.find((t) => t.playerControlled && !t.exited);
@@ -253,7 +254,7 @@ export function renderTacticalMap(canvas, s, targets, aim, options = {}) {
       c.strokeRect(p.x - 5, p.y - 5, 10, 10);
       c.fillStyle = '#8ccbe3';
       c.font = '12px Consolas,monospace';
-      c.fillText(`KIJÁRAT ${(s.position.distance(exit) / 1000).toFixed(1)} KM`, p.x + 7, p.y);
+      c.fillText(tr(`KIJÁRAT ${(s.position.distance(exit) / 1000).toFixed(1)} KM`), p.x + 7, p.y);
     }
   }
   const own = mapPoint(s.position, map),
@@ -297,7 +298,7 @@ export function renderTacticalMap(canvas, s, targets, aim, options = {}) {
     c.stroke();
     c.fillStyle = route.color;
     c.font = '12px Consolas,monospace';
-    c.fillText('I · SEGÉDÍV', 9, height - 22);
+    c.fillText(tr('I · SEGÉDÍV'), 9, height - 22);
     c.restore();
   }
   if (s.canyonTraining) {
@@ -326,7 +327,7 @@ export function renderTacticalMap(canvas, s, targets, aim, options = {}) {
       c.strokeRect(point.x - 4, point.y - 4, 8, 8);
       c.fillStyle = '#82c6e5';
       c.font = '10px Consolas,monospace';
-      c.fillText('VÁROS', point.x + 6, point.y);
+      c.fillText(tr('VÁROS'), point.x + 6, point.y);
       continue;
     }
     glyph(
@@ -362,7 +363,7 @@ export function renderRadarNoise(c, time = 0, { width = 240, height = 240 } = {}
   c.fillStyle = '#fff';
   c.font = 'bold 10px Consolas,monospace';
   c.textAlign = 'center';
-  c.fillText('JELZAVARÁS · NAV / RADAR', width / 2, height / 2 + 3);
+  c.fillText(tr('JELZAVARÁS · NAV / RADAR'), width / 2, height / 2 + 3);
   c.textAlign = 'left';
 }
 
@@ -409,9 +410,9 @@ function renderMapRoutes(c, map) {
   }
   c.fillStyle = '#d0bd88';
   c.font = '12px Consolas,monospace';
-  if (terrainWorld.road) c.fillText('━ ÚT', 9, (map.height || 240) - 9);
+  if (terrainWorld.road) c.fillText(tr('━ ÚT'), 9, (map.height || 240) - 9);
   if (terrainWorld.river) {
     c.fillStyle = '#72b3be';
-    c.fillText('~ FOLYÓ', 76, (map.height || 240) - 9);
+    c.fillText(tr('~ FOLYÓ'), 76, (map.height || 240) - 9);
   }
 }
