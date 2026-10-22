@@ -259,3 +259,45 @@ test('naval mission never spawns another flight after survivors withdraw or afte
   assert.equal(x.m.wave, 1);
   assert.match(x.m.objectives.find((o) => o.id === 'waves').text, /4\/4/);
 });
+
+test('ship hulls have complete symmetric bows and a closed five-sided envelope', () => {
+  for (const type of ['destroyer', 'carrier']) {
+    const mesh = groundMesh(type),
+      hull = mesh.faces.slice(0, 7),
+      edges = new Map();
+    assert.equal(hull[0].length, 5);
+    assert.equal(hull[1].length, 5);
+    for (const face of hull) {
+      for (let i = 0; i < face.length; i++) {
+        const a = face[i],
+          b = face[(i + 1) % face.length];
+        const key = [a, b].sort((a, b) => a - b).join(':');
+        edges.set(key, (edges.get(key) || 0) + 1);
+      }
+    }
+    assert.ok(
+      [...edges.values()].every((count) => count === 2),
+      `${type}: open hull`,
+    );
+    for (const face of hull.slice(0, 2)) {
+      const points = face.map((i) => mesh.points[i]);
+      for (const p of points)
+        assert.ok(
+          points.some((q) => q.x === -p.x && q.y === p.y && q.z === p.z),
+          `${type}: asymmetric bow`,
+        );
+    }
+    const L = type === 'carrier' ? 160 : 75,
+      W = type === 'carrier' ? 34 : 9;
+    const target = { type, position: new Vec3(), heading: 0 };
+    for (const side of [-1, 1])
+      assert.ok(
+        groundHit(
+          target,
+          new Vec3(side * W * 0.6, 80, L * 0.55),
+          new Vec3(side * W * 0.6, -5, L * 0.55),
+        ),
+        `${type}: missing forward ${side} deck`,
+      );
+  }
+});

@@ -173,17 +173,21 @@ export function groundMesh(type, span = 220, dimensions = {}) {
         [W * 0.65, 0, -L * 0.88],
         [W * 0.72, 0, L * 0.7],
         [0, 0, L],
+        [-W * 0.72, 0, L * 0.7],
       ],
       upper = [
         [-W, H, -L],
         [W, H, -L],
         [W, H, L * 0.72],
         [0, H, L],
+        [-W, H, L * 0.72],
       ];
-    b.face(lower);
+    b.face([...lower].reverse());
     b.face(upper);
-    for (let i = 0; i < 4; i++)
-      b.face([lower[i], lower[(i + 1) % 4], upper[(i + 1) % 4], upper[i]]);
+    for (let i = 0; i < lower.length; i++) {
+      const next = (i + 1) % lower.length;
+      b.face([lower[i], lower[next], upper[next], upper[i]]);
+    }
     b.box(carrier ? 30 : 6, H + 2, -30, 2.5, 2, 3.5);
     b.box(carrier ? 30 : 6, H + 4, -30, 3, 2, 3);
     if (carrier) {
