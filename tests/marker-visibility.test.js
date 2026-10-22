@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Renderer, baseMarkerPosition } from '../src/renderer.js';
 import { Vec3, Quat, DEG } from '../src/math.js';
+import { setLanguage } from '../src/i18n.js';
 function fixture() {
   const r = Object.create(Renderer.prototype),
     calls = { frames: [], arrows: 0, labels: [] };
@@ -100,4 +101,29 @@ test('carrier base marker stays on its deck center under banking, rather than on
   home.position = new Vec3(200, 0, 800);
   assert.deepEqual(baseMarkerPosition([home], true), new Vec3(200, 20, 800));
   assert.deepEqual(baseMarkerPosition([], false), new Vec3(0, 10, -1000));
+});
+
+test('localized marker text uses the same label for measurement, outline and fill', () => {
+  const { r, calls } = fixture(),
+    measured = [],
+    outlined = [];
+  r.ctx.measureText = (label) => {
+    measured.push(label);
+    return { width: label.length * 6 };
+  };
+  r.ctx.strokeText = (label) => outlined.push(label);
+  try {
+    for (const language of ['en', 'hu']) {
+      setLanguage(language, { persist: false });
+      r.markerLabels = [];
+      r.markerLabel('KIJÁRAT 44.5 KM', 600, 100);
+      const expected = language === 'en' ? 'EXIT 44.5 KM' : 'KIJÁRAT 44.5 KM';
+      assert.equal(measured.at(-1), expected);
+      assert.equal(outlined.at(-1), expected);
+      assert.equal(calls.labels.at(-1), expected);
+      assert.equal(r.markerLabels[0].right - r.markerLabels[0].left, expected.length * 6 + 10);
+    }
+  } finally {
+    setLanguage('hu', { persist: false });
+  }
 });

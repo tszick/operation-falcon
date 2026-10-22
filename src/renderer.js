@@ -509,7 +509,8 @@ export class Renderer {
   markerLabel(label, x, y) {
     if (!label) return;
     const c = this.ctx,
-      width = (c.measureText?.(label).width || label.length * 6) + 10,
+      renderedLabel = tr(label),
+      width = (c.measureText?.(renderedLabel).width || renderedLabel.length * 6) + 10,
       half = width / 2,
       px = clamp(x, half + 8, this.w - half - 8),
       top = 45,
@@ -536,8 +537,8 @@ export class Renderer {
     c.strokeStyle = '#071014';
     c.lineWidth = 3.5;
     c.lineJoin = 'round';
-    c.strokeText?.(label, px, py);
-    c.fillText(tr(label), px, py);
+    c.strokeText?.(renderedLabel, px, py);
+    c.fillText(renderedLabel, px, py);
   }
   flakBattery(p) {
     for (const x of [-30, 30]) {

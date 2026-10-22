@@ -288,15 +288,6 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
     routeButton.setAttribute('aria-pressed', String(s.landingRouteEnabled !== false));
     routeButton.textContent = tr(`I SEGÉDÍV ${s.landingRouteEnabled === false ? 'KI' : 'BE'}`);
   }
-  const head = $('head-view-status');
-  if (head) {
-    const yaw = s.headLook?.yawDeg || 0,
-      pitch = s.headLook?.pitchDeg || 0;
-    head.hidden = Math.abs(yaw) + Math.abs(pitch) < 2;
-    head.textContent = tr(
-      `NÉZET ${yaw < 0 ? 'BAL' : 'JOBB'} ${Math.abs(yaw).toFixed(0)}° · ${pitch < 0 ? 'LE' : 'FEL'} ${Math.abs(pitch).toFixed(0)}°`,
-    );
-  }
   if (landing) {
     $('approach-stage').textContent = tr(
       `${approach.stage} · ${(approach.distance / 1000).toFixed(1)} KM`,

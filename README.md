@@ -1,5 +1,7 @@
 # Operation Falcon: Redline
 
+![Operation Falcon: Redline — Carrier defence, rendered with the game engine](docs/images/carrier-battle.png)
+
 Böngészős repülőszimulátor magyar és angol kezelőfelülettel, 120 Hz-es repülésfizikával, küldetésekkel és helyben futó gépi ellenfelekkel. A 3D világ, a HUD, a műszerfal, a radar és az effektek alapértelmezetten WebGPU-val jelennek meg. A menük HTML-alapúak. A játékhoz nincs külső futásidejű hálózati függőség vagy felhős AI-szolgáltatás; a rádiófelvételek helyi fájlok.
 
 ## Indítás

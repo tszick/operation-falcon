@@ -678,9 +678,6 @@ body.flying #warning {
   text-align: center;
   z-index: 3;
 }
-body.flying #head-view-status {
-  top: 70px;
-}
 body.flying #overlay {
   inset: 40px 0 0;
 }
