@@ -94,3 +94,35 @@ test('gun ground impacts make small sparks; bombs make a full ground explosion',
   assert.equal(w.effects[1].ground, true);
   assert.equal(w.events[0].heavy, true);
 });
+
+test('new gun tracers start ahead of a moving aircraft instead of stretching backwards through its tail', async () => {
+  const { renderWeapons } = await import('../src/weaponRenderer.js');
+  for (const heading of [0, Math.PI / 2, Math.PI]) {
+    const rotation = Quat.euler(heading, 0.15, 0.3);
+    const direction = rotation.rotate(new Vec3(0, 0, 1));
+    const velocity = direction.clone().scale(1200);
+    const origin = new Vec3(100, 500, 200);
+    const muzzle = origin.clone().add(direction.clone().scale(15));
+    for (const age of [0, 0.001, 0.01, 0.04, 0.08, 0.2]) {
+      const position = muzzle.clone().add(velocity.clone().scale(age));
+      const aircraftPosition = origin.clone().add(direction.clone().scale(200 * age));
+      const lines = [];
+      renderWeapons(
+        {
+          ctx: { beginPath() {}, stroke() {} },
+          line(a, b) {
+            lines.push([a, b]);
+          },
+        },
+        {},
+        { projectiles: [{ type: 'gun', position, velocity, age }], effects: [] },
+      );
+      assert.equal(lines.length, 2);
+      for (const [tail, head] of lines) {
+        assert.ok(head.distance(tail) <= 65.000001);
+        assert.ok(tail.clone().sub(aircraftPosition).dot(direction) >= 0);
+        assert.ok(tail.clone().sub(muzzle).dot(direction) >= -1e-8);
+      }
+    }
+  }
+});

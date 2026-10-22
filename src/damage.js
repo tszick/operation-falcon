@@ -273,6 +273,15 @@ export function updateDamage(s, dt) {
 }
 export function recordImpact(s, reasons = []) {
   if (s.crashed) return;
+  if (s.lastImpact?.time !== s.elapsed)
+    s.lastImpact = {
+      time: s.elapsed,
+      position: { ...s.position },
+      velocity: { ...s.velocity },
+      damage: s.damage,
+      source: s.condition?.source,
+      reason: reasons.join(' '),
+    };
   s.crashed = true;
   s.dying = false;
   s.damage = 100;

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="hu">
+  <meta charset="utf-8" /><title>Menüzene · néma többfüles teszt</title>
+  <body>
+    <h1>Néma többfüles lejátszóteszt</h1>
+    <p>Valódi menüvezérlő és böngészőzár, hangkimenet nélküli tesztforrással.</p>
+    <button id="music">ZENE</button><button id="engage">LEJÁTSZÁS INDÍTÁSA</button
+    ><output id="status"></output>
+    <script type="module">
+      import { MenuMusic } from '/src/menuMusic.js';
+      const button = document.getElementById('music'),
+        player = new MenuMusic(button),
+        initialEnabled = player.enabled;
+      let starts = 0,
+        stops = 0;
+      player.createContext = () => ({
+        sampleRate: 44100,
+        currentTime: 0,
+        state: 'running',
+        destination: {},
+        resume: async () => {},
+        suspend: async () => {},
+        createGain: () => ({
+          gain: { value: 0, setTargetAtTime() {}, setValueAtTime() {}, cancelScheduledValues() {} },
+          connect() {},
+        }),
+        createBufferSource: () => ({
+          connect() {},
+          disconnect() {},
+          start() {
+            starts++;
+          },
+          stop() {
+            stops++;
+          },
+        }),
+      });
+      player.renderMusic = async () => ({ buffer: {} });
+      document.getElementById('engage').onclick = () => {
+        player.enabled = true;
+        player.refresh();
+        player.sync(true);
+      };
+      function frame() {
+        document.getElementById('status').textContent = JSON.stringify({
+          initialEnabled,
+          enabled: player.enabled,
+          state: button.dataset.state,
+          starts,
+          stops,
+          source: !!player.source,
+        });
+        requestAnimationFrame(frame);
+      }
+      frame();
+    </script>
+  </body>
+</html>

@@ -15,3 +15,5 @@ On compact cockpit displays Mission Control shows the current instruction and th
 Latest user refinement: raise the deck modestly (up to 30% of the viewport) and replace the 2×3 metal toggles with red cylindrical pushbuttons. Key characters sit on the caps, function labels beside them. Actual active state depresses the cap, including keyboard-driven changes. Keep danger warnings independent of pressed state. The four lower HUD readouts move upward only as needed to stay above the raised frame.
 
 Superseding refinement: remove the red cylindrical button visuals entirely. Keep text controls such as “G – FUTÓ” with green for normal/off, yellow for active, red for an unsafe configuration. Retain the raised deck height.
+
+Approved refinement — 2026-10-22: selected-strike.png supersedes the earlier shell. The new layered graphite fighter/strike cockpit uses strike-frame.png with separately registered live screen wells and text controls. Preserve the central HUD and its original altitude readout; keep cockpit height at most 30% of the viewport.

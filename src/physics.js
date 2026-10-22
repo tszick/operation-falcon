@@ -75,6 +75,7 @@ export function createAircraft(spec, { ammo = loadout(spec) } = {}) {
 export function stepAircraft(s, input, dt = STEP) {
   if (s.crashed) return;
   s.previousPosition = s.position.clone();
+  s.previousOrientation = s.orientation.clone();
   const spec = s.spec;
   s.elapsed += dt;
   syncDamage(s);
@@ -272,11 +273,12 @@ export function stepAircraft(s, input, dt = STEP) {
     !s.onGround &&
     (s.dying || (!s.gear && s.landingMode !== 'on' && !s.approach?.active && !onLandingRunway(s)))
   ) {
-    const reason = terrainWorld.ocean
-      ? 'A gép a tengerbe csapódott.'
-      : s.dying
-        ? 'A végzetesen sérült, irányíthatatlan gép a terepnek ütközött.'
-        : 'Repülés közben a terepnek ütköztél.';
+    const reason =
+      terrainWorld.ocean && floor <= 2.1
+        ? 'A gép a tengerbe csapódott.'
+        : s.dying
+          ? 'A végzetesen sérült, irányíthatatlan gép a terepnek ütközött.'
+          : 'Repülés közben a terepnek ütköztél.';
     s.lastImpact = {
       time: s.elapsed,
       position: { ...s.position },
@@ -370,7 +372,7 @@ export function stepAircraft(s, input, dt = STEP) {
     }
     s.position.y = floor;
     s.velocity.y = 0;
-    if (!rolloutSurface(s).allowed && v > 35) {
+    if (!rolloutSurface(s).allowed && (s.landing?.success || v > 35)) {
       recordImpact(s, ['A gép a pályán kívüli terepnek ütközött.']);
       return;
     }

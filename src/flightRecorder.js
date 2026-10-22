@@ -148,6 +148,7 @@ function unitData(t, w) {
     defendGroup: t.defendGroup,
     assignedTarget: t.aiTargetId,
     navigationGoal: t.navigationGoal ? copy(t.navigationGoal) : null,
+    seaWaypoint: vec(t.seaWaypoint),
     routeDistance: round(t.routeDistance),
     ai: ai ? copy(ai) : null,
     flight: t.flight
@@ -372,6 +373,7 @@ export class FlightRecorder {
           profile: p.profile?.id,
           position: vec(p.position),
           velocity: vec(p.velocity),
+          age: round(p.age),
           fuse: p.fuse,
         });
     for (const id of this.shots) if (!ids.has(id)) this.event('projectile-end', { id });

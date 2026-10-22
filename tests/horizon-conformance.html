@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+  <meta charset="utf-8" /><style>
+    body {
+      margin: 0;
+    }
+    canvas {
+      position: fixed;
+      inset: 0;
+    }
+    pre {
+      position: fixed;
+      color: white;
+      background: #0008;
+    }</style
+  ><canvas id="world"></canvas>
+  <pre id="status"></pre>
+  <script type="module">
+    import { Renderer } from '/src/renderer.js';
+    import { Vec3, Quat } from '/src/math.js';
+    import { renderEnvironmentSky } from '/src/environmentSky.js';
+    const r = new Renderer(document.getElementById('world'));
+    r.surfaceMode = 'grass';
+    r.setup(new Vec3(0, 316, -7600), new Quat());
+    function frame() {
+      renderEnvironmentSky(r);
+      r.gpuModels?.renderHorizon(r, false);
+      let values = { backend: r.gpuModels?.name };
+      const h = r.gpuModels?.horizonPainter,
+        g = r.gpuModels?.gl;
+      if (g) {
+        values.viewport = Array.from(g.getParameter(g.VIEWPORT));
+        values.canvas = [g.canvas.width, g.canvas.height];
+        values.dpr = devicePixelRatio;
+        values.output = [r.canvas.width, r.canvas.height];
+      }
+      if (h)
+        for (const name of ['basis', 'screen', 'elevationRange', 'depression'])
+          values[name] = Array.from(g.getUniform(h.program, h.locations[name]) || []);
+      document.getElementById('status').textContent = JSON.stringify(values);
+      requestAnimationFrame(frame);
+    }
+    frame();
+  </script>
+</html>

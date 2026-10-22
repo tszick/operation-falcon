@@ -143,6 +143,7 @@ export function evaluateFlight(log) {
         facts.push(`${playerHits.length} ellenséges találati esemény érte a gépet.`);
       if (events.some((e) => e.kind === 'target-lock' && e.data.locked))
         facts.push('Sikeres célbefogás rögzítve.');
+      const procedureFindings = [...findings];
       const impact = events.findLast((e) => e.kind === 'impact')?.data;
       if (impact) {
         status = 'failed';
@@ -203,6 +204,7 @@ export function evaluateFlight(log) {
         status,
         statusLabel: statusLabels[status],
         findings: [...new Set(findings)],
+        procedureFindings,
         facts,
       };
     })

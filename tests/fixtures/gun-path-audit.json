@@ -1,0 +1,2466 @@
+{
+  "shots": [
+    {
+      "start": {
+        "seq": 2988,
+        "t": 128.0417,
+        "kind": "projectile-start",
+        "data": {
+          "id": 208,
+          "owner": "player",
+          "sourceId": "PLAYER",
+          "interceptor": false,
+          "targetId": "ENEMY-S2-2",
+          "type": "gun",
+          "profile": "m61",
+          "position": {
+            "x": -18366.0476,
+            "y": 2427.3659,
+            "z": 18452.2548
+          },
+          "velocity": {
+            "x": 523.8864,
+            "y": -111.8768,
+            "z": -1172.9022
+          },
+          "age": 0.0083
+        }
+      },
+      "end": 129.4,
+      "expectedHit": true,
+      "worlds": [
+        {
+          "t": 128,
+          "data": {
+            "id": "ENEMY-S2-2",
+            "kind": "air",
+            "home": false,
+            "coalition": "east",
+            "coalitionMode": "mixed",
+            "radius": 28,
+            "falling": false,
+            "civilian": false,
+            "squad": 2,
+            "formationSlot": 1,
+            "radioCallSign": {
+              "flight": "Wolf",
+              "number": 2
+            },
+            "name": "Su-27 Flanker",
+            "type": "fighter",
+            "team": "enemy",
+            "faction": "east",
+            "aircraftId": "su27",
+            "position": {
+              "x": -17946.5781,
+              "y": 2334.02,
+              "z": 17581.9101
+            },
+            "velocity": {
+              "x": 90.0443,
+              "y": -20.2503,
+              "z": -241.8496
+            },
+            "headingDeg": 156.7122,
+            "pitchDeg": 0,
+            "bankDeg": 55,
+            "alive": true,
+            "damage": 50,
+            "health": 100,
+            "maxHealth": 100,
+            "service": {
+              "reason": "repair",
+              "homeId": "ENEMY-BASE",
+              "stage": "holding",
+              "remaining": 60,
+              "previousRole": "interceptor",
+              "sorties": 0
+            },
+            "serviceCount": 0,
+            "retired": false,
+            "retreat": null,
+            "evasion": null,
+            "coordinatedFlight": null,
+            "afterburner": true,
+            "playerControlled": false,
+            "countermeasures": {
+              "flare": 32,
+              "chaff": 23,
+              "used": 9
+            },
+            "role": "resupply",
+            "ballistic": null,
+            "assignedTarget": null,
+            "navigationGoal": {
+              "position": {
+                "x": -22080.659934207382,
+                "y": 2680,
+                "z": 23401.029337486987
+              },
+              "kind": "air",
+              "targetId": "ENEMY-S2-1"
+            },
+            "routeDistance": null,
+            "ai": {
+              "seed": 1935036941,
+              "missile": 5.577679482335459,
+              "flak": -109.69166666670003,
+              "gun": -109.69166666670003,
+              "flakBurst": 0,
+              "gunBurst": 0,
+              "missiles": 1,
+              "agm": 0,
+              "shells": 90,
+              "rounds": 150,
+              "bombs": 0,
+              "bomb": -110.69166666670083,
+              "lock": 19.116666666666223,
+              "initialMissiles": 4,
+              "initialAgm": 0,
+              "initialBombs": 0,
+              "initialRounds": 150,
+              "targetDecision": {
+                "targetId": "ALLY-S1-3",
+                "reason": "self-defense",
+                "score": 1081.7380741993957
+              },
+              "choiceId": "ALLY-S1-3",
+              "choiceUntil": 118.25000000004002,
+              "missionTargetId": "ALLY-S1-3",
+              "targetId": "ALLY-S1-3",
+              "envelope": {
+                "distance": 3261.9258006044297,
+                "maxRange": 24000,
+                "effectiveRange": 16320.000000000002,
+                "minRange": 250,
+                "closing": 300.6156582925405,
+                "time": 34,
+                "cross": 61.368542498474966
+              },
+              "envelopeAt": 118.05000000004001,
+              "envelopeTarget": "ALLY-S1-3",
+              "envelopeProfile": "r73",
+              "missileDecision": {
+                "reserve": 2,
+                "closeRange": 8000,
+                "tacticalRange": 16320.000000000002,
+                "inbound": 0,
+                "salvoLimit": 2,
+                "urgentDefense": false,
+                "allow": true,
+                "reason": "ready"
+              },
+              "launchRange": 24000
+            },
+            "flight": {
+              "spec": "su27",
+              "massKg": 21096.419716519784,
+              "fuelKg": 4696.419716519783,
+              "orientation": {
+                "x": -0.204048433929655,
+                "y": 0.9572100604239032,
+                "z": -0.08066293333754844,
+                "w": 0.1886971860402405
+              },
+              "parts": {
+                "leftWing": 0.94,
+                "rightWing": 0.94,
+                "tail": 0.94,
+                "fuselage": 0.94,
+                "engineLeft": 0.94,
+                "engineRight": 0.94,
+                "hydraulics": 0.94,
+                "weapons": 0.17500000000000004
+              },
+              "engines": [0.94, 0.94],
+              "warning": "FEGYVERRENDSZER HIBA · RAKÉTAINDÍTÁS TILTVA",
+              "dying": false,
+              "crashed": false
+            }
+          }
+        },
+        {
+          "t": 128.5,
+          "data": {
+            "id": "ENEMY-S2-2",
+            "kind": "air",
+            "home": false,
+            "coalition": "east",
+            "coalitionMode": "mixed",
+            "radius": 28,
+            "falling": false,
+            "civilian": false,
+            "squad": 2,
+            "formationSlot": 1,
+            "radioCallSign": {
+              "flight": "Wolf",
+              "number": 2
+            },
+            "name": "Su-27 Flanker",
+            "type": "fighter",
+            "team": "enemy",
+            "faction": "east",
+            "aircraftId": "su27",
+            "position": {
+              "x": -17902.202,
+              "y": 2323.9007,
+              "z": 17461.1093
+            },
+            "velocity": {
+              "x": 87.504,
+              "y": -20.2299,
+              "z": -241.3605
+            },
+            "headingDeg": 157.2064,
+            "pitchDeg": 0,
+            "bankDeg": 55,
+            "alive": true,
+            "damage": 50,
+            "health": 100,
+            "maxHealth": 100,
+            "service": {
+              "reason": "repair",
+              "homeId": "ENEMY-BASE",
+              "stage": "holding",
+              "remaining": 60,
+              "previousRole": "interceptor",
+              "sorties": 0
+            },
+            "serviceCount": 0,
+            "retired": false,
+            "retreat": null,
+            "evasion": null,
+            "coordinatedFlight": null,
+            "afterburner": true,
+            "playerControlled": false,
+            "countermeasures": {
+              "flare": 32,
+              "chaff": 23,
+              "used": 9
+            },
+            "role": "resupply",
+            "ballistic": null,
+            "assignedTarget": null,
+            "navigationGoal": {
+              "position": {
+                "x": -22080.659934207382,
+                "y": 2680,
+                "z": 23401.029337486987
+              },
+              "kind": "air",
+              "targetId": "ENEMY-S2-1"
+            },
+            "routeDistance": null,
+            "ai": {
+              "seed": 1935036941,
+              "missile": 5.577679482335459,
+              "flak": -109.69166666670003,
+              "gun": -109.69166666670003,
+              "flakBurst": 0,
+              "gunBurst": 0,
+              "missiles": 1,
+              "agm": 0,
+              "shells": 90,
+              "rounds": 150,
+              "bombs": 0,
+              "bomb": -110.69166666670083,
+              "lock": 19.116666666666223,
+              "initialMissiles": 4,
+              "initialAgm": 0,
+              "initialBombs": 0,
+              "initialRounds": 150,
+              "targetDecision": {
+                "targetId": "ALLY-S1-3",
+                "reason": "self-defense",
+                "score": 1081.7380741993957
+              },
+              "choiceId": "ALLY-S1-3",
+              "choiceUntil": 118.25000000004002,
+              "missionTargetId": "ALLY-S1-3",
+              "targetId": "ALLY-S1-3",
+              "envelope": {
+                "distance": 3261.9258006044297,
+                "maxRange": 24000,
+                "effectiveRange": 16320.000000000002,
+                "minRange": 250,
+                "closing": 300.6156582925405,
+                "time": 34,
+                "cross": 61.368542498474966
+              },
+              "envelopeAt": 118.05000000004001,
+              "envelopeTarget": "ALLY-S1-3",
+              "envelopeProfile": "r73",
+              "missileDecision": {
+                "reserve": 2,
+                "closeRange": 8000,
+                "tacticalRange": 16320.000000000002,
+                "inbound": 0,
+                "salvoLimit": 2,
+                "urgentDefense": false,
+                "allow": true,
+                "reason": "ready"
+              },
+              "launchRange": 24000
+            },
+            "flight": {
+              "spec": "su27",
+              "massKg": 21096.322039258972,
+              "fuelKg": 4696.322039258972,
+              "orientation": {
+                "x": -0.2048217187609418,
+                "y": 0.9579234873974101,
+                "z": -0.07987345674752454,
+                "w": 0.18452882355718528
+              },
+              "parts": {
+                "leftWing": 0.94,
+                "rightWing": 0.94,
+                "tail": 0.94,
+                "fuselage": 0.94,
+                "engineLeft": 0.94,
+                "engineRight": 0.94,
+                "hydraulics": 0.94,
+                "weapons": 0.17500000000000004
+              },
+              "engines": [0.94, 0.94],
+              "warning": "FEGYVERRENDSZER HIBA · RAKÉTAINDÍTÁS TILTVA",
+              "dying": false,
+              "crashed": false
+            }
+          }
+        },
+        {
+          "t": 129,
+          "data": {
+            "id": "ENEMY-S2-2",
+            "kind": "air",
+            "home": false,
+            "coalition": "east",
+            "coalitionMode": "mixed",
+            "radius": 28,
+            "falling": false,
+            "civilian": false,
+            "squad": 2,
+            "formationSlot": 1,
+            "radioCallSign": {
+              "flight": "Wolf",
+              "number": 2
+            },
+            "name": "Su-27 Flanker",
+            "type": "fighter",
+            "team": "enemy",
+            "faction": "east",
+            "aircraftId": "su27",
+            "position": {
+              "x": -17859.0939,
+              "y": 2313.792,
+              "z": 17340.5552
+            },
+            "velocity": {
+              "x": 84.9712,
+              "y": -20.2086,
+              "z": -240.8573
+            },
+            "headingDeg": 157.7023,
+            "pitchDeg": 0,
+            "bankDeg": 55,
+            "alive": true,
+            "damage": 52.6911,
+            "health": 100,
+            "maxHealth": 100,
+            "service": {
+              "reason": "repair",
+              "homeId": "ENEMY-BASE",
+              "stage": "holding",
+              "remaining": 60,
+              "previousRole": "interceptor",
+              "sorties": 0
+            },
+            "serviceCount": 0,
+            "retired": false,
+            "retreat": null,
+            "evasion": null,
+            "coordinatedFlight": null,
+            "afterburner": true,
+            "playerControlled": false,
+            "countermeasures": {
+              "flare": 32,
+              "chaff": 23,
+              "used": 9
+            },
+            "role": "resupply",
+            "ballistic": null,
+            "assignedTarget": null,
+            "navigationGoal": {
+              "position": {
+                "x": -22080.659934207382,
+                "y": 2680,
+                "z": 23401.029337486987
+              },
+              "kind": "air",
+              "targetId": "ENEMY-S2-1"
+            },
+            "routeDistance": null,
+            "ai": {
+              "seed": 1935036941,
+              "missile": 5.577679482335459,
+              "flak": -109.69166666670003,
+              "gun": -109.69166666670003,
+              "flakBurst": 0,
+              "gunBurst": 0,
+              "missiles": 1,
+              "agm": 0,
+              "shells": 90,
+              "rounds": 150,
+              "bombs": 0,
+              "bomb": -110.69166666670083,
+              "lock": 19.116666666666223,
+              "initialMissiles": 4,
+              "initialAgm": 0,
+              "initialBombs": 0,
+              "initialRounds": 150,
+              "targetDecision": {
+                "targetId": "ALLY-S1-3",
+                "reason": "self-defense",
+                "score": 1081.7380741993957
+              },
+              "choiceId": "ALLY-S1-3",
+              "choiceUntil": 118.25000000004002,
+              "missionTargetId": "ALLY-S1-3",
+              "targetId": "ALLY-S1-3",
+              "envelope": {
+                "distance": 3261.9258006044297,
+                "maxRange": 24000,
+                "effectiveRange": 16320.000000000002,
+                "minRange": 250,
+                "closing": 300.6156582925405,
+                "time": 34,
+                "cross": 61.368542498474966
+              },
+              "envelopeAt": 118.05000000004001,
+              "envelopeTarget": "ALLY-S1-3",
+              "envelopeProfile": "r73",
+              "missileDecision": {
+                "reserve": 2,
+                "closeRange": 8000,
+                "tacticalRange": 16320.000000000002,
+                "inbound": 0,
+                "salvoLimit": 2,
+                "urgentDefense": false,
+                "allow": true,
+                "reason": "ready"
+              },
+              "launchRange": 24000
+            },
+            "flight": {
+              "spec": "su27",
+              "massKg": 21096.22443278355,
+              "fuelKg": 4696.22443278355,
+              "orientation": {
+                "x": -0.20587363976730294,
+                "y": 0.9585603771867219,
+                "z": -0.0791384287363187,
+                "w": 0.180319596366448
+              },
+              "parts": {
+                "leftWing": 0.9367706247547662,
+                "rightWing": 0.9367706247547662,
+                "tail": 0.9367706247547662,
+                "fuselage": 0.9367706247547662,
+                "engineLeft": 0.9367706247547662,
+                "engineRight": 0.9367706247547662,
+                "hydraulics": 0.9367706247547662,
+                "weapons": 0.13059609037803738
+              },
+              "engines": [0.9367706247547662, 0.9367706247547662],
+              "warning": "SZERKEZETI KÁR",
+              "dying": false,
+              "crashed": false
+            }
+          }
+        },
+        {
+          "t": 129.5,
+          "data": {
+            "id": "ENEMY-S2-2",
+            "kind": "air",
+            "home": false,
+            "coalition": "east",
+            "coalitionMode": "mixed",
+            "radius": 28,
+            "falling": false,
+            "civilian": false,
+            "squad": 2,
+            "formationSlot": 1,
+            "radioCallSign": {
+              "flight": "Wolf",
+              "number": 2
+            },
+            "name": "Su-27 Flanker",
+            "type": "fighter",
+            "team": "enemy",
+            "faction": "east",
+            "aircraftId": "su27",
+            "position": {
+              "x": -17817.2515,
+              "y": 2303.6912,
+              "z": 17220.2627
+            },
+            "velocity": {
+              "x": 82.4403,
+              "y": -20.1942,
+              "z": -240.3124
+            },
+            "headingDeg": 158.199,
+            "pitchDeg": 0,
+            "bankDeg": 55,
+            "alive": true,
+            "damage": 54.8055,
+            "health": 100,
+            "maxHealth": 100,
+            "service": {
+              "reason": "repair",
+              "homeId": "ENEMY-BASE",
+              "stage": "holding",
+              "remaining": 60,
+              "previousRole": "interceptor",
+              "sorties": 0
+            },
+            "serviceCount": 0,
+            "retired": false,
+            "retreat": null,
+            "evasion": null,
+            "coordinatedFlight": null,
+            "afterburner": true,
+            "playerControlled": false,
+            "countermeasures": {
+              "flare": 32,
+              "chaff": 23,
+              "used": 9
+            },
+            "role": "resupply",
+            "ballistic": null,
+            "assignedTarget": null,
+            "navigationGoal": {
+              "position": {
+                "x": -22080.659934207382,
+                "y": 2680,
+                "z": 23401.029337486987
+              },
+              "kind": "air",
+              "targetId": "ENEMY-S2-1"
+            },
+            "routeDistance": null,
+            "ai": {
+              "seed": 1935036941,
+              "missile": 5.577679482335459,
+              "flak": -109.69166666670003,
+              "gun": -109.69166666670003,
+              "flakBurst": 0,
+              "gunBurst": 0,
+              "missiles": 1,
+              "agm": 0,
+              "shells": 90,
+              "rounds": 150,
+              "bombs": 0,
+              "bomb": -110.69166666670083,
+              "lock": 19.116666666666223,
+              "initialMissiles": 4,
+              "initialAgm": 0,
+              "initialBombs": 0,
+              "initialRounds": 150,
+              "targetDecision": {
+                "targetId": "ALLY-S1-3",
+                "reason": "self-defense",
+                "score": 1081.7380741993957
+              },
+              "choiceId": "ALLY-S1-3",
+              "choiceUntil": 118.25000000004002,
+              "missionTargetId": "ALLY-S1-3",
+              "targetId": "ALLY-S1-3",
+              "envelope": {
+                "distance": 3261.9258006044297,
+                "maxRange": 24000,
+                "effectiveRange": 16320.000000000002,
+                "minRange": 250,
+                "closing": 300.6156582925405,
+                "time": 34,
+                "cross": 61.368542498474966
+              },
+              "envelopeAt": 118.05000000004001,
+              "envelopeTarget": "ALLY-S1-3",
+              "envelopeProfile": "r73",
+              "missileDecision": {
+                "reserve": 2,
+                "closeRange": 8000,
+                "tacticalRange": 16320.000000000002,
+                "inbound": 0,
+                "salvoLimit": 2,
+                "urgentDefense": false,
+                "allow": true,
+                "reason": "ready"
+              },
+              "launchRange": 24000
+            },
+            "flight": {
+              "spec": "su27",
+              "massKg": 21096.12823217793,
+              "fuelKg": 4696.128232177929,
+              "orientation": {
+                "x": -0.20537924067306057,
+                "y": 0.959511347513929,
+                "z": -0.07811697462094795,
+                "w": 0.17622451523165478
+              },
+              "parts": {
+                "leftWing": 0.9316961091408985,
+                "rightWing": 0.9316961091408985,
+                "tail": 0.9316961091408985,
+                "fuselage": 0.9316961091408985,
+                "engineLeft": 0.9367706247547662,
+                "engineRight": 0.8669960350640842,
+                "hydraulics": 0.9316961091408985,
+                "weapons": 0.12552157476416959
+              },
+              "engines": [0.9367706247547662, 0.8669960350640842],
+              "warning": "SZERKEZETI KÁR",
+              "dying": false,
+              "crashed": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "start": {
+        "seq": 3392,
+        "t": 134.9167,
+        "kind": "projectile-start",
+        "data": {
+          "id": 296,
+          "owner": "player",
+          "sourceId": "PLAYER",
+          "interceptor": false,
+          "targetId": "ENEMY-S2-2",
+          "type": "gun",
+          "profile": "m61",
+          "position": {
+            "x": -17688.619,
+            "y": 2278.4918,
+            "z": 16679.9447
+          },
+          "velocity": {
+            "x": 401.4285,
+            "y": -141.9088,
+            "z": -1241.0848
+          },
+          "age": 0.0083
+        }
+      },
+      "end": 139.9083,
+      "expectedHit": false,
+      "worlds": [
+        {
+          "t": 134.5,
+          "data": {
+            "id": "ENEMY-S2-2",
+            "kind": "air",
+            "home": false,
+            "coalition": "east",
+            "coalitionMode": "mixed",
+            "radius": 28,
+            "falling": false,
+            "civilian": false,
+            "squad": 2,
+            "formationSlot": 1,
+            "radioCallSign": {
+              "flight": "Wolf",
+              "number": 2
+            },
+            "name": "Su-27 Flanker",
+            "type": "fighter",
+            "team": "enemy",
+            "faction": "east",
+            "aircraftId": "su27",
+            "position": {
+              "x": -17467.8764,
+              "y": 2203.3306,
+              "z": 16033.8652
+            },
+            "velocity": {
+              "x": 57.518,
+              "y": -19.9595,
+              "z": -234.1427
+            },
+            "headingDeg": 163.3382,
+            "pitchDeg": 0,
+            "bankDeg": 55,
+            "alive": true,
+            "damage": 54.8055,
+            "health": 100,
+            "maxHealth": 100,
+            "service": {
+              "reason": "repair",
+              "homeId": "ENEMY-BASE",
+              "stage": "holding",
+              "remaining": 60,
+              "previousRole": "interceptor",
+              "sorties": 0
+            },
+            "serviceCount": 0,
+            "retired": false,
+            "retreat": null,
+            "evasion": null,
+            "coordinatedFlight": null,
+            "afterburner": true,
+            "playerControlled": false,
+            "countermeasures": {
+              "flare": 32,
+              "chaff": 23,
+              "used": 9
+            },
+            "role": "resupply",
+            "ballistic": null,
+            "assignedTarget": null,
+            "navigationGoal": {
+              "position": {
+                "x": -22080.659934207382,
+                "y": 2680,
+                "z": 23401.029337486987
+              },
+              "kind": "air",
+              "targetId": "ENEMY-S2-1"
+            },
+            "routeDistance": null,
+            "ai": {
+              "seed": 1935036941,
+              "missile": 5.577679482335459,
+              "flak": -109.69166666670003,
+              "gun": -109.69166666670003,
+              "flakBurst": 0,
+              "gunBurst": 0,
+              "missiles": 1,
+              "agm": 0,
+              "shells": 90,
+              "rounds": 150,
+              "bombs": 0,
+              "bomb": -110.69166666670083,
+              "lock": 19.116666666666223,
+              "initialMissiles": 4,
+              "initialAgm": 0,
+              "initialBombs": 0,
+              "initialRounds": 150,
+              "targetDecision": {
+                "targetId": "ALLY-S1-3",
+                "reason": "self-defense",
+                "score": 1081.7380741993957
+              },
+              "choiceId": "ALLY-S1-3",
+              "choiceUntil": 118.25000000004002,
+              "missionTargetId": "ALLY-S1-3",
+              "targetId": "ALLY-S1-3",
+              "envelope": {
+                "distance": 3261.9258006044297,
+                "maxRange": 24000,
+                "effectiveRange": 16320.000000000002,
+                "minRange": 250,
+                "closing": 300.6156582925405,
+                "time": 34,
+                "cross": 61.368542498474966
+              },
+              "envelopeAt": 118.05000000004001,
+              "envelopeTarget": "ALLY-S1-3",
+              "envelopeProfile": "r73",
+              "missileDecision": {
+                "reserve": 2,
+                "closeRange": 8000,
+                "tacticalRange": 16320.000000000002,
+                "inbound": 0,
+                "salvoLimit": 2,
+                "urgentDefense": false,
+                "allow": true,
+                "reason": "ready"
+              },
+              "launchRange": 24000
+            },
+            "flight": {
+              "spec": "su27",
+              "massKg": 21095.20639319077,
+              "fuelKg": 4695.206393190768,
+              "orientation": {
+                "x": -0.2091343948546305,
+                "y": 0.9663425925844943,
+                "z": -0.06902988744777834,
+                "w": 0.13296493253791666
+              },
+              "parts": {
+                "leftWing": 0.9316961091408985,
+                "rightWing": 0.9316961091408985,
+                "tail": 0.9316961091408985,
+                "fuselage": 0.9316961091408985,
+                "engineLeft": 0.9367706247547662,
+                "engineRight": 0.8669960350640842,
+                "hydraulics": 0.9316961091408985,
+                "weapons": 0.12552157476416959
+              },
+              "engines": [0.9367706247547662, 0.8669960350640842],
+              "warning": "SZERKEZETI KÁR",
+              "dying": false,
+              "crashed": false
+            }
+          }
+        },
+        {
+          "t": 135,
+          "data": {
+            "id": "ENEMY-S2-2",
+            "kind": "air",
+            "home": false,
+            "coalition": "east",
+            "coalitionMode": "mixed",
+            "radius": 28,
+            "falling": false,
+            "civilian": false,
+            "squad": 2,
+            "formationSlot": 1,
+            "radioCallSign": {
+              "flight": "Wolf",
+              "number": 2
+            },
+            "name": "Su-27 Flanker",
+            "type": "fighter",
+            "team": "enemy",
+            "faction": "east",
+            "aircraftId": "su27",
+            "position": {
+              "x": -17439.7373,
+              "y": 2193.3563,
+              "z": 15916.9605
+            },
+            "velocity": {
+              "x": 55.08,
+              "y": -19.9381,
+              "z": -233.4856
+            },
+            "headingDeg": 163.865,
+            "pitchDeg": 0,
+            "bankDeg": 55,
+            "alive": true,
+            "damage": 54.8055,
+            "health": 100,
+            "maxHealth": 100,
+            "service": {
+              "reason": "repair",
+              "homeId": "ENEMY-BASE",
+              "stage": "holding",
+              "remaining": 60,
+              "previousRole": "interceptor",
+              "sorties": 0
+            },
+            "serviceCount": 0,
+            "retired": false,
+            "retreat": null,
+            "evasion": null,
+            "coordinatedFlight": null,
+            "afterburner": true,
+            "playerControlled": false,
+            "countermeasures": {
+              "flare": 32,
+              "chaff": 23,
+              "used": 9
+            },
+            "role": "resupply",
+            "ballistic": null,
+            "assignedTarget": null,
+            "navigationGoal": {
+              "position": {
+                "x": -22080.659934207382,
+                "y": 2680,
+                "z": 23401.029337486987
+              },
+              "kind": "air",
+              "targetId": "ENEMY-S2-1"
+            },
+            "routeDistance": null,
+            "ai": {
+              "seed": 1935036941,
+              "missile": 5.577679482335459,
+              "flak": -109.69166666670003,
+              "gun": -109.69166666670003,
+              "flakBurst": 0,
+              "gunBurst": 0,
+              "missiles": 1,
+              "agm": 0,
+              "shells": 90,
+              "rounds": 150,
+              "bombs": 0,
+              "bomb": -110.69166666670083,
+              "lock": 19.116666666666223,
+              "initialMissiles": 4,
+              "initialAgm": 0,
+              "initialBombs": 0,
+              "initialRounds": 150,
+              "targetDecision": {
+                "targetId": "ALLY-S1-3",
+                "reason": "self-defense",
+                "score": 1081.7380741993957
+              },
+              "choiceId": "ALLY-S1-3",
+              "choiceUntil": 118.25000000004002,
+              "missionTargetId": "ALLY-S1-3",
+              "targetId": "ALLY-S1-3",
+              "envelope": {
+                "distance": 3261.9258006044297,
+                "maxRange": 24000,
+                "effectiveRange": 16320.000000000002,
+                "minRange": 250,
+                "closing": 300.6156582925405,
+                "time": 34,
+                "cross": 61.368542498474966
+              },
+              "envelopeAt": 118.05000000004001,
+              "envelopeTarget": "ALLY-S1-3",
+              "envelopeProfile": "r73",
+              "missileDecision": {
+                "reserve": 2,
+                "closeRange": 8000,
+                "tacticalRange": 16320.000000000002,
+                "inbound": 0,
+                "salvoLimit": 2,
+                "urgentDefense": false,
+                "allow": true,
+                "reason": "ready"
+              },
+              "launchRange": 24000
+            },
+            "flight": {
+              "spec": "su27",
+              "massKg": 21095.113941103806,
+              "fuelKg": 4695.113941103806,
+              "orientation": {
+                "x": -0.20953378566477107,
+                "y": 0.9669230947323291,
+                "z": -0.06813614621832323,
+                "w": 0.1285020899314895
+              },
+              "parts": {
+                "leftWing": 0.9316961091408985,
+                "rightWing": 0.9316961091408985,
+                "tail": 0.9316961091408985,
+                "fuselage": 0.9316961091408985,
+                "engineLeft": 0.9367706247547662,
+                "engineRight": 0.8669960350640842,
+                "hydraulics": 0.9316961091408985,
+                "weapons": 0.12552157476416959
+              },
+              "engines": [0.9367706247547662, 0.8669960350640842],
+              "warning": "SZERKEZETI KÁR",
+              "dying": false,
+              "crashed": false
+            }
+          }
+        },
+        {
+          "t": 135.5,
+          "data": {
+            "id": "ENEMY-S2-2",
+            "kind": "air",
+            "home": false,
+            "coalition": "east",
+            "coalitionMode": "mixed",
+            "radius": 28,
+            "falling": false,
+            "civilian": false,
+            "squad": 2,
+            "formationSlot": 1,
+            "radioCallSign": {
+              "flight": "Wolf",
+              "number": 2
+            },
+            "name": "Su-27 Flanker",
+            "type": "fighter",
+            "team": "enemy",
+            "faction": "east",
+            "aircraftId": "su27",
+            "position": {
+              "x": -17412.8148,
+              "y": 2183.3918,
+              "z": 15800.3866
+            },
+            "velocity": {
+              "x": 52.6522,
+              "y": -19.9187,
+              "z": -232.82
+            },
+            "headingDeg": 164.397,
+            "pitchDeg": 0,
+            "bankDeg": 55,
+            "alive": true,
+            "damage": 54.8055,
+            "health": 100,
+            "maxHealth": 100,
+            "service": {
+              "reason": "repair",
+              "homeId": "ENEMY-BASE",
+              "stage": "holding",
+              "remaining": 60,
+              "previousRole": "interceptor",
+              "sorties": 0
+            },
+            "serviceCount": 0,
+            "retired": false,
+            "retreat": null,
+            "evasion": null,
+            "coordinatedFlight": null,
+            "afterburner": true,
+            "playerControlled": false,
+            "countermeasures": {
+              "flare": 32,
+              "chaff": 23,
+              "used": 9
+            },
+            "role": "resupply",
+            "ballistic": null,
+            "assignedTarget": null,
+            "navigationGoal": {
+              "position": {
+                "x": -22080.659934207382,
+                "y": 2680,
+                "z": 23401.029337486987
+              },
+              "kind": "air",
+              "targetId": "ENEMY-S2-1"
+            },
+            "routeDistance": null,
+            "ai": {
+              "seed": 1935036941,
+              "missile": 5.577679482335459,
+              "flak": -109.69166666670003,
+              "gun": -109.69166666670003,
+              "flakBurst": 0,
+              "gunBurst": 0,
+              "missiles": 1,
+              "agm": 0,
+              "shells": 90,
+              "rounds": 150,
+              "bombs": 0,
+              "bomb": -110.69166666670083,
+              "lock": 19.116666666666223,
+              "initialMissiles": 4,
+              "initialAgm": 0,
+              "initialBombs": 0,
+              "initialRounds": 150,
+              "targetDecision": {
+                "targetId": "ALLY-S1-3",
+                "reason": "self-defense",
+                "score": 1081.7380741993957
+              },
+              "choiceId": "ALLY-S1-3",
+              "choiceUntil": 118.25000000004002,
+              "missionTargetId": "ALLY-S1-3",
+              "targetId": "ALLY-S1-3",
+              "envelope": {
+                "distance": 3261.9258006044297,
+                "maxRange": 24000,
+                "effectiveRange": 16320.000000000002,
+                "minRange": 250,
+                "closing": 300.6156582925405,
+                "time": 34,
+                "cross": 61.368542498474966
+              },
+              "envelopeAt": 118.05000000004001,
+              "envelopeTarget": "ALLY-S1-3",
+              "envelopeProfile": "r73",
+              "missileDecision": {
+                "reserve": 2,
+                "closeRange": 8000,
+                "tacticalRange": 16320.000000000002,
+                "inbound": 0,
+                "salvoLimit": 2,
+                "urgentDefense": false,
+                "allow": true,
+                "reason": "ready"
+              },
+              "launchRange": 24000
+            },
+            "flight": {
+              "spec": "su27",
+              "massKg": 21095.021436639356,
+              "fuelKg": 4695.021436639357,
+              "orientation": {
+                "x": -0.20970835246995917,
+                "y": 0.9675389854663978,
+                "z": -0.06715685594010695,
+                "w": 0.12401885020926723
+              },
+              "parts": {
+                "leftWing": 0.9316961091408985,
+                "rightWing": 0.9316961091408985,
+                "tail": 0.9316961091408985,
+                "fuselage": 0.9316961091408985,
+                "engineLeft": 0.9367706247547662,
+                "engineRight": 0.8669960350640842,
+                "hydraulics": 0.9316961091408985,
+                "weapons": 0.12552157476416959
+              },
+              "engines": [0.9367706247547662, 0.8669960350640842],
+              "warning": "SZERKEZETI KÁR",
+              "dying": false,
+              "crashed": false
+            }
+          }
+        },
+        {
+          "t": 136,
+          "data": {
+            "id": "ENEMY-S2-2",
+            "kind": "air",
+            "home": false,
+            "coalition": "east",
+            "coalitionMode": "mixed",
+            "radius": 28,
+            "falling": false,
+            "civilian": false,
+            "squad": 2,
+            "formationSlot": 1,
+            "radioCallSign": {
+              "flight": "Wolf",
+              "number": 2
+            },
+            "name": "Su-27 Flanker",
+            "type": "fighter",
+            "team": "enemy",
+            "faction": "east",
+            "aircraftId": "su27",
+            "position": {
+              "x": -17387.1042,
+              "y": 2173.437,
+              "z": 15684.1475
+            },
+            "velocity": {
+              "x": 50.2325,
+              "y": -19.8989,
+              "z": -232.1463
+            },
+            "headingDeg": 164.9319,
+            "pitchDeg": 0,
+            "bankDeg": 55,
+            "alive": true,
+            "damage": 54.8055,
+            "health": 100,
+            "maxHealth": 100,
+            "service": {
+              "reason": "repair",
+              "homeId": "ENEMY-BASE",
+              "stage": "holding",
+              "remaining": 60,
+              "previousRole": "interceptor",
+              "sorties": 0
+            },
+            "serviceCount": 0,
+            "retired": false,
+            "retreat": null,
+            "evasion": null,
+            "coordinatedFlight": null,
+            "afterburner": true,
+            "playerControlled": false,
+            "countermeasures": {
+              "flare": 32,
+              "chaff": 23,
+              "used": 9
+            },
+            "role": "resupply",
+            "ballistic": null,
+            "assignedTarget": null,
+            "navigationGoal": {
+              "position": {
+                "x": -22080.659934207382,
+                "y": 2680,
+                "z": 23401.029337486987
+              },
+              "kind": "air",
+              "targetId": "ENEMY-S2-1"
+            },
+            "routeDistance": null,
+            "ai": {
+              "seed": 1935036941,
+              "missile": 5.577679482335459,
+              "flak": -109.69166666670003,
+              "gun": -109.69166666670003,
+              "flakBurst": 0,
+              "gunBurst": 0,
+              "missiles": 1,
+              "agm": 0,
+              "shells": 90,
+              "rounds": 150,
+              "bombs": 0,
+              "bomb": -110.69166666670083,
+              "lock": 19.116666666666223,
+              "initialMissiles": 4,
+              "initialAgm": 0,
+              "initialBombs": 0,
+              "initialRounds": 150,
+              "targetDecision": {
+                "targetId": "ALLY-S1-3",
+                "reason": "self-defense",
+                "score": 1081.7380741993957
+              },
+              "choiceId": "ALLY-S1-3",
+              "choiceUntil": 118.25000000004002,
+              "missionTargetId": "ALLY-S1-3",
+              "targetId": "ALLY-S1-3",
+              "envelope": {
+                "distance": 3261.9258006044297,
+                "maxRange": 24000,
+                "effectiveRange": 16320.000000000002,
+                "minRange": 250,
+                "closing": 300.6156582925405,
+                "time": 34,
+                "cross": 61.368542498474966
+              },
+              "envelopeAt": 118.05000000004001,
+              "envelopeTarget": "ALLY-S1-3",
+              "envelopeProfile": "r73",
+              "missileDecision": {
+                "reserve": 2,
+                "closeRange": 8000,
+                "tacticalRange": 16320.000000000002,
+                "inbound": 0,
+                "salvoLimit": 2,
+                "urgentDefense": false,
+                "allow": true,
+                "reason": "ready"
+              },
+              "launchRange": 24000
+            },
+            "flight": {
+              "spec": "su27",
+              "massKg": 21094.92887894599,
+              "fuelKg": 4694.928878945991,
+              "orientation": {
+                "x": -0.20867620776767,
+                "y": 0.9683975428791813,
+                "z": -0.06602006175757698,
+                "w": 0.11959009450115068
+              },
+              "parts": {
+                "leftWing": 0.9316961091408985,
+                "rightWing": 0.9316961091408985,
+                "tail": 0.9316961091408985,
+                "fuselage": 0.9316961091408985,
+                "engineLeft": 0.9367706247547662,
+                "engineRight": 0.8669960350640842,
+                "hydraulics": 0.9316961091408985,
+                "weapons": 0.12552157476416959
+              },
+              "engines": [0.9367706247547662, 0.8669960350640842],
+              "warning": "SZERKEZETI KÁR",
+              "dying": false,
+              "crashed": false
+            }
+          }
+        },
+        {
+          "t": 136.5,
+          "data": {
+            "id": "ENEMY-S2-2",
+            "kind": "air",
+            "home": false,
+            "coalition": "east",
+            "coalitionMode": "mixed",
+            "radius": 28,
+            "falling": false,
+            "civilian": false,
+            "squad": 2,
+            "formationSlot": 1,
+            "radioCallSign": {
+              "flight": "Wolf",
+              "number": 2
+            },
+            "name": "Su-27 Flanker",
+            "type": "fighter",
+            "team": "enemy",
+            "faction": "east",
+            "aircraftId": "su27",
+            "position": {
+              "x": -17362.601,
+              "y": 2163.4918,
+              "z": 15568.2475
+            },
+            "velocity": {
+              "x": 47.8223,
+              "y": -19.8813,
+              "z": -231.4638
+            },
+            "headingDeg": 165.4664,
+            "pitchDeg": 0,
+            "bankDeg": 55,
+            "alive": true,
+            "damage": 54.8055,
+            "health": 100,
+            "maxHealth": 100,
+            "service": {
+              "reason": "repair",
+              "homeId": "ENEMY-BASE",
+              "stage": "holding",
+              "remaining": 60,
+              "previousRole": "interceptor",
+              "sorties": 0
+            },
+            "serviceCount": 0,
+            "retired": false,
+            "retreat": null,
+            "evasion": null,
+            "coordinatedFlight": null,
+            "afterburner": true,
+            "playerControlled": false,
+            "countermeasures": {
+              "flare": 32,
+              "chaff": 23,
+              "used": 9
+            },
+            "role": "resupply",
+            "ballistic": null,
+            "assignedTarget": null,
+            "navigationGoal": {
+              "position": {
+                "x": -22080.659934207382,
+                "y": 2680,
+                "z": 23401.029337486987
+              },
+              "kind": "air",
+              "targetId": "ENEMY-S2-1"
+            },
+            "routeDistance": null,
+            "ai": {
+              "seed": 1935036941,
+              "missile": 5.577679482335459,
+              "flak": -109.69166666670003,
+              "gun": -109.69166666670003,
+              "flakBurst": 0,
+              "gunBurst": 0,
+              "missiles": 1,
+              "agm": 0,
+              "shells": 90,
+              "rounds": 150,
+              "bombs": 0,
+              "bomb": -110.69166666670083,
+              "lock": 19.116666666666223,
+              "initialMissiles": 4,
+              "initialAgm": 0,
+              "initialBombs": 0,
+              "initialRounds": 150,
+              "targetDecision": {
+                "targetId": "ALLY-S1-3",
+                "reason": "self-defense",
+                "score": 1081.7380741993957
+              },
+              "choiceId": "ALLY-S1-3",
+              "choiceUntil": 118.25000000004002,
+              "missionTargetId": "ALLY-S1-3",
+              "targetId": "ALLY-S1-3",
+              "envelope": {
+                "distance": 3261.9258006044297,
+                "maxRange": 24000,
+                "effectiveRange": 16320.000000000002,
+                "minRange": 250,
+                "closing": 300.6156582925405,
+                "time": 34,
+                "cross": 61.368542498474966
+              },
+              "envelopeAt": 118.05000000004001,
+              "envelopeTarget": "ALLY-S1-3",
+              "envelopeProfile": "r73",
+              "missileDecision": {
+                "reserve": 2,
+                "closeRange": 8000,
+                "tacticalRange": 16320.000000000002,
+                "inbound": 0,
+                "salvoLimit": 2,
+                "urgentDefense": false,
+                "allow": true,
+                "reason": "ready"
+              },
+              "launchRange": 24000
+            },
+            "flight": {
+              "spec": "su27",
+              "massKg": 21094.836267187893,
+              "fuelKg": 4694.836267187891,
+              "orientation": {
+                "x": -0.20888282130127372,
+                "y": 0.9689640143561077,
+                "z": -0.06508827431872069,
+                "w": 0.11506616528905292
+              },
+              "parts": {
+                "leftWing": 0.9316961091408985,
+                "rightWing": 0.9316961091408985,
+                "tail": 0.9316961091408985,
+                "fuselage": 0.9316961091408985,
+                "engineLeft": 0.9367706247547662,
+                "engineRight": 0.8669960350640842,
+                "hydraulics": 0.9316961091408985,
+                "weapons": 0.12552157476416959
+              },
+              "engines": [0.9367706247547662, 0.8669960350640842],
+              "warning": "SZERKEZETI KÁR",
+              "dying": false,
+              "crashed": false
+            }
+          }
+        },
+        {
+          "t": 137,
+          "data": {
+            "id": "ENEMY-S2-2",
+            "kind": "air",
+            "home": false,
+            "coalition": "east",
+            "coalitionMode": "mixed",
+            "radius": 28,
+            "falling": false,
+            "civilian": false,
+            "squad": 2,
+            "formationSlot": 1,
+            "radioCallSign": {
+              "flight": "Wolf",
+              "number": 2
+            },
+            "name": "Su-27 Flanker",
+            "type": "fighter",
+            "team": "enemy",
+            "faction": "east",
+            "aircraftId": "su27",
+            "position": {
+              "x": -17339.3004,
+              "y": 2153.5559,
+              "z": 15452.6909
+            },
+            "velocity": {
+              "x": 45.4215,
+              "y": -19.8645,
+              "z": -230.7724
+            },
+            "headingDeg": 166.006,
+            "pitchDeg": 0,
+            "bankDeg": 55,
+            "alive": true,
+            "damage": 54.8055,
+            "health": 100,
+            "maxHealth": 100,
+            "service": {
+              "reason": "repair",
+              "homeId": "ENEMY-BASE",
+              "stage": "holding",
+              "remaining": 60,
+              "previousRole": "interceptor",
+              "sorties": 0
+            },
+            "serviceCount": 0,
+            "retired": false,
+            "retreat": null,
+            "evasion": null,
+            "coordinatedFlight": null,
+            "afterburner": true,
+            "playerControlled": false,
+            "countermeasures": {
+              "flare": 32,
+              "chaff": 23,
+              "used": 9
+            },
+            "role": "resupply",
+            "ballistic": null,
+            "assignedTarget": null,
+            "navigationGoal": {
+              "position": {
+                "x": -22080.659934207382,
+                "y": 2680,
+                "z": 23401.029337486987
+              },
+              "kind": "air",
+              "targetId": "ENEMY-S2-1"
+            },
+            "routeDistance": null,
+            "ai": {
+              "seed": 1935036941,
+              "missile": 5.577679482335459,
+              "flak": -109.69166666670003,
+              "gun": -109.69166666670003,
+              "flakBurst": 0,
+              "gunBurst": 0,
+              "missiles": 1,
+              "agm": 0,
+              "shells": 90,
+              "rounds": 150,
+              "bombs": 0,
+              "bomb": -110.69166666670083,
+              "lock": 19.116666666666223,
+              "initialMissiles": 4,
+              "initialAgm": 0,
+              "initialBombs": 0,
+              "initialRounds": 150,
+              "targetDecision": {
+                "targetId": "ALLY-S1-3",
+                "reason": "self-defense",
+                "score": 1081.7380741993957
+              },
+              "choiceId": "ALLY-S1-3",
+              "choiceUntil": 118.25000000004002,
+              "missionTargetId": "ALLY-S1-3",
+              "targetId": "ALLY-S1-3",
+              "envelope": {
+                "distance": 3261.9258006044297,
+                "maxRange": 24000,
+                "effectiveRange": 16320.000000000002,
+                "minRange": 250,
+                "closing": 300.6156582925405,
+                "time": 34,
+                "cross": 61.368542498474966
+              },
+              "envelopeAt": 118.05000000004001,
+              "envelopeTarget": "ALLY-S1-3",
+              "envelopeProfile": "r73",
+              "missileDecision": {
+                "reserve": 2,
+                "closeRange": 8000,
+                "tacticalRange": 16320.000000000002,
+                "inbound": 0,
+                "salvoLimit": 2,
+                "urgentDefense": false,
+                "allow": true,
+                "reason": "ready"
+              },
+              "launchRange": 24000
+            },
+            "flight": {
+              "spec": "su27",
+              "massKg": 21094.74360054502,
+              "fuelKg": 4694.743600545024,
+              "orientation": {
+                "x": -0.2095514500408773,
+                "y": 0.9694165765237632,
+                "z": -0.06414150413546958,
+                "w": 0.1104787689737356
+              },
+              "parts": {
+                "leftWing": 0.9316961091408985,
+                "rightWing": 0.9316961091408985,
+                "tail": 0.9316961091408985,
+                "fuselage": 0.9316961091408985,
+                "engineLeft": 0.9367706247547662,
+                "engineRight": 0.8669960350640842,
+                "hydraulics": 0.9316961091408985,
+                "weapons": 0.12552157476416959
+              },
+              "engines": [0.9367706247547662, 0.8669960350640842],
+              "warning": "SZERKEZETI KÁR",
+              "dying": false,
+              "crashed": false
+            }
+          }
+        },
+        {
+          "t": 137.5,
+          "data": {
+            "id": "ENEMY-S2-2",
+            "kind": "air",
+            "home": false,
+            "coalition": "east",
+            "coalitionMode": "mixed",
+            "radius": 28,
+            "falling": false,
+            "civilian": false,
+            "squad": 2,
+            "formationSlot": 1,
+            "radioCallSign": {
+              "flight": "Wolf",
+              "number": 2
+            },
+            "name": "Su-27 Flanker",
+            "type": "fighter",
+            "team": "enemy",
+            "faction": "east",
+            "aircraftId": "su27",
+            "position": {
+              "x": -17317.1981,
+              "y": 2143.6293,
+              "z": 15337.4823
+            },
+            "velocity": {
+              "x": 43.0288,
+              "y": -19.8442,
+              "z": -230.0724
+            },
+            "headingDeg": 166.5472,
+            "pitchDeg": 0,
+            "bankDeg": 55,
+            "alive": true,
+            "damage": 54.8055,
+            "health": 100,
+            "maxHealth": 100,
+            "service": {
+              "reason": "repair",
+              "homeId": "ENEMY-BASE",
+              "stage": "holding",
+              "remaining": 60,
+              "previousRole": "interceptor",
+              "sorties": 0
+            },
+            "serviceCount": 0,
+            "retired": false,
+            "retreat": null,
+            "evasion": null,
+            "coordinatedFlight": null,
+            "afterburner": true,
+            "playerControlled": false,
+            "countermeasures": {
+              "flare": 32,
+              "chaff": 23,
+              "used": 9
+            },
+            "role": "resupply",
+            "ballistic": null,
+            "assignedTarget": null,
+            "navigationGoal": {
+              "position": {
+                "x": -22080.659934207382,
+                "y": 2680,
+                "z": 23401.029337486987
+              },
+              "kind": "air",
+              "targetId": "ENEMY-S2-1"
+            },
+            "routeDistance": null,
+            "ai": {
+              "seed": 1935036941,
+              "missile": 5.577679482335459,
+              "flak": -109.69166666670003,
+              "gun": -109.69166666670003,
+              "flakBurst": 0,
+              "gunBurst": 0,
+              "missiles": 1,
+              "agm": 0,
+              "shells": 90,
+              "rounds": 150,
+              "bombs": 0,
+              "bomb": -110.69166666670083,
+              "lock": 19.116666666666223,
+              "initialMissiles": 4,
+              "initialAgm": 0,
+              "initialBombs": 0,
+              "initialRounds": 150,
+              "targetDecision": {
+                "targetId": "ALLY-S1-3",
+                "reason": "self-defense",
+                "score": 1081.7380741993957
+              },
+              "choiceId": "ALLY-S1-3",
+              "choiceUntil": 118.25000000004002,
+              "missionTargetId": "ALLY-S1-3",
+              "targetId": "ALLY-S1-3",
+              "envelope": {
+                "distance": 3261.9258006044297,
+                "maxRange": 24000,
+                "effectiveRange": 16320.000000000002,
+                "minRange": 250,
+                "closing": 300.6156582925405,
+                "time": 34,
+                "cross": 61.368542498474966
+              },
+              "envelopeAt": 118.05000000004001,
+              "envelopeTarget": "ALLY-S1-3",
+              "envelopeProfile": "r73",
+              "missileDecision": {
+                "reserve": 2,
+                "closeRange": 8000,
+                "tacticalRange": 16320.000000000002,
+                "inbound": 0,
+                "salvoLimit": 2,
+                "urgentDefense": false,
+                "allow": true,
+                "reason": "ready"
+              },
+              "launchRange": 24000
+            },
+            "flight": {
+              "spec": "su27",
+              "massKg": 21094.650878212597,
+              "fuelKg": 4694.650878212596,
+              "orientation": {
+                "x": -0.210756496806504,
+                "y": 0.9697308071531869,
+                "z": -0.06326450115178076,
+                "w": 0.10583696710457564
+              },
+              "parts": {
+                "leftWing": 0.9316961091408985,
+                "rightWing": 0.9316961091408985,
+                "tail": 0.9316961091408985,
+                "fuselage": 0.9316961091408985,
+                "engineLeft": 0.9367706247547662,
+                "engineRight": 0.8669960350640842,
+                "hydraulics": 0.9316961091408985,
+                "weapons": 0.12552157476416959
+              },
+              "engines": [0.9367706247547662, 0.8669960350640842],
+              "warning": "SZERKEZETI KÁR",
+              "dying": false,
+              "crashed": false
+            }
+          }
+        },
+        {
+          "t": 138,
+          "data": {
+            "id": "ENEMY-S2-2",
+            "kind": "air",
+            "home": false,
+            "coalition": "east",
+            "coalitionMode": "mixed",
+            "radius": 28,
+            "falling": false,
+            "civilian": false,
+            "squad": 2,
+            "formationSlot": 1,
+            "radioCallSign": {
+              "flight": "Wolf",
+              "number": 2
+            },
+            "name": "Su-27 Flanker",
+            "type": "fighter",
+            "team": "enemy",
+            "faction": "east",
+            "aircraftId": "su27",
+            "position": {
+              "x": -17296.2895,
+              "y": 2133.712,
+              "z": 15222.626
+            },
+            "velocity": {
+              "x": 40.6463,
+              "y": -19.8256,
+              "z": -229.3628
+            },
+            "headingDeg": 167.0892,
+            "pitchDeg": 0,
+            "bankDeg": 55,
+            "alive": true,
+            "damage": 54.8055,
+            "health": 100,
+            "maxHealth": 100,
+            "service": {
+              "reason": "repair",
+              "homeId": "ENEMY-BASE",
+              "stage": "holding",
+              "remaining": 60,
+              "previousRole": "interceptor",
+              "sorties": 0
+            },
+            "serviceCount": 0,
+            "retired": false,
+            "retreat": null,
+            "evasion": null,
+            "coordinatedFlight": null,
+            "afterburner": true,
+            "playerControlled": false,
+            "countermeasures": {
+              "flare": 32,
+              "chaff": 23,
+              "used": 9
+            },
+            "role": "resupply",
+            "ballistic": null,
+            "assignedTarget": null,
+            "navigationGoal": {
+              "position": {
+                "x": -22080.659934207382,
+                "y": 2680,
+                "z": 23401.029337486987
+              },
+              "kind": "air",
+              "targetId": "ENEMY-S2-1"
+            },
+            "routeDistance": null,
+            "ai": {
+              "seed": 1935036941,
+              "missile": 5.577679482335459,
+              "flak": -109.69166666670003,
+              "gun": -109.69166666670003,
+              "flakBurst": 0,
+              "gunBurst": 0,
+              "missiles": 1,
+              "agm": 0,
+              "shells": 90,
+              "rounds": 150,
+              "bombs": 0,
+              "bomb": -110.69166666670083,
+              "lock": 19.116666666666223,
+              "initialMissiles": 4,
+              "initialAgm": 0,
+              "initialBombs": 0,
+              "initialRounds": 150,
+              "targetDecision": {
+                "targetId": "ALLY-S1-3",
+                "reason": "self-defense",
+                "score": 1081.7380741993957
+              },
+              "choiceId": "ALLY-S1-3",
+              "choiceUntil": 118.25000000004002,
+              "missionTargetId": "ALLY-S1-3",
+              "targetId": "ALLY-S1-3",
+              "envelope": {
+                "distance": 3261.9258006044297,
+                "maxRange": 24000,
+                "effectiveRange": 16320.000000000002,
+                "minRange": 250,
+                "closing": 300.6156582925405,
+                "time": 34,
+                "cross": 61.368542498474966
+              },
+              "envelopeAt": 118.05000000004001,
+              "envelopeTarget": "ALLY-S1-3",
+              "envelopeProfile": "r73",
+              "missileDecision": {
+                "reserve": 2,
+                "closeRange": 8000,
+                "tacticalRange": 16320.000000000002,
+                "inbound": 0,
+                "salvoLimit": 2,
+                "urgentDefense": false,
+                "allow": true,
+                "reason": "ready"
+              },
+              "launchRange": 24000
+            },
+            "flight": {
+              "spec": "su27",
+              "massKg": 21094.558099402257,
+              "fuelKg": 4694.5580994022575,
+              "orientation": {
+                "x": -0.2111458233556645,
+                "y": 0.9701985521829652,
+                "z": -0.06232362001469289,
+                "w": 0.10123229232710736
+              },
+              "parts": {
+                "leftWing": 0.9316961091408985,
+                "rightWing": 0.9316961091408985,
+                "tail": 0.9316961091408985,
+                "fuselage": 0.9316961091408985,
+                "engineLeft": 0.9367706247547662,
+                "engineRight": 0.8669960350640842,
+                "hydraulics": 0.9316961091408985,
+                "weapons": 0.12552157476416959
+              },
+              "engines": [0.9367706247547662, 0.8669960350640842],
+              "warning": "SZERKEZETI KÁR",
+              "dying": false,
+              "crashed": false
+            }
+          }
+        },
+        {
+          "t": 138.5,
+          "data": {
+            "id": "ENEMY-S2-2",
+            "kind": "air",
+            "home": false,
+            "coalition": "east",
+            "coalitionMode": "mixed",
+            "radius": 28,
+            "falling": false,
+            "civilian": false,
+            "squad": 2,
+            "formationSlot": 1,
+            "radioCallSign": {
+              "flight": "Wolf",
+              "number": 2
+            },
+            "name": "Su-27 Flanker",
+            "type": "fighter",
+            "team": "enemy",
+            "faction": "east",
+            "aircraftId": "su27",
+            "position": {
+              "x": -17276.5701,
+              "y": 2123.8035,
+              "z": 15108.127
+            },
+            "velocity": {
+              "x": 38.2726,
+              "y": -19.8073,
+              "z": -228.6439
+            },
+            "headingDeg": 167.6376,
+            "pitchDeg": 0,
+            "bankDeg": 55,
+            "alive": true,
+            "damage": 54.8055,
+            "health": 100,
+            "maxHealth": 100,
+            "service": {
+              "reason": "repair",
+              "homeId": "ENEMY-BASE",
+              "stage": "holding",
+              "remaining": 60,
+              "previousRole": "interceptor",
+              "sorties": 0
+            },
+            "serviceCount": 0,
+            "retired": false,
+            "retreat": null,
+            "evasion": null,
+            "coordinatedFlight": null,
+            "afterburner": true,
+            "playerControlled": false,
+            "countermeasures": {
+              "flare": 32,
+              "chaff": 23,
+              "used": 9
+            },
+            "role": "resupply",
+            "ballistic": null,
+            "assignedTarget": null,
+            "navigationGoal": {
+              "position": {
+                "x": -22080.659934207382,
+                "y": 2680,
+                "z": 23401.029337486987
+              },
+              "kind": "air",
+              "targetId": "ENEMY-S2-1"
+            },
+            "routeDistance": null,
+            "ai": {
+              "seed": 1935036941,
+              "missile": 5.577679482335459,
+              "flak": -109.69166666670003,
+              "gun": -109.69166666670003,
+              "flakBurst": 0,
+              "gunBurst": 0,
+              "missiles": 1,
+              "agm": 0,
+              "shells": 90,
+              "rounds": 150,
+              "bombs": 0,
+              "bomb": -110.69166666670083,
+              "lock": 19.116666666666223,
+              "initialMissiles": 4,
+              "initialAgm": 0,
+              "initialBombs": 0,
+              "initialRounds": 150,
+              "targetDecision": {
+                "targetId": "ALLY-S1-3",
+                "reason": "self-defense",
+                "score": 1081.7380741993957
+              },
+              "choiceId": "ALLY-S1-3",
+              "choiceUntil": 118.25000000004002,
+              "missionTargetId": "ALLY-S1-3",
+              "targetId": "ALLY-S1-3",
+              "envelope": {
+                "distance": 3261.9258006044297,
+                "maxRange": 24000,
+                "effectiveRange": 16320.000000000002,
+                "minRange": 250,
+                "closing": 300.6156582925405,
+                "time": 34,
+                "cross": 61.368542498474966
+              },
+              "envelopeAt": 118.05000000004001,
+              "envelopeTarget": "ALLY-S1-3",
+              "envelopeProfile": "r73",
+              "missileDecision": {
+                "reserve": 2,
+                "closeRange": 8000,
+                "tacticalRange": 16320.000000000002,
+                "inbound": 0,
+                "salvoLimit": 2,
+                "urgentDefense": false,
+                "allow": true,
+                "reason": "ready"
+              },
+              "launchRange": 24000
+            },
+            "flight": {
+              "spec": "su27",
+              "massKg": 21094.465263338494,
+              "fuelKg": 4694.465263338493,
+              "orientation": {
+                "x": -0.2112971960670691,
+                "y": 0.9707037158727462,
+                "z": -0.0612880380035978,
+                "w": 0.09660003790220277
+              },
+              "parts": {
+                "leftWing": 0.9316961091408985,
+                "rightWing": 0.9316961091408985,
+                "tail": 0.9316961091408985,
+                "fuselage": 0.9316961091408985,
+                "engineLeft": 0.9367706247547662,
+                "engineRight": 0.8669960350640842,
+                "hydraulics": 0.9316961091408985,
+                "weapons": 0.12552157476416959
+              },
+              "engines": [0.9367706247547662, 0.8669960350640842],
+              "warning": "SZERKEZETI KÁR",
+              "dying": false,
+              "crashed": false
+            }
+          }
+        },
+        {
+          "t": 139,
+          "data": {
+            "id": "ENEMY-S2-2",
+            "kind": "air",
+            "home": false,
+            "coalition": "east",
+            "coalitionMode": "mixed",
+            "radius": 28,
+            "falling": false,
+            "civilian": false,
+            "squad": 2,
+            "formationSlot": 1,
+            "radioCallSign": {
+              "flight": "Wolf",
+              "number": 2
+            },
+            "name": "Su-27 Flanker",
+            "type": "fighter",
+            "team": "enemy",
+            "faction": "east",
+            "aircraftId": "su27",
+            "position": {
+              "x": -17258.0356,
+              "y": 2113.904,
+              "z": 14993.9898
+            },
+            "velocity": {
+              "x": 35.9069,
+              "y": -19.7885,
+              "z": -227.9155
+            },
+            "headingDeg": 168.1873,
+            "pitchDeg": 0,
+            "bankDeg": 55,
+            "alive": true,
+            "damage": 54.8055,
+            "health": 100,
+            "maxHealth": 100,
+            "service": {
+              "reason": "repair",
+              "homeId": "ENEMY-BASE",
+              "stage": "holding",
+              "remaining": 60,
+              "previousRole": "interceptor",
+              "sorties": 0
+            },
+            "serviceCount": 0,
+            "retired": false,
+            "retreat": null,
+            "evasion": null,
+            "coordinatedFlight": null,
+            "afterburner": true,
+            "playerControlled": false,
+            "countermeasures": {
+              "flare": 32,
+              "chaff": 23,
+              "used": 9
+            },
+            "role": "resupply",
+            "ballistic": null,
+            "assignedTarget": null,
+            "navigationGoal": {
+              "position": {
+                "x": -22080.659934207382,
+                "y": 2680,
+                "z": 23401.029337486987
+              },
+              "kind": "air",
+              "targetId": "ENEMY-S2-1"
+            },
+            "routeDistance": null,
+            "ai": {
+              "seed": 1935036941,
+              "missile": 5.577679482335459,
+              "flak": -109.69166666670003,
+              "gun": -109.69166666670003,
+              "flakBurst": 0,
+              "gunBurst": 0,
+              "missiles": 1,
+              "agm": 0,
+              "shells": 90,
+              "rounds": 150,
+              "bombs": 0,
+              "bomb": -110.69166666670083,
+              "lock": 19.116666666666223,
+              "initialMissiles": 4,
+              "initialAgm": 0,
+              "initialBombs": 0,
+              "initialRounds": 150,
+              "targetDecision": {
+                "targetId": "ALLY-S1-3",
+                "reason": "self-defense",
+                "score": 1081.7380741993957
+              },
+              "choiceId": "ALLY-S1-3",
+              "choiceUntil": 118.25000000004002,
+              "missionTargetId": "ALLY-S1-3",
+              "targetId": "ALLY-S1-3",
+              "envelope": {
+                "distance": 3261.9258006044297,
+                "maxRange": 24000,
+                "effectiveRange": 16320.000000000002,
+                "minRange": 250,
+                "closing": 300.6156582925405,
+                "time": 34,
+                "cross": 61.368542498474966
+              },
+              "envelopeAt": 118.05000000004001,
+              "envelopeTarget": "ALLY-S1-3",
+              "envelopeProfile": "r73",
+              "missileDecision": {
+                "reserve": 2,
+                "closeRange": 8000,
+                "tacticalRange": 16320.000000000002,
+                "inbound": 0,
+                "salvoLimit": 2,
+                "urgentDefense": false,
+                "allow": true,
+                "reason": "ready"
+              },
+              "launchRange": 24000
+            },
+            "flight": {
+              "spec": "su27",
+              "massKg": 21094.372369261455,
+              "fuelKg": 4694.372369261455,
+              "orientation": {
+                "x": -0.2106739184057385,
+                "y": 0.971353650688206,
+                "z": -0.060215891541248026,
+                "w": 0.09199256385251624
+              },
+              "parts": {
+                "leftWing": 0.9316961091408985,
+                "rightWing": 0.9316961091408985,
+                "tail": 0.9316961091408985,
+                "fuselage": 0.9316961091408985,
+                "engineLeft": 0.9367706247547662,
+                "engineRight": 0.8669960350640842,
+                "hydraulics": 0.9316961091408985,
+                "weapons": 0.12552157476416959
+              },
+              "engines": [0.9367706247547662, 0.8669960350640842],
+              "warning": "SZERKEZETI KÁR",
+              "dying": false,
+              "crashed": false
+            }
+          }
+        },
+        {
+          "t": 139.5,
+          "data": {
+            "id": "ENEMY-S2-2",
+            "kind": "air",
+            "home": false,
+            "coalition": "east",
+            "coalitionMode": "mixed",
+            "radius": 28,
+            "falling": false,
+            "civilian": false,
+            "squad": 2,
+            "formationSlot": 1,
+            "radioCallSign": {
+              "flight": "Wolf",
+              "number": 2
+            },
+            "name": "Su-27 Flanker",
+            "type": "fighter",
+            "team": "enemy",
+            "faction": "east",
+            "aircraftId": "su27",
+            "position": {
+              "x": -17240.6813,
+              "y": 2104.0135,
+              "z": 14880.2194
+            },
+            "velocity": {
+              "x": 33.5511,
+              "y": -19.7733,
+              "z": -227.1768
+            },
+            "headingDeg": 168.7389,
+            "pitchDeg": 0,
+            "bankDeg": 55,
+            "alive": true,
+            "damage": 54.8055,
+            "health": 100,
+            "maxHealth": 100,
+            "service": {
+              "reason": "repair",
+              "homeId": "ENEMY-BASE",
+              "stage": "holding",
+              "remaining": 60,
+              "previousRole": "interceptor",
+              "sorties": 0
+            },
+            "serviceCount": 0,
+            "retired": false,
+            "retreat": null,
+            "evasion": null,
+            "coordinatedFlight": null,
+            "afterburner": true,
+            "playerControlled": false,
+            "countermeasures": {
+              "flare": 32,
+              "chaff": 23,
+              "used": 9
+            },
+            "role": "resupply",
+            "ballistic": null,
+            "assignedTarget": null,
+            "navigationGoal": {
+              "position": {
+                "x": -22080.659934207382,
+                "y": 2680,
+                "z": 23401.029337486987
+              },
+              "kind": "air",
+              "targetId": "ENEMY-S2-1"
+            },
+            "routeDistance": null,
+            "ai": {
+              "seed": 1935036941,
+              "missile": 5.577679482335459,
+              "flak": -109.69166666670003,
+              "gun": -109.69166666670003,
+              "flakBurst": 0,
+              "gunBurst": 0,
+              "missiles": 1,
+              "agm": 0,
+              "shells": 90,
+              "rounds": 150,
+              "bombs": 0,
+              "bomb": -110.69166666670083,
+              "lock": 19.116666666666223,
+              "initialMissiles": 4,
+              "initialAgm": 0,
+              "initialBombs": 0,
+              "initialRounds": 150,
+              "targetDecision": {
+                "targetId": "ALLY-S1-3",
+                "reason": "self-defense",
+                "score": 1081.7380741993957
+              },
+              "choiceId": "ALLY-S1-3",
+              "choiceUntil": 118.25000000004002,
+              "missionTargetId": "ALLY-S1-3",
+              "targetId": "ALLY-S1-3",
+              "envelope": {
+                "distance": 3261.9258006044297,
+                "maxRange": 24000,
+                "effectiveRange": 16320.000000000002,
+                "minRange": 250,
+                "closing": 300.6156582925405,
+                "time": 34,
+                "cross": 61.368542498474966
+              },
+              "envelopeAt": 118.05000000004001,
+              "envelopeTarget": "ALLY-S1-3",
+              "envelopeProfile": "r73",
+              "missileDecision": {
+                "reserve": 2,
+                "closeRange": 8000,
+                "tacticalRange": 16320.000000000002,
+                "inbound": 0,
+                "salvoLimit": 2,
+                "urgentDefense": false,
+                "allow": true,
+                "reason": "ready"
+              },
+              "launchRange": 24000
+            },
+            "flight": {
+              "spec": "su27",
+              "massKg": 21094.27941642687,
+              "fuelKg": 4694.279416426873,
+              "orientation": {
+                "x": -0.21085988342195786,
+                "y": 0.9718055911997094,
+                "z": -0.0592333768262451,
+                "w": 0.08731213859493812
+              },
+              "parts": {
+                "leftWing": 0.9316961091408985,
+                "rightWing": 0.9316961091408985,
+                "tail": 0.9316961091408985,
+                "fuselage": 0.9316961091408985,
+                "engineLeft": 0.9367706247547662,
+                "engineRight": 0.8669960350640842,
+                "hydraulics": 0.9316961091408985,
+                "weapons": 0.12552157476416959
+              },
+              "engines": [0.9367706247547662, 0.8669960350640842],
+              "warning": "SZERKEZETI KÁR",
+              "dying": false,
+              "crashed": false
+            }
+          }
+        },
+        {
+          "t": 140,
+          "data": {
+            "id": "ENEMY-S2-2",
+            "kind": "air",
+            "home": false,
+            "coalition": "east",
+            "coalitionMode": "mixed",
+            "radius": 28,
+            "falling": false,
+            "civilian": false,
+            "squad": 2,
+            "formationSlot": 1,
+            "radioCallSign": {
+              "flight": "Wolf",
+              "number": 2
+            },
+            "name": "Su-27 Flanker",
+            "type": "fighter",
+            "team": "enemy",
+            "faction": "east",
+            "aircraftId": "su27",
+            "position": {
+              "x": -17224.5027,
+              "y": 2094.1316,
+              "z": 14766.8208
+            },
+            "velocity": {
+              "x": 31.2035,
+              "y": -19.7568,
+              "z": -226.4283
+            },
+            "headingDeg": 169.296,
+            "pitchDeg": 0,
+            "bankDeg": 55,
+            "alive": true,
+            "damage": 54.8055,
+            "health": 100,
+            "maxHealth": 100,
+            "service": {
+              "reason": "repair",
+              "homeId": "ENEMY-BASE",
+              "stage": "holding",
+              "remaining": 60,
+              "previousRole": "interceptor",
+              "sorties": 0
+            },
+            "serviceCount": 0,
+            "retired": false,
+            "retreat": null,
+            "evasion": null,
+            "coordinatedFlight": null,
+            "afterburner": true,
+            "playerControlled": false,
+            "countermeasures": {
+              "flare": 32,
+              "chaff": 23,
+              "used": 9
+            },
+            "role": "resupply",
+            "ballistic": null,
+            "assignedTarget": null,
+            "navigationGoal": {
+              "position": {
+                "x": -22080.659934207382,
+                "y": 2680,
+                "z": 23401.029337486987
+              },
+              "kind": "air",
+              "targetId": "ENEMY-S2-1"
+            },
+            "routeDistance": null,
+            "ai": {
+              "seed": 1935036941,
+              "missile": 5.577679482335459,
+              "flak": -109.69166666670003,
+              "gun": -109.69166666670003,
+              "flakBurst": 0,
+              "gunBurst": 0,
+              "missiles": 1,
+              "agm": 0,
+              "shells": 90,
+              "rounds": 150,
+              "bombs": 0,
+              "bomb": -110.69166666670083,
+              "lock": 19.116666666666223,
+              "initialMissiles": 4,
+              "initialAgm": 0,
+              "initialBombs": 0,
+              "initialRounds": 150,
+              "targetDecision": {
+                "targetId": "ALLY-S1-3",
+                "reason": "self-defense",
+                "score": 1081.7380741993957
+              },
+              "choiceId": "ALLY-S1-3",
+              "choiceUntil": 118.25000000004002,
+              "missionTargetId": "ALLY-S1-3",
+              "targetId": "ALLY-S1-3",
+              "envelope": {
+                "distance": 3261.9258006044297,
+                "maxRange": 24000,
+                "effectiveRange": 16320.000000000002,
+                "minRange": 250,
+                "closing": 300.6156582925405,
+                "time": 34,
+                "cross": 61.368542498474966
+              },
+              "envelopeAt": 118.05000000004001,
+              "envelopeTarget": "ALLY-S1-3",
+              "envelopeProfile": "r73",
+              "missileDecision": {
+                "reserve": 2,
+                "closeRange": 8000,
+                "tacticalRange": 16320.000000000002,
+                "inbound": 0,
+                "salvoLimit": 2,
+                "urgentDefense": false,
+                "allow": true,
+                "reason": "ready"
+              },
+              "launchRange": 24000
+            },
+            "flight": {
+              "spec": "su27",
+              "massKg": 21094.186404101587,
+              "fuelKg": 4694.186404101587,
+              "orientation": {
+                "x": -0.21196409150181697,
+                "y": 0.972040902117264,
+                "z": -0.05826526419901539,
+                "w": 0.0825400963937153
+              },
+              "parts": {
+                "leftWing": 0.9316961091408985,
+                "rightWing": 0.9316961091408985,
+                "tail": 0.9316961091408985,
+                "fuselage": 0.9316961091408985,
+                "engineLeft": 0.9367706247547662,
+                "engineRight": 0.8669960350640842,
+                "hydraulics": 0.9316961091408985,
+                "weapons": 0.12552157476416959
+              },
+              "engines": [0.9367706247547662, 0.8669960350640842],
+              "warning": "SZERKEZETI KÁR",
+              "dying": false,
+              "crashed": false
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

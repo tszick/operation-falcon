@@ -17,11 +17,6 @@ export function objectiveRows(s, m, targets = []) {
           text: 'Civil gép békés elfogása',
           done: m.civilIntercepted || civil?.departedAirspace,
         },
-        {
-          id: 'civil-exit',
-          text: 'Civil gép sértetlenül távozik',
-          done: !!civil?.departedAirspace,
-        },
         { id: 'landing', text: 'Hazatérés és leszállás', done: landed },
       ];
     else

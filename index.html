@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="/src/ui/nationality.css" />
     <link rel="stylesheet" href="/src/ui/aircraftCatalog.css" />
     <link rel="stylesheet" href="/src/ui/language.css" />
+    <link rel="stylesheet" href="/src/ui/missionResult.css" />
+    <link rel="stylesheet" href="/src/ui/menuMusic.css" />
   </head>
   <body>
     <canvas id="world" aria-label="A szimulátor háromdimenziós repülési nézete"></canvas>
@@ -22,6 +24,14 @@
       <div class="header-right">
         <span class="live-dot"></span> <span id="system-state">RENDSZER KÉSZ</span
         ><span class="version">PROTO / 0.1</span>
+        <button
+          id="menu-music-toggle"
+          type="button"
+          aria-pressed="true"
+          aria-label="Menüzene kikapcsolása"
+        >
+          <span aria-hidden="true">♫</span><span>ZENE BE</span>
+        </button>
       </div>
     </header>
     <main id="hangar" class="briefing" data-step="missions">
@@ -523,19 +533,27 @@
         <div class="eyebrow" id="overlay-label"></div>
         <h2 id="overlay-title" tabindex="-1"></h2>
         <p id="overlay-text"></p>
-        <div id="overlay-stats"></div>
-        <section id="mission-debrief" hidden aria-label="Küldetés kiértékelése"></section>
+        <div id="mission-rating" hidden></div>
         <button id="resume" class="primary">REPÜLÉS FOLYTATÁSA</button
         ><button id="open-mission-control" class="secondary" type="button">
           MISSION CONTROL · O</button
         ><button id="restart" class="secondary">ÚJRAINDÍTÁS</button
         ><button id="back" class="secondary">VISSZA A HANGÁRBA</button>
-        <div class="flight-log-tools">
-          <a href="/flight-log.html" target="_blank" rel="noopener">REPÜLÉSI NAPLÓ ↗</a
-          ><button id="export-flight-log" class="secondary" disabled>NAPLÓ LETÖLTÉSE</button
-          ><small id="log-storage-status">Csak az aktuális küldetés</small>
-        </div>
+        <details id="result-details">
+          <summary>RÉSZLETES KIÉRTÉKELÉS ÉS NAPLÓ</summary>
+          <div id="overlay-stats"></div>
+          <section id="mission-debrief" hidden aria-label="Küldetés kiértékelése"></section>
+          <div class="flight-log-tools">
+            <a href="/flight-log.html" target="_blank" rel="noopener">REPÜLÉSI NAPLÓ ↗</a
+            ><button id="export-flight-log" class="secondary" disabled>NAPLÓ LETÖLTÉSE</button
+            ><small id="log-storage-status">Csak az aktuális küldetés</small>
+          </div>
+        </details>
       </section>
+      <aside class="result-replay">
+        <span id="replay-caption"></span
+        ><button id="replay-toggle" class="secondary" type="button"></button>
+      </aside>
     </div>
     <footer id="hangar-footer">
       <span><i>●</i> MINDEN RENDSZER ÜZEMKÉSZ</span

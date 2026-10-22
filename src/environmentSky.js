@@ -1,24 +1,52 @@
+import { requestSkySprite } from './skySpriteLoader.js';
+import { renderCumulus, cloudScreenAngle } from './clouds.js';
+import { terrainWorld } from './terrain.js';
 import { surfaceStyle } from './surfaceStyle.js';
 import { Vec3 } from './math.js';
-let cloudSprite;
+let cloudSprite,
+  cloudPending = false;
+// The weather sheet must fade to transparent before every texture boundary.
+// Radial lobes clipped by the old canvas produced visible rectangular seams.
+export function overcastPixels(width = 512, height = 256) {
+  const pixels = new Uint8ClampedArray(width * height * 4);
+  const smooth = (x) => {
+    x = Math.max(0, Math.min(1, x));
+    return x * x * (3 - 2 * x);
+  };
+  for (let y = 0; y < height; y++)
+    for (let x = 0; x < width; x++) {
+      const px = x / (width - 1),
+        py = y / (height - 1);
+      const fade = smooth(Math.min(px, 1 - px) / 0.18) * smooth(Math.min(py, 1 - py) / 0.24);
+      let alpha = 0,
+        tone = 0;
+      for (let i = 0; i < 22; i++) {
+        const cx = (32 + ((i * 79) % 448)) / 512,
+          cy = (55 + ((i * 43) % 145)) / 256,
+          radius = (55 + (i % 4) * 12) / 512,
+          distance = Math.hypot(px - cx, (py - cy) * 0.5) / radius,
+          weight = smooth(1 - distance) * (i % 2 ? 0.12 : 0.09);
+        tone += (i % 2 ? 225 : 65) * weight;
+        alpha += weight;
+      }
+      const p = (y * width + x) * 4;
+      const gray = alpha > 0 ? tone / alpha : 128;
+      pixels[p] = gray;
+      pixels[p + 1] = gray + 5;
+      pixels[p + 2] = gray + 11;
+      pixels[p + 3] = Math.round((1 - Math.exp(-alpha)) * fade * 255);
+    }
+  return pixels;
+}
 function overcastSprite() {
   if (cloudSprite) return cloudSprite;
-  if (typeof document === 'undefined') return null;
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 256;
-  const c = canvas.getContext('2d');
-  for (let i = 0; i < 22; i++) {
-    const x = 32 + ((i * 79) % 448),
-      y = 55 + ((i * 43) % 145),
-      radius = 55 + (i % 4) * 12,
-      g = c.createRadialGradient(x, y, 0, x, y, radius);
-    g.addColorStop(0, i % 2 ? '#e1e4e635' : '#414c5a25');
-    g.addColorStop(1, '#78838e00');
-    c.fillStyle = g;
-    c.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+  if (!cloudPending) {
+    cloudPending = true;
+    requestSkySprite({ kind: 'overcast' }).then((image) => {
+      cloudSprite = image;
+    });
   }
-  return (cloudSprite = canvas);
+  return null;
 }
 export function renderEnvironmentSky(r) {
   const c = r.ctx,
@@ -67,7 +95,7 @@ export function renderEnvironmentSky(r) {
       c.fill();
     }
   }
-  if (p.clouds) {
+  if (p.clouds && r.cloudsEnabled !== false) {
     const image = overcastSprite();
     if (image)
       for (let i = 0; i < 16; i++) {
@@ -83,9 +111,10 @@ export function renderEnvironmentSky(r) {
         const size = r.focal * 1.6;
         c.save();
         c.translate(point.x, point.y);
-        c.rotate(Math.atan2(-r.r.y, r.u.y));
+        c.rotate(cloudScreenAngle(r));
         c.drawImage(image, -size * 0.5, -size * 0.25, size, size * 0.5);
         c.restore();
       }
   }
+  if (r.cloudsEnabled !== false) renderCumulus(r, terrainWorld);
 }

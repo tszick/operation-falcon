@@ -154,8 +154,15 @@ export function aircraftHit(s, from, to, { radius = 0.35, moving = true } = {}) 
     .clone()
     .add(direction.clone().scale(clamp(-a.dot(direction) / Math.max(1e-12, length2), 0, 1)));
   if (mid.length() > mesh.radius + radius) return null;
+  const hit = meshSegmentHit(mesh, a, b, { radius, condition: s.condition });
+  if (hit) hit.point = s.orientation.rotate(hit.localPoint).add(s.position);
+  return hit;
+}
+export function meshSegmentHit(mesh, a, b, { radius = 0.25, condition } = {}) {
+  const direction = b.clone().sub(a),
+    length2 = direction.dot(direction);
   let best = null;
-  for (const triangle of collisionTriangles(mesh, s.condition)) {
+  for (const triangle of collisionTriangles(mesh, condition)) {
     if (outsideTriangleBounds(triangle, a, b, radius)) continue;
     const { a: v0, b: v1, c: v2 } = triangle,
       hit = rayTriangle(a, direction, v0, v1, v2);
@@ -181,7 +188,7 @@ export function aircraftHit(s, from, to, { radius = 0.35, moving = true } = {}) 
         localPoint: point,
         part: triangle.part,
         engineIndex: triangle.engineIndex,
-        point: s.orientation.rotate(point).add(s.position),
+        point,
       };
   }
   return best;

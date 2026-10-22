@@ -112,6 +112,7 @@ function planLocalLandingRoute(
     slope = Math.tan((strip.glideDeg || 3) * DEG),
     aligned =
       along > 0 &&
+      along <= 6500 &&
       Math.abs(s.position.x) < 200 &&
       error < 12 * DEG &&
       Math.abs(s.position.y - (2 + along * slope)) < Math.max(80, along * 0.025);
@@ -122,7 +123,7 @@ function planLocalLandingRoute(
   if (aligned) {
     entryDistance = Math.max(600, along);
   } else {
-    const options = [6500, 10000, 15000, 22000, 30000]
+    const options = [6500]
       .map((distance) => {
         const path = dubinsPath(
           s.position,

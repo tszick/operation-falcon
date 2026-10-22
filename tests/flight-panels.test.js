@@ -66,9 +66,13 @@ test('standalone landing and civil missions receive explicit goals and elapsed m
   const civil = new Mission(missions.find((m) => m.id === 'civil'));
   civil.civilIntercepted = true;
   card = missionCardState(s, civil, [{ civilian: true, alive: true, departedAirspace: false }]);
-  assert.equal(card.primary.total, 3);
+  assert.equal(card.primary.total, 2);
+  assert.equal(card.optional.total, 0);
   assert.equal(card.rows.find((r) => r.id === 'civil-lock').status, 'done');
-  assert.equal(card.rows.find((r) => r.id === 'civil-exit').status, 'pending');
+  assert.equal(
+    card.rows.some((r) => r.id === 'civil-exit'),
+    false,
+  );
   assert.equal(flightClock(3605), '60:05');
 });
 test('completed, failed, unfinished and optional goals remain distinct on a mission failure', () => {

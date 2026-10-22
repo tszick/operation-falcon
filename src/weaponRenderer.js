@@ -57,7 +57,9 @@ export function renderWeapons(renderer, s, weapons) {
       }
     }
     if (p.type === 'gun') {
-      const tail = p.position.clone().sub(direction.clone().scale(65));
+      // A newborn tracer cannot extend behind its launch point through the aircraft.
+      const length = Math.min(65, Math.max(0, p.age || 0) * p.velocity.length()),
+        tail = p.position.clone().sub(direction.clone().scale(length));
       c.strokeStyle = 'rgba(251,166,73,.25)';
       c.lineWidth = 4;
       c.beginPath();

@@ -1,10 +1,11 @@
+import { drawingContext } from './rendering/createBackend.js';
 import { Vec3, clamp } from './math.js';
 let flareSprite;
 function sprite() {
   if (flareSprite || typeof document === 'undefined') return flareSprite;
   flareSprite = document.createElement('canvas');
   flareSprite.width = flareSprite.height = 64;
-  const c = flareSprite.getContext('2d'),
+  const c = drawingContext(flareSprite),
     g = c.createRadialGradient(32, 32, 0, 32, 32, 32);
   g.addColorStop(0, 'rgba(255,249,214,1)');
   g.addColorStop(0.2, 'rgba(255,168,65,.9)');

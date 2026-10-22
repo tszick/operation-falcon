@@ -128,3 +128,43 @@ test('civil targeting and phase help explicitly prohibit firing instead of sugge
   assert.ok(steps.some((step) => /TŰZTILALOM/.test(step.text)));
   assert.ok(!steps.some((step) => step.key === '2'));
 });
+
+test('successful intercept and stopped landing finish the practice even while the civilian is still leaving; no repair or runway reset', () => {
+  const { s, targets, m, aim, w } = setup();
+  aim.id = targets[0].id;
+  aim.locked = true;
+  m.update(s, targets, w, aim);
+  assert.equal(m.civilIntercepted, true);
+  assert.equal(targets[0].departedAirspace, undefined);
+  s.position = new Vec3(12, 2, 850);
+  s.onGround = true;
+  s.speed = 0;
+  s.velocity = new Vec3();
+  s.landing = { success: true, descent: 1, offset: 12 };
+  s.lastTouchdown = s.landing;
+  s.damage = 23;
+  s.fuel = 400;
+  const landing = s.landing;
+  m.update(s, targets, w, aim);
+  assert.equal(m.complete, true);
+  assert.equal(w.missionEnded, true);
+  assert.equal(m.phaseId, 'complete');
+  assert.equal(m.serviceCount || 0, 0);
+  assert.equal(s.damage, 23);
+  assert.equal(s.fuel, 400);
+  assert.equal(s.position.z, 850);
+  assert.equal(s.landing, landing);
+  m.update(s, targets, w, aim);
+  assert.equal(m.complete, true);
+  assert.equal(m.serviceCount || 0, 0);
+});
+test('landing before any civil interception does not complete or silently refit the training sortie', () => {
+  const { s, targets, m, aim, w } = setup();
+  s.onGround = true;
+  s.speed = 0;
+  s.velocity = new Vec3();
+  s.landing = { success: true, descent: 1, offset: 0 };
+  m.update(s, targets, w, aim);
+  assert.equal(m.complete, false);
+  assert.equal(m.serviceCount || 0, 0);
+});

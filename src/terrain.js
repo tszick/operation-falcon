@@ -1,3 +1,4 @@
+import { generateIslands, oceanHeight } from './oceanEnvironment.js';
 import { Vec3, clamp } from './math.js';
 export const runway = { halfWidth: 45, halfLength: 1600, heading: 0 };
 // The runway renderer and ground collision use these same physical hangar boxes.
@@ -27,7 +28,9 @@ export function configureTerrain(m, anchor = new Vec3(22000, 0, 0), rng = Math.r
   if (m.naval || m.id === 'carrier-defense') {
     terrainWorld = {
       revision: ++revision,
+      skySeed: (revision * 22695477) >>> 0,
       ocean: true,
+      islands: generateIslands(Math.floor(rng() * 4294967296)),
       river: null,
       road: null,
       canyon: null,
@@ -38,6 +41,7 @@ export function configureTerrain(m, anchor = new Vec3(22000, 0, 0), rng = Math.r
   if (m.id === 'practice-bombing') {
     terrainWorld = {
       revision: ++revision,
+      skySeed: (revision * 22695477) >>> 0,
       river: null,
       road: null,
       canyon: null,
@@ -49,6 +53,7 @@ export function configureTerrain(m, anchor = new Vec3(22000, 0, 0), rng = Math.r
   if (m.id === 'canyon') {
     terrainWorld = {
       revision: ++revision,
+      skySeed: (revision * 22695477) >>> 0,
       river: null,
       road: null,
       canyon: {
@@ -146,6 +151,7 @@ export function configureTerrain(m, anchor = new Vec3(22000, 0, 0), rng = Math.r
   }
   terrainWorld = {
     revision: ++revision,
+    skySeed: (revision * 22695477) >>> 0,
     river,
     road,
     canyon,
@@ -229,7 +235,7 @@ function landscape(x, z) {
   return Math.max(0, h) * flatten;
 }
 export function terrainHeight(x, z) {
-  if (terrainWorld.ocean) return 0;
+  if (terrainWorld.ocean) return oceanHeight(terrainWorld.islands || [], x, z);
   let base = landscape(x, z);
   const road = terrainWorld.road;
   if (road) {
@@ -253,7 +259,6 @@ export function terrainHeight(x, z) {
         (1 - smooth((Math.abs(lateral) - 70) / 160)) *
           (1 - smooth((Math.abs(longitudinal) - 1800) / 700)),
         (1 - smooth((Math.abs(lateral) - 100) / 400)) *
-          smooth((Math.abs(longitudinal) - 1600) / 500) *
           (1 - smooth((Math.abs(longitudinal) - 8500) / 2000)),
       );
     base = base * (1 - blend) + f.elevation * blend;

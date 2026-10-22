@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="hu">
+  <meta charset="utf-8" /><title>WebGPU diagnosztika</title>
+  <body>
+    <h1>WebGPU diagnosztika</h1>
+    <pre id="status">Adapter ellenőrzése…</pre>
+    <script type="module">
+      const status = document.getElementById('status');
+      try {
+        if (!navigator.gpu) throw new Error('A WebGPU API nem érhető el ebben a böngészőben.');
+        const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+        if (!adapter) throw new Error('A böngésző nem adott WebGPU-adaptert.');
+        const device = await adapter.requestDevice();
+        status.textContent = JSON.stringify(
+          {
+            ready: true,
+            secureContext: isSecureContext,
+            adapter: adapter.info,
+            features: [...adapter.features],
+            maxTextureDimension2D: device.limits.maxTextureDimension2D,
+          },
+          null,
+          2,
+        );
+        device.destroy();
+      } catch (error) {
+        status.textContent = 'WebGPU HIBA: ' + error.message;
+      }
+    </script>
+  </body>
+</html>

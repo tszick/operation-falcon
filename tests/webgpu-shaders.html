@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="hu">
+  <meta charset="utf-8" /><title>WGSL shader validation</title>
+  <body>
+    <h1>WGSL shader validation</h1>
+    <pre id="status">Compiling…</pre>
+    <script type="module">
+      import * as shaders from '/src/rendering/webgpu/shaders.js';
+      import { shader } from '/src/rendering/webgpu/vectorContext.js';
+      const adapter = await navigator.gpu.requestAdapter(),
+        device = await adapter.requestDevice(),
+        messages = [];
+      for (const [name, code] of Object.entries({ ...shaders, vector: shader })) {
+        if (name === 'uniforms') continue;
+        const module = device.createShaderModule({
+          code: code.startsWith('\ndiagnostic')
+            ? code
+            : 'diagnostic(off, derivative_uniformity);\n' + code,
+        });
+        const info = await module.getCompilationInfo();
+        messages.push(
+          name +
+            ': ' +
+            (info.messages.length
+              ? info.messages
+                  .map((m) => m.type + ' line ' + m.lineNum + ': ' + m.message)
+                  .join('\n')
+              : 'OK'),
+        );
+      }
+      document.getElementById('status').textContent = messages.join('\n\n');
+      device.destroy();
+    </script>
+  </body>
+</html>

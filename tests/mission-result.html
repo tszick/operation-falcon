@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="hu">
+  <meta charset="utf-8" /><title>Operation Falcon · kiértékelés próba</title>
+  <body>
+    <script type="module">
+      const template = new DOMParser().parseFromString(
+        await (await fetch('/index.html')).text(),
+        'text/html',
+      );
+      for (const link of template.querySelectorAll('link[rel="stylesheet"]'))
+        document.head.append(link.cloneNode(true));
+      for (const script of template.querySelectorAll('script')) script.remove();
+      document.body.replaceChildren(...template.body.childNodes);
+      const [
+        { Renderer },
+        { MissionResultView },
+        { FlightRecorder },
+        { aircraft, missions },
+        { createTargets, Targeting },
+        { createMissionAircraft },
+        { Weapons },
+        { Mission },
+        { Vec3, Quat },
+        { setLanguage },
+      ] = await Promise.all([
+        import('/src/renderer.js'),
+        import('/src/ui/missionResult.js'),
+        import('/src/flightRecorder.js'),
+        import('/src/aircraftSpec.js'),
+        import('/src/targeting.js'),
+        import('/src/missionStart.js'),
+        import('/src/weapons.js'),
+        import('/src/mission.js'),
+        import('/src/math.js'),
+        import('/src/i18n.js'),
+      ]);
+      const params = new URLSearchParams(location.search),
+        stars = Number(params.get('stars') ?? 3),
+        spec = aircraft.find((a) => a.id === 'f16'),
+        missionSpec = missions.find((m) => m.id === 'air-superiority'),
+        targets = createTargets(missionSpec, spec, { rng: () => 0.3 }),
+        state = createMissionAircraft(spec, missionSpec),
+        weapons = new Weapons({ enemyFire: false }),
+        aim = new Targeting(),
+        mission = new Mission(missionSpec),
+        recorder = new FlightRecorder();
+      mission.update(state, targets, weapons, aim);
+      if (params.has('gun')) weapons.selected = 'gun';
+      state.position = new Vec3(0, 2, -1200);
+      state.onGround = true;
+      state.airborne = false;
+      recorder.start(state, mission, targets, weapons, aim);
+      for (let i = 1; i <= 240; i++) {
+        const t = i / 10;
+        state.elapsed = t;
+        state.position = new Vec3(
+          Math.sin(t * 0.12) * 200,
+          2 + Math.max(0, t - 2) * 14,
+          -1200 + t * 95,
+        );
+        state.velocity = new Vec3(24 * Math.cos(t * 0.12), t > 2 ? 14 : 0, 95);
+        state.orientation = Quat.euler(0.08, 0.09, Math.sin(t * 0.15) * 0.16);
+        state.onGround = t <= 2;
+        state.airborne = t > 2;
+        state.ias = 100;
+        state.agl = state.position.y;
+        state.gear = t < 6;
+        state.flapPosition = 0;
+        if (t > 10) {
+          state.damage = stars === 1 ? 40 : 0;
+        }
+        let index = 0;
+        for (const target of targets)
+          if (target.kind === 'air' && !target.playerControlled) {
+            target.position = new Vec3(
+              state.position.x + 160 + index * 90,
+              state.position.y + 30,
+              state.position.z + 180 + index * 90,
+            );
+            index++;
+          }
+        if (params.has('gun')) {
+          weapons.update(state, targets, 0.1);
+          if (i >= 90 && i <= 110) weapons.fire(state, targets, aim);
+          for (const event of weapons.drainEvents()) recorder.event('combat', event);
+        }
+        if (i === 100 && !params.has('gun'))
+          recorder.event('combat', {
+            type: 'missile-launch',
+            sourceId: 'PLAYER',
+            targetId: targets.find((target) => target.kind === 'air')?.id,
+          });
+        recorder.capture(state, mission, targets, weapons, aim);
+      }
+      if (stars === 2)
+        recorder.event('touchdown', { grade: 'hard', success: true, sinkMps: 4, impactDamage: 2 });
+      recorder.event('objectives', [
+        { id: 'primary', label: 'Légtér biztosítása', done: stars > 0 },
+      ]);
+      recorder.finish({
+        result: stars === 0 ? 'failure' : 'success',
+        score: stars === 0 ? 0 : 850,
+      });
+      setLanguage(params.get('lang') || 'hu', { persist: false });
+      document.body.classList.add('flying');
+      for (const id of ['hangar', 'hangar-footer', 'help', 'flight-ui'])
+        document.getElementById(id).hidden = true;
+      const renderer = new Renderer(document.getElementById('world'));
+      renderer.surfaceMode = 'grass';
+      renderer.surfaceLines = false;
+      await renderer.ready;
+      const view = new MissionResultView(renderer);
+      document.getElementById('overlay').hidden = false;
+      document.getElementById('resume').hidden = true;
+      document.getElementById('open-mission-control').hidden = true;
+      document.getElementById('overlay-label').textContent = 'REPÜLÉSI JELENTÉS';
+      document.getElementById('overlay-title').textContent =
+        stars > 0 ? 'Küldetés teljesítve.' : 'Küldetés sikertelen.';
+      document.getElementById('mission-debrief').hidden = false;
+      view.show(recorder.export());
+      if (params.has('at')) {
+        view.moving = false;
+        view.clipIndex = Math.max(
+          0,
+          view.replay.clips.findIndex(
+            (clip) =>
+              Number(params.get('at')) >= clip.start && Number(params.get('at')) <= clip.end,
+          ),
+        );
+        view.clipTime = Number(params.get('at')) - view.replay.clips[view.clipIndex].start;
+        view.updateToggle();
+        view.render(0);
+      }
+      async function showImportedLog(log) {
+        const { terrainWorld } = await import('/src/terrain.js');
+        if (log.metadata.terrain)
+          Object.assign(terrainWorld, log.metadata.terrain, {
+            revision: terrainWorld.revision + 1,
+          });
+        document.getElementById('overlay-title').textContent =
+          log.metadata.result?.result === 'success'
+            ? 'Küldetés teljesítve.'
+            : 'Küldetés sikertelen.';
+        view.show(log);
+        const combat = view.replay.clips.findIndex((clip) => clip.focusId);
+        if (combat >= 0) {
+          view.clipIndex = combat;
+          const clip = view.replay.clips[combat];
+          view.clipTime = Math.max(0, clip.eventTime - clip.start - 0.5);
+        }
+        view.moving = false;
+        view.updateToggle();
+        view.render(0);
+      }
+      if (params.get('fixture') === 'air-combat')
+        await showImportedLog(await (await fetch('/tests/fixtures/air-combat-replay.json')).json());
+      if (params.has('import')) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.setAttribute('aria-label', 'Repülési napló betöltése a próbához');
+        input.style.cssText = 'position:fixed;top:65px;right:12px;z-index:100;color:white';
+        input.addEventListener('change', async () => {
+          const log = JSON.parse(await input.files[0].text());
+          await showImportedLog(log);
+          input.hidden = true;
+        });
+        document.body.append(input);
+      }
+      const status = document.createElement('output');
+      status.id = 'result-test-status';
+      status.style.cssText =
+        'position:fixed;top:45px;right:10px;z-index:50;color:#fff;font:10px monospace';
+      document.body.append(status);
+      let previous;
+      function frame(time) {
+        view.render(previous === undefined ? 0 : Math.min(0.05, (time - previous) / 1000));
+        previous = time;
+        status.textContent = JSON.stringify({
+          backend: renderer.gpuModels?.name,
+          errors: renderer.ctx.surface?.runtime.errors || [],
+          clips: view.replay.clips.length,
+          clipSeconds: view.replay.clips.map((clip) => clip.end - clip.start),
+          moving: view.moving,
+        });
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+      addEventListener('resize', () => renderer.resize());
+    </script>
+  </body>
+</html>

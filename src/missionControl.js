@@ -1,3 +1,4 @@
+import { drawingContext } from './rendering/createBackend.js';
 import { tr, trHtml } from './i18n.js';
 import { escapeHtml as esc } from './ui/html.js';
 import { renderTacticalMap, tacticalMapState, mapPoint, mapZoomLevel } from './tacticalMap.js';
@@ -87,7 +88,7 @@ export class MissionControlView {
     if (!map.jammed) this.labels(snapshot, s);
   }
   labels(snapshot, s) {
-    const c = this.canvas.getContext('2d'),
+    const c = drawingContext(this.canvas),
       map = snapshot.map,
       rects = [];
     c.save();

@@ -8698,5 +8698,153 @@
   "Harc": {
     "hu": "Harc",
     "en": "Combat"
+  },
+  "A WebGPU megjelenítés nem érhető el. Ellenőrizd a böngészőt és a grafikus illesztőprogramot, majd töltsd újra az oldalt.": {
+    "hu": "A WebGPU megjelenítés nem érhető el. Ellenőrizd a böngészőt és a grafikus illesztőprogramot, majd töltsd újra az oldalt.",
+    "en": "WebGPU rendering is unavailable. Check your browser and graphics driver, then reload the page."
+  },
+  "Sikertelen küldetés": {
+    "hu": "Sikertelen küldetés",
+    "en": "Mission unsuccessful"
+  },
+  "Még nincs lezárva": {
+    "hu": "Még nincs lezárva",
+    "en": "Not yet concluded"
+  },
+  "Nincs elegendő adat az értékeléshez": {
+    "hu": "Nincs elegendő adat az értékeléshez",
+    "en": "Insufficient data to rate this flight"
+  },
+  "Súlyos földetérés": {
+    "hu": "Súlyos földetérés",
+    "en": "Severe landing"
+  },
+  "Jelentős szerkezeti sérülés": {
+    "hu": "Jelentős szerkezeti sérülés",
+    "en": "Major structural damage"
+  },
+  "Szerkezeti sérülés": {
+    "hu": "Szerkezeti sérülés",
+    "en": "Structural damage"
+  },
+  "Repülési eljárások eltérései": {
+    "hu": "Repülési eljárások eltérései",
+    "en": "Flight procedure deviations"
+  },
+  "Baráti egység elvesztése saját tűzben": {
+    "hu": "Baráti egység elvesztése saját tűzben",
+    "en": "Friendly unit lost to own fire"
+  },
+  "Kiegészítő célok nem teljesültek": {
+    "hu": "Kiegészítő célok nem teljesültek",
+    "en": "Optional objectives not completed"
+  },
+  "Súlyos hibák, sikeres küldetés": {
+    "hu": "Súlyos hibák, sikeres küldetés",
+    "en": "Serious errors, mission accomplished"
+  },
+  "Kisebb hibák": {
+    "hu": "Kisebb hibák",
+    "en": "Minor errors"
+  },
+  "Tökéletes teljesítés": {
+    "hu": "Tökéletes teljesítés",
+    "en": "Perfect completion"
+  },
+  "KÜLDETÉS ÉRTÉKELÉSE": {
+    "hu": "KÜLDETÉS ÉRTÉKELÉSE",
+    "en": "MISSION RATING"
+  },
+  "A feladat teljesült. Minden repülés számít.": {
+    "hu": "A feladat teljesült. Minden repülés számít.",
+    "en": "Mission accomplished. Every flight counts."
+  },
+  "Új bevetés, új lehetőség.": {
+    "hu": "Új bevetés, új lehetőség.",
+    "en": "A new sortie. A new opportunity."
+  },
+  "REPÜLT IDŐ": {
+    "hu": "REPÜLT IDŐ",
+    "en": "FLIGHT TIME"
+  },
+  "TELJESÍTETT CÉLOK": {
+    "hu": "TELJESÍTETT CÉLOK",
+    "en": "OBJECTIVES COMPLETED"
+  },
+  "PONTSZÁM": {
+    "hu": "PONTSZÁM",
+    "en": "SCORE"
+  },
+  "RÉSZLETES KIÉRTÉKELÉS ÉS NAPLÓ": {
+    "hu": "RÉSZLETES KIÉRTÉKELÉS ÉS NAPLÓ",
+    "en": "DETAILED DEBRIEF & FLIGHT LOG"
+  },
+  "ÉRTÉKELÉS RÉSZLETEI": {
+    "hu": "ÉRTÉKELÉS RÉSZLETEI",
+    "en": "RATING BREAKDOWN"
+  },
+  "Ⅱ VISSZAJÁTSZÁS SZÜNETELTETÉSE": {
+    "hu": "Ⅱ VISSZAJÁTSZÁS SZÜNETELTETÉSE",
+    "en": "Ⅱ PAUSE REPLAY"
+  },
+  "▷ VISSZAJÁTSZÁS INDÍTÁSA": {
+    "hu": "▷ VISSZAJÁTSZÁS INDÍTÁSA",
+    "en": "▷ PLAY REPLAY"
+  },
+  "Nincs elegendő adat a visszajátszáshoz.": {
+    "hu": "Nincs elegendő adat a visszajátszáshoz.",
+    "en": "Not enough data for a replay."
+  },
+  "BEVETÉSI PILLANATOK": {
+    "hu": "BEVETÉSI PILLANATOK",
+    "en": "SORTIE HIGHLIGHTS"
+  },
+  "HARCI JELENET": {
+    "hu": "HARCI JELENET",
+    "en": "COMBAT"
+  },
+  "FÖLDI CSAPÁS": {
+    "hu": "FÖLDI CSAPÁS",
+    "en": "GROUND ATTACK"
+  },
+  "REPÜLÉS RÉSZLETE": {
+    "hu": "REPÜLÉS RÉSZLETE",
+    "en": "FLIGHT MOMENT"
+  },
+  "Menüzene kikapcsolása": {
+    "hu": "Menüzene kikapcsolása",
+    "en": "Turn menu music off"
+  },
+  "Menüzene bekapcsolása": {
+    "hu": "Menüzene bekapcsolása",
+    "en": "Turn menu music on"
+  },
+  "Madárka, madárka · menüzene bekapcsolva": {
+    "hu": "Madárka, madárka · menüzene bekapcsolva",
+    "en": "Madárka, madárka · menu music on"
+  },
+  "Menüzene kikapcsolva": {
+    "hu": "Menüzene kikapcsolva",
+    "en": "Menu music off"
+  },
+  "ZENE BE": {
+    "hu": "ZENE BE",
+    "en": "MUSIC ON"
+  },
+  "ZENE KI": {
+    "hu": "ZENE KI",
+    "en": "MUSIC OFF"
+  },
+  "Küldetés értékelése": {
+    "hu": "Küldetés értékelése",
+    "en": "Mission rating"
+  },
+  "A civil gép békés elfogása és a biztonságos hazatérés teljesítve.": {
+    "hu": "A civil gép békés elfogása és a biztonságos hazatérés teljesítve.",
+    "en": "Peaceful interception and safe return completed."
+  },
+  "A civil gépet békésen elfogtad. Sikeresen hazahoztad a gépedet.": {
+    "hu": "A civil gépet békésen elfogtad. Sikeresen hazahoztad a gépedet.",
+    "en": "You peacefully intercepted the civilian aircraft and returned home safely."
   }
 }

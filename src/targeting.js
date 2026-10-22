@@ -1,3 +1,4 @@
+import { moveOceanShip } from './oceanEnvironment.js';
 import { aiServiceInput, moveServiceTaxi } from './aiResupply.js';
 import { radarContact } from './sensors.js';
 import {
@@ -242,7 +243,17 @@ export function updateTargets(targets, dt) {
       if (t.civilian) updateCivilFlight(t, dt);
       else if (t.aiRole === 'escortee') moveEscort(t, dt);
       else if (t.type === 'convoy') moveConvoy(t, targets, dt);
-      else t.position.add(t.velocity.clone().scale(dt));
+      else if (t.type === 'destroyer' && terrainWorld.ocean) {
+        const carrier = targets.find(
+            (target) => target.type === 'carrier' && target.team !== t.team,
+          ),
+          home = carrier?.position || new Vec3(),
+          away = t.position.clone().sub(home).normalize(),
+          goal = home.clone().add(away.scale(1200));
+        // Keep a fixed goal so small heading changes do not invalidate the cached route.
+        t.seaDestination ||= goal;
+        moveOceanShip(t, t.seaDestination, terrainWorld.islands || [], terrainWorld.revision, dt);
+      } else t.position.add(t.velocity.clone().scale(dt));
     }
     if (t.alive && t.aiRole === 'escortee' && t.position.z >= t.exitZ) {
       t.exited = true;
