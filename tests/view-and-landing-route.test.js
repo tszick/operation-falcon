@@ -126,7 +126,7 @@ test('side arrivals have a curved join, terrain clearance and a matching northbo
 test('faster aircraft receive broader turns and normal descent joins do not require a steep dive', () => {
   const slow = approach(),
     fast = approach();
-  slow.position = fast.position = new Vec3(6000, 1700, 0);
+  slow.position = fast.position = new Vec3(6000, 900, 0);
   slow.velocity = new Vec3(90, 0, 0);
   fast.velocity = new Vec3(180, 0, 0);
   const a = planLandingRoute(slow),
@@ -134,6 +134,11 @@ test('faster aircraft receive broader turns and normal descent joins do not requ
   assert.ok(b.radius > a.radius * 3.9);
   assert.equal(a.advisory, '');
   assert.equal(b.advisory, '');
+  // A higher arrival must request altitude reduction instead of a 30 km final.
+  slow.position.y = 1700;
+  const high = planLandingRoute(slow);
+  assert.equal(high.entryDistance, 6500);
+  assert.match(high.advisory, /Magasan érkezel/);
 });
 test('map and world share a stable route, switches and jamming hide it, and large deviations replan', () => {
   const s = approach(),

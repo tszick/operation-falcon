@@ -47,7 +47,7 @@ body.flying #flight-help {
 #cockpit-frame {
   position: absolute;
   inset: 0;
-  background-image: url('/assets/cockpit/two-row-frame.png');
+  background-image: url('/assets/cockpit/strike-frame.png');
   background-size: 100% var(--frame-scale);
   background-position: center bottom;
   background-repeat: no-repeat;
@@ -1374,4 +1374,20 @@ body.flying #cockpit-annunciator {
   .mission-goal-group[data-optional='true']
   ul {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Semantic controls retain keyboard, pointer and accessibility behavior; WebGPU paints them. */
+body.webgpu-flight #flight-ui {
+  opacity: 0;
+}
+
+#graphics-error {
+  position: fixed;
+  inset: 100px 10% auto;
+  z-index: 10000;
+  padding: 24px;
+  border: 1px solid #df9273;
+  background: #201914;
+  color: #ffe2c9;
+  font: 16px/1.6 sans-serif;
 }

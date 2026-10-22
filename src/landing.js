@@ -83,6 +83,7 @@ export function evaluateApproach(s) {
     s.velocity.z * direction > 15 &&
     arriving &&
     (distance > 0 || onLandingRunway(s));
+  // Explicit pilot selection also provides the route home from outside final approach range.
   const active =
     !s.onGround &&
     !s.crashed &&
@@ -321,22 +322,29 @@ export function assessTouchdown(s, descent, speed) {
 }
 
 // A shoulder is available only after a surviving runway touchdown, not for off-field landing.
-export const rolloutLateralTolerance = 25;
+export const rolloutLateralTolerance = 120;
+export function rolloutMargins(speed) {
+  const factor = Math.max(0, Math.min(1, (90 - speed) / 70)) ** 2;
+  return {
+    lateralTolerance: 8 + (rolloutLateralTolerance - 8) * factor,
+    endTolerance: 15 + 285 * factor,
+  };
+}
 export function rolloutSurface(s) {
   if (navalFlight(s)) return { shoulder: false, allowed: onCarrierDeck(s.position) };
   s = runwayState(s);
   const strip = s.airfield || runway,
-    lateral = Math.abs(s.position.x),
-    along = Math.abs(s.position.z) <= strip.halfLength;
+    margins = rolloutMargins(Math.hypot(s.velocity.x, s.velocity.z)),
+    lateral = Math.max(0, Math.abs(s.position.x) - strip.halfWidth),
+    longitudinal = Math.max(0, Math.abs(s.position.z) - strip.halfLength);
   const shoulder = !!(
     s.onGround &&
     s.landing?.success &&
     s.gear &&
-    along &&
-    lateral >= strip.halfWidth &&
-    lateral <= strip.halfWidth + rolloutLateralTolerance
+    !onLandingRunway(s) &&
+    (lateral / margins.lateralTolerance) ** 2 + (longitudinal / margins.endTolerance) ** 2 <= 1
   );
-  return { shoulder, allowed: onLandingRunway(s) || shoulder };
+  return { ...margins, shoulder, allowed: onLandingRunway(s) || shoulder };
 }
 export function rolloutObstacle(s, from = s.previousPosition || s.position, to = s.position) {
   if (navalFlight(s))

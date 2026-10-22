@@ -1,3 +1,4 @@
+import { FlightInstrumentLayer } from './rendering/flightInstrumentLayer.js';
 import { tr, trHtml, formatNumber } from './i18n.js';
 import { missionForSide } from './missionSides.js';
 import { Briefing } from './ui/briefing.js';
@@ -19,7 +20,8 @@ import { superiorityRoster } from './airSuperiority.js';
 import { HeadLookInput } from './headLookInput.js';
 import { postRadioMessage, postFlightMessage, resetFlightMessages } from './flightMessages.js';
 import { mountCockpit } from './cockpit.js';
-import { debriefMarkup } from './flightDebrief.js';
+import { MissionResultView } from './ui/missionResult.js';
+import { MenuMusic } from './menuMusic.js';
 import {
   defaultLoadout,
   stationOptions,
@@ -51,8 +53,30 @@ import { deployCountermeasures } from './countermeasures.js';
 mountCockpit();
 const $ = (id) => document.getElementById(id),
   renderer = new Renderer($('world')),
+  flightInstruments = new FlightInstrumentLayer(renderer),
+  missionResult = new MissionResultView(renderer),
+  menuMusic = new MenuMusic($('menu-music-toggle')),
   audio = new AudioSystem(),
   keys = new Set();
+let graphicsFailed = false;
+function reportGraphicsError(error) {
+  graphicsFailed = true;
+  let panel = document.getElementById('graphics-error');
+  if (!panel) {
+    panel = document.createElement('section');
+    panel.id = 'graphics-error';
+    panel.setAttribute('role', 'alert');
+    document.body.append(panel);
+  }
+  panel.textContent =
+    tr(
+      'A WebGPU megjelenítés nem érhető el. Ellenőrizd a böngészőt és a grafikus illesztőprogramot, majd töltsd újra az oldalt.',
+    ) +
+    ' ' +
+    (error?.message || error || '');
+}
+renderer.ready.catch(reportGraphicsError);
+addEventListener('falcon:graphicslost', (event) => reportGraphicsError(event.detail));
 function setSurfaceMode(mode) {
   renderer.surfaceMode = surfaceStyles[mode] ? mode : 'grass';
   renderer.surfaceLines = renderer.surfaceMode === 'vector';
@@ -164,19 +188,26 @@ function logFramePerformance(report) {
     ...report,
     visualStyle: renderer.surfaceMode,
     view: state.dying || state.crashed ? 'wreck' : state.rearView ? 'tail-gunner' : 'cockpit',
-    modelBackend: renderer.gpuModels && !renderer.gpuModels.lost ? 'WebGL2' : 'Canvas2D',
-    featureBackend:
-      renderer.gpuModels?.featurePainter &&
-      !renderer.gpuModels.featuresUnavailable &&
-      !renderer.gpuModels.lost
-        ? 'WebGL2'
+    modelBackend:
+      renderer.gpuModels && !renderer.gpuModels.lost
+        ? renderer.gpuModels.name || 'WebGL2'
         : 'Canvas2D',
+    featureBackend:
+      renderer.gpuModels?.name === 'WebGPU' && renderer.gpuModels.available
+        ? 'WebGPU'
+        : renderer.gpuModels?.featurePainter &&
+            !renderer.gpuModels.featuresUnavailable &&
+            !renderer.gpuModels.lost
+          ? renderer.gpuModels.name || 'WebGL2'
+          : 'Canvas2D',
     terrainBackend:
       renderer.gpuModels && !renderer.gpuModels.lost && !renderer.gpuModels.terrainUnavailable
-        ? 'WebGL2'
+        ? renderer.gpuModels.name || 'WebGL2'
         : 'Canvas2D',
     viewport: [renderer.w, renderer.h],
     pixelRatio: renderer.canvas.width / renderer.w,
+    overlayBackend: renderer.ctx.surface ? 'WebGPU' : 'Canvas2D',
+    instrumentBackend: flightInstruments.active ? 'WebGPU' : 'DOM',
     aircraft: targets.filter((t) => t.kind === 'air' && (t.alive || t.falling)).length,
     falling: targets.filter((t) => t.falling).length,
     smokePuffs: targets.reduce(
@@ -629,7 +660,16 @@ function toast(text, duration = 4) {
   recorder.change('message', text, 'message');
   postFlightMessage(text, state?.elapsed || 0, duration);
 }
-function launch() {
+async function launch() {
+  try {
+    await renderer.ready;
+    if (graphicsFailed) return;
+  } catch (error) {
+    reportGraphicsError(error);
+    return;
+  }
+  missionResult.hide();
+  menuMusic.setActive(false);
   controlView.hide();
   frameTelemetry.reset();
   resetFlightMessages();
@@ -734,7 +774,7 @@ function showOverlay(kind) {
             : mission.spec.objective === 'practice-bombing'
               ? 'A három inert bombából legalább kettő a célkörbe talált, majd biztonságosan leszálltál és megálltál.'
               : mission.spec.objective === 'escort'
-                ? 'A civil gép sértetlenül elhagyta a légteret. Sikeresen hazahoztad a gépedet.'
+                ? 'A civil gépet békésen elfogtad. Sikeresen hazahoztad a gépedet.'
                 : state.recoveryExit
                   ? 'Az elsődleges feladatokat teljesítetted és biztonságosan kivonultál.'
                   : 'Az elsődleges feladatokat teljesítetted és sikeresen leszálltál.'
@@ -757,7 +797,10 @@ function showOverlay(kind) {
       'A feladatokat teljesítetted és megálltál. A földetérés sérüléssel járt; a részleteket a kiértékelés mutatja.',
     );
   $('mission-debrief').hidden = kind === 'pause';
-  $('mission-debrief').innerHTML = trHtml(kind === 'pause' ? '' : debriefMarkup(recorder.export()));
+  if (kind === 'pause') {
+    missionResult.hide();
+    $('mission-debrief').innerHTML = '';
+  } else missionResult.show(recorder.export());
   if (kind === 'pause') $('resume').focus();
   else {
     $('overlay-title').focus({ preventScroll: true });
@@ -789,6 +832,8 @@ function togglePause() {
   else showOverlay('pause');
 }
 function hangar() {
+  missionResult.hide();
+  menuMusic.setActive(true);
   controlView.hide();
   headInput.release();
   if (playing && !recorder.ended) {
@@ -1061,11 +1106,14 @@ function tick(dt) {
   }
 }
 function frame(time) {
+  if (graphicsFailed) return;
   const start = performance.now(),
     frameMs = Math.max(0, time - last),
     delta = Math.min(frameMs / 1000, 0.1);
   last = time;
-  if (playing) {
+  if (playing && paused && missionResult.active) {
+    missionResult.render(delta);
+  } else if (playing) {
     const active = !paused,
       simulationStart = performance.now();
     if (!paused && !state.dying && !state.crashed && !renderer.thirdPerson)
@@ -1085,15 +1133,19 @@ function frame(time) {
     }
     const simulationMs = performance.now() - simulationStart,
       renderStart = performance.now();
-    renderer.render(state, targets, weapons, aim);
+    if (missionResult.active) missionResult.render(0);
+    else renderer.render(state, targets, weapons, aim);
     const renderMs = performance.now() - renderStart,
       uiStart = performance.now();
-    uiElapsed += delta;
-    if (uiElapsed > 0.1) {
-      uiElapsed = 0;
-      updateHUD(state, targets, weapons, aim, mission, audio.muted);
+    if (!missionResult.active) {
+      uiElapsed += delta;
+      if (uiElapsed > 0.1) {
+        uiElapsed = 0;
+        updateHUD(state, targets, weapons, aim, mission, audio.muted);
+      }
+      flightInstruments.render();
+      audio.update(state, aim, !paused, mission, targets);
     }
-    audio.update(state, aim, !paused, mission, targets);
     if (active && !paused)
       logFramePerformance(
         frameTelemetry.add({

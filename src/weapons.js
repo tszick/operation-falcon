@@ -1,3 +1,4 @@
+import { updateAircraftCollisions } from './aircraftCollisions.js';
 import { updateSeaRam } from './navalInterception.js';
 import { updateAIResupply } from './aiResupply.js';
 import { syncPlayerTransport } from './transportRole.js';
@@ -208,6 +209,7 @@ export class Weapons {
     if (this.enemyCombat) updateAIResupply(s, targets, this, this.enemyCombat, dt);
     updateAIDefense(s, targets, this, dt);
     this.enemyCombat?.update(s, targets, this, dt);
+    updateAircraftCollisions(s, targets, this);
     if (s.impactPending) {
       s.impactPending = false;
       this.explode(s.position, 'bomb', { ground: true });

@@ -66,8 +66,8 @@ test('a real runway touchdown can cross either painted edge while braking withou
     assert.ok(s.speed < 5);
   }
 });
-test('shoulder tolerance is limited, does not expand runway ends, and does not excuse off-runway touchdown', () => {
-  assert.equal(rolloutLateralTolerance, 25);
+test('shoulder tolerance is limited, includes runway ends, and does not excuse off-runway touchdown', () => {
+  assert.equal(rolloutLateralTolerance, 120);
   for (const sign of [-1, 1]) {
     const s = rolling(sign * (runway.halfWidth + 25.1));
     stepAircraft(s, { brake: true }, dt);
@@ -75,7 +75,7 @@ test('shoulder tolerance is limited, does not expand runway ends, and does not e
   }
   const end = rolling(0, runway.halfLength + 1);
   stepAircraft(end, { brake: true }, dt);
-  assert.equal(end.crashed, true);
+  assert.equal(end.crashed, false);
   const off = rolling(52);
   off.onGround = false;
   off.landing = null;
@@ -106,4 +106,46 @@ test('hangar boxes still cause physical ground collisions even at taxi speed; th
   const clear = rolling(65, -900, 4);
   stepAircraft(clear, { brake: true }, dt);
   assert.equal(clear.crashed, false);
+});
+
+test('slow rollout has more room on both shoulders and both ends; high speed excursions remain fatal', () => {
+  for (const sign of [-1, 1]) {
+    for (const [x, z] of [
+      [sign * 125, 0],
+      [0, sign * (runway.halfLength + 200)],
+    ]) {
+      const slow = rolling(x, z, 10),
+        fast = rolling(x, z, 80);
+      assert.equal(rolloutSurface(slow).allowed, true);
+      assert.equal(rolloutSurface(fast).allowed, false);
+      stepAircraft(slow, { brake: true }, dt);
+      stepAircraft(fast, { brake: true }, dt);
+      assert.equal(slow.crashed, false);
+      assert.equal(fast.crashed, true);
+    }
+    const beyond = rolling(0, sign * (runway.halfLength + 301), 1);
+    stepAircraft(beyond, { brake: true }, dt);
+    assert.equal(beyond.crashed, true, 'Even slow overrun tolerance is finite');
+  }
+});
+
+test('overrun tolerance follows a translated and rotated remote runway', () => {
+  const s = rolling(0, 0, 10);
+  const rotation = Quat.euler(Math.PI / 2, 0, 0),
+    position = new Vec3(12000, 0, 18000);
+  s.airfield = {
+    position,
+    elevation: 0,
+    heading: Math.PI / 2,
+    halfWidth: 45,
+    halfLength: 1600,
+    home: false,
+  };
+  for (const sign of [-1, 1]) {
+    s.position = rotation.rotate(new Vec3(0, 2, sign * 1800)).add(position);
+    s.velocity = rotation.rotate(new Vec3(0, 0, sign * 10));
+    assert.equal(rolloutSurface(s).shoulder, true);
+    s.velocity.scale(8);
+    assert.equal(rolloutSurface(s).allowed, false);
+  }
 });

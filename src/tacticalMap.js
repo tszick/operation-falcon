@@ -1,3 +1,4 @@
+import { drawingContext } from './rendering/createBackend.js';
 import { tr } from './i18n.js';
 import { transportExitPosition } from './transportRole.js';
 import { getLandingRoute } from './landingRoute.js';
@@ -86,10 +87,31 @@ function contours(map) {
     canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
-  const c = canvas.getContext('2d'),
+  const c = drawingContext(canvas),
     nx = 72,
     nz = Math.ceil((nx * height) / width),
     h = [];
+  if (terrainWorld.ocean) {
+    for (const island of terrainWorld.islands || []) {
+      const x = (island.x - originX) * scale + centerX,
+        y = (originZ - island.z) * scale + centerY,
+        rx = island.radiusX * scale,
+        rz = island.radiusZ * scale;
+      if (x + rx < 0 || x - rx > width || y + rz < 0 || y - rz > height) continue;
+      c.save();
+      c.translate(x, y);
+      c.rotate(island.heading);
+      c.fillStyle = '#205c60';
+      c.beginPath();
+      c.ellipse(0, 0, rx * 1.4, rz * 1.4, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#a58e57';
+      c.beginPath();
+      c.ellipse(0, 0, rx, rz, 0, 0, Math.PI * 2);
+      c.fill();
+      c.restore();
+    }
+  }
   c.strokeStyle = '#35523b88';
   c.lineWidth = 0.5;
   for (let z = 0; z <= nz; z++) {
@@ -188,7 +210,7 @@ export function renderTacticalMap(canvas, s, targets, aim, options = {}) {
   const width = canvas.width || 240,
     height = canvas.height || 240,
     map = tacticalMapState(s, targets, { width, height, ...options }),
-    c = canvas.getContext('2d'),
+    c = drawingContext(canvas),
     cx = map.centerX,
     cy = map.centerY;
   c.clearRect(0, 0, width, height);

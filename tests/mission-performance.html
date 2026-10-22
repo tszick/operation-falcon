@@ -60,6 +60,7 @@
         { FlightRecorder } = await import('/src/flightRecorder.js');
       const $ = (id) => document.getElementById(id),
         r = new Renderer($('world'));
+      await r.ready;
       r.debugMetrics = true;
       addEventListener('resize', () => r.resize());
       let timing = {},
@@ -81,7 +82,7 @@
       const environment = {
         viewport: [r.w, r.h],
         pixelRatio: r.canvas.width / r.w,
-        backend: gl ? 'WebGL2' : 'Canvas2D',
+        backend: r.gpuModels?.name || 'Canvas2D',
         gpu: debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : null,
         gpuTimer: !!gpuTimer,
         longTaskObserver: observerSupported,

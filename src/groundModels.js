@@ -1,4 +1,6 @@
-import { runwaySurfaceMesh } from './runwayVisuals.js';
+import { meshSegmentHit } from './hitGeometry.js';
+import { homeHangars } from './terrain.js';
+import { renderAirfield } from './runwayVisuals.js';
 import { materialFor } from './surfaceStyle.js';
 import { Vec3, Quat } from './math.js';
 import { terrainWorld, terrainHeight, convoyPose } from './terrain.js';
@@ -357,7 +359,6 @@ export function groundMesh(type, span = 220, dimensions = {}) {
     for (const z of [-half * 0.65, 0, half * 0.65]) b.box(0, -18, z, 7, 18, 3);
   } else if (type === 'airbase') {
     b.box(0, -1, 0, 45, 1, 1600);
-    for (let z = -1500; z < 1550; z += 100) b.line([0, 0.1, z], [0, 0.1, z + 20]);
     for (const z of [-170, -70, 30]) {
       b.box(85, 0, z, 28, 15, 32);
       b.face([
@@ -479,16 +480,8 @@ export function buildingDetail(t, camera, focal = 600) {
 export function renderGroundTarget(renderer, t) {
   const detail = t.city ? buildingDetail(t, renderer.camera, renderer.focal) : 'near';
   for (const instance of groundInstances(t, { detail })) {
-    if (t.type === 'airbase' && renderer.surfaceMode !== 'vector')
-      renderer.mesh(
-        runwaySurfaceMesh(0.04),
-        instance.position,
-        instance.rotation,
-        1,
-        '#c8e4aa',
-        null,
-        'asphalt',
-      );
+    if (t.type === 'airbase')
+      renderAirfield(renderer, instance.position, instance.rotation, { lights: t.alive !== false });
     renderer.mesh(
       instance.mesh,
       instance.position,
@@ -508,14 +501,17 @@ export function renderGroundTarget(renderer, t) {
 }
 // Collect once per simulation step, rather than resolving instance caches for
 // every projectile/object pair. Bounds enclose the exact rotated hit boxes.
+const collisionBoundsCache = new WeakMap();
 export function groundCollisionBounds(t) {
   const instances = groundInstances(t),
     bounds = { x: [Infinity, -Infinity], y: [Infinity, -Infinity], z: [Infinity, -Infinity] };
+  if (collisionBoundsCache.has(instances)) return collisionBoundsCache.get(instances);
   for (const { worldBounds } of instances)
     for (const axis of ['x', 'y', 'z']) {
       bounds[axis][0] = Math.min(bounds[axis][0], worldBounds[axis][0]);
       bounds[axis][1] = Math.max(bounds[axis][1], worldBounds[axis][1]);
     }
+  collisionBoundsCache.set(instances, bounds);
   return bounds;
 }
 export function sweptBoundsOverlap(bounds, from, to, padding = 0) {
@@ -563,4 +559,31 @@ export function groundHit(t, from, to, padding = 0) {
     if (enter <= exit && enter <= 1 && exit >= 0) return true;
   }
   return false;
+}
+
+let homeCollisionMesh;
+// Triangle-level aircraft contact avoids treating empty space between airport buildings as solid.
+export function groundAircraftHit(target, from, to) {
+  let instances;
+  if (target.type === 'airbase' && target.home && !target.remoteHome) {
+    if (!homeCollisionMesh) {
+      const builder = new Builder();
+      for (const h of homeHangars) builder.box(h.x, 0, h.z, h.halfWidth, h.height, h.halfLength);
+      homeCollisionMesh = builder.finish();
+    }
+    instances = [preparedInstance(new Vec3(), 0, homeCollisionMesh)];
+  } else instances = groundInstances(target);
+  let best = null;
+  for (const instance of instances) {
+    if (!sweptBoundsOverlap(instance.worldBounds, from, to, 0.25)) continue;
+    const motion = target.previousPosition
+        ? target.position.clone().sub(target.previousPosition)
+        : new Vec3(),
+      a = instance.inverse.rotate(from.clone().add(motion).sub(instance.position)),
+      b = instance.inverse.rotate(to.clone().sub(instance.position)),
+      hit = meshSegmentHit(instance.mesh, a, b);
+    if (hit && (!best || hit.fraction < best.fraction))
+      best = { ...hit, point: instance.rotation.rotate(hit.localPoint).add(instance.position) };
+  }
+  return best;
 }

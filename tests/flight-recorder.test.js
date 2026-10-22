@@ -123,3 +123,20 @@ test('practice and combat aircraft use the same touchdown checks when their flig
     assert.deepEqual(touchdownProblems(practice, 1, 72), touchdownProblems(combat, 1, 72), a.id);
   }
 });
+
+test('projectile start records the existing age when capture follows a physics step', () => {
+  const x = setup();
+  x.w.projectiles.push({
+    id: 99,
+    type: 'gun',
+    position: new Vec3(0, 500, 40),
+    velocity: new Vec3(0, 0, 1200),
+    age: 0.025,
+  });
+  x.s.elapsed = 0.025;
+  x.rec.capture(x.s, x.mission, x.targets, x.w, x.aim);
+  const entry = x.rec
+    .export()
+    .entries.find((e) => e.kind === 'projectile-start' && e.data.id === 99);
+  assert.equal(entry.data.age, 0.025);
+});

@@ -130,11 +130,7 @@ export const missions = [
     speed: 120,
     description:
       'Szállj fel, fogd be békésen a civil gépet, majd térj haza. A civilre tüzelni tilos.',
-    primary: [
-      'Békésen fogd be a civil repülőt.',
-      'Várd meg, hogy sértetlenül elhagyja a légteret.',
-      'Szállj le és állj meg a saját bázison.',
-    ],
+    primary: ['Békésen fogd be a civil repülőt.', 'Szállj le és állj meg a saját bázison.'],
     optional: [],
     roster: [{ type: 'civil', count: 1, team: 'neutral' }],
   },

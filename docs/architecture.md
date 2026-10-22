@@ -8,7 +8,7 @@
 | Repülés és sérülés             | `physics`, `maneuverDynamics`, `damage`, `fuel`, `performance`, `navalOps`           | 120 Hz-es állapotfrissítés; UI nélkül                      |
 | Harc                           | `weapons`, `enemyCombat`, `src/combat/*`, `weaponDynamics`                           | Célválasztás, lövedékek, hajós védelem és elfogás          |
 | Küldetés                       | `scenarioSpawn`, `mission`, `missionRuntime`, `missionObjectives`, `missionProgress` | Indítás, feltételek, célállapot és eredmény                |
-| Megjelenítés                   | `renderer`, `gpuModels`, `gpuTerrain`, `gpuFeatures`, `horizon`, `hud`, `cockpit`    | WebGL2, Canvas és DOM                                      |
+| Megjelenítés                   | `renderer`, `gpuModels`, `gpuTerrain`, `gpuFeatures`, `horizon`, `hud`, `cockpit`    | WebGPU; választható WebGL2/Canvas referencia               |
 | Közös megjelenítési primitívek | `src/ui/html`, `src/ui/preferences`                                                  | HTML-szövegkódolás; hibabiztos helyi beállítások           |
 | GPU-erőforrás életciklus       | `src/graphics/shaderProgram`                                                         | Közös fordítás/linkelés és hibánál is teljes felszabadítás |
 | Napló                          | `flightRecorder`, `flightLogStorage`, `flightLogAnalysis`, `flightDebrief`           | Események, IndexedDB és helyi elemzés                      |
@@ -55,3 +55,7 @@ A teljes forrás Prettierrel formázott, ESLint recommended és kiegészítő bi
 Az `i18n` modul i18next-példányt, böngészőnyelv-felismerést és tárolt kézi választást kezel. A meglévő, adatvezérelt magyar forrásszövegek természetes kulcsok; a megjelenítési határon `tr` fordít szöveget és `trHtml` a biztonságosan összeállított jelölés szövegcsomópontjait. A DOM-attribútumok, a statikus feliratok és a canvas-szövegek ugyanazt a szótárt használják. Szöveg-/jelöléscache és WeakMap őrzi a már lokalizált csomópontok forrását; nincs képkockánkénti teljes DOM-keresés vagy MutationObserver. A nyelvváltás egyszer újralokalizálja a felületet, a folyamatos műszerek közvetlenül az aktív nyelven rajzolnak. A szimulációs feltételek és azonosítók nem fordulnak le.
 
 A helyi, MIT-licencű i18next-csomag az egyetlen kivétel a böngészőmodulok `src/` alatti importhatára alól; az architektúrateszt konkrétan ezt és a nyelvi JSON-adatot engedi. A függőség és a kiszolgált példány verzióegyezését külön teszt ellenőrzi.
+
+## Grafikus megvalósítások
+
+A `rendering/createBackend` választja ki a WebGPU-megvalósítást vagy a kifejezetten kért régi referenciát. Az API-specifikus kód a `rendering/webgpu` és `rendering/webgl` mappákban, a geometria és a pixeladatok a `rendering/shared` alatt találhatók. A `rendering/flightInstrumentLayer` a szemantikus HTML-műszerfalat GPU-primitívekkel jeleníti meg, miközben az eredeti vezérlők fogadják a bemenetet. Az inicializálás aszinkron (`Renderer.ready`); a fő ciklus és a szimuláció képkockái továbbra is szinkron módon állítják össze a képet. Lásd: [WebGPU-megjelenítés](rendering-webgpu.md).

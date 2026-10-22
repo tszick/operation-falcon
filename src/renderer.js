@@ -1,15 +1,16 @@
+import { drawingContext } from './rendering/createBackend.js';
 import { tr } from './i18n.js';
 import { renderCarrier } from './carrierVisuals.js';
 import { renderCityVisuals } from './cityVisuals.js';
 import { renderEnvironmentSky } from './environmentSky.js';
-import { homeRunwayMesh, runwaySurfaceMesh } from './runwayVisuals.js';
+import { renderAirfield, renderRunwayLightGlows } from './runwayVisuals.js';
 import { surfaceStyle } from './surfaceStyle.js';
 import { transportExitPosition } from './transportRole.js';
 import { damagedVertex, modelFacePresent } from './modelDamage.js';
 import { damageVibration } from './damage.js';
 import { tailGunPose, tailGunStatus } from './tailGunnery.js';
 import { segmentInView, projectedInView } from './viewCulling.js';
-import { GpuModels } from './gpuModels.js';
+import { createBackend } from './rendering/createBackend.js';
 import { aircraftFlightSpec } from './aiAircraftSpec.js';
 import { isHostile } from './unitTypes.js';
 import { formatCallSign } from './airSuperiority.js';
@@ -48,8 +49,15 @@ export function baseMarkerPosition(targets, ocean = false) {
 export class Renderer {
   constructor(canvas) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
-    this.gpuModels = GpuModels.create();
+    this.ctx = drawingContext(canvas);
+    this.gpuModels = createBackend(this.ctx);
+    this.ready = this.ctx.surface
+      ? this.ctx.surface.ready.then(async () => {
+          await this.gpuModels.initialization;
+          await this.ctx.atlasReady;
+        })
+      : Promise.resolve();
+    this.ready.catch(() => {});
     this.camera = new Vec3();
     this.q = new Quat();
     this.thirdPerson = false;
@@ -226,17 +234,19 @@ export class Renderer {
           color:
             mesh.flapFaces?.includes(original) && mesh.flapFraction > 0.02
               ? '#40522b'
-              : this.surfaceMode !== 'vector'
-                ? material === 'aircraft'
-                  ? '#929ba2'
-                  : material === 'camo'
-                    ? '#686e49'
-                    : material === 'hangar'
-                      ? '#939b9b'
-                      : material === 'asphalt'
-                        ? '#303437'
-                        : '#8b918c'
-                : '#101c16',
+              : material === 'paint' || material === 'lamp'
+                ? color
+                : this.surfaceMode !== 'vector'
+                  ? material === 'aircraft'
+                    ? '#929ba2'
+                    : material === 'camo'
+                      ? '#686e49'
+                      : material === 'hangar'
+                        ? '#939b9b'
+                        : material === 'asphalt'
+                          ? '#303437'
+                          : '#8b918c'
+                  : '#101c16',
         });
       }
       for (const [a, b] of modelDetails) {
@@ -413,45 +423,11 @@ export class Renderer {
       renderCarrier(this);
       return;
     }
-    if (this.surfaceMode !== 'vector')
-      this.mesh(runwaySurfaceMesh(), new Vec3(), new Quat(), 1, '#c8e4aa', null, 'asphalt');
-    if (this.gpuModels?.gl && !this.gpuModels.lost && !this.gpuModels.gl.isContextLost()) {
-      this.mesh(homeRunwayMesh(!jammed), new Vec3(), new Quat(), 1, '#c8e4aa', null, 'runway');
-      for (const h of homeHangars)
-        this.box(new Vec3(h.x, 0, h.z), h.halfWidth, h.height, h.halfLength, '#64735f');
-      return;
-    }
-    const c = this.ctx;
-    c.strokeStyle = '#c8e4aa';
-    c.lineWidth = 1.5;
-    c.beginPath();
-    this.line(new Vec3(-45, 0.8, -1600), new Vec3(-45, 0.8, 1600));
-    this.line(new Vec3(45, 0.8, -1600), new Vec3(45, 0.8, 1600));
-    this.line(new Vec3(-45, 0.8, -1600), new Vec3(45, 0.8, -1600));
-    this.line(new Vec3(-45, 0.8, 1600), new Vec3(45, 0.8, 1600));
-    for (let z = -1500; z < 1600; z += 130) this.line(new Vec3(0, 1, z), new Vec3(0, 1, z + 55));
-    for (let z = -1500; z < 1600; z += 140) {
-      for (const x of [-48, 48]) {
-        this.line(new Vec3(x, 2, z), new Vec3(x, 5, z));
-      }
-    }
-    for (const z of [-1450, 1450])
-      for (let x = -35; x <= 35; x += 14) this.line(new Vec3(x, 1, z), new Vec3(x, 1, z + 60));
-    c.stroke();
+    renderAirfield(this, new Vec3(), new Quat(), { gates: !jammed });
     for (const h of homeHangars)
       this.box(new Vec3(h.x, 0, h.z), h.halfWidth, h.height, h.halfLength, '#64735f');
-    // Two approach gates on the three-degree glide path.
-    if (jammed) return;
-    c.strokeStyle = '#89af6955';
-    c.beginPath();
-    for (const z of [-2600, -3600]) {
-      const y = (-z - 1600) * Math.tan(3 * DEG) + 3;
-      this.line(new Vec3(-60, y - 12, z), new Vec3(-60, y + 12, z));
-      this.line(new Vec3(-60, y + 12, z), new Vec3(60, y + 12, z));
-      this.line(new Vec3(60, y + 12, z), new Vec3(60, y - 12, z));
-    }
-    c.stroke();
   }
+
   box(p, w, h, d, color) {
     this.boxMeshes ??= new Map();
     const key = [w, h, d].join(':');
@@ -486,6 +462,7 @@ export class Renderer {
   }
 
   marker(p, label, color = '#baf37d', locked = false, { offscreenLabel = false } = {}) {
+    if (this.cinematic) return;
     const c = this.ctx,
       screen = this.project(p);
     if (projectedInView(this, screen, 0)) {
@@ -617,12 +594,15 @@ export class Renderer {
       rear = !!s.rearView && !wreck;
     let camera,
       cameraQ = s.orientation;
-    if (wreck) {
+    if (this.replayCamera) {
+      camera = this.replayCamera.position;
+      cameraQ = this.replayCamera.orientation;
+    } else if (wreck) {
       if (!this.wreckOffset) {
         const direction = s.velocity.length() > 5 ? s.velocity.clone() : forward(s.orientation);
         direction.y = 0;
         direction.normalize();
-        this.wreckOffset = direction.scale(-125).add(new Vec3(58, 48, 0));
+        this.wreckOffset = direction.scale(-82).add(new Vec3(34, 30, 0));
       }
       camera = s.position.clone().add(this.wreckOffset);
       camera.y = Math.max(camera.y, terrainHeight(camera.x, camera.z) + 8);
@@ -648,6 +628,7 @@ export class Renderer {
         .add(forward(s.orientation).scale(this.thirdPerson ? -58 : 4));
       if (
         !this.thirdPerson &&
+        !this.cinematic &&
         !(
           typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
         )
@@ -658,10 +639,11 @@ export class Renderer {
           .add(up(s.orientation).scale(Math.sin(s.elapsed * 31) * shake * 0.12));
       }
     }
-    if (!wreck && !rear && !this.thirdPerson && this.headLook)
+    if (!wreck && !rear && !this.thirdPerson && !this.cinematic && this.headLook)
       cameraQ = this.headLook.orientation(s.orientation);
     if (
       !wreck &&
+      !this.cinematic &&
       !this.thirdPerson &&
       !(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches)
     ) {
@@ -669,7 +651,9 @@ export class Renderer {
       cameraQ = cameraQ.multiply(Quat.euler(vibration.yaw, vibration.pitch, vibration.roll));
     }
     this.setup(camera, cameraQ);
+    const skyStart = this.debugMetrics ? performance.now() : 0;
     renderEnvironmentSky(this);
+    if (this.debugMetrics) this.skyMs = performance.now() - skyStart;
     this.worldOcclusion = false;
     this.skyStars();
     if (!this.gpuModels?.renderHorizon(this, true)) this.groundHorizon();
@@ -680,12 +664,13 @@ export class Renderer {
     const jammed = navigationJammed(s, targets);
     this.worldOcclusion = true;
     this.meshQueue = [];
+    this.runwayLightQueue = [];
     this.runway(jammed);
     this.worldOcclusion = false;
-    renderLandingRoute(this, getLandingRoute(s, { jammed }));
+    if (!this.cinematic) renderLandingRoute(this, getLandingRoute(s, { jammed }));
     this.worldOcclusion = true;
-    renderCanyonCourse(this, s);
-    const contacts = radarContacts(s, targets);
+    if (!this.cinematic) renderCanyonCourse(this, s);
+    const contacts = this.cinematic ? [] : radarContacts(s, targets);
     if (s.spec.transport && !jammed) {
       const transport = targets.find((t) => t.playerControlled);
       if (transport && !transport.exited) {
@@ -732,7 +717,7 @@ export class Renderer {
         );
       } else renderGroundTarget(this, t);
     }
-    if ((this.thirdPerson || wreck) && !s.crashed)
+    if ((this.thirdPerson || wreck || this.cinematic) && !s.crashed)
       this.mesh(
         aircraftMesh(
           s.spec.id,
@@ -747,9 +732,10 @@ export class Renderer {
         'aircraft',
       );
     this.flushMeshes();
+    renderRunwayLightGlows(this);
     this.markerLabels = [];
     const friendlyFighters = targets.filter((t) => t.team === 'ally' && t.type === 'fighter');
-    for (const t of targets) {
+    for (const t of this.cinematic ? [] : targets) {
       if (
         !t.exited &&
         !t.playerControlled &&
@@ -827,7 +813,7 @@ export class Renderer {
     if (this.debugMetrics) this.countermeasureMs = performance.now() - cmStart;
     renderDamageSmoke(this, s);
     this.worldOcclusion = false;
-    if (wreck) return;
+    if (wreck || this.cinematic) return;
     if (rear) {
       this.tailHud(s);
       return;
@@ -1067,7 +1053,7 @@ export function renderAircraftPreview(
     canvas.width = w * d;
     canvas.height = h * d;
   }
-  const c = canvas.getContext('2d');
+  const c = drawingContext(canvas);
   c.setTransform(d, 0, 0, d, 0, 0);
   c.clearRect(0, 0, w, h);
   if (decorations) {

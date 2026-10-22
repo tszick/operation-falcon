@@ -176,7 +176,7 @@ export class Mission {
     this.objectiveComplete = practice
       ? !!(s.onGround && s.landing?.success)
       : civil
-        ? !!civil.departedAirspace
+        ? !!(civil.departedAirspace || (this.civilIntercepted && recoveryComplete(s)))
         : this.destroyed;
     if (this.spec.composition && !practice && !civil) {
       const report = battleObjectives(this, s, targets, w);
@@ -210,7 +210,7 @@ export class Mission {
         practice
           ? 'Biztonságos földetérés és megállás. Sikeres leszállási gyakorlat.'
           : civil
-            ? 'A civil gép biztonságban elhagyta a légteret; sikeres hazatérés.'
+            ? 'A civil gép békés elfogása és a biztonságos hazatérés teljesítve.'
             : s.recoveryExit
               ? 'Ellenséges célok megsemmisítve, biztonságos kivonulás.'
               : 'Cél megsemmisítve, biztonságos hazatérés.',
@@ -231,7 +231,7 @@ export class Mission {
       );
       return;
     }
-    if (!this.objectiveComplete && recoveryComplete(s) && !practice && !s.recoveryExit) {
+    if (!this.objectiveComplete && recoveryComplete(s) && !practice && !civil && !s.recoveryExit) {
       this.service(s);
       return;
     }

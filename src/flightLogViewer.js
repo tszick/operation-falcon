@@ -1,3 +1,4 @@
+import { drawingContext } from './rendering/createBackend.js';
 import { trHtml, tr } from './i18n.js';
 import { escapeHtml as escape } from './ui/html.js';
 import { debriefMarkup } from './flightDebrief.js';
@@ -47,7 +48,7 @@ function draw() {
   const canvas = $('log-plot'),
     w = (canvas.width = Math.max(300, Math.round(canvas.getBoundingClientRect().width))),
     h = (canvas.height = 190),
-    c = canvas.getContext('2d'),
+    c = drawingContext(canvas),
     samples = analysis.samples;
   c.clearRect(0, 0, w, h);
   c.fillStyle = '#071511';

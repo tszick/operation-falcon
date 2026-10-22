@@ -54,6 +54,12 @@ export function serviceProbe({
     w = new Weapons({ enemyFire: true }),
     u = w.enemyCombat.unit(t),
     units = field ? [base, t] : [t];
+  // This probe measures an unobstructed service cycle. Keep the observer off the runway;
+  // a real parked player aircraft now correctly causes a physical collision.
+  p.position = new Vec3(f.x + 3000, f.elevation + 1000, f.z + 5000);
+  p.previousPosition = p.position.clone();
+  p.onGround = false;
+  p.airborne = true;
   u.missiles = 0;
   if (t.type === 'bomber') u.bombs = 0;
   if (damage) {

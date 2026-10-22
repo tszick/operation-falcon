@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="hu">
+  <meta charset="utf-8" /><title>Operation Falcon · grafikus regresszió</title>
+  <body>
+    <p>Betöltés…</p>
+    <script type="module">
+      const contextRequests = [];
+      const nativeGetContext = HTMLCanvasElement.prototype.getContext;
+      const strictWebGPU =
+        (new URLSearchParams(location.search).get('backend') || 'webgpu') === 'webgpu';
+      HTMLCanvasElement.prototype.getContext = function (kind, ...args) {
+        contextRequests.push(kind);
+        if (strictWebGPU && kind !== 'webgpu')
+          throw new Error('Legacy context requested during WebGPU rendering: ' + kind);
+        return nativeGetContext.call(this, kind, ...args);
+      };
+      const template = new DOMParser().parseFromString(
+        await (await fetch('/index.html')).text(),
+        'text/html',
+      );
+      for (const link of template.querySelectorAll('link[rel="stylesheet"]'))
+        document.head.append(link.cloneNode(true));
+      for (const script of template.querySelectorAll('script')) script.remove();
+      document.body.replaceChildren(...template.body.childNodes);
+      const [
+        { Renderer },
+        { FlightInstrumentLayer },
+        { aircraft, missions },
+        { createTargets, Targeting },
+        { createMissionAircraft },
+        { Weapons },
+        { Mission },
+        { updateHUD },
+        { mountCockpit },
+        { missionSurface },
+        { setLanguage },
+      ] = await Promise.all([
+        import('/src/renderer.js'),
+        import('/src/rendering/flightInstrumentLayer.js'),
+        import('/src/aircraftSpec.js'),
+        import('/src/targeting.js'),
+        import('/src/missionStart.js'),
+        import('/src/weapons.js'),
+        import('/src/mission.js'),
+        import('/src/hud.js'),
+        import('/src/cockpit.js'),
+        import('/src/surfaceStyle.js'),
+        import('/src/i18n.js'),
+      ]);
+      const params = new URLSearchParams(location.search),
+        spec = missions.find((m) => m.id === (params.get('mission') || 'landing')),
+        plane =
+          aircraft.find(
+            (a) => a.id === (params.get('aircraft') || (spec.naval ? 'fa18' : 'f16')),
+          ) || aircraft[0];
+      if (!spec) throw new Error('Unknown mission fixture');
+      const targets = createTargets(spec, plane, { rng: () => 0.3 }),
+        state = createMissionAircraft(plane, spec),
+        weapons = new Weapons({ enemyFire: false }),
+        aim = new Targeting(),
+        mission = new Mission(spec);
+      mission.update(state, targets, weapons, aim);
+      if (params.get('scene') === 'archipelago') {
+        const { terrainWorld } = await import('/src/terrain.js');
+        const { Vec3, Quat } = await import('/src/math.js');
+        const island = terrainWorld.islands
+          .filter((i) => i.z < 15000 && i.z > -15000)
+          .sort((a, b) => Math.hypot(a.x, a.z) - Math.hypot(b.x, b.z))[0];
+        state.position = new Vec3(island.x + 2600, 1100, island.z - 5000);
+        state.orientation = Quat.euler(Math.atan2(-2600, 5000), -0.17, 0);
+        state.velocity = state.orientation.rotate(new Vec3(0, 0, 150));
+        state.onGround = false;
+        state.airborne = true;
+        state.gear = false;
+        state.flaps = false;
+        state.flapPosition = 0;
+        state.speed = 150;
+        state.ias = 142;
+        state.agl = 1100;
+      }
+      if (params.get('scene') === 'sky') {
+        const { Vec3, Quat } = await import('/src/math.js');
+        state.position = new Vec3(0, 1600, -5000);
+        state.orientation = Quat.euler(
+          Number(params.get('heading') || 0),
+          Number(params.get('pitch') || 0.35),
+          Number(params.get('roll') || 0),
+        );
+        state.onGround = false;
+        state.airborne = true;
+      }
+      if (params.get('scene') === 'runway' || params.get('scene') === 'runway-approach') {
+        const { Vec3, Quat } = await import('/src/math.js');
+        const approach = params.get('scene') === 'runway-approach';
+        state.position = approach ? new Vec3(0, 65, -2600) : new Vec3(-12, 7, -1440);
+        state.orientation = Quat.euler(0, approach ? -0.055 : -0.025, 0);
+        state.velocity = new Vec3(0, 0, approach ? 80 : 0);
+        state.speed = state.ias = approach ? 80 : 0;
+        state.onGround = !approach;
+        state.airborne = approach;
+      }
+      // Optional repeatable rendering load: frozen physics, identical visible aircraft.
+      const contactCount = Math.min(64, Math.max(0, Number(params.get('contacts')) || 0));
+      if (contactCount) {
+        const { Vec3 } = await import('/src/math.js');
+        const template = targets.find(
+          (target) =>
+            target.kind === 'air' &&
+            !target.playerControlled &&
+            (!params.has('hostile') || target.team !== 'ally'),
+        );
+        if (!template) throw new Error('This mission has no aircraft contact template');
+        for (let i = 0; i < contactCount; i++) {
+          const position = state.orientation
+            .rotate(new Vec3(((i % 8) - 3.5) * 130, Math.floor(i / 8) * 90, 1700 + (i % 3) * 200))
+            .add(state.position);
+          targets.push({
+            ...template,
+            id: `load-${i}`,
+            position,
+            flight: null,
+            alive: true,
+            exited: false,
+          });
+        }
+      }
+      mountCockpit();
+      document.body.classList.add('flying');
+      document.body.classList.toggle('landing-practice', !!state.training);
+      for (const id of ['hangar', 'hangar-footer', 'overlay', 'help'])
+        document.getElementById(id).hidden = true;
+      document.getElementById('flight-ui').hidden = false;
+      document.getElementById('fuel-status').hidden = false;
+      setLanguage(params.get('lang') || 'en', { persist: false });
+      const renderer = new Renderer(document.getElementById('world')),
+        instruments = new FlightInstrumentLayer(renderer);
+      renderer.surfaceMode = params.get('surface') || missionSurface(spec);
+      renderer.surfaceLines = false;
+      renderer.cloudsEnabled = params.get('clouds') !== 'off';
+      const hideInstruments = params.get('instruments') === 'off';
+      if (hideInstruments) document.getElementById('flight-ui').hidden = true;
+      if (params.get('frame') === 'old')
+        document.getElementById('cockpit-frame').style.backgroundImage =
+          "url('/assets/cockpit/two-row-frame.png')";
+      const { Quat: TurnQuat } = await import('/src/math.js');
+      renderer.debugMetrics = true;
+      const status = document.createElement('output');
+      status.id = 'graphics-test-status';
+      status.style.cssText =
+        'position:fixed;top:45px;left:8px;z-index:1000;background:#071511;color:#baf37d;font:11px monospace;padding:4px';
+      document.body.append(status);
+      const samples = [],
+        coldSamples = [],
+        benchmark = params.has('benchmark');
+      const animateMessages = params.has('messages');
+      const { postRadioMessage } = await import('/src/flightMessages.js');
+      let nextMessage = 0,
+        animationStart;
+      let frames = 0,
+        nextHUD = 0,
+        previousFrame;
+      const summary = (key, source = samples) => {
+        const values = source.map((s) => s[key]).sort((a, b) => a - b);
+        return {
+          median: +values[Math.floor(values.length / 2)].toFixed(2),
+          p95: +values[Math.floor(values.length * 0.95)].toFixed(2),
+          max: +values.at(-1).toFixed(2),
+        };
+      };
+      function frame(time = performance.now()) {
+        try {
+          const start = performance.now();
+          if (params.has('turn')) {
+            const turn = frames / 60;
+            state.orientation = TurnQuat.euler(
+              turn * 0.6,
+              0.18 + Math.sin(turn * 0.6) * 0.08,
+              Math.sin(turn) * 0.65,
+            );
+          }
+          if (animateMessages) {
+            animationStart ??= time;
+            state.elapsed = (time - animationStart) / 1000;
+            if (state.elapsed >= nextMessage) {
+              postRadioMessage(
+                {
+                  callSign: 'FALCON CONTROL',
+                  text: `WebGPU rádiópróba · több bejövő cél a látómezőben · ${nextMessage}s`,
+                  duration: 3,
+                },
+                state.elapsed,
+              );
+              nextMessage += 3;
+            }
+          }
+          if (time >= nextHUD) {
+            updateHUD(state, targets, weapons, aim, mission, true);
+            nextHUD = time + 100;
+          }
+          const renderStart = performance.now();
+          renderer.render(state, targets, weapons, aim);
+          const instrumentStart = performance.now();
+          if (!hideInstruments) instruments.render();
+          const end = performance.now();
+          const sample = {
+            cpu: end - start,
+            world: instrumentStart - renderStart,
+            instruments: end - instrumentStart,
+            interval: time - previousFrame,
+            panels: instruments.metrics?.costs || [],
+            sky: renderer.skyMs || 0,
+          };
+          (frames++ >= 60 ? samples : coldSamples).push(sample);
+          previousFrame = time;
+          status.textContent = JSON.stringify({
+            backend: renderer.gpuModels?.name || 'Canvas2D',
+            ready: renderer.gpuModels?.available ?? true,
+            errors: renderer.ctx.surface?.runtime?.errors || [],
+            model: renderer.modelMetrics?.backend,
+            terrain: renderer.terrainMetrics?.backend,
+            contexts: [...new Set(contextRequests)],
+            features: renderer.featureMetrics?.backend,
+            visible: renderer.modelMetrics?.visible,
+            pixels: [renderer.canvas.width, renderer.canvas.height],
+            ...(benchmark && samples.length >= 240
+              ? {
+                  benchmark: Object.fromEntries(
+                    ['cpu', 'world', 'instruments', 'interval', 'sky'].map((key) => [
+                      key,
+                      summary(key),
+                    ]),
+                  ),
+                  coldSky: summary('sky', coldSamples),
+                  expensivePanels: samples
+                    .flatMap((sample) => sample.panels)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5),
+                }
+              : {}),
+          });
+        } catch (error) {
+          status.textContent = 'ERROR: ' + error.stack;
+          return;
+        }
+        if (!benchmark || samples.length < 240) requestAnimationFrame(frame);
+      }
+      addEventListener('resize', () => renderer.resize());
+      frame();
+    </script>
+  </body>
+</html>

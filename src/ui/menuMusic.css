@@ -1,0 +1,40 @@
+#menu-music-toggle {
+  order: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  margin-left: 8px;
+  border: 1px solid #577367;
+  border-radius: 3px;
+  background: #0b201c;
+  color: #c4dcb0;
+  font: 10px var(--mono, monospace);
+  cursor: pointer;
+}
+#menu-music-toggle > :first-child {
+  font-size: 15px;
+}
+#menu-music-toggle[aria-pressed='false'] {
+  color: #8c9b9b;
+  border-color: #354c48;
+}
+#menu-music-toggle:focus-visible {
+  outline: 2px solid #c9ed8e;
+  outline-offset: 2px;
+}
+.header-right > .language-control {
+  order: 1;
+}
+body.flying #menu-music-toggle {
+  display: none;
+}
+@media (max-width: 650px) {
+  #menu-music-toggle {
+    padding: 5px 8px;
+    margin-left: 5px;
+  }
+  #menu-music-toggle > :last-child {
+    display: none;
+  }
+}

@@ -202,7 +202,7 @@
         busy: '32 repülő · azonos jelenet mindkét beállításban',
       }[scene];
       $('status').textContent =
-        `${r.surfaceLines ? 'Vektorvonalakkal' : 'Vektorvonalak nélkül'} · ${r.gpuModels ? 'WebGL2' : 'Canvas2D'} · valódi játékbeli renderelés · hang nélkül`;
+        `${r.surfaceLines ? 'Vektorvonalakkal' : 'Vektorvonalak nélkül'} · ${r.gpuModels?.name || 'Canvas2D'} · valódi játékbeli renderelés · hang nélkül`;
     }
     let run = null;
     function frame(now) {
@@ -264,6 +264,7 @@
       r.resize();
       draw();
     });
+    await r.ready;
     draw();
   </script>
 </html>

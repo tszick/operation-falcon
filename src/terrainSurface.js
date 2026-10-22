@@ -1,3 +1,4 @@
+import { oceanSurface } from './oceanEnvironment.js';
 import { terrainTint } from './surfaceStyle.js';
 import { Vec3, clamp } from './math.js';
 import { terrainHeight, terrainWorld } from './terrain.js';
@@ -28,6 +29,8 @@ export function terrainAxis(center) {
 let sampleRevision = -1,
   sampleCache = new Map();
 export function buildTerrainSurface(cx, cz, heightAt = terrainHeight) {
+  if (terrainWorld.ocean && heightAt === terrainHeight)
+    return oceanSurface(terrainWorld.islands || [], cx, cz);
   const xs = terrainAxis(cx),
     zs = terrainAxis(cz);
   // Explicit peak anchors keep narrow prominent summits from jumping between LOD samples.
@@ -42,6 +45,26 @@ export function buildTerrainSurface(cx, cz, heightAt = terrainHeight) {
           if (Math.abs(value - center) < 48000 && !values.some((v) => Math.abs(v - value) < 1))
             values.push(value);
         }
+    // Preserve narrow flat landing corridors between the coarse terrain samples.
+    // Use world-space anchors so camera grid shifts cannot bury a remote runway.
+    for (const field of terrainWorld.airfields || []) {
+      const c = Math.cos(field.heading || 0),
+        s = Math.sin(field.heading || 0);
+      for (const lateral of [-500, -100, 100, 500])
+        for (const longitudinal of [-10500, -8500, 8500, 10500]) {
+          const x = field.x + lateral * c + longitudinal * s,
+            z = field.z - lateral * s + longitudinal * c;
+          for (const [values, value, center] of [
+            [xs, x, cx],
+            [zs, z, cz],
+          ])
+            if (
+              Math.abs(value - center) < 48000 &&
+              !values.some((v) => Math.abs(v - value) < 0.001)
+            )
+              values.push(value);
+        }
+    }
     xs.sort((a, b) => a - b);
     zs.sort((a, b) => a - b);
   }
@@ -84,6 +107,17 @@ export function buildTerrainSurface(cx, cz, heightAt = terrainHeight) {
   return faces;
 }
 export function terrainGridCenter(camera, previous = null) {
+  if (terrainWorld.ocean) {
+    const reuse =
+      previous?.revision === terrainWorld.revision &&
+      Math.abs(camera.x - previous.x) < 2000 &&
+      Math.abs(camera.z - previous.z) < 2000;
+    return {
+      x: reuse ? previous.x : Math.round(camera.x / 3000) * 3000,
+      z: reuse ? previous.z : Math.round(camera.z / 3000) * 3000,
+      revision: terrainWorld.revision,
+    };
+  }
   const reuse = previous?.revision === terrainWorld.revision;
   return {
     x:
@@ -112,7 +146,12 @@ export function renderTerrainSurface(r) {
   const faces = [],
     localCache = new Map();
   for (const face of r.terrainSurface) {
-    const screen = projectFeaturePolygon(r, face.points, localCache);
+    if (face.oceanWater) continue;
+    const screen = projectFeaturePolygon(
+      r,
+      face.ocean ? face.points.map((p) => new Vec3(p.x, Math.max(0.03, p.y), p.z)) : face.points,
+      localCache,
+    );
     if (
       screen.length < 3 ||
       screen.every((p) => p.x < 0) ||
@@ -134,7 +173,7 @@ export function renderTerrainSurface(r) {
     c.closePath();
     // Opaque fill covers the far slope, stars and all previously painted grid lines.
     const color =
-      r.surfaceMode && r.surfaceMode !== 'vector'
+      !face.ocean && r.surfaceMode && r.surfaceMode !== 'vector'
         ? `rgb(${terrainTint(
             r.surfaceMode,
             face.normal.y,

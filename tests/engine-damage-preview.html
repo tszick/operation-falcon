@@ -121,17 +121,20 @@
         r.flushMeshes();
       }
       document.querySelector('#backend').textContent = cpu
-        ? 'CPU tartalék rajzoló'
+        ? scenes[0].r.ctx.surface
+          ? 'CPU geometria · WebGPU'
+          : 'Canvas2D'
         : scenes.every((s) => s.gpu)
-          ? 'WebGL2'
-          : 'WebGL2 nem érhető el';
+          ? scenes[0].gpu.name || 'WebGL2'
+          : 'GPU nem érhető el';
     }
     document.querySelector('#cpu').onclick = () => {
       cpu = !cpu;
-      document.querySelector('#cpu').textContent = cpu ? 'WebGL2 nézet' : 'CPU nézet';
+      document.querySelector('#cpu').textContent = cpu ? 'GPU nézet' : 'CPU geometria';
       draw();
     };
     addEventListener('resize', draw);
+    await Promise.all(scenes.map(({ r }) => r.ready));
     draw();
   </script>
 </html>

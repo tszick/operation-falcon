@@ -121,7 +121,8 @@
           );
         r.flushMeshes();
       } else r.render(x.s, x.targets, x.w, x.aim);
-      $('status').textContent = 'Valódi játékbeli modellek és fizika · WebGL2 · nincs hang';
+      $('status').textContent =
+        `Valódi játékbeli modellek és fizika · ${r.gpuModels?.name || 'Canvas2D'} · nincs hang`;
     }
     function summary(x) {
       return {
@@ -228,6 +229,7 @@
       r.resize();
       draw();
     });
+    await r.ready;
     draw();
   </script>
 </html>

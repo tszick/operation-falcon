@@ -1,0 +1,412 @@
+{
+  "log": {
+    "metadata": {
+      "durationSeconds": 423.9416666664454,
+      "initialUnits": [
+        {
+          "id": "BRIDGE",
+          "team": "enemy"
+        },
+        {
+          "id": "CONVOY",
+          "team": "enemy"
+        },
+        {
+          "id": "BASE",
+          "team": "ally"
+        }
+      ]
+    },
+    "entries": [
+      {
+        "t": 0,
+        "kind": "sample",
+        "data": {
+          "player": {
+            "damage": 0
+          }
+        }
+      },
+      {
+        "t": 412.7583,
+        "kind": "sample",
+        "data": {
+          "player": {
+            "damage": 73.2584
+          }
+        }
+      },
+      {
+        "t": 423.9417,
+        "kind": "sample",
+        "data": {
+          "player": {
+            "damage": 73.2584
+          }
+        }
+      },
+      {
+        "t": 412.6833,
+        "kind": "touchdown",
+        "data": {
+          "grade": "severe",
+          "success": true,
+          "impactDamage": 34.04461074052984
+        }
+      },
+      {
+        "t": 423.9417,
+        "kind": "mission-end",
+        "data": {
+          "result": "success",
+          "reason": ["Túl nagy süllyedés: 5.5 m/s; 3 m/s alatt szükséges."],
+          "recovered": false,
+          "score": 796,
+          "touchdown": {
+            "time": 412.68333333312233,
+            "position": {
+              "x": -6.186676499095468,
+              "y": 1.9882629640917309,
+              "z": 716.6161096997057
+            },
+            "velocity": {
+              "x": -0.984092826509947,
+              "y": -5.474064460054444,
+              "z": -67.51235255319386
+            },
+            "speedKmh": 243.86782550597582,
+            "iasKmh": 243.8393052111457,
+            "sinkMps": 5.474064460054444,
+            "pitchDeg": 3.717355172262405,
+            "bankDeg": 7.22378682129621,
+            "headingDeg": 176.99747169326852,
+            "trackDeg": -179.16488804518914,
+            "massKg": 9342.917903424615,
+            "fuelKg": 2017.445903424615,
+            "damage": 39.21383091149629,
+            "parts": {
+              "leftWing": 0.9529434029062044,
+              "rightWing": 0.8482004140653944,
+              "tail": 0.8705449399559158,
+              "fuselage": 0.6947414446150846,
+              "engineLeft": 0.8533952000425294,
+              "engineRight": 1,
+              "hydraulics": 0.9529434029062044,
+              "weapons": 0.8978634029062046
+            },
+            "gear": true,
+            "flapPosition": 1,
+            "throttle": 0,
+            "afterburner": false,
+            "airbrake": false,
+            "approach": {
+              "active": true,
+              "direction": -1,
+              "distance": 0,
+              "height": 2.033880167925518,
+              "sink": 5.4826360361570385,
+              "angle": 4.641485227992893,
+              "glideError": 0.033880167925517846,
+              "headingError": -3.0110214924245766,
+              "items": [
+                {
+                  "label": "FUTÓMŰ",
+                  "value": "KINN",
+                  "ok": true
+                },
+                {
+                  "label": "FÉKSZÁRNY",
+                  "value": "KINN",
+                  "ok": true
+                },
+                {
+                  "label": "LÉGFÉK",
+                  "value": "ZÁRVA",
+                  "ok": true
+                },
+                {
+                  "label": "SEBESSÉG",
+                  "value": "244 / 259 KM/H",
+                  "ok": true
+                },
+                {
+                  "label": "SÜLLYEDÉS",
+                  "value": "5.5 M/S · <3",
+                  "ok": false
+                },
+                {
+                  "label": "SIKLÓPÁLYA",
+                  "value": "SZINTBE VÉTEL",
+                  "ok": true
+                },
+                {
+                  "label": "PÁLYAIRÁNY",
+                  "value": "180° · -3°",
+                  "ok": true
+                },
+                {
+                  "label": "TENGELY",
+                  "value": "-6 M",
+                  "ok": true
+                },
+                {
+                  "label": "BEDÖNTÉS",
+                  "value": "7°",
+                  "ok": true
+                },
+                {
+                  "label": "ORRHELYZET",
+                  "value": "3.7°",
+                  "ok": true
+                }
+              ],
+              "warning": "ÁTSTARTOLÁS — GÁZ, ORR FEL!",
+              "protectedCorridor": false,
+              "targetSpeed": 259.2,
+              "minSpeed": 234.2,
+              "maxSpeed": 289.2,
+              "runwayCorridor": true,
+              "stage": "SZINTBE VÉTEL",
+              "instruction": "Finoman emeld az orrot; földetérés <3 m/s.",
+              "mode": "on"
+            },
+            "limits": {
+              "maxIASKmh": 396,
+              "minIASKmh": 108,
+              "maxSink": 3,
+              "maxBankDeg": 10,
+              "minPitchDeg": -3,
+              "maxPitchDeg": 15,
+              "maxHeadingErrorDeg": 7.46959231641693,
+              "hardSink": 3,
+              "severeSink": 5,
+              "criticalSink": 8
+            },
+            "problems": ["Túl nagy süllyedés: 5.5 m/s; 3 m/s alatt szükséges."],
+            "success": true,
+            "grade": "severe",
+            "impactDamage": 34.04461074052984
+          }
+        }
+      }
+    ]
+  },
+  "analysis": {
+    "result": {
+      "result": "success",
+      "reason": ["Túl nagy süllyedés: 5.5 m/s; 3 m/s alatt szükséges."],
+      "recovered": false,
+      "score": 796,
+      "touchdown": {
+        "time": 412.68333333312233,
+        "position": {
+          "x": -6.186676499095468,
+          "y": 1.9882629640917309,
+          "z": 716.6161096997057
+        },
+        "velocity": {
+          "x": -0.984092826509947,
+          "y": -5.474064460054444,
+          "z": -67.51235255319386
+        },
+        "speedKmh": 243.86782550597582,
+        "iasKmh": 243.8393052111457,
+        "sinkMps": 5.474064460054444,
+        "pitchDeg": 3.717355172262405,
+        "bankDeg": 7.22378682129621,
+        "headingDeg": 176.99747169326852,
+        "trackDeg": -179.16488804518914,
+        "massKg": 9342.917903424615,
+        "fuelKg": 2017.445903424615,
+        "damage": 39.21383091149629,
+        "parts": {
+          "leftWing": 0.9529434029062044,
+          "rightWing": 0.8482004140653944,
+          "tail": 0.8705449399559158,
+          "fuselage": 0.6947414446150846,
+          "engineLeft": 0.8533952000425294,
+          "engineRight": 1,
+          "hydraulics": 0.9529434029062044,
+          "weapons": 0.8978634029062046
+        },
+        "gear": true,
+        "flapPosition": 1,
+        "throttle": 0,
+        "afterburner": false,
+        "airbrake": false,
+        "approach": {
+          "active": true,
+          "direction": -1,
+          "distance": 0,
+          "height": 2.033880167925518,
+          "sink": 5.4826360361570385,
+          "angle": 4.641485227992893,
+          "glideError": 0.033880167925517846,
+          "headingError": -3.0110214924245766,
+          "items": [
+            {
+              "label": "FUTÓMŰ",
+              "value": "KINN",
+              "ok": true
+            },
+            {
+              "label": "FÉKSZÁRNY",
+              "value": "KINN",
+              "ok": true
+            },
+            {
+              "label": "LÉGFÉK",
+              "value": "ZÁRVA",
+              "ok": true
+            },
+            {
+              "label": "SEBESSÉG",
+              "value": "244 / 259 KM/H",
+              "ok": true
+            },
+            {
+              "label": "SÜLLYEDÉS",
+              "value": "5.5 M/S · <3",
+              "ok": false
+            },
+            {
+              "label": "SIKLÓPÁLYA",
+              "value": "SZINTBE VÉTEL",
+              "ok": true
+            },
+            {
+              "label": "PÁLYAIRÁNY",
+              "value": "180° · -3°",
+              "ok": true
+            },
+            {
+              "label": "TENGELY",
+              "value": "-6 M",
+              "ok": true
+            },
+            {
+              "label": "BEDÖNTÉS",
+              "value": "7°",
+              "ok": true
+            },
+            {
+              "label": "ORRHELYZET",
+              "value": "3.7°",
+              "ok": true
+            }
+          ],
+          "warning": "ÁTSTARTOLÁS — GÁZ, ORR FEL!",
+          "protectedCorridor": false,
+          "targetSpeed": 259.2,
+          "minSpeed": 234.2,
+          "maxSpeed": 289.2,
+          "runwayCorridor": true,
+          "stage": "SZINTBE VÉTEL",
+          "instruction": "Finoman emeld az orrot; földetérés <3 m/s.",
+          "mode": "on"
+        },
+        "limits": {
+          "maxIASKmh": 396,
+          "minIASKmh": 108,
+          "maxSink": 3,
+          "maxBankDeg": 10,
+          "minPitchDeg": -3,
+          "maxPitchDeg": 15,
+          "maxHeadingErrorDeg": 7.46959231641693,
+          "hardSink": 3,
+          "severeSink": 5,
+          "criticalSink": 8
+        },
+        "problems": ["Túl nagy süllyedés: 5.5 m/s; 3 m/s alatt szükséges."],
+        "success": true,
+        "grade": "severe",
+        "impactDamage": 34.04461074052984
+      }
+    },
+    "objectives": [
+      {
+        "id": "bridge",
+        "text": "Híd lezárva az átkelés előtt",
+        "done": true,
+        "optional": false
+      },
+      {
+        "id": "convoy",
+        "text": "Konvoj megsemmisítve",
+        "done": true,
+        "optional": true
+      },
+      {
+        "id": "landing",
+        "text": "Sikeres leszállás és megállás",
+        "done": true,
+        "optional": false
+      }
+    ],
+    "phases": [
+      {
+        "id": "preflight",
+        "findings": []
+      },
+      {
+        "id": "takeoff",
+        "findings": []
+      },
+      {
+        "id": "climb",
+        "findings": []
+      },
+      {
+        "id": "target-approach",
+        "findings": []
+      },
+      {
+        "id": "ground-attack",
+        "findings": ["Rögzített tüzelési akadály: EZ A FEGYVER NINCS FELSZERELVE"]
+      },
+      {
+        "id": "return",
+        "findings": []
+      },
+      {
+        "id": "landing",
+        "findings": [
+          "A célsebesség-tartomány fölött repültél; időben lassíts (17.0 s).",
+          "A kifutó irányától vagy tengelyétől eltértél (17.0 s)."
+        ]
+      },
+      {
+        "id": "return",
+        "findings": []
+      },
+      {
+        "id": "landing",
+        "findings": [
+          "A célsebesség-tartomány fölött repültél; időben lassíts (55.7 s).",
+          "A kifutó irányától vagy tengelyétől eltértél (26.9 s)."
+        ]
+      },
+      {
+        "id": "flare",
+        "findings": ["A célsebesség-tartomány fölött repültél; időben lassíts (3.1 s)."]
+      },
+      {
+        "id": "landing",
+        "findings": ["A célsebesség-tartomány fölött repültél; időben lassíts (2.4 s)."]
+      },
+      {
+        "id": "flare",
+        "findings": [
+          "Alacsonyan túl nagy volt a süllyedés; finoman vedd szintbe a gépet (3.2 s).",
+          "Célsebességnél nyitva maradt a légfék; B-vel zárd vissza (2.8 s).",
+          "Túlélt súlyos földetérés; 34.0% új sérülés.",
+          "Túl nagy süllyedés: 5.5 m/s; 3 m/s alatt szükséges."
+        ]
+      },
+      {
+        "id": "rollout",
+        "findings": []
+      }
+    ]
+  }
+}

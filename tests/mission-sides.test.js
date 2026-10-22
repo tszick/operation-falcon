@@ -1,6 +1,6 @@
 import { missionCardState } from '../src/flightPanels.js';
 import { superiorityRoster } from '../src/airSuperiority.js';
-import { planLandingRoute } from '../src/landingRoute.js';
+import { planLandingRoute, getLandingRoute } from '../src/landingRoute.js';
 import { EnemyCombat } from '../src/enemyCombat.js';
 import { evaluateFlight } from '../src/flightDebrief.js';
 import { Quat } from '../src/math.js';
@@ -337,4 +337,31 @@ test('opposing objectives stay green in the cockpit and temporarily servicing ai
   air[0].alive = true;
   air[0].service = { stage: 'outbound' };
   assert.equal(battleObjectives(n.m, n.s, n.targets, n.w).complete, false);
+});
+
+test('manual landing guidance and route work far from home after destroying the convoy and bridge', () => {
+  for (const side of ['west', 'east']) {
+    const x = setup('convoy', side);
+    for (const target of x.targets)
+      if (target.team === 'enemy' && ['convoy', 'bridge'].includes(target.type)) destroy(target);
+    const home = x.s.airfield?.position || new Vec3();
+    x.s.position = home.clone().add(new Vec3(18000, 2000, 22000));
+    x.s.velocity = new Vec3(-100, -2, -100);
+    x.s.orientation = Quat.euler(-Math.PI * 0.75, 0, 0);
+    x.s.onGround = false;
+    x.s.airborne = true;
+    x.s.landingMode = 'auto';
+    assert.equal(evaluateApproach(x.s).active, false, side + ': remote auto stays off');
+    x.s.landingMode = 'on';
+    x.s.approach = evaluateApproach(x.s);
+    assert.equal(x.s.approach.active, true, side + ': manual mode works immediately');
+    assert.equal(x.s.approach.runwayCorridor, false);
+    const route = getLandingRoute(x.s);
+    assert.ok(route?.points.length > 1);
+    assert.ok(route.entryDistance <= 6500);
+    assert.ok(route.points.at(-1).clone().sub(home).length() < 1700);
+    x.s.landingMode = 'off';
+    x.s.approach = evaluateApproach(x.s);
+    assert.equal(getLandingRoute(x.s), null);
+  }
 });

@@ -1,6 +1,6 @@
 # Operation Falcon: Redline
 
-Böngészős repülőszimulátor magyar és angol kezelőfelülettel, 120 Hz-es repülésfizikával, küldetésekkel és helyben futó gépi ellenfelekkel. A 3D világ WebGL 2-vel, a HUD és a műszerfal Canvas/DOM réteggel jelenik meg. A játékhoz nincs külső futásidejű hálózati függőség vagy felhős AI-szolgáltatás; a rádiófelvételek helyi fájlok.
+Böngészős repülőszimulátor magyar és angol kezelőfelülettel, 120 Hz-es repülésfizikával, küldetésekkel és helyben futó gépi ellenfelekkel. A 3D világ, a HUD, a műszerfal, a radar és az effektek alapértelmezetten WebGPU-val jelennek meg. A menük HTML-alapúak. A játékhoz nincs külső futásidejű hálózati függőség vagy felhős AI-szolgáltatás; a rádiófelvételek helyi fájlok.
 
 ## Indítás
 
@@ -58,11 +58,12 @@ Az ütemezések a workflow-fájlok **alapértelmezett ágra történő feltölt�
 ## Felépítés és biztonság
 
 - [Architektúra és réteghatárok](docs/architecture.md)
+- [Csillagos küldetésértékelés, visszajátszás és menüzene](docs/mission-results.md)
 - [Biztonsági áttekintés és helyi ellenőrzések](docs/security-review.md)
 - [Vulnerabilitás bejelentése](.github/SECURITY.md)
 - [Archivált fejlesztési feljegyzések](docs/archive/development-notes.md)
 
-A WebGL 2 böngésző-API: nem npm-csomagként frissül. A böngésző és a videóillesztő frissítése adja a legújabb implementációt. A WebGPU külön API, ezért nem része egy WebGL-verziófrissítésnek.
+A WebGPU böngésző-API; működő adapterhez támogatott böngésző és grafikus illesztőprogram kell. A korábbi WebGL2/Canvas-változat `?backend=webgl`, a Canvas2D-változat `?backend=cpu` paraméterrel érhető el összehasonlításhoz. Az alapértelmezett WebGPU-útvonal nem kér Canvas2D- vagy WebGL-kontextust. Részletek és vizuális tesztoldalak: [WebGPU-megjelenítés](docs/rendering-webgpu.md).
 
 ## Nyelvek
 

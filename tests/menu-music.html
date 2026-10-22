@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="hu">
+  <meta charset="utf-8" /><title>Menüzene · hangpróba</title>
+  <body style="background: #09151b; color: #dce9d7; font: 16px monospace; padding: 40px">
+    <h1>Madárka, madárka · hangpróba</h1>
+    <p>Kürt, vonósok, mély vonósszólam és halk pergő. Saját hangszerelés, 66 BPM.</p>
+    <button id="render">HANGZÁS ELŐÁLLÍTÁSA</button>
+    <p id="music-status">Várakozás</p>
+    <audio id="preview" controls loop></audio>
+    <p><a id="download" hidden>WAV LETÖLTÉSE</a></p>
+    <script type="module">
+      import { renderMenuMusic } from '/src/menuMusic.js';
+      document.getElementById('render').onclick = async () => {
+        const status = document.getElementById('music-status');
+        status.textContent = 'Előállítás…';
+        try {
+          const { buffer, peak, rms } = await renderMenuMusic(44100),
+            channels = buffer.numberOfChannels,
+            data = new ArrayBuffer(44 + buffer.length * channels * 2),
+            view = new DataView(data);
+          const text = (offset, value) => {
+            for (let i = 0; i < value.length; i++) view.setUint8(offset + i, value.charCodeAt(i));
+          };
+          text(0, 'RIFF');
+          view.setUint32(4, data.byteLength - 8, true);
+          text(8, 'WAVE');
+          text(12, 'fmt ');
+          view.setUint32(16, 16, true);
+          view.setUint16(20, 1, true);
+          view.setUint16(22, channels, true);
+          view.setUint32(24, buffer.sampleRate, true);
+          view.setUint32(28, buffer.sampleRate * channels * 2, true);
+          view.setUint16(32, channels * 2, true);
+          view.setUint16(34, 16, true);
+          text(36, 'data');
+          view.setUint32(40, data.byteLength - 44, true);
+          const samples = Array.from({ length: channels }, (_, i) => buffer.getChannelData(i));
+          for (let i = 0; i < buffer.length; i++)
+            for (let c = 0; c < channels; c++)
+              view.setInt16(
+                44 + (i * channels + c) * 2,
+                Math.max(-1, Math.min(1, samples[c][i])) * 32767,
+                true,
+              );
+          const url = URL.createObjectURL(new Blob([data], { type: 'audio/wav' }));
+          document.getElementById('preview').src = url;
+          const download = document.getElementById('download');
+          download.href = url;
+          download.download = 'falcon-madarka-menu.wav';
+          download.hidden = false;
+          status.textContent = JSON.stringify({
+            seconds: buffer.duration,
+            sampleRate: buffer.sampleRate,
+            channels,
+            peak,
+            rms,
+            clipping: peak >= 1,
+          });
+        } catch (error) {
+          status.textContent = 'ERROR: ' + error.stack;
+        }
+      };
+    </script>
+  </body>
+</html>
