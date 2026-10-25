@@ -2,6 +2,23 @@ import { Vec3 } from './math.js';
 export const playerStrikeRole = (spec) =>
   /bombáz|csapásmérő|közvetlen támogató/i.test(spec.role || '');
 export function superiorityRoster(m, player) {
+  if (m.battlefield) {
+    const side = m.side || 'west',
+      rows = [];
+    const add = (type, team, count) => {
+      const old = rows.find((r) => r.type === type && r.team === team);
+      if (old) old.count += count;
+      else rows.push({ type, team, count });
+    };
+    for (const f of m.battlefield.flights) {
+      const team = f.side === side ? 'ally' : 'enemy',
+        n = f.waves * f.squadrons;
+      add('fighter', team, n * 3 - (team === 'ally' && !playerStrikeRole(player) ? 1 : 0));
+      add('bomber', team, n - (team === 'ally' && playerStrikeRole(player) ? 1 : 0));
+    }
+    for (const a of m.battlefield.assets) add(a.type, a.side === side ? 'ally' : 'enemy', 1);
+    return rows;
+  }
   if (m.mirrored) {
     const wanted = playerStrikeRole(player) ? 'bomber' : 'fighter';
     const seat =

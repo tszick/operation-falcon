@@ -136,12 +136,26 @@ body:not(.flying) {
   color: #80d8c7;
   border-color: currentColor;
 }
+.map-pin.flight-test-pin {
+  color: #c391ff;
+  border-color: currentColor;
+  background: #28183be0;
+}
+.map-legend .flight-test {
+  color: #c391ff;
+}
 .map-pin[aria-pressed='true'] {
   border-color: #ffdc69;
   color: #ffdc69;
   background: #5d4a1a;
   box-shadow: 0 0 14px #ffcc5a60;
   z-index: 2;
+}
+.map-pin.flight-test-pin[aria-pressed='true'] {
+  color: #dab5ff;
+  border-color: currentColor;
+  background: #4c2b70;
+  box-shadow: 0 0 14px #b56aff80;
 }
 .map-pin:hover,
 .map-pin:focus-visible {

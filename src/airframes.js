@@ -1,3 +1,4 @@
+import { experimentalAirframes } from './experimentalAirframes.js';
 import { Vec3, clamp, DEG } from './math.js';
 
 // Hand-built, low-poly recognition models in metres (+Z nose, +Y up).
@@ -1085,6 +1086,7 @@ function wingSection(wing, x) {
   }
   return zs.length ? { rear: Math.min(...zs), front: Math.max(...zs) } : null;
 }
+Object.assign(airframes, experimentalAirframes);
 export function aircraftMesh(id = 'f16', sweep = 0, flaps = 0) {
   if (typeof id === 'object') id = id.id;
   if (!airframes[id])

@@ -1,3 +1,5 @@
+import { taiwanMission } from './taiwanMission.js';
+import { flightTestMissions } from './experimentalAircraft.js';
 import { navalMission } from './navalData.js';
 export const missions = [
   {
@@ -309,7 +311,7 @@ export const missions = [
     ],
   },
 ];
-missions.push(navalMission);
+missions.push(navalMission, taiwanMission);
 const order = [
   'landing',
   'canyon',
@@ -324,6 +326,7 @@ const order = [
   'air-superiority',
   'iron-veil',
   'carrier-defense',
+  'taiwan-invasion',
 ];
 missions.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
 for (const m of missions) {
@@ -332,7 +335,9 @@ for (const m of missions) {
     : 'story1';
   m.order = order.indexOf(m.id) + (m.group === 'practice' ? 1 : -3);
 }
+missions.push(...flightTestMissions);
 export const missionGroups = [
   { id: 'practice', name: 'Gyakorlás' },
+  { id: 'flight-test', name: 'Berepülés' },
   { id: 'story1', name: 'Küldetések · Story #1' },
 ];

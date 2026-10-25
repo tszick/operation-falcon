@@ -1,3 +1,4 @@
+import { externalStoreCount } from './armament.js';
 import {
   navalFlight,
   navalControlAuthority,
@@ -165,7 +166,7 @@ export function stepAircraft(s, input, dt = STEP) {
       s,
       q,
       m,
-      clamp(0.22 + spec.clSlope * alpha, -spec.maxCL, spec.maxCL),
+      clamp((spec.liftZero ?? 0.22) + spec.clSlope * alpha, -spec.maxCL, spec.maxCL),
       spec.thrust * s.throttle * clamp(air.density / 1.225, 0.23, 1),
       dt,
     ),
@@ -188,7 +189,7 @@ export function stepAircraft(s, input, dt = STEP) {
   f = forward(s.orientation);
   u = up(s.orientation);
   const cl = flow.cl;
-  const stores = s.ammo.aam + s.ammo.agm + s.ammo.bomb,
+  const stores = externalStoreCount(s),
     cd =
       spec.cd0 +
       spec.inducedDrag * cl * cl +

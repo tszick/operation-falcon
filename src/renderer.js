@@ -419,6 +419,7 @@ export class Renderer {
     return this.worldVisible(p) ? screen : null;
   }
   runway(jammed = false) {
+    if (terrainWorld.recoverySites) return;
     if (terrainWorld.ocean) {
       renderCarrier(this);
       return;
@@ -716,7 +717,9 @@ export class Renderer {
           t.flight?.condition,
           'aircraft',
         );
-      } else renderGroundTarget(this, t);
+      } else if (t.type === 'carrier')
+        renderCarrier(this, t.position, Quat.euler(t.heading || 0, 0, 0));
+      else renderGroundTarget(this, t);
     }
     if ((this.thirdPerson || wreck || this.cinematic) && !s.crashed)
       this.mesh(
@@ -740,7 +743,8 @@ export class Renderer {
       if (
         !t.exited &&
         !t.playerControlled &&
-        !t.home &&
+        (!t.home || s.multipleAirfields) &&
+        t.id !== s.airfield?.targetId &&
         !t.city &&
         t.alive &&
         !jammed &&
@@ -798,8 +802,8 @@ export class Renderer {
         s.position.length() > 3500)
     )
       this.marker(
-        s.recoveryExit || baseMarkerPosition(targets, terrainWorld.ocean),
-        `${s.recoveryExit ? 'KIVONULÁS' : terrainWorld.ocean ? 'ANYAHAJÓ' : 'BASE'} ${(s.position.distance(s.recoveryExit || s.airfield?.position || new Vec3()) / 1000).toFixed(1)} KM`,
+        s.recoveryExit || s.airfield?.position || baseMarkerPosition(targets, terrainWorld.ocean),
+        `${s.recoveryExit ? 'KIVONULÁS' : s.airfield?.carrier ? 'ANYAHAJÓ' : 'BASE'} ${(s.position.distance(s.recoveryExit || s.airfield?.position || new Vec3()) / 1000).toFixed(1)} KM`,
         '#baf37d',
         false,
         { offscreenLabel: true },

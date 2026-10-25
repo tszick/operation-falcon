@@ -1,3 +1,4 @@
+import { carrierLocalPosition } from './recoveryAirfields.js';
 import { navalFlight, onCarrierDeck, carrierTouchdown, vtolApproach } from './navalOps.js';
 import { attitude, DEG, Quat } from './math.js';
 import { runway, homeHangars } from './terrain.js';
@@ -26,14 +27,14 @@ export function runwayState(s) {
 }
 export function onLandingRunway(s) {
   if (navalFlight(s) && s.spec.vtol && (s.naval?.nozzle || 0) >= 75)
-    return onCarrierDeck(s.position);
+    return onCarrierDeck(s.position, s.airfield);
   const v = runwayState(s),
     strip = s.airfield || runway;
   return Math.abs(v.position.x) < strip.halfWidth && Math.abs(v.position.z) < strip.halfLength;
 }
 export function landingGroundHeight(s, terrain) {
-  return navalFlight(s) && onCarrierDeck(s.position)
-    ? 20
+  return navalFlight(s) && onCarrierDeck(s.position, s.airfield)
+    ? s.airfield.elevation
     : s.airfield && onLandingRunway(s)
       ? s.airfield.elevation
       : terrain;
@@ -331,7 +332,7 @@ export function rolloutMargins(speed) {
   };
 }
 export function rolloutSurface(s) {
-  if (navalFlight(s)) return { shoulder: false, allowed: onCarrierDeck(s.position) };
+  if (navalFlight(s)) return { shoulder: false, allowed: onCarrierDeck(s.position, s.airfield) };
   s = runwayState(s);
   const strip = s.airfield || runway,
     margins = rolloutMargins(Math.hypot(s.velocity.x, s.velocity.z)),
@@ -347,14 +348,12 @@ export function rolloutSurface(s) {
   return { ...margins, shoulder, allowed: onLandingRunway(s) || shoulder };
 }
 export function rolloutObstacle(s, from = s.previousPosition || s.position, to = s.position) {
-  if (navalFlight(s))
-    return s.position.y < 52 &&
-      s.position.x > 18 &&
-      s.position.x < 36 &&
-      s.position.z > -15 &&
-      s.position.z < 55
+  if (navalFlight(s)) {
+    const p = carrierLocalPosition(s.position, s.airfield);
+    return p.y < 52 && p.x > 18 && p.x < 36 && p.z > -15 && p.z < 55
       ? 'A gép az anyahajó felépítményének gurult.'
       : null;
+  }
   if (!s.onGround) return null;
   if (s.airfield && !s.airfield.home) return null;
   if (s.airfield) {

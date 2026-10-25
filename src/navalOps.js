@@ -1,17 +1,27 @@
+import { carrierLocalPosition } from './recoveryAirfields.js';
 import { Vec3, Quat, DEG, attitude, up, forward, clamp } from './math.js';
 import { carrierDeck, carrierAirfield } from './navalData.js';
 import { mass, atmosphere } from './performance.js';
 export const navalFlight = (s) => !!s.airfield?.carrier;
-export function onCarrierDeck(p) {
+export function onCarrierDeck(p, field = null) {
+  p = carrierLocalPosition(p, field);
   return Math.abs(p.x) < carrierDeck.halfWidth && Math.abs(p.z) < carrierDeck.halfLength;
 }
 export function initialiseNaval(s) {
-  s.airfield = carrierAirfield();
+  const field = s.airfield?.carrier ? s.airfield : carrierAirfield();
+  s.airfield = field;
   s.naval = { hook: false, nozzle: 0, arrested: false, bolter: false };
-  s.position = new Vec3(-7, 22, -115);
+  const q = Quat.euler(field.deckHeading || 0, 0, 0);
+  s.position = q.rotate(new Vec3(-7, 22, -115)).add(field.deckPosition || new Vec3());
   s.previousPosition = s.position.clone();
-  s.orientation = new Quat();
+  s.orientation = Quat.euler(field.deckHeading || 0, 0, 0);
   s.agl = 22;
+  s.velocity = new Vec3();
+  s.speed = 0;
+  s.ias = 0;
+  s.mach = 0;
+  s.onGround = true;
+  s.airborne = false;
   return s;
 }
 export function requestCatapult(s) {
@@ -20,9 +30,10 @@ export function requestCatapult(s) {
   if (s.naval.catapult) return 'KATAPULT INDÍTÁS FOLYAMATBAN';
   if (s.elapsed < 5) return 'VÁRJ: FALCON TWO ELHAGYJA A FEDÉLZETET';
   if (s.throttle < 0.9) return 'KATAPULT: ELŐBB TELJES GÁZ';
-  if (Math.abs(s.position.x + 7) > 5 || s.position.z > 0) return 'ÁLLJ A KATAPULT INDÍTÓPONTJÁRA';
+  const local = carrierLocalPosition(s.position, s.airfield);
+  if (Math.abs(local.x + 7) > 5 || local.z > 0) return 'ÁLLJ A KATAPULT INDÍTÓPONTJÁRA';
   s.naval.catapult = true;
-  s.naval.launchStart = s.position.z;
+  s.naval.launchStart = local.z;
   const pose = attitude(s.orientation);
   s.naval.launchHeading = pose.heading;
   s.naval.launchPitch = pose.pitch;
@@ -44,7 +55,9 @@ export function navalControlAuthority(s) {
   return !!s.spec.vtol && (s.naval?.nozzle || 0) >= 45 && s.fuel > 0 && s.throttle > 0.35;
 }
 export function navalAcceleration(s) {
-  return s.naval?.catapult && s.onGround ? new Vec3(0, 0, 40) : new Vec3();
+  return s.naval?.catapult && s.onGround
+    ? Quat.euler(s.airfield?.deckHeading || 0, 0, 0).rotate(new Vec3(0, 0, 40))
+    : new Vec3();
 }
 export function carrierTouchdown(s, descent, speed) {
   const a = attitude(s.orientation),
@@ -52,7 +65,7 @@ export function carrierTouchdown(s, descent, speed) {
       s.spec.vtol && (s.naval?.nozzle || 0) >= 75 && Math.hypot(s.velocity.x, s.velocity.z) < 12;
   const problems = [];
   if (!s.gear) problems.push('A fedélzeti leszálláshoz futómű kell.');
-  if (!onCarrierDeck(s.position)) problems.push('A gép nem a fedélzetet érte el.');
+  if (!onCarrierDeck(s.position, s.airfield)) problems.push('A gép nem a fedélzetet érte el.');
   if (descent > 5.5) problems.push('Túl nagy fedélzeti süllyedés.');
   if (Math.abs(a.bank) > 12 * DEG) problems.push('Túl nagy bedöntés a fedélzethez.');
   if (vtol) {
@@ -83,14 +96,14 @@ export function stepNaval(s, dt) {
   const n = s.naval;
   if (n.arrested) {
     s.onGround = true;
-    s.position.y = 22;
+    s.position.y = s.airfield.elevation + 2;
     s.velocity.y = 0;
   }
   if (n.bolter && s.agl > 150) n.bolter = false;
   if (n.catapult) {
     // A single small release bob over the first 12 m settles before rotation.
     // Both ends of the pulse have zero slope: no instantaneous camera change.
-    const travel = Math.max(0, s.position.z - n.launchStart),
+    const travel = Math.max(0, carrierLocalPosition(s.position, s.airfield).z - n.launchStart),
       t = clamp((travel - 14) / 80, 0, 1),
       ease = t * t * (3 - 2 * t),
       pose = attitude(s.orientation),
@@ -150,7 +163,7 @@ export function stepNaval(s, dt) {
       s.warning = 'BOLTER — ÁTSTARTOLÁS, TELJES GÁZ';
     }
   }
-  if (s.onGround && !onCarrierDeck(s.position)) {
+  if (s.onGround && !onCarrierDeck(s.position, s.airfield)) {
     s.onGround = false;
     s.airborne = true;
     s.landing = null;
@@ -161,9 +174,10 @@ export function stepNaval(s, dt) {
 }
 
 export function vtolApproach(s) {
-  const height = s.position.y - 20,
+  const local = carrierLocalPosition(s.position, s.airfield);
+  const height = s.position.y - s.airfield.elevation,
     sink = -s.velocity.y,
-    near = Math.abs(s.position.x) < 100 && Math.abs(s.position.z) < 230,
+    near = Math.abs(local.x) < 100 && Math.abs(local.z) < 230,
     active =
       !s.onGround &&
       !s.dying &&
@@ -184,7 +198,7 @@ export function vtolApproach(s) {
   return {
     active,
     direction: 1,
-    distance: Math.max(0, Math.hypot(s.position.x, s.position.z) - 100),
+    distance: Math.max(0, Math.hypot(local.x, local.z) - 100),
     height,
     sink,
     angle: 0,

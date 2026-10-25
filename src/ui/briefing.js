@@ -1,3 +1,4 @@
+import { missionGroups } from '../missionCatalog.js';
 import { trHtml, tr } from '../i18n.js';
 import { missionForSide } from '../missionSides.js';
 import { escapeHtml as escape } from './html.js';
@@ -84,15 +85,15 @@ export class Briefing {
         .map((m) => {
           const location = missionLocation(m),
             p = mapPosition(location);
-          return `<button class="map-pin ${m.group === 'practice' ? 'practice-pin' : ''}" data-mission="${escape(m.id)}" style="left:${p.x}%;top:${p.y}%" aria-label="${escape(m.name)} — ${escape(location.name)}" aria-pressed="false" aria-describedby="map-tooltip"><span></span></button>`;
+          return `<button class="map-pin ${m.group === 'practice' ? 'practice-pin' : m.group === 'flight-test' ? 'flight-test-pin' : ''}" data-mission="${escape(m.id)}" style="left:${p.x}%;top:${p.y}%" aria-label="${escape(m.name)} — ${escape(location.name)}" aria-pressed="false" aria-describedby="map-tooltip"><span></span></button>`;
         })
         .join(''),
     );
     document.getElementById('map-mission-list').innerHTML = trHtml(
-      ['practice', 'story1']
+      missionGroups
         .map(
-          (group) =>
-            `<details ${group === 'practice' ? 'open' : ''}><summary>${group === 'practice' ? 'GYAKORLÁS' : 'KÜLDETÉSEK'}</summary><div>${this.missions
+          ({ id: group, name }) =>
+            `<details ${group === 'practice' ? 'open' : ''}><summary>${escape(name)}</summary><div>${this.missions
               .filter((m) => m.group === group)
               .map(
                 (m) =>
@@ -168,7 +169,18 @@ export class Briefing {
     );
     document.getElementById('launch-summary').textContent = tr(selected.name);
     document.getElementById('equipment-mission-name').textContent = tr(mission.name);
-    document.getElementById('equipment-brief').textContent = tr(mission.description);
+    document.getElementById('equipment-brief').textContent =
+      tr(mission.description) +
+      (selected.testProfile
+        ? ' ' +
+          tr(
+            'Stabil repülés: ' +
+              selected.testProfile.altitude +
+              ' m · IAS ' +
+              selected.testProfile.ias +
+              ' km/h · 12 s',
+          )
+        : '');
     document.getElementById('equipment-objectives').innerHTML = trHtml(
       '<h3>ELSŐDLEGES CÉLOK</h3><ol>' +
         mission.primary.map((p) => `<li>${escape(p)}</li>`).join('') +

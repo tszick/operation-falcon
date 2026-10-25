@@ -44,7 +44,7 @@ struct Out {@builtin(position) position:vec4f,@location(0) tint:vec3f,@location(
   let normal=normalize(cross(dpdx(o.world),dpdy(o.world)));
   let light=0.58+0.42*abs(dot(normal,normalize(vec3f(-0.36,0.86,-0.36))));
   var color=mix(vec3f(0.075,0.61,0.65),vec3f(0.10,0.30,0.42),smoothstep(0.0,650.0,depth));
-  if(o.world.y>0.0){color=vec3f(0.91,0.77,0.51)*(0.7+grain*0.55)*light;}
+  if(o.world.y>0.0){color=o.tint*(0.7+grain*0.55);}
   let foam=exp(-pow(depth/22.0,2))*select(0.0,0.22,o.world.y<0.0);
   color=mix(color,vec3f(0.78,0.91,0.85),foam);
   color=mix(color,u.haze.rgb,smoothstep(7000.0,40000.0,o.depth)*0.45);

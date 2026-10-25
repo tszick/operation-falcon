@@ -36,7 +36,7 @@ import { threatsFor } from './threats.js';
 import { predictBombImpact } from './weaponDynamics.js';
 export function createTargets(m, playerSpec = { faction: 'west' }, { rng = Math.random } = {}) {
   if (m.composition) return createBattleTargets(m, playerSpec, { rng });
-  if (m.objective === 'landing') {
+  if (m.objective === 'landing' || m.objective === 'flight-test') {
     configureTerrain(m, undefined, rng);
     return [];
   }
@@ -142,7 +142,8 @@ export function applyTargetHit(
     const air = atmosphere(s.position.y),
       q = 0.5 * air.density * s.velocity.length() ** 2,
       alpha = clamp(
-        ((mass(s) * 9.81) / Math.max(1, q * spec.wingArea) - 0.22) / spec.clSlope,
+        ((mass(s) * 9.81) / Math.max(1, q * spec.wingArea) - (spec.liftZero ?? 0.22)) /
+          spec.clSlope,
         0,
         spec.stallAlpha * 0.8,
       );

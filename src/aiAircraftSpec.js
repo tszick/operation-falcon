@@ -1,8 +1,11 @@
-import { aircraft } from './aircraftSpec.js';
+import { aircraft, experimentalAircraft } from './aircraftSpec.js';
 import { aiAircraft } from './heavyAircraftData.js';
 export { aiAircraft };
 export function aircraftFlightSpec(id) {
-  const spec = aircraft.find((s) => s.id === id) || aiAircraft.find((s) => s.id === id);
+  const spec =
+    aircraft.find((s) => s.id === id) ||
+    experimentalAircraft.find((s) => s.id === id) ||
+    aiAircraft.find((s) => s.id === id);
   if (!spec) throw new Error(`Missing aircraft physics: ${id}`);
   return spec;
 }

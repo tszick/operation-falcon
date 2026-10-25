@@ -208,7 +208,10 @@ export function getLandingRoute(s, { jammed = false } = {}) {
   }
   if (jammed) return null;
   if (s.airfield?.carrier && s.spec.vtol && (s.naval?.nozzle || 0) >= 75) {
-    const spot = new Vec3(-18, 22, -40);
+    const f = s.airfield;
+    const spot = Quat.euler(f.deckHeading || 0, 0, 0)
+      .rotate(new Vec3(-18, 22, -40))
+      .add(f.deckPosition || new Vec3());
     return {
       points: [s.position.clone(), new Vec3(spot.x, Math.max(60, s.position.y), spot.z), spot],
       finalStart: 1,
@@ -220,9 +223,11 @@ export function getLandingRoute(s, { jammed = false } = {}) {
   let route = cache.get(s);
   if (
     !route ||
+    route.airfield !== s.airfield ||
     ((s.elapsed || 0) - route.plannedAt > 5 && distanceToRoute(s.position, route.points) > 2000)
   ) {
     route = planLandingRoute(s, route?.direction || s.approach.direction);
+    route.airfield = s.airfield;
     cache.set(s, route);
   }
   return route;

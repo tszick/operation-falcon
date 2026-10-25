@@ -8,7 +8,7 @@ export function airflow(s, f, u, v) {
     beta = Math.atan2(lateral, Math.hypot(along, normal));
   const stalled = Math.abs(alpha) > s.spec.stallAlpha && v > 35;
   let cl = clamp(
-    0.22 + s.spec.clSlope * alpha + s.flapPosition * 0.45,
+    (s.spec.liftZero ?? 0.22) + s.spec.clSlope * alpha + s.flapPosition * 0.45,
     -s.spec.maxCL,
     s.spec.maxCL + s.flapPosition * 0.35,
   );

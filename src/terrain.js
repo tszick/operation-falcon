@@ -25,6 +25,18 @@ function corridor(anchor, rng) {
   };
 }
 export function configureTerrain(m, anchor = new Vec3(22000, 0, 0), rng = Math.random) {
+  if (m.battlefield?.environment) {
+    terrainWorld = {
+      revision: ++revision,
+      skySeed: (revision * 22695477) >>> 0,
+      river: null,
+      road: null,
+      canyon: null,
+      peaks: [],
+      ...m.battlefield.environment,
+    };
+    return terrainWorld;
+  }
   if (m.naval || m.id === 'carrier-defense') {
     terrainWorld = {
       revision: ++revision,

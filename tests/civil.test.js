@@ -30,11 +30,11 @@ function setup() {
   return { s, targets, m, aim, w };
 }
 test('grouped compositions replace the old target-type menu', () => {
-  assert.equal(catalog.length, 13);
+  assert.equal(catalog.length, 16);
   assert.equal(catalog[0].id, 'landing');
   assert.equal(catalog[1].id, 'canyon');
   assert.equal(catalog[2].id, 'civil');
-  assert.ok(catalog.every((m) => m.composition));
+  assert.ok(catalog.every((m) => m.composition || m.objective === 'flight-test'));
   assert.equal(
     catalog.some((m) => m.id === 'radar'),
     false,

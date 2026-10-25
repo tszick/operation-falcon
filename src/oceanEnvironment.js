@@ -64,7 +64,12 @@ export function islandGeometry(island) {
           x = Math.cos(angle) * shore * radius * island.radiusX,
           z = Math.sin(angle) * shore * radius * island.radiusZ,
           y =
-            radius <= 1 ? island.height * (1 - radius * radius) ** 2 : (-650 * (radius - 1)) / 0.7;
+            radius <= 1
+              ? island.plateau
+                ? island.height *
+                  (1 - clamp((radius - island.plateau) / (1 - island.plateau), 0, 1))
+                : island.height * (1 - radius * radius) ** 2
+              : (-650 * (radius - 1)) / 0.7;
         return new Vec3(island.x + x * c + z * s, y, island.z - x * s + z * c);
       }),
     );
@@ -81,7 +86,10 @@ export function islandGeometry(island) {
       deep = clamp(-center.y / 650, 0, 1),
       rgb = water
         ? [22 + deep * 3, 155 - deep * 78, 164 - deep * 57]
-        : [219 * light, 188 * light, 126 * light];
+        : (island.landColor && center.y > island.height * 0.3
+            ? island.landColor
+            : [219, 188, 126]
+          ).map((c) => c * light);
     const face = {
       points,
       normal,
@@ -171,18 +179,21 @@ export function oceanSurface(islands, cx, cz) {
   return faces;
 }
 export function seaSegmentClear(from, to, islands, clearance = 350) {
-  const dx = to.x - from.x,
-    dz = to.z - from.z,
-    d2 = dx * dx + dz * dz;
   return islands.every((island) => {
-    const t = clamp(
-      ((island.x - from.x) * dx + (island.z - from.z) * dz) / Math.max(1e-9, d2),
-      0,
-      1,
-    );
-    return (
-      Math.hypot(from.x + t * dx - island.x, from.z + t * dz - island.z) > island.radius + clearance
-    );
+    const c = Math.cos(island.heading),
+      s = Math.sin(island.heading);
+    const rx = island.radiusX * 1.18 + clearance,
+      rz = island.radiusZ * 1.18 + clearance;
+    const local = (p) => ({
+      x: ((p.x - island.x) * c - (p.z - island.z) * s) / rx,
+      z: ((p.x - island.x) * s + (p.z - island.z) * c) / rz,
+    });
+    const a = local(from),
+      b = local(to),
+      dx = b.x - a.x,
+      dz = b.z - a.z;
+    const t = clamp(-(a.x * dx + a.z * dz) / Math.max(1e-9, dx * dx + dz * dz), 0, 1);
+    return Math.hypot(a.x + t * dx, a.z + t * dz) > 1;
   });
 }
 export function planSeaRoute(from, goal, islands, clearance = 450) {
@@ -192,10 +203,13 @@ export function planSeaRoute(from, goal, islands, clearance = 450) {
   for (const island of nearby)
     for (let j = 0; j < 12; j++) {
       const angle = (j * TAU) / 12,
-        radius = (island.radius + clearance) / Math.cos(Math.PI / 12) + 20;
-      nodes.push(
-        new Vec3(island.x + Math.cos(angle) * radius, 0, island.z + Math.sin(angle) * radius),
-      );
+        c = Math.cos(island.heading),
+        s = Math.sin(island.heading);
+      const x =
+        Math.cos(angle) * ((island.radiusX * 1.18 + clearance) / Math.cos(Math.PI / 12) + 20);
+      const z =
+        Math.sin(angle) * ((island.radiusZ * 1.18 + clearance) / Math.cos(Math.PI / 12) + 20);
+      nodes.push(new Vec3(island.x + x * c + z * s, 0, island.z - x * s + z * c));
     }
   const cost = nodes.map(() => Infinity),
     prior = nodes.map(() => -1),

@@ -10,6 +10,11 @@ import { sensorTargets, navigationJammed } from './electronicWarfare.js';
 // Short, ordered cockpit reminders. Detailed instructions remain in H.
 export function phaseGuide(s, mission, aim, weapons, targets) {
   const step = (key, text, done = false) => ({ key, text, done });
+  if (mission.spec.objective === 'flight-test' && !s.approach?.active)
+    return [
+      step('R / W / S', mission.phaseHint),
+      step('—', 'A repülési tesztpontokat folyamatosan, fegyverzet nélkül teljesítsd.'),
+    ].map((v, i) => ({ ...v, active: i === 0 }));
   if (s.recoveryExit && (mission.aborted || ['return', 'emergency'].includes(mission.phaseId))) {
     const delta = s.recoveryExit.clone().sub(s.position),
       heading = (Math.atan2(delta.x, delta.z) / DEG + 360) % 360;
@@ -195,7 +200,13 @@ export function phaseGuide(s, mission, aim, weapons, targets) {
           s.spec.hasAB ? 'Teljes gáz, utánégető' : 'Teljes gáz',
           s.throttle >= 0.95 && (!s.spec.hasAB || s.afterburner),
         ),
-        step('S', `${rotation}–${rotation + 20} km/h: finoman orr fel`, s.airborne),
+        step(
+          'S',
+          s.spec.id === 'b52'
+            ? 'B–52: csak enyhe orremelés, kb. 3–5°; hagyd felgyorsulni.'
+            : `${rotation}–${rotation + 20} km/h: finoman orr fel`,
+          s.airborne,
+        ),
         step('G', 'Emelkedés után futómű be', !s.gear),
         step('X', 'Fékszárny be', flap.retracted),
       ];

@@ -8846,5 +8846,385 @@
   "A civil gépet békésen elfogtad. Sikeresen hazahoztad a gépedet.": {
     "hu": "A civil gépet békésen elfogtad. Sikeresen hazahoztad a gépedet.",
     "en": "You peacefully intercepted the civilian aircraft and returned home safely."
+  },
+  "Berepülés": {
+    "hu": "Berepülés",
+    "en": "Flight testing"
+  },
+  "Berepülés · Edwards": {
+    "hu": "Berepülés · Edwards",
+    "en": "Flight testing · Edwards"
+  },
+  "Berepülés · Zsukovszkij": {
+    "hu": "Berepülés · Zsukovszkij",
+    "en": "Flight testing · Zhukovsky"
+  },
+  "TESZTPILÓTA": {
+    "hu": "TESZTPILÓTA",
+    "en": "TEST PILOT"
+  },
+  "Kísérleti repülőgép": {
+    "hu": "Kísérleti repülőgép",
+    "en": "Experimental aircraft"
+  },
+  "Edwards · Kalifornia, USA": {
+    "hu": "Edwards · Kalifornia, USA",
+    "en": "Edwards · California, USA"
+  },
+  "Zsukovszkij · szovjet/orosz tesztközpont": {
+    "hu": "Zsukovszkij · szovjet/orosz tesztközpont",
+    "en": "Zhukovsky · Soviet/Russian test centre"
+  },
+  "Fegyvertelen tesztprogram: felszállás, előírt magasság és IAS elérése, stabil repülés, kíméletes bal és jobb forduló, majd hazatérés és leszállás. A pontos tesztpontokat a kiválasztott gép határozza meg.": {
+    "hu": "Fegyvertelen tesztprogram: felszállás, előírt magasság és IAS elérése, stabil repülés, kíméletes bal és jobb forduló, majd hazatérés és leszállás. A pontos tesztpontokat a kiválasztott gép határozza meg.",
+    "en": "Unarmed test programme: take off, reach the specified altitude and IAS, demonstrate stable flight and gentle left/right turns, then return and land. Test points depend on the selected aircraft."
+  },
+  "Szállj fel a kiválasztott kísérleti géppel.": {
+    "hu": "Szállj fel a kiválasztott kísérleti géppel.",
+    "en": "Take off in the selected experimental aircraft."
+  },
+  "Teljesítsd a géphez tartozó stabil repülési és fordulási tesztpontokat.": {
+    "hu": "Teljesítsd a géphez tartozó stabil repülési és fordulási tesztpontokat.",
+    "en": "Complete the aircraft-specific level-flight and turning test points."
+  },
+  "Térj vissza, szállj le és állj meg.": {
+    "hu": "Térj vissza, szállj le és állj meg.",
+    "en": "Return, land and come to a stop."
+  },
+  "Ez a kísérleti gép csak a saját berepülési programjában választható.": {
+    "hu": "Ez a kísérleti gép csak a saját berepülési programjában választható.",
+    "en": "This experimental aircraft is restricted to its own flight-test programme."
+  },
+  "A berepüléshez kísérleti repülőgép szükséges.": {
+    "hu": "A berepüléshez kísérleti repülőgép szükséges.",
+    "en": "Select an experimental aircraft for flight testing."
+  },
+  "Berepülés: biztonságos felszállás": {
+    "hu": "Berepülés: biztonságos felszállás",
+    "en": "Flight test: safe takeoff"
+  },
+  "Bal forduló: 20–40° bedöntés, 3 s": {
+    "hu": "Bal forduló: 20–40° bedöntés, 3 s",
+    "en": "Left turn: 20–40° bank for 3 s"
+  },
+  "Jobb forduló: 20–40° bedöntés, 3 s": {
+    "hu": "Jobb forduló: 20–40° bedöntés, 3 s",
+    "en": "Right turn: 20–40° bank for 3 s"
+  },
+  "Hazatérés, leszállás és megállás": {
+    "hu": "Hazatérés, leszállás és megállás",
+    "en": "Return, land and stop"
+  },
+  "BEREPÜLÉS TELJESÍTVE": {
+    "hu": "BEREPÜLÉS TELJESÍTVE",
+    "en": "FLIGHT TEST COMPLETE"
+  },
+  "A tesztpontokat teljesítetted, a gépet biztonságosan hazahoztad.": {
+    "hu": "A tesztpontokat teljesítetted, a gépet biztonságosan hazahoztad.",
+    "en": "Test points completed and aircraft recovered safely."
+  },
+  "Teljes gáz; felszállás után futó és fékszárny be.": {
+    "hu": "Teljes gáz; felszállás után futó és fékszárny be.",
+    "en": "Full throttle; retract gear and flaps after takeoff."
+  },
+  "Térj a BASE felé; N: leszállási segéd. Szállj le és állj meg.": {
+    "hu": "Térj a BASE felé; N: leszállási segéd. Szállj le és állj meg.",
+    "en": "Return to BASE; N: landing aid. Land and come to a stop."
+  },
+  "A repülési tesztpontokat folyamatosan, fegyverzet nélkül teljesítsd.": {
+    "hu": "A repülési tesztpontokat folyamatosan, fegyverzet nélkül teljesítsd.",
+    "en": "Hold each test condition continuously; no weapons are carried."
+  },
+  "B–52: csak enyhe orremelés, kb. 3–5°; hagyd felgyorsulni.": {
+    "hu": "B–52: csak enyhe orremelés, kb. 3–5°; hagyd felgyorsulni.",
+    "en": "B–52: raise the nose gently, about 3–5°; allow it to accelerate."
+  },
+  "Tervezett sebességhatár": {
+    "hu": "Tervezett sebességhatár",
+    "en": "Design speed limit"
+  },
+  "Tervezett csúcsmagasság": {
+    "hu": "Tervezett csúcsmagasság",
+    "en": "Design ceiling"
+  },
+  "Első repülés": {
+    "hu": "Első repülés",
+    "en": "First flight"
+  },
+  "Repült prototípusok": {
+    "hu": "Repült prototípusok",
+    "en": "Flying prototypes"
+  },
+  "Berepülési tesztpont": {
+    "hu": "Berepülési tesztpont",
+    "en": "Flight-test point"
+  },
+  "Berepülés · kísérleti repülőgépek": {
+    "hu": "Berepülés · kísérleti repülőgépek",
+    "en": "Flight testing · experimental aircraft"
+  },
+  "Nyilvános típusadatok és tervezési célok; a repülési együtthatók és részben nem közölt tömegek játékbeli becslések.": {
+    "hu": "Nyilvános típusadatok és tervezési célok; a repülési együtthatók és részben nem közölt tömegek játékbeli becslések.",
+    "en": "Public airframe figures and design targets; aerodynamic coefficients and some undisclosed weights are simulation estimates."
+  },
+  "Túl nagy felszállótömeg: {{v0}} / {{v1}} kg. Ezzel a teherrel legfeljebb {{v2}}% üzemanyag választható.": {
+    "hu": "Túl nagy felszállótömeg: {{v0}} / {{v1}} kg. Ezzel a teherrel legfeljebb {{v2}}% üzemanyag választható.",
+    "en": "Takeoff mass exceeded: {{v0}} / {{v1}} kg. Maximum fuel with these stores: {{v2}}%."
+  },
+  "Előrenyilazott szárnyú, digitális repülésvezérlésű kutatógép. Két példány épült; nem sorozatgyártásra szánt vadász.": {
+    "hu": "Előrenyilazott szárnyú, digitális repülésvezérlésű kutatógép. Két példány épült; nem sorozatgyártásra szánt vadász.",
+    "en": "Forward-swept-wing research aircraft with digital flight control. Two were built; it was not intended as a production fighter."
+  },
+  "Grumman X-29A": {
+    "hu": "Grumman X-29A",
+    "en": "Grumman X-29A"
+  },
+  "Stabil repülés: 3000 m · IAS 550 km/h · 12 s": {
+    "hu": "Stabil repülés: 3000 m · IAS 550 km/h · 12 s",
+    "en": "Level flight: 3000 m · IAS 550 km/h · 12 s"
+  },
+  "3000 m ±150 m · IAS 550 km/h ±40 km/h · szinttartás 12 s, bedöntés <8°, függőleges sebesség <4 m/s.": {
+    "hu": "3000 m ±150 m · IAS 550 km/h ±40 km/h · szinttartás 12 s, bedöntés <8°, függőleges sebesség <4 m/s.",
+    "en": "3000 m ±150 m · IAS 550 km/h ±40 km/h · hold level for 12 s, bank <8°, vertical speed <4 m/s."
+  },
+  "3000 m ±150 m · IAS 550 km/h ±40 km/h · bal bedöntés 20–40° legalább 3 s.": {
+    "hu": "3000 m ±150 m · IAS 550 km/h ±40 km/h · bal bedöntés 20–40° legalább 3 s.",
+    "en": "3000 m ±150 m · IAS 550 km/h ±40 km/h · left bank 20–40° for at least 3 s."
+  },
+  "3000 m ±150 m · IAS 550 km/h ±40 km/h · jobb bedöntés 20–40° legalább 3 s.": {
+    "hu": "3000 m ±150 m · IAS 550 km/h ±40 km/h · jobb bedöntés 20–40° legalább 3 s.",
+    "en": "3000 m ±150 m · IAS 550 km/h ±40 km/h · right bank 20–40° for at least 3 s."
+  },
+  "Az ATF-program két demonstrátora közül a YF119 hajtóműves PAV-1 közelítő modellje. A versenyt a YF-22 nyerte.": {
+    "hu": "Az ATF-program két demonstrátora közül a YF119 hajtóműves PAV-1 közelítő modellje. A versenyt a YF-22 nyerte.",
+    "en": "Approximation of the YF119-powered PAV-1, one of two ATF demonstrators. The YF-22 won the competition."
+  },
+  "Northrop YF-23A Black Widow II": {
+    "hu": "Northrop YF-23A Black Widow II",
+    "en": "Northrop YF-23A Black Widow II"
+  },
+  "Stabil repülés: 5000 m · IAS 650 km/h · 12 s": {
+    "hu": "Stabil repülés: 5000 m · IAS 650 km/h · 12 s",
+    "en": "Level flight: 5000 m · IAS 650 km/h · 12 s"
+  },
+  "5000 m ±150 m · IAS 650 km/h ±40 km/h · szinttartás 12 s, bedöntés <8°, függőleges sebesség <4 m/s.": {
+    "hu": "5000 m ±150 m · IAS 650 km/h ±40 km/h · szinttartás 12 s, bedöntés <8°, függőleges sebesség <4 m/s.",
+    "en": "5000 m ±150 m · IAS 650 km/h ±40 km/h · hold level for 12 s, bank <8°, vertical speed <4 m/s."
+  },
+  "5000 m ±150 m · IAS 650 km/h ±40 km/h · bal bedöntés 20–40° legalább 3 s.": {
+    "hu": "5000 m ±150 m · IAS 650 km/h ±40 km/h · bal bedöntés 20–40° legalább 3 s.",
+    "en": "5000 m ±150 m · IAS 650 km/h ±40 km/h · left bank 20–40° for at least 3 s."
+  },
+  "5000 m ±150 m · IAS 650 km/h ±40 km/h · jobb bedöntés 20–40° legalább 3 s.": {
+    "hu": "5000 m ±150 m · IAS 650 km/h ±40 km/h · jobb bedöntés 20–40° legalább 3 s.",
+    "en": "5000 m ±150 m · IAS 650 km/h ±40 km/h · right bank 20–40° for at least 3 s."
+  },
+  "A JSF-verseny deltaszárnyú koncepció-demonstrátora. Ez az A változat: hagyományos felszállás, nem az X-32B függőleges üzemmódja.": {
+    "hu": "A JSF-verseny deltaszárnyú koncepció-demonstrátora. Ez az A változat: hagyományos felszállás, nem az X-32B függőleges üzemmódja.",
+    "en": "Delta-wing concept demonstrator for the JSF competition. This is the conventional-takeoff A model, not the vertical-landing X-32B."
+  },
+  "Boeing X-32A": {
+    "hu": "Boeing X-32A",
+    "en": "Boeing X-32A"
+  },
+  "Stabil repülés: 3000 m · IAS 500 km/h · 12 s": {
+    "hu": "Stabil repülés: 3000 m · IAS 500 km/h · 12 s",
+    "en": "Level flight: 3000 m · IAS 500 km/h · 12 s"
+  },
+  "3000 m ±150 m · IAS 500 km/h ±40 km/h · szinttartás 12 s, bedöntés <8°, függőleges sebesség <4 m/s.": {
+    "hu": "3000 m ±150 m · IAS 500 km/h ±40 km/h · szinttartás 12 s, bedöntés <8°, függőleges sebesség <4 m/s.",
+    "en": "3000 m ±150 m · IAS 500 km/h ±40 km/h · hold level for 12 s, bank <8°, vertical speed <4 m/s."
+  },
+  "3000 m ±150 m · IAS 500 km/h ±40 km/h · bal bedöntés 20–40° legalább 3 s.": {
+    "hu": "3000 m ±150 m · IAS 500 km/h ±40 km/h · bal bedöntés 20–40° legalább 3 s.",
+    "en": "3000 m ±150 m · IAS 500 km/h ±40 km/h · left bank 20–40° for at least 3 s."
+  },
+  "3000 m ±150 m · IAS 500 km/h ±40 km/h · jobb bedöntés 20–40° legalább 3 s.": {
+    "hu": "3000 m ±150 m · IAS 500 km/h ±40 km/h · jobb bedöntés 20–40° legalább 3 s.",
+    "en": "3000 m ±150 m · IAS 500 km/h ±40 km/h · right bank 20–40° for at least 3 s."
+  },
+  "Titán/acél felderítő-bombázó demonstrátor, egy repült példánnyal és tíz repüléssel. A Mach 3 és a csúcsmagasság tervezési adat; a tesztprogramban kb. Mach 1,36-ot és 12 000 métert ért el.": {
+    "hu": "Titán/acél felderítő-bombázó demonstrátor, egy repült példánnyal és tíz repüléssel. A Mach 3 és a csúcsmagasság tervezési adat; a tesztprogramban kb. Mach 1,36-ot és 12 000 métert ért el.",
+    "en": "Titanium/steel reconnaissance-bomber demonstrator: one flying airframe, ten flights. Mach 3 and ceiling are design targets; testing reached about Mach 1.36 and 12,000 metres."
+  },
+  "Szuhoj T-4 Sotka": {
+    "hu": "Szuhoj T-4 Sotka",
+    "en": "Sukhoi T-4 Sotka"
+  },
+  "Stabil repülés: 3500 m · IAS 600 km/h · 12 s": {
+    "hu": "Stabil repülés: 3500 m · IAS 600 km/h · 12 s",
+    "en": "Level flight: 3500 m · IAS 600 km/h · 12 s"
+  },
+  "3500 m ±150 m · IAS 600 km/h ±40 km/h · szinttartás 12 s, bedöntés <8°, függőleges sebesség <4 m/s.": {
+    "hu": "3500 m ±150 m · IAS 600 km/h ±40 km/h · szinttartás 12 s, bedöntés <8°, függőleges sebesség <4 m/s.",
+    "en": "3500 m ±150 m · IAS 600 km/h ±40 km/h · hold level for 12 s, bank <8°, vertical speed <4 m/s."
+  },
+  "3500 m ±150 m · IAS 600 km/h ±40 km/h · bal bedöntés 20–40° legalább 3 s.": {
+    "hu": "3500 m ±150 m · IAS 600 km/h ±40 km/h · bal bedöntés 20–40° legalább 3 s.",
+    "en": "3500 m ±150 m · IAS 600 km/h ±40 km/h · left bank 20–40° for at least 3 s."
+  },
+  "3500 m ±150 m · IAS 600 km/h ±40 km/h · jobb bedöntés 20–40° legalább 3 s.": {
+    "hu": "3500 m ±150 m · IAS 600 km/h ±40 km/h · jobb bedöntés 20–40° legalább 3 s.",
+    "en": "3500 m ±150 m · IAS 600 km/h ±40 km/h · right bank 20–40° for at least 3 s."
+  },
+  "Szovjet eredetű, Oroszországban repült előrenyilazott szárnyú kutatógép. Egy prototípus épült. A közölt teljesítményhatárok nem teljes körűen igazolt berepülési adatok.": {
+    "hu": "Szovjet eredetű, Oroszországban repült előrenyilazott szárnyú kutatógép. Egy prototípus épült. A közölt teljesítményhatárok nem teljes körűen igazolt berepülési adatok.",
+    "en": "Russian forward-swept-wing research aircraft originating in a Soviet programme. One prototype was built. Published limits are not a fully verified flight-test envelope."
+  },
+  "Szuhoj Szu-47 Berkut": {
+    "hu": "Szuhoj Szu-47 Berkut",
+    "en": "Sukhoi Su-47 Berkut"
+  },
+  "Stabil repülés: 4000 m · IAS 600 km/h · 12 s": {
+    "hu": "Stabil repülés: 4000 m · IAS 600 km/h · 12 s",
+    "en": "Level flight: 4000 m · IAS 600 km/h · 12 s"
+  },
+  "4000 m ±150 m · IAS 600 km/h ±40 km/h · szinttartás 12 s, bedöntés <8°, függőleges sebesség <4 m/s.": {
+    "hu": "4000 m ±150 m · IAS 600 km/h ±40 km/h · szinttartás 12 s, bedöntés <8°, függőleges sebesség <4 m/s.",
+    "en": "4000 m ±150 m · IAS 600 km/h ±40 km/h · hold level for 12 s, bank <8°, vertical speed <4 m/s."
+  },
+  "4000 m ±150 m · IAS 600 km/h ±40 km/h · bal bedöntés 20–40° legalább 3 s.": {
+    "hu": "4000 m ±150 m · IAS 600 km/h ±40 km/h · bal bedöntés 20–40° legalább 3 s.",
+    "en": "4000 m ±150 m · IAS 600 km/h ±40 km/h · left bank 20–40° for at least 3 s."
+  },
+  "4000 m ±150 m · IAS 600 km/h ±40 km/h · jobb bedöntés 20–40° legalább 3 s.": {
+    "hu": "4000 m ±150 m · IAS 600 km/h ±40 km/h · jobb bedöntés 20–40° legalább 3 s.",
+    "en": "4000 m ±150 m · IAS 600 km/h ±40 km/h · right bank 20–40° for at least 3 s."
+  },
+  "Szovjet MFI-programból származó orosz demonstrátor, két ismert repüléssel. A Mach 2,6 és a csúcsmagasság tervezési cél, nem igazolt teljesítmény. A küldetés szándékosan szubszonikus.": {
+    "hu": "Szovjet MFI-programból származó orosz demonstrátor, két ismert repüléssel. A Mach 2,6 és a csúcsmagasság tervezési cél, nem igazolt teljesítmény. A küldetés szándékosan szubszonikus.",
+    "en": "Russian demonstrator originating in the Soviet MFI programme, with two known flights. Mach 2.6 and ceiling are design targets, not demonstrated performance. This mission deliberately remains subsonic."
+  },
+  "MiG 1.44 MFI": {
+    "hu": "MiG 1.44 MFI",
+    "en": "MiG 1.44 MFI"
+  },
+  "Stabil repülés: 1500 m · IAS 400 km/h · 12 s": {
+    "hu": "Stabil repülés: 1500 m · IAS 400 km/h · 12 s",
+    "en": "Level flight: 1500 m · IAS 400 km/h · 12 s"
+  },
+  "1500 m ±150 m · IAS 400 km/h ±40 km/h · szinttartás 12 s, bedöntés <8°, függőleges sebesség <4 m/s.": {
+    "hu": "1500 m ±150 m · IAS 400 km/h ±40 km/h · szinttartás 12 s, bedöntés <8°, függőleges sebesség <4 m/s.",
+    "en": "1500 m ±150 m · IAS 400 km/h ±40 km/h · hold level for 12 s, bank <8°, vertical speed <4 m/s."
+  },
+  "1500 m ±150 m · IAS 400 km/h ±40 km/h · bal bedöntés 20–40° legalább 3 s.": {
+    "hu": "1500 m ±150 m · IAS 400 km/h ±40 km/h · bal bedöntés 20–40° legalább 3 s.",
+    "en": "1500 m ±150 m · IAS 400 km/h ±40 km/h · left bank 20–40° for at least 3 s."
+  },
+  "1500 m ±150 m · IAS 400 km/h ±40 km/h · jobb bedöntés 20–40° legalább 3 s.": {
+    "hu": "1500 m ±150 m · IAS 400 km/h ±40 km/h · jobb bedöntés 20–40° legalább 3 s.",
+    "en": "1500 m ±150 m · IAS 400 km/h ±40 km/h · right bank 20–40° for at least 3 s."
+  },
+  "BEREPÜLÉS · FELSZÁLLÁS": {
+    "hu": "BEREPÜLÉS · FELSZÁLLÁS",
+    "en": "FLIGHT TEST · TAKEOFF"
+  },
+  "BEREPÜLÉS · STABIL REPÜLÉS": {
+    "hu": "BEREPÜLÉS · STABIL REPÜLÉS",
+    "en": "FLIGHT TEST · LEVEL FLIGHT"
+  },
+  "BEREPÜLÉS · BAL FORDULÓ": {
+    "hu": "BEREPÜLÉS · BAL FORDULÓ",
+    "en": "FLIGHT TEST · LEFT TURN"
+  },
+  "BEREPÜLÉS · JOBB FORDULÓ": {
+    "hu": "BEREPÜLÉS · JOBB FORDULÓ",
+    "en": "FLIGHT TEST · RIGHT TURN"
+  },
+  "BEREPÜLÉS · HAZATÉRÉS": {
+    "hu": "BEREPÜLÉS · HAZATÉRÉS",
+    "en": "FLIGHT TEST · RETURN"
+  },
+  "TESZTMAGASSÁG": {
+    "hu": "TESZTMAGASSÁG",
+    "en": "TEST ALTITUDE"
+  },
+  "TESZTSEBESSÉG": {
+    "hu": "TESZTSEBESSÉG",
+    "en": "TEST IAS"
+  },
+  "Felszállás": {
+    "hu": "Felszállás",
+    "en": "Takeoff"
+  },
+  "Szinttartás": {
+    "hu": "Szinttartás",
+    "en": "Hold level"
+  },
+  "Bal forduló": {
+    "hu": "Bal forduló",
+    "en": "Left turn"
+  },
+  "Jobb forduló": {
+    "hu": "Jobb forduló",
+    "en": "Right turn"
+  },
+  "Invázió: Tajvan": {
+    "hu": "Invázió: Tajvan",
+    "en": "Invasion: Taiwan"
+  },
+  "Tajvan · Tajvani-szoros": {
+    "hu": "Tajvan · Tajvani-szoros",
+    "en": "Taiwan · Taiwan Strait"
+  },
+  "A Kelet három hullámban támad: hullámonként három négygépes raj, rajonként egy bombázó és három vadász. A hullámok hárompercenként érkeznek. A Nyugat három négygépes rajjal védekezik; a játékos a tizenkét gép egyike. Minden aktív raj a levegőből indul. A sziget közepén repülőtér, a tengeren nyugati anyahajó, a partokon négy SAM és négy légvédelmi löveg áll. A Keletet anyahajó, romboló és hátsó repülőtér támogatja. Saját, épségben maradt repülőtéren feltölthetsz; fedélzeti géppel saját anyahajón is. A győzelem azonnali: legalább egy nyugati leszállóhely maradjon meg, és mind a 36 keleti gépet küzdjétek le.": {
+    "hu": "A Kelet három hullámban támad: hullámonként három négygépes raj, rajonként egy bombázó és három vadász. A hullámok hárompercenként érkeznek. A Nyugat három négygépes rajjal védekezik; a játékos a tizenkét gép egyike. Minden aktív raj a levegőből indul. A sziget közepén repülőtér, a tengeren nyugati anyahajó, a partokon négy SAM és négy légvédelmi löveg áll. A Keletet anyahajó, romboló és hátsó repülőtér támogatja. Saját, épségben maradt repülőtéren feltölthetsz; fedélzeti géppel saját anyahajón is. A győzelem azonnali: legalább egy nyugati leszállóhely maradjon meg, és mind a 36 keleti gépet küzdjétek le.",
+    "en": "The East attacks in three waves, three four-aircraft flights per wave, with one bomber and three fighters per flight. Waves arrive every three minutes. The West defends with three flights; the player occupies one of its twelve seats. All active flights start airborne. A central island airfield, a western carrier, four coastal SAM systems and four AA guns defend Taiwan. The East has a carrier, a destroyer and a rear airfield. Rearm at any surviving friendly runway; carrier-capable aircraft may also use their own carrier. Victory is immediate once all 36 eastern aircraft are destroyed and at least one western landing base survives."
+  },
+  "Keleti támadás Tajvan ellen. Három hullám, hullámonként három négyszeres raj, egy bombázóval és három vadásszal rajonként. Te az első hullám egyik gépének helyén indulsz. A további hullámok hárompercenként érkeznek. A Nyugat tizenkét géppel, szigeti reptérrel, anyahajóval és partvédelmi ütegekkel védekezik. Saját repülőtéren feltölthetsz; a fedélzeti típusok saját anyahajót is használhatnak. A győzelemhez mindkét nyugati leszállóhely VAGY mind a tizenkét nyugati repülő megsemmisítése szükséges.": {
+    "hu": "Keleti támadás Tajvan ellen. Három hullám, hullámonként három négyszeres raj, egy bombázóval és három vadásszal rajonként. Te az első hullám egyik gépének helyén indulsz. A további hullámok hárompercenként érkeznek. A Nyugat tizenkét géppel, szigeti reptérrel, anyahajóval és partvédelmi ütegekkel védekezik. Saját repülőtéren feltölthetsz; a fedélzeti típusok saját anyahajót is használhatnak. A győzelemhez mindkét nyugati leszállóhely VAGY mind a tizenkét nyugati repülő megsemmisítése szükséges.",
+    "en": "Eastern invasion of Taiwan. Three waves, each containing three flights of one bomber and three fighters. You occupy one seat in the first wave. Reinforcements arrive every three minutes. Twelve western aircraft, an island airfield, a carrier and coastal batteries defend the island. Rearm at a friendly airfield; carrier-capable aircraft can also use their own carrier. Win by destroying both western landing bases OR all twelve western aircraft."
+  },
+  "Őrizz meg legalább egy leszállóhelyet: a szigeti repteret vagy a nyugati anyahajót.": {
+    "hu": "Őrizz meg legalább egy leszállóhelyet: a szigeti repteret vagy a nyugati anyahajót.",
+    "en": "Preserve at least one landing base: the island airfield or the western carrier."
+  },
+  "Küzdjétek le mind a 36 keleti repülőt, a három hullámot együtt.": {
+    "hu": "Küzdjétek le mind a 36 keleti repülőt, a három hullámot együtt.",
+    "en": "Destroy all 36 eastern aircraft across all three waves."
+  },
+  "Semmisítsétek meg a keleti rombolót.": {
+    "hu": "Semmisítsétek meg a keleti rombolót.",
+    "en": "Destroy the eastern destroyer."
+  },
+  "Semmisítsétek meg a nyugati repteret ÉS az anyahajót, VAGY küzdjétek le mind a 12 nyugati repülőt.": {
+    "hu": "Semmisítsétek meg a nyugati repteret ÉS az anyahajót, VAGY küzdjétek le mind a 12 nyugati repülőt.",
+    "en": "Destroy BOTH the western airfield and carrier, OR all 12 western aircraft."
+  },
+  "A keleti romboló túléli a bevetést.": {
+    "hu": "A keleti romboló túléli a bevetést.",
+    "en": "The eastern destroyer survives."
+  },
+  "Az ellenfél teljesítette a győzelmi feltételeket.": {
+    "hu": "Az ellenfél teljesítette a győzelmi feltételeket.",
+    "en": "The opposing side has met its victory conditions."
+  },
+  "A győzelmi feltételek teljesültek.": {
+    "hu": "A győzelmi feltételek teljesültek.",
+    "en": "Victory conditions met."
+  },
+  "Saját bázisok: {{v0}}/{{v1}}": {
+    "hu": "Saját bázisok: {{v0}}/{{v1}}",
+    "en": "Friendly bases: {{v0}}/{{v1}}"
+  },
+  "Repülők: {{v0}}/{{v1}} · hullám {{v2}}/3": {
+    "hu": "Repülők: {{v0}}/{{v1}} · hullám {{v2}}/3",
+    "en": "Aircraft: {{v0}}/{{v1}} · wave {{v2}}/3"
+  },
+  "Repülők: {{v0}}/{{v1}}": {
+    "hu": "Repülők: {{v0}}/{{v1}}",
+    "en": "Aircraft: {{v0}}/{{v1}}"
+  },
+  "Bázis {{v0}}/{{v1}} · repülő {{v2}}/{{v3}}": {
+    "hu": "Bázis {{v0}}/{{v1}} · repülő {{v2}}/{{v3}}",
+    "en": "Bases {{v0}}/{{v1}} · aircraft {{v2}}/{{v3}}"
+  },
+  "Romboló megsemmisítve": {
+    "hu": "Romboló megsemmisítve",
+    "en": "Destroyer destroyed"
+  },
+  "Romboló megmaradt": {
+    "hu": "Romboló megmaradt",
+    "en": "Destroyer survives"
   }
 }

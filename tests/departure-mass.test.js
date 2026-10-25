@@ -1,7 +1,7 @@
 import { trainingAircraft, isPracticeMission, unarmedPractice } from '../src/trainingAircraft.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { aircraft, missions } from '../src/aircraftSpec.js';
+import { aircraft, experimentalAircraft, missions } from '../src/aircraftSpec.js';
 import { defaultLoadout, configureAircraft, plannedDeparture } from '../src/loadoutPlanner.js';
 import { mass, massBreakdown, approachSpeeds } from '../src/performance.js';
 import { createMissionAircraft, defaultMissionFuel } from '../src/missionStart.js';
@@ -52,34 +52,24 @@ test('planner and actual mission-start mass match for every aircraft, fuel level
 });
 test('default tanking stays full for ordinary missions and fifteen percent for landing practice; explicit values override it', () => {
   for (const m of missions) {
+    const a =
+      m.objective === 'flight-test'
+        ? experimentalAircraft.find((a) => a.faction === m.side)
+        : m.naval
+          ? aircraft.find((a) => a.id === 'fa18')
+          : f16;
+    const actual = isPracticeMission(m) ? trainingAircraft : a;
     const expected = m.objective === 'landing' ? 0.15 : m.objective === 'canyon' ? 0.5 : 1;
     assert.equal(defaultMissionFuel(m), expected);
-    close(
-      createMissionAircraft(m.naval ? aircraft.find((a) => a.id === 'fa18') : f16, m).fuel,
-      (isPracticeMission(m)
-        ? trainingAircraft
-        : m.naval
-          ? aircraft.find((a) => a.id === 'fa18')
-          : f16
-      ).fuelCapacity * expected,
-    );
-    close(
-      createMissionAircraft(m.naval ? aircraft.find((a) => a.id === 'fa18') : f16, m, {
-        fuelFraction: 0.42,
-      }).fuel,
-      (isPracticeMission(m)
-        ? trainingAircraft
-        : m.naval
-          ? aircraft.find((a) => a.id === 'fa18')
-          : f16
-      ).fuelCapacity * 0.42,
-    );
+    close(createMissionAircraft(a, m).fuel, actual.fuelCapacity * expected);
+    close(createMissionAircraft(a, m, { fuelFraction: 0.42 }).fuel, actual.fuelCapacity * 0.42);
   }
   const m = missions.find((m) => m.id === 'civil');
   close(createMissionAircraft(f16, m, { fuelFraction: 5 }).fuel, trainingAircraft.fuelCapacity);
   close(createMissionAircraft(f16, m, { fuelFraction: -2 }).fuel, 0);
   close(createMissionAircraft(f16, m, { fuelFraction: NaN }).fuel, trainingAircraft.fuelCapacity);
 });
+
 test('fuel consumption, an actual cannon shot and releasing stores reduce the same flying mass used in the planner', () => {
   const choice = defaultLoadout(f16),
     s = createMissionAircraft(

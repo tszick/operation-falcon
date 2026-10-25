@@ -155,6 +155,10 @@ export function compactObjective(row) {
   if (wingmen[row.id]) return wingmen[row.id];
   if (row.id === 'carrier') return row.text.replace('Anyahajó:', 'Hajó:');
   const labels = {
+    'test-takeoff': 'Felszállás',
+    'test-level': 'Szinttartás',
+    'test-left': 'Bal forduló',
+    'test-right': 'Jobb forduló',
     destroyer: 'Romboló',
     return: 'Hazatérés',
     bridge: 'Híd lezárása',
@@ -168,6 +172,8 @@ export function compactObjective(row) {
     enemies: 'Ellenség',
     main: 'Elsődleges feladat',
   };
+  if (row.id === 'invasion-bases') return row.text;
+  if (row.id === 'attackers' && row.text.startsWith('Repülők:')) return row.text.split(' · ')[0];
   if (row.id === 'city') return row.text.split(' · ')[0];
   if (row.id === 'waves')
     return row.text
