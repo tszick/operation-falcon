@@ -34,10 +34,12 @@ export function selectRecoveryAirfield(s, targets) {
         )[0];
   if (!nearest) {
     if (s.airfield?.targetId) delete s.airfield;
+    if (s.fallbackRecoveryExit) s.recoveryExit = s.fallbackRecoveryExit.clone();
     return;
   }
   if (nearest.id === s.airfield?.targetId) return;
   s.airfield = airfieldForTarget(nearest);
+  delete s.recoveryExit;
   if (s.spec.carrierCapable) {
     s.naval ??= { hook: false, nozzle: 0, arrested: false, bolter: false };
     s.naval.arrested = false;

@@ -54,7 +54,8 @@ test('a complete aileron roll remains controllable and does not invent a spin', 
 });
 test('a half roll followed by a positive pull reverses heading and returns upright (Split-S)', () => {
   const s = flight();
-  for (let i = 0; i < 120 * 2.22; i++) stepAircraft(s, { roll: 1 });
+  for (let i = 0; i < 120 * 3 && up(s.orientation).y > -0.985; i++) stepAircraft(s, { roll: 1 });
+  for (let i = 0; i < 60; i++) stepAircraft(s, {});
   assert.ok(up(s.orientation).y < -0.95);
   const initialAltitude = s.position.y;
   let reversed = false;

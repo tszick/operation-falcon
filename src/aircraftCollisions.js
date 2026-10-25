@@ -127,6 +127,7 @@ export function updateAircraftCollisions(player, targets, weapons) {
       .filter(
         (t) =>
           t.kind === 'air' &&
+          t.type !== 'ballistic' &&
           !t.playerControlled &&
           !t.pending &&
           !t.exited &&

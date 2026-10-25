@@ -1,3 +1,11 @@
+import { calmWeather, relativeAirVelocity } from './flightEnvironment.js';
+import {
+  stepEngine,
+  stepBodyRates,
+  groundEffectFactor,
+  waveDragCoefficient,
+  thrustFactor,
+} from './flightModel.js';
 import { externalStoreCount } from './armament.js';
 import {
   navalFlight,
@@ -46,6 +54,10 @@ export function createAircraft(spec, { ammo = loadout(spec) } = {}) {
     fuel: spec.fuelCapacity,
     ammo: { ...ammo },
     throttle: 0,
+    engineSpool: 0,
+    afterburnerSpool: 0,
+    weather: calmWeather(),
+    trueAirspeed: null,
     afterburner: false,
     gear: true,
     flaps: true,
@@ -88,15 +100,20 @@ export function stepAircraft(s, input, dt = STEP) {
   s.flapPosition ??= flapTarget;
   if (!actuatorFault(s, 'flaps'))
     s.flapPosition += clamp(flapTarget - s.flapPosition, -dt * 0.6, dt * 0.6);
-  const v = s.velocity.length(),
+  const airMotion = relativeAirVelocity(s, terrainHeight(s.position.x, s.position.z));
+  s.wind = airMotion.wind;
+  s.airVelocity = airMotion.velocity;
+  s.trueAirspeed = airMotion.velocity.length();
+  const v = airMotion.velocity.length(),
+    groundSpeed = s.velocity.length(),
     m = mass(s),
     air = atmosphere(s.position.y),
     q = 0.5 * air.density * v * v;
   let a = attitude(s.orientation),
     f = forward(s.orientation),
     u = up(s.orientation);
-  const velDir = v > 1 ? s.velocity.clone().scale(1 / v) : f.clone();
-  const flow = airflow(s, f, u, v);
+  const velDir = v > 1 ? airMotion.velocity.clone().scale(1 / v) : f.clone();
+  const flow = airflow(s, f, u, v, airMotion.velocity);
   if (navalControlAuthority(s) && v < 60) flow.stalled = false;
   const { alpha } = flow,
     lowAuthority = navalControlAuthority(s)
@@ -127,24 +144,9 @@ export function stepAircraft(s, input, dt = STEP) {
     }
     if (a.pitch < 0 && pitchRate < 0) pitchRate = 0;
   }
-  // Ramp into a bank command, but stop rolling immediately when released.
-  if (!rollInput) s.rollControl = 0;
-  else {
-    s.rollControl =
-      Math.sign(rollInput) *
-      Math.min(
-        1,
-        (Math.sign(s.rollControl || 0) === Math.sign(rollInput) ? Math.abs(s.rollControl) : 0) +
-          dt * 5,
-      );
-  }
-  const rollRate =
-      s.rollControl *
-      spec.rollRate *
-      DEG *
-      lowAuthority *
-      (s.onGround ? 0 : 1) *
-      response.rollControl,
+  // The desired roll rate is filtered by the aircraft's shared angular response.
+  let rollRate =
+      rollInput * spec.rollRate * DEG * lowAuthority * (s.onGround ? 0 : 1) * response.rollControl,
     coordinated =
       s.onGround || s.dying
         ? 0
@@ -156,18 +158,35 @@ export function stepAircraft(s, input, dt = STEP) {
             -0.6,
             0.6,
           ),
-    yawRate =
+    yawTarget =
       (input.yaw || 0) *
       (navalControlAuthority(s) && !s.onGround ? 0.3 : s.onGround ? 0.2 : 0.07) *
       Math.max(navalControlAuthority(s) ? 0.85 : 0, clamp(v / 15, 0, 1)) *
       response.control;
+  const rates = stepBodyRates(s, { pitch: pitchRate, roll: rollRate, yaw: yawTarget }, dt);
+  pitchRate = rates.pitch;
+  rollRate = rates.roll;
+  const yawRate = rates.yaw;
+  // Never let stored pitch momentum defeat the commanded G/AOA safety limits.
+  if (s.assist && !s.onGround && pitchRate * alpha > 0) {
+    const limit = (spec.stallAlpha * 0.9 - Math.abs(alpha)) / dt;
+    pitchRate = Math.sign(pitchRate) * Math.min(Math.abs(pitchRate), Math.max(0, limit));
+    const gLimit = spec.maxG * (1 - s.damage * 0.003);
+    pitchRate = clamp(
+      pitchRate,
+      Math.min(0, ((-gLimit * 0.4 - u.y) * 9.81) / Math.max(v, 30)),
+      Math.max(0, ((gLimit - u.y) * 9.81) / Math.max(v, 30)),
+    );
+    rates.pitch = pitchRate;
+  }
+  s.rollControl = spec.rollRate ? rollRate / (spec.rollRate * DEG) : 0;
   const departure = departureMotion(s, input, flow, dt);
   const motion = damageMotion(
       s,
       q,
       m,
       clamp((spec.liftZero ?? 0.22) + spec.clSlope * alpha, -spec.maxCL, spec.maxCL),
-      spec.thrust * s.throttle * clamp(air.density / 1.225, 0.23, 1),
+      spec.thrust * s.engineSpool * thrustFactor(spec, air, v / air.soundSpeed),
       dt,
     ),
     airborne = s.onGround ? 0 : 1;
@@ -189,10 +208,16 @@ export function stepAircraft(s, input, dt = STEP) {
   f = forward(s.orientation);
   u = up(s.orientation);
   const cl = flow.cl;
+  const wingHeight =
+    Math.max(0, s.position.y - landingGroundHeight(s, terrainHeight(s.position.x, s.position.z))) +
+    (spec.wingHeight ?? 0.5);
+  const groundFactor = groundEffectFactor(spec, wingHeight, a.bank),
+    waveCd = waveDragCoefficient(spec, v / air.soundSpeed);
   const stores = externalStoreCount(s),
     cd =
       spec.cd0 +
-      spec.inducedDrag * cl * cl +
+      spec.inducedDrag * cl * cl * groundFactor +
+      waveCd +
       (s.gear ? 0.024 : 0) +
       s.flapPosition * 0.035 +
       (s.airbrake ? 0.16 : 0) +
@@ -200,20 +225,17 @@ export function stepAircraft(s, input, dt = STEP) {
       response.drag +
       (s.dying ? 0.1 : 0),
     isAB = afterburnerActive(s);
+  const deliveredThrust = stepEngine(s, dt, isAB);
   const thrust =
     s.fuel > 0
-      ? (isAB ? spec.abThrust : spec.thrust) *
-        s.throttle *
-        clamp(air.density / 1.225, 0.23, 1) *
-        clamp(1 - (v / (spec.maxMach * air.soundSpeed)) * 0.22, 0.4, 1) *
-        response.engine
+      ? deliveredThrust * thrustFactor(spec, air, v / air.soundSpeed) * response.engine
       : 0;
-  s.enginePower = s.fuel > 0 ? response.engine : 0;
+  s.enginePower = s.fuel > 0 ? s.engineSpool * response.engine : 0;
   consumeFuel(
     s,
     fuelFlow(s, {
       thrust,
-      afterburner: isAB,
+      afterburner: s.afterburnerSpool > 0.05,
       mach: v / air.soundSpeed,
       density: air.density,
       engine: response.engine,
@@ -236,6 +258,17 @@ export function stepAircraft(s, input, dt = STEP) {
     catapultN: s.naval?.catapult ? 40 * m : 0,
     nozzleDeg: s.naval?.nozzle || 0,
     massKg: m,
+    groundEffectFactor: groundFactor,
+    wingHeightM: wingHeight,
+    waveDragCoefficient: waveCd,
+    dragCoefficient: cd,
+    targetThrustN:
+      (isAB ? spec.abThrust : spec.thrust) *
+      s.throttle *
+      thrustFactor(spec, air, v / air.soundSpeed) *
+      response.engine,
+    airSpeedMps: v,
+    densityKgM3: air.density,
     dynamicPressurePa: q,
     liftN: lift,
     dragN: drag,
@@ -245,7 +278,8 @@ export function stepAircraft(s, input, dt = STEP) {
     const rolling =
       (input.brake && !actuatorFault(s, 'wheelBrake') ? 5.5 : s.gear ? 0.15 : 3.5) +
       (rolloutSurface(s).shoulder ? 0.8 : 0);
-    acc.add(velDir.clone().scale(-Math.min(rolling, v / dt)));
+    const groundDir = groundSpeed > 0 ? s.velocity.clone().scale(1 / groundSpeed) : new Vec3();
+    acc.add(groundDir.scale(-Math.min(rolling, groundSpeed / dt)));
     if (acc.y < 0) acc.y = 0;
   }
   s.velocity.add(acc.scale(dt));
@@ -385,8 +419,10 @@ export function stepAircraft(s, input, dt = STEP) {
   }
   if (s.onGround && v < 0.3 && s.throttle < 0.01) s.velocity = new Vec3();
   s.speed = s.velocity.length();
-  s.ias = s.speed * Math.sqrt(air.density / 1.225);
-  s.mach = s.speed / air.soundSpeed;
+  s.airVelocity = s.velocity.clone().sub(s.wind);
+  s.trueAirspeed = s.airVelocity.length();
+  s.ias = s.trueAirspeed * Math.sqrt(air.density / 1.225);
+  s.mach = s.trueAirspeed / air.soundSpeed;
   s.alpha = alpha;
   s.beta = flow.beta;
   s.stalled = stall;

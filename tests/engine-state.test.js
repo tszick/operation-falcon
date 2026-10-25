@@ -17,6 +17,7 @@ function flight() {
     flaps: false,
     flapPosition: 0,
     throttle: 0.1913,
+    engineSpool: 0.1913,
   });
   return s;
 }
@@ -46,6 +47,11 @@ test('arming afterburner at the logged 19 percent throttle does not increase thr
   dry.throttle = armed.throttle = 1;
   stepAircraft(dry, {});
   stepAircraft(armed, {});
+  assert.equal(armed.forces.thrustN, dry.forces.thrustN);
+  for (let i = 0; i < 360; i++) {
+    stepAircraft(dry, {});
+    stepAircraft(armed, {});
+  }
   assert.ok(armed.forces.thrustN > dry.forces.thrustN);
   assert.ok(armed.fuel < dry.fuel);
 });

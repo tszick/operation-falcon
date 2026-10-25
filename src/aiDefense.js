@@ -1,3 +1,4 @@
+import { windAt, windCorrectedHeading } from './flightEnvironment.js';
 import { Vec3, Quat, attitude, forward, clamp, DEG } from './math.js';
 import { aircraftFlightSpec } from './aiAircraftSpec.js';
 import {
@@ -253,10 +254,11 @@ export function guidedFlightInput(
 ) {
   const s = t.flight,
     a = attitude(s.orientation),
-    heading = Math.atan2(goal.x - s.position.x, goal.z - s.position.z),
+    wind = windAt(s.weather, s.position, s.elapsed, terrainHeight(s.position.x, s.position.z)),
+    heading = windCorrectedHeading(s.position, goal, s.trueAirspeed ?? s.velocity.length(), wind),
     error = Math.atan2(Math.sin(heading - a.heading), Math.cos(heading - a.heading)),
     bank = clamp(error * 0.8, -bankLimit, bankLimit),
-    v = s.velocity.length(),
+    v = s.trueAirspeed ?? s.velocity.length(),
     response = damageResponse(s);
   const nose = forward(s.orientation);
   for (const ahead of [0, 1500, 3500])
@@ -268,7 +270,7 @@ export function guidedFlightInput(
     alpha = clamp(
       ((mass(s) * 9.81) /
         Math.max(1, q * s.spec.wingArea * response.lift * Math.max(0.5, Math.cos(a.bank))) -
-        0.22) /
+        (s.spec.liftZero ?? 0.22)) /
         s.spec.clSlope,
       0,
       s.spec.stallAlpha * 0.7,

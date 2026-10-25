@@ -100,6 +100,7 @@ export function createBattlefieldTargets(m, player, rng = Math.random) {
               slot,
               role,
               radioCallSign: call,
+              withdrawalPoint: f.withdrawalPoint ? new Vec3(...f.withdrawalPoint) : null,
             };
             continue;
           }
@@ -158,6 +159,10 @@ export function updateBattlefieldRuntime(s, m, targets, w) {
     }
 }
 const lost = (t) => !t.alive && !t.pending && !t.exited && !t.retired;
+// Only completed, permanent withdrawals count; temporary service trips remain in combat.
+const withdrawn = (t) =>
+  !t.pending && t.exited && t.retired && !t.service && t.retreat?.reason !== 'resupply';
+const resolved = (t) => lost(t) || withdrawn(t);
 export function battlefieldCondition(rule, targets, s) {
   if (rule.all) return rule.all.every((r) => battlefieldCondition(r, targets, s));
   if (rule.any) return rule.any.some((r) => battlefieldCondition(r, targets, s));
@@ -168,7 +173,16 @@ export function battlefieldCondition(rule, targets, s) {
     const air = targets.filter((t) => t.coalition === rule.eliminateAir && t.kind === 'air');
     const includesPlayer =
       (s.coalition || (s.spec.faction === 'west' ? 'west' : 'east')) === rule.eliminateAir;
-    return air.length > 0 && air.every(lost) && (!includesPlayer || s.dying || s.crashed);
+    const playerWithdrawn =
+      rule.allowWithdrawn &&
+      s.recoveryExit &&
+      !s.onGround &&
+      s.position.distance(s.recoveryExit) < 2500;
+    return (
+      air.length > 0 &&
+      air.every(rule.allowWithdrawn ? resolved : lost) &&
+      (!includesPlayer || s.dying || s.crashed || playerWithdrawn)
+    );
   }
   return false;
 }
@@ -194,6 +208,7 @@ export function battlefieldObjectives(m, s, targets, w) {
       total: assets.length,
       destroyed: assets.filter(lost).length,
       airLost: air.filter(lost).length,
+      airResolved: air.filter(resolved).length,
       airTotal: air.length,
       wave: m.wave || 1,
     };

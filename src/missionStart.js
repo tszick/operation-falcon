@@ -1,3 +1,4 @@
+import { missionWeather, windAt } from './flightEnvironment.js';
 import { selectRecoveryAirfield } from './recoveryAirfields.js';
 import { initialiseNaval } from './navalOps.js';
 import { trainingAircraft, isPracticeMission, unarmedPractice } from './trainingAircraft.js';
@@ -39,6 +40,7 @@ export function createMissionAircraft(
   if (mission.objective === 'flight-test' && !spec.experimentalOnly)
     throw new Error('A berepüléshez kísérleti repülőgép szükséges.');
   const s = createAircraft(spec);
+  s.weather = missionWeather(mission);
   s.practice = isPracticeMission(mission);
   if (spec.transport) s.radioCallSign = { flight: 'Nomad', number: 1 };
   if (unarmedPractice(mission)) {
@@ -79,6 +81,8 @@ export function createMissionAircraft(
     s.orientation = Quat.euler(start.heading, alpha, 0);
     s.velocity = new Vec3(Math.sin(start.heading) * v, 0, Math.cos(start.heading) * v);
     s.throttle = 0.7;
+    s.engineSpool = s.throttle;
+    s.velocity.add(windAt(s.weather, s.position, 0, terrainHeight(s.position.x, s.position.z)));
     s.speed = v;
     s.ias = v * Math.sqrt(air.density / 1.225);
     s.mach = v / air.soundSpeed;
@@ -114,6 +118,7 @@ export function createMissionAircraft(
       s.formationSlot = formation.slot;
       s.formationRole = formation.role;
       s.radioCallSign = formation.radioCallSign;
+      s.fallbackRecoveryExit = formation.withdrawalPoint?.clone();
     }
     const heading = formation?.heading || 0,
       air = atmosphere(s.position.y),
@@ -127,6 +132,8 @@ export function createMissionAircraft(
       );
     s.orientation = Quat.euler(heading, alpha, 0);
     s.throttle = 0.65;
+    s.engineSpool = s.throttle;
+    s.velocity.add(windAt(s.weather, s.position, 0, terrainHeight(s.position.x, s.position.z)));
     s.speed = v;
     s.ias = v * Math.sqrt(air.density / 1.225);
     s.mach = v / air.soundSpeed;
@@ -177,6 +184,8 @@ export function createMissionAircraft(
     0.08,
     0.75,
   );
+  s.engineSpool = s.throttle;
+  s.velocity.add(windAt(s.weather, s.position, 0, terrainHeight(s.position.x, s.position.z)));
   s.speed = v;
   s.ias = ias;
   s.mach = v / air.soundSpeed;
@@ -193,10 +202,12 @@ export function serviceAircraft(s) {
   const naval = !!s.airfield?.carrier,
     fresh = createAircraft(s.spec),
     keep = {
+      weather: s.weather,
       airfield: s.airfield,
       coalition: s.coalition,
       multipleAirfields: s.multipleAirfields,
       recoveryExit: s.recoveryExit,
+      fallbackRecoveryExit: s.fallbackRecoveryExit,
       practice: s.practice,
       training: s.training,
       elapsed: s.elapsed,

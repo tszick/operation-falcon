@@ -9,5 +9,7 @@ export function afterburnerStatus(s) {
     return { active: false, label: 'AB NINCS', message: 'UTÁNÉGETŐ NEM MŰKÖDIK · NINCS ÜZEMANYAG' };
   if (!afterburnerActive(s))
     return { active: false, label: 'AB KÉSZ', message: 'UTÁNÉGETŐ ELŐKÉSZÍTVE · R: GÁZ 80% FÖLÉ' };
+  if (s.afterburnerSpool !== undefined && s.afterburnerSpool < 0.5)
+    return { active: false, label: 'AB INDUL', message: 'UTÁNÉGETŐ FELPÖRGÉS' };
   return { active: true, label: 'UTÁNÉG.', message: 'UTÁNÉGETŐ AKTÍV' };
 }

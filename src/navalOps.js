@@ -76,7 +76,10 @@ export function carrierTouchdown(s, descent, speed) {
     const q = Quat.euler(-s.airfield.heading, 0, 0),
       p = q.rotate(s.position.clone().sub(s.airfield.position)),
       heading = attitude(q.multiply(s.orientation)).heading,
-      ias = speed * Math.sqrt(atmosphere(s.position.y).density / 1.225) * 3.6;
+      ias =
+        (s.wind?.length() > 0 ? s.velocity.clone().sub(s.wind).length() : speed) *
+        Math.sqrt(atmosphere(s.position.y).density / 1.225) *
+        3.6;
     if (Math.abs(p.x) > 13 || Math.abs(p.z) > 140)
       problems.push('A gép a leszállósávon kívül érkezett.');
     if (Math.abs(heading) > 12 * DEG) problems.push('Nem a ferde fedélzet irányába érkeztél.');

@@ -1,3 +1,4 @@
+import { missionWeather, weatherBrief } from './flightEnvironment.js';
 import { FlightInstrumentLayer } from './rendering/flightInstrumentLayer.js';
 import { tr, trHtml, formatNumber } from './i18n.js';
 import { missionForSide } from './missionSides.js';
@@ -439,9 +440,10 @@ function renderMissionBrief(briefMission) {
   $('mission-empty').hidden = true;
   $('mission-details').hidden = false;
   const location = missionLocation(briefMission);
-  $('mission-location').textContent = tr(
-    location.name + ' · ' + surfaceStyles[location.surface].label,
-  );
+  $('mission-location').textContent =
+    tr(location.name + ' · ' + surfaceStyles[location.surface].label) +
+    ' · ' +
+    tr(weatherBrief(missionWeather(briefMission)));
   $('mission-threat-icons').innerHTML = trHtml(threatMarkup(briefMission));
   $('mission-code').textContent = tr(briefMission.difficulty + ' / ' + briefMission.code);
   $('mission-name').textContent = tr(briefMission.name);

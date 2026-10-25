@@ -8,14 +8,13 @@ const island = (x, z, radiusX, radiusZ, heading, height) => ({
   heading,
   height,
   phase: 0,
-  plateau: 0.8,
+  plateau: 0.2,
   landColor: [91, 128, 65],
 });
 const bases = ['WEST-AIRFIELD', 'WEST-CARRIER'];
 const assets = [
   { id: 'WEST-AIRFIELD', type: 'airbase', side: 'west', position: [0, 0, 0], heading: 0 },
   { id: 'WEST-CARRIER', type: 'carrier', side: 'west', position: [-15000, 0, -12000], heading: 0 },
-  { id: 'EAST-AIRFIELD', type: 'airbase', side: 'east', position: [-45000, 0, 17000], heading: 0 },
   {
     id: 'EAST-CARRIER',
     type: 'carrier',
@@ -66,10 +65,9 @@ export const taiwanMission = {
   needs: ['aam', 'bomb'],
   speed: 0,
   description:
-    'A Kelet három hullámban támad: hullámonként három négygépes raj, rajonként egy bombázó és három vadász. A hullámok hárompercenként érkeznek. A Nyugat három négygépes rajjal védekezik; a játékos a tizenkét gép egyike. Minden aktív raj a levegőből indul. A sziget közepén repülőtér, a tengeren nyugati anyahajó, a partokon négy SAM és négy légvédelmi löveg áll. A Keletet anyahajó, romboló és hátsó repülőtér támogatja. Saját, épségben maradt repülőtéren feltölthetsz; fedélzeti géppel saját anyahajón is. A győzelem azonnali: legalább egy nyugati leszállóhely maradjon meg, és mind a 36 keleti gépet küzdjétek le.',
+    'A Kelet három hullámban támad: hullámonként három négygépes raj, rajonként egy bombázó és három vadász. A hullámok hárompercenként érkeznek. A Nyugat három négygépes rajjal védekezik; a játékos a tizenkét gép egyike. Minden aktív raj a levegőből indul. A sziget közepén repülőtér, a tengeren nyugati anyahajó, a partokon négy SAM és négy légvédelmi löveg áll. Keletnek nincs szigete vagy reptere, csak egy anyahajója és egy rombolója. Saját, épségben maradt repülőtéren feltölthetsz; fedélzeti géppel saját anyahajón is. Nyugat győz, ha a keleti anyahajó megsemmisül, VAGY mind a 36 keleti gépet lelőttétek vagy végleg visszavonultak.',
   primary: [
-    'Őrizz meg legalább egy leszállóhelyet: a szigeti repteret vagy a nyugati anyahajót.',
-    'Küzdjétek le mind a 36 keleti repülőt, a három hullámot együtt.',
+    'Semmisítsétek meg a keleti anyahajót, VAGY küzdjétek le vagy kényszerítsétek végleges visszavonulásra mind a 36 keleti repülőt.',
   ],
   optional: ['Semmisítsétek meg a keleti rombolót.'],
   roster: [
@@ -88,7 +86,7 @@ export const taiwanMission = {
   sideBriefings: {
     east: {
       description:
-        'Keleti támadás Tajvan ellen. Három hullám, hullámonként három négyszeres raj, egy bombázóval és három vadásszal rajonként. Te az első hullám egyik gépének helyén indulsz. A további hullámok hárompercenként érkeznek. A Nyugat tizenkét géppel, szigeti reptérrel, anyahajóval és partvédelmi ütegekkel védekezik. Saját repülőtéren feltölthetsz; a fedélzeti típusok saját anyahajót is használhatnak. A győzelemhez mindkét nyugati leszállóhely VAGY mind a tizenkét nyugati repülő megsemmisítése szükséges.',
+        'Keleti támadás Tajvan ellen. Három hullám, hullámonként három négyszeres raj, egy bombázóval és három vadásszal rajonként. Te az első hullám egyik gépének helyén indulsz. A további hullámok hárompercenként érkeznek. A Nyugat tizenkét géppel, szigeti reptérrel, anyahajóval és partvédelmi ütegekkel védekezik. Keletnek nincs szigete vagy reptere: egy anyahajó és egy romboló támogatja. Fedélzeti típus saját anyahajón tölthet fel; a szárazföldi típusok szükség esetén végleg kivonulnak. A győzelemhez mindkét nyugati leszállóhely VAGY mind a tizenkét nyugati repülő megsemmisítése szükséges.',
       primary: [
         'Semmisítsétek meg a nyugati repteret ÉS az anyahajót, VAGY küzdjétek le mind a 12 nyugati repülőt.',
       ],
@@ -98,7 +96,7 @@ export const taiwanMission = {
   battlefield: {
     environment: {
       ocean: true,
-      islands: [island(0, 0, 10000, 22000, 0.15, 80), island(-45000, 17000, 11500, 23000, 0, 50)],
+      islands: [island(0, 0, 10000, 22000, 0.15, 650)],
     },
     assets,
     flights: [
@@ -112,11 +110,12 @@ export const taiwanMission = {
         heading: -Math.PI / 2,
         fighter: 'fa18',
         bomber: 'b52',
-        attack: ['EAST-CARRIER', 'EAST-AIRFIELD'],
+        attack: ['EAST-CARRIER'],
         defend: bases,
       },
       {
         side: 'east',
+        withdrawalPoint: [-50000, 3000, 5000],
         physicalRecovery: true,
         waves: 3,
         squadrons: 3,
@@ -126,23 +125,19 @@ export const taiwanMission = {
         fighter: 'su27',
         bomber: 'tu95',
         attack: bases,
-        defend: ['EAST-CARRIER', 'EAST-AIRFIELD'],
+        defend: ['EAST-CARRIER'],
       },
     ],
-    waitForThreats: ['west'],
     reports: {
       west: [
         {
           id: 'invasion-bases',
-          text: 'Saját bázisok: {alive}/{total}',
-          assets: bases,
-          condition: { survive: bases, min: 1 },
-        },
-        {
-          id: 'attackers',
-          text: 'Repülők: {airLost}/{airTotal} · hullám {wave}/3',
+          text: 'Hajó {destroyed}/{total} · gép {airResolved}/{airTotal}',
+          assets: ['EAST-CARRIER'],
           air: 'east',
-          condition: { eliminateAir: 'east' },
+          condition: {
+            any: [{ destroy: ['EAST-CARRIER'] }, { eliminateAir: 'east', allowWithdrawn: true }],
+          },
         },
         {
           id: 'destroyer',
@@ -168,7 +163,9 @@ export const taiwanMission = {
       ],
     },
     victory: {
-      west: { all: [{ survive: bases, min: 1 }, { eliminateAir: 'east' }] },
+      west: {
+        any: [{ destroy: ['EAST-CARRIER'] }, { eliminateAir: 'east', allowWithdrawn: true }],
+      },
       east: { any: [{ destroy: bases }, { eliminateAir: 'west' }] },
     },
   },

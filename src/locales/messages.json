@@ -9167,22 +9167,6 @@
     "hu": "Tajvan · Tajvani-szoros",
     "en": "Taiwan · Taiwan Strait"
   },
-  "A Kelet három hullámban támad: hullámonként három négygépes raj, rajonként egy bombázó és három vadász. A hullámok hárompercenként érkeznek. A Nyugat három négygépes rajjal védekezik; a játékos a tizenkét gép egyike. Minden aktív raj a levegőből indul. A sziget közepén repülőtér, a tengeren nyugati anyahajó, a partokon négy SAM és négy légvédelmi löveg áll. A Keletet anyahajó, romboló és hátsó repülőtér támogatja. Saját, épségben maradt repülőtéren feltölthetsz; fedélzeti géppel saját anyahajón is. A győzelem azonnali: legalább egy nyugati leszállóhely maradjon meg, és mind a 36 keleti gépet küzdjétek le.": {
-    "hu": "A Kelet három hullámban támad: hullámonként három négygépes raj, rajonként egy bombázó és három vadász. A hullámok hárompercenként érkeznek. A Nyugat három négygépes rajjal védekezik; a játékos a tizenkét gép egyike. Minden aktív raj a levegőből indul. A sziget közepén repülőtér, a tengeren nyugati anyahajó, a partokon négy SAM és négy légvédelmi löveg áll. A Keletet anyahajó, romboló és hátsó repülőtér támogatja. Saját, épségben maradt repülőtéren feltölthetsz; fedélzeti géppel saját anyahajón is. A győzelem azonnali: legalább egy nyugati leszállóhely maradjon meg, és mind a 36 keleti gépet küzdjétek le.",
-    "en": "The East attacks in three waves, three four-aircraft flights per wave, with one bomber and three fighters per flight. Waves arrive every three minutes. The West defends with three flights; the player occupies one of its twelve seats. All active flights start airborne. A central island airfield, a western carrier, four coastal SAM systems and four AA guns defend Taiwan. The East has a carrier, a destroyer and a rear airfield. Rearm at any surviving friendly runway; carrier-capable aircraft may also use their own carrier. Victory is immediate once all 36 eastern aircraft are destroyed and at least one western landing base survives."
-  },
-  "Keleti támadás Tajvan ellen. Három hullám, hullámonként három négyszeres raj, egy bombázóval és három vadásszal rajonként. Te az első hullám egyik gépének helyén indulsz. A további hullámok hárompercenként érkeznek. A Nyugat tizenkét géppel, szigeti reptérrel, anyahajóval és partvédelmi ütegekkel védekezik. Saját repülőtéren feltölthetsz; a fedélzeti típusok saját anyahajót is használhatnak. A győzelemhez mindkét nyugati leszállóhely VAGY mind a tizenkét nyugati repülő megsemmisítése szükséges.": {
-    "hu": "Keleti támadás Tajvan ellen. Három hullám, hullámonként három négyszeres raj, egy bombázóval és három vadásszal rajonként. Te az első hullám egyik gépének helyén indulsz. A további hullámok hárompercenként érkeznek. A Nyugat tizenkét géppel, szigeti reptérrel, anyahajóval és partvédelmi ütegekkel védekezik. Saját repülőtéren feltölthetsz; a fedélzeti típusok saját anyahajót is használhatnak. A győzelemhez mindkét nyugati leszállóhely VAGY mind a tizenkét nyugati repülő megsemmisítése szükséges.",
-    "en": "Eastern invasion of Taiwan. Three waves, each containing three flights of one bomber and three fighters. You occupy one seat in the first wave. Reinforcements arrive every three minutes. Twelve western aircraft, an island airfield, a carrier and coastal batteries defend the island. Rearm at a friendly airfield; carrier-capable aircraft can also use their own carrier. Win by destroying both western landing bases OR all twelve western aircraft."
-  },
-  "Őrizz meg legalább egy leszállóhelyet: a szigeti repteret vagy a nyugati anyahajót.": {
-    "hu": "Őrizz meg legalább egy leszállóhelyet: a szigeti repteret vagy a nyugati anyahajót.",
-    "en": "Preserve at least one landing base: the island airfield or the western carrier."
-  },
-  "Küzdjétek le mind a 36 keleti repülőt, a három hullámot együtt.": {
-    "hu": "Küzdjétek le mind a 36 keleti repülőt, a három hullámot együtt.",
-    "en": "Destroy all 36 eastern aircraft across all three waves."
-  },
   "Semmisítsétek meg a keleti rombolót.": {
     "hu": "Semmisítsétek meg a keleti rombolót.",
     "en": "Destroy the eastern destroyer."
@@ -9226,5 +9210,45 @@
   "Romboló megmaradt": {
     "hu": "Romboló megmaradt",
     "en": "Destroyer survives"
+  },
+  "A Kelet három hullámban támad: hullámonként három négygépes raj, rajonként egy bombázó és három vadász. A hullámok hárompercenként érkeznek. A Nyugat három négygépes rajjal védekezik; a játékos a tizenkét gép egyike. Minden aktív raj a levegőből indul. A sziget közepén repülőtér, a tengeren nyugati anyahajó, a partokon négy SAM és négy légvédelmi löveg áll. Keletnek nincs szigete vagy reptere, csak egy anyahajója és egy rombolója. Saját, épségben maradt repülőtéren feltölthetsz; fedélzeti géppel saját anyahajón is. Nyugat győz, ha a keleti anyahajó megsemmisül, VAGY mind a 36 keleti gépet lelőttétek vagy végleg visszavonultak.": {
+    "hu": "A Kelet három hullámban támad: hullámonként három négygépes raj, rajonként egy bombázó és három vadász. A hullámok hárompercenként érkeznek. A Nyugat három négygépes rajjal védekezik; a játékos a tizenkét gép egyike. Minden aktív raj a levegőből indul. A sziget közepén repülőtér, a tengeren nyugati anyahajó, a partokon négy SAM és négy légvédelmi löveg áll. Keletnek nincs szigete vagy reptere, csak egy anyahajója és egy rombolója. Saját, épségben maradt repülőtéren feltölthetsz; fedélzeti géppel saját anyahajón is. Nyugat győz, ha a keleti anyahajó megsemmisül, VAGY mind a 36 keleti gépet lelőttétek vagy végleg visszavonultak.",
+    "en": "The East attacks in three waves, each containing three flights of one bomber and three fighters. Waves arrive every three minutes. The West defends with twelve aircraft, including the player. All active flights start airborne. There is ONE island, with a western airfield, four coastal SAM systems and four AA guns, plus a western carrier offshore. The East has no island or airfield, only one carrier and one destroyer. Friendly operational runways provide resupply; carrier-capable types may use their own carrier. The West wins when the eastern carrier is destroyed OR all 36 eastern aircraft have been destroyed or permanently withdrawn."
+  },
+  "Keleti támadás Tajvan ellen. Három hullám, hullámonként három négyszeres raj, egy bombázóval és három vadásszal rajonként. Te az első hullám egyik gépének helyén indulsz. A további hullámok hárompercenként érkeznek. A Nyugat tizenkét géppel, szigeti reptérrel, anyahajóval és partvédelmi ütegekkel védekezik. Keletnek nincs szigete vagy reptere: egy anyahajó és egy romboló támogatja. Fedélzeti típus saját anyahajón tölthet fel; a szárazföldi típusok szükség esetén végleg kivonulnak. A győzelemhez mindkét nyugati leszállóhely VAGY mind a tizenkét nyugati repülő megsemmisítése szükséges.": {
+    "hu": "Keleti támadás Tajvan ellen. Három hullám, hullámonként három négyszeres raj, egy bombázóval és három vadásszal rajonként. Te az első hullám egyik gépének helyén indulsz. A további hullámok hárompercenként érkeznek. A Nyugat tizenkét géppel, szigeti reptérrel, anyahajóval és partvédelmi ütegekkel védekezik. Keletnek nincs szigete vagy reptere: egy anyahajó és egy romboló támogatja. Fedélzeti típus saját anyahajón tölthet fel; a szárazföldi típusok szükség esetén végleg kivonulnak. A győzelemhez mindkét nyugati leszállóhely VAGY mind a tizenkét nyugati repülő megsemmisítése szükséges.",
+    "en": "Eastern attack on Taiwan: three waves, each with three flights of one bomber and three fighters. You occupy one seat in the first wave; reinforcements arrive every three minutes. The West has twelve aircraft, an island airfield, a carrier and coastal air defenses. The East has no island or airfield: only one carrier and one destroyer. Carrier-capable aircraft can resupply on their own carrier; land-based aircraft withdraw permanently when necessary. Win by destroying BOTH western landing bases OR all twelve western aircraft."
+  },
+  "Semmisítsétek meg a keleti anyahajót, VAGY küzdjétek le vagy kényszerítsétek végleges visszavonulásra mind a 36 keleti repülőt.": {
+    "hu": "Semmisítsétek meg a keleti anyahajót, VAGY küzdjétek le vagy kényszerítsétek végleges visszavonulásra mind a 36 keleti repülőt.",
+    "en": "Destroy the eastern carrier OR destroy or force the permanent withdrawal of all 36 eastern aircraft."
+  },
+  "Hajó {{v0}}/{{v1}} · gép {{v2}}/{{v3}}": {
+    "hu": "Hajó {{v0}}/{{v1}} · gép {{v2}}/{{v3}}",
+    "en": "Ship {{v0}}/{{v1}} · air {{v2}}/{{v3}}"
+  },
+  "SZÉLCSEND": {
+    "hu": "SZÉLCSEND",
+    "en": "CALM WIND"
+  },
+  "SZÉL {{v0}}° · {{v1}} KM/H · LÖKÉS ±{{v2}} M/S": {
+    "hu": "SZÉL {{v0}}° · {{v1}} KM/H · LÖKÉS ±{{v2}} M/S",
+    "en": "WIND {{v0}}° · {{v1}} KM/H · GUST ±{{v2}} M/S"
+  },
+  "SZÉL {{v0}}° {{v1}} KM/H": {
+    "hu": "SZÉL {{v0}}° {{v1}} KM/H",
+    "en": "WIND {{v0}}° {{v1}} KM/H"
+  },
+  "AB INDUL": {
+    "hu": "AB INDUL",
+    "en": "AB SPOOL"
+  },
+  "UTÁNÉGETŐ FELPÖRGÉS": {
+    "hu": "UTÁNÉGETŐ FELPÖRGÉS",
+    "en": "AFTERBURNER SPOOLING"
+  },
+  "SZÉL {{v0}}° {{v1}} KM/H · ±{{v2}}": {
+    "hu": "SZÉL {{v0}}° {{v1}} KM/H · ±{{v2}}",
+    "en": "WIND {{v0}}° {{v1}} KM/H · ±{{v2}}"
   }
 }

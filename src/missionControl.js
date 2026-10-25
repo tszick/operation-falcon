@@ -1,3 +1,4 @@
+import { weatherBrief } from './flightEnvironment.js';
 import { drawingContext } from './rendering/createBackend.js';
 import { tr, trHtml } from './i18n.js';
 import { escapeHtml as esc } from './ui/html.js';
@@ -67,7 +68,10 @@ export class MissionControlView {
       snapshot = missionControlSnapshot(s, m, targets, aim, options),
       map = renderTacticalMap(this.canvas, s, targets, aim, options);
     $('control-mission-name').textContent = tr(snapshot.card.name);
-    $('control-phase').textContent = tr(snapshot.card.phase + ' · ' + snapshot.card.elapsed);
+    $('control-phase').textContent =
+      tr(snapshot.card.phase + ' · ' + snapshot.card.elapsed) +
+      ' · ' +
+      tr(weatherBrief({ ...s.weather, wind: s.wind || s.weather?.wind }));
     $('control-objectives').innerHTML = trHtml(missionGoalsMarkup(snapshot.card));
     $('control-map-zoom').textContent = tr(`0 · NAGYÍTÁS ${map.zoomFactor}×`);
     $('control-map-range').textContent = tr(

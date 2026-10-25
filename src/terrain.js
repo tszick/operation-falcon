@@ -1,3 +1,4 @@
+import { missionWeather } from './flightEnvironment.js';
 import { generateIslands, oceanHeight } from './oceanEnvironment.js';
 import { Vec3, clamp } from './math.js';
 export const runway = { halfWidth: 45, halfLength: 1600, heading: 0 };
@@ -25,6 +26,11 @@ function corridor(anchor, rng) {
   };
 }
 export function configureTerrain(m, anchor = new Vec3(22000, 0, 0), rng = Math.random) {
+  const world = buildTerrain(m, anchor, rng);
+  world.weather = missionWeather(m);
+  return world;
+}
+function buildTerrain(m, anchor, rng) {
   if (m.battlefield?.environment) {
     terrainWorld = {
       revision: ++revision,
