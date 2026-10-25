@@ -13,13 +13,14 @@ export function serviceProbe({
   field = true,
   damage = 0,
   seconds = 1200,
+  weather,
 } = {}) {
   const f =
     side === 'enemy'
       ? { x: 12000, z: 20000, elevation: 180, heading: 0.4 }
       : { x: 0, z: 0, elevation: 0, heading: 0 };
   configureTerrain(
-    { id: field && side === 'enemy' ? 'airbase' : 'landing' },
+    { id: field && side === 'enemy' ? 'airbase' : 'landing', weather },
     new Vec3(f.x, 0, f.z),
     () => 0.5,
   );

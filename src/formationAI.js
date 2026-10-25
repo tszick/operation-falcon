@@ -1,3 +1,5 @@
+import { unitAirVelocity } from './flightEnvironment.js';
+import { stepEngine, stepBodyRates, waveDragCoefficient, thrustFactor } from './flightModel.js';
 import { Vec3, clamp, DEG } from './math.js';
 import { aircraftFlightSpec } from './aiAircraftSpec.js';
 import { loadout } from './aircraftSpec.js';
@@ -158,26 +160,39 @@ export function coordinatedFlightPlan(t, target, context) {
 export function steerCoordinatedFlight(t, plan, dt) {
   if (!plan || t.flight || t.evasion || t.retreat || dt <= 0) return;
   const limits = navigationLimits(t),
-    speed = Math.max(1, Math.hypot(t.velocity.x, t.velocity.z)),
+    airVelocity = unitAirVelocity(t),
+    speed = Math.max(1, Math.hypot(airVelocity.x, airVelocity.z)),
     desiredHeading = Math.atan2(plan.position.x - t.position.x, plan.position.z - t.position.z),
     error = Math.atan2(
       Math.sin(desiredHeading - (t.heading || 0)),
       Math.cos(desiredHeading - (t.heading || 0)),
     ),
     rate = Math.min(0.12, (9.81 * Math.tan(plan.bankLimit)) / Math.max(70, speed)),
-    turn = clamp(error, -rate * dt, rate * dt);
+    demand = clamp(error / dt, -rate, rate);
+  const motion = (t.navigationMotion ??= { spec: limits.spec, onGround: false });
+  const turn = stepBodyRates(motion, { pitch: 0, roll: 0, yaw: demand }, dt).yaw * dt;
   t.heading = (t.heading || 0) + turn;
   t.bank = Math.atan((speed * turn) / (dt * 9.81));
   const q = 0.5 * limits.air.density * speed * speed,
     cl =
       (limits.mass * 9.81) /
       Math.max(1, q * limits.spec.wingArea * Math.max(0.5, Math.cos(t.bank))),
-    drag = q * limits.spec.wingArea * (limits.spec.cd0 + limits.spec.inducedDrag * cl * cl),
-    installed = plan.afterburner ? limits.spec.abThrust : limits.spec.thrust,
-    thrust =
-      installed *
-      clamp(limits.air.density / 1.225, 0.23, 1) *
-      clamp(1 - (speed / (limits.spec.maxMach * limits.air.soundSpeed)) * 0.22, 0.4, 1);
+    mach = speed / limits.air.soundSpeed,
+    drag =
+      q *
+      limits.spec.wingArea *
+      (limits.spec.cd0 +
+        limits.spec.inducedDrag * cl * cl +
+        waveDragCoefficient(limits.spec, mach));
+  const engine = (t.navigationEngine ??= {
+    spec: limits.spec,
+    fuel: 1,
+    engineSpool: t.throttle ?? 0.65,
+    afterburnerSpool: 0,
+  });
+  engine.throttle = plan.targetSpeed > speed ? 1 : 0.5;
+  const thrust =
+    stepEngine(engine, dt, plan.afterburner) * thrustFactor(limits.spec, limits.air, mach);
   const acceleration = Math.min(6, (thrust - drag) / limits.mass),
     deceleration = Math.min(
       3.5,
@@ -204,7 +219,12 @@ export function steerCoordinatedFlight(t, plan, dt) {
         plan.groundAttack ? -60 : -15,
         plan.groundAttack ? 45 : 22,
       );
-  t.velocity = new Vec3(Math.sin(t.heading) * next, vertical, Math.cos(t.heading) * next);
+  t.airVelocity = new Vec3(Math.sin(t.heading) * next, vertical, Math.cos(t.heading) * next);
+  t.velocity = t.airVelocity.clone();
+  if (t.wind) {
+    t.velocity.add(t.wind);
+    t.windAppliedVelocity = t.velocity;
+  }
   t.pitch = Math.atan2(vertical, next);
   t.afterburner = plan.afterburner;
   t.throttle = plan.targetSpeed > speed ? 1 : 0.5;

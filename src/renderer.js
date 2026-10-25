@@ -1,3 +1,4 @@
+import { windHudReadout } from './flightEnvironment.js';
 import { drawingContext } from './rendering/createBackend.js';
 import { tr } from './i18n.js';
 import { renderCarrier } from './carrierVisuals.js';
@@ -1012,6 +1013,29 @@ export class Renderer {
       cx - span - 30,
       cockpitHudFooterY(w, h),
     );
+    const wind = windHudReadout(s),
+      wx = Math.max(28, cx - span - 220),
+      wy = cockpitHudFooterY(w, h) + 20;
+    c.save();
+    c.font = '11px Consolas,monospace';
+    c.fillStyle = '#a8d6c5';
+    c.strokeStyle = '#a8d6c5';
+    c.fillText(tr(wind.text), wx, wy);
+    if (!wind.calm) {
+      const angle = wind.directionToRad - a.heading,
+        dx = Math.sin(angle) * 7,
+        dy = -Math.cos(angle) * 7;
+      const x = wx - 13,
+        y = wy - 4;
+      c.beginPath();
+      c.moveTo(x - dx, y - dy);
+      c.lineTo(x + dx, y + dy);
+      c.moveTo(x + dx - dx * 0.5 - dy * 0.4, y + dy - dy * 0.5 + dx * 0.4);
+      c.lineTo(x + dx, y + dy);
+      c.lineTo(x + dx - dx * 0.5 + dy * 0.4, y + dy - dy * 0.5 - dx * 0.4);
+      c.stroke();
+    }
+    c.restore();
     c.fillText(tr(`AGL ${Math.round(s.agl)} M`), cx + span - 40, cockpitHudFooterY(w, h));
     c.fillText(
       tr(`V/S ${s.velocity.y >= 0 ? '+' : ''}${s.velocity.y.toFixed(1)} M/S`),

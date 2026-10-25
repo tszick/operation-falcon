@@ -1,13 +1,13 @@
 # Invázió: Tajvan
 
-Játékbeli, stilizált hadszíntér; a térképen Tajvanhoz rendelve. A helyi sziget és a nyugati partvidék procedurális, nem valódi méretarányú térkép.
+Játékbeli, stilizált hadszíntér; a térképen Tajvanhoz rendelve. A pályán egyetlen, nyugati sziget van; a procedurális sziget nem valódi méretarányú térkép.
 
 - Kelet: három hullám 0 / 180 / 360 másodpercnél, hullámonként három négygépes raj (1 Tu-95 és 3 Su-27). Összesen 36 gép. A keleti játékos az első hullám egyik rajhelyét foglalja el.
 - Nyugat: három négygépes raj (1 B-52 és 3 F/A-18). A játékos beleszámít a 12 gépbe: vadásszal vadászhelyen, csapásmérő/bombázó géppel bombázóhelyen kezd.
 - Két rögzített anyahajó, egy keleti mozgó romboló. A romboló a közös szigetkerülő útvonaltervezést használja.
-- Nyugati szigeti reptér, keleti hátsó reptér, négy parti SAM és négy légvédelmi löveg. A nagy szigetek lapos belső területe és a tényleges háromszögelt terep azonos a kirajzolásban és az ütközésben.
-- Feltöltés bármely épségben maradt saját, típussal használható leszállóhelyen. A legközelebbi saját használható bázisra mutat a navigáció és az N segédvonal. F/A-18/F-14/Harrier használhat anyahajót; szárazföldi típusok (B-52, Tu-95, Su-27 stb.) repteret használnak. A jelenlegi keleti gépkínálatban nincs fedélzeti típus, ezért keleti repülővel a hátsó reptér szolgál feltöltésre; a keleti anyahajó közös fedélzeti infrastruktúrája egy későbbi fedélzeti típust külön küldetéskód nélkül fogad.
-- Nyugati győzelem: az összes keleti repülő leküzdve (a függő hullámokat is beleértve), és legalább egy nyugati leszállóhely megmarad. Beérkező, megmaradt bázist fenyegető fegyver esetén a lezárás vár.
+- A sziget közepén egy nyugati reptér, a parton négy nyugati SAM és négy légvédelmi löveg van. Keletnek nincs szigete és nincs reptere. Az alacsony partokról fokozatosan 650 méter magas központi fennsíkra emelkedik a terep; a reptér, a kifutó és a közvetlen kigurulási terület ezen a vízszintes fennsíkon fekszik. A sziget felszíne és a tényleges háromszögelt terep azonos a kirajzolásban és az ütközésben.
+- Feltöltés bármely épségben maradt saját, típussal használható leszállóhelyen. A legközelebbi saját használható bázisra mutat a navigáció és az N segédvonal. F/A-18/F-14/Harrier használhat anyahajót; szárazföldi típusok (B-52, Tu-95, Su-27 stb.) repteret használnak. A jelenlegi keleti gépkínálatban nincs fedélzeti típus: a keleti szárazföldi típusok nem tölthetnek fel, szükség esetén végleg kivonulnak. Keleti játékosként nincs baráti reptérre mutató hamis leszállójel; a kivonulási pont nyugaton, a harctértől távol található. A keleti anyahajó közös fedélzeti infrastruktúrája egy későbbi fedélzeti típust külön küldetéskód nélkül fogad.
+- Nyugati győzelem: a keleti anyahajó megsemmisül VAGY minden keleti repülő megsemmisül vagy végleg visszavonul (a függő hullámokat is beleértve). Vegyesen is teljesülhet a lelövések és a végleges kivonulások száma. A feltöltésre tartó, ideiglenesen távol lévő gép, a még folyamatban lévő visszavonulás és a függő hullám nem számít leküzdöttnek. Az anyahajó megsemmisítése a későbbi hullámok előtt is győzelem.
 - Keleti győzelem: mindkét nyugati leszállóhely VAGY az összes nyugati repülő megsemmisül. A győzelemhez nem kötelező még egyszer leszállni.
 
 ## Közös játékrendszerek

@@ -1,3 +1,4 @@
+import { flightModelProfile } from './flightModel.js';
 import { afterburnerActive } from './engineState.js';
 import { attitude, DEG } from './math.js';
 import { mass, massBreakdown } from './performance.js';
@@ -27,7 +28,13 @@ function playerData(s, controls) {
     velocity: vec(s.velocity),
     orientation: { ...s.orientation },
     ...angles(s.orientation),
-    tasKmh: round(s.velocity.length() * 3.6),
+    tasKmh: round((s.trueAirspeed ?? s.velocity.length()) * 3.6),
+    groundSpeedKmh: round(s.velocity.length() * 3.6),
+    windMps: vec(s.wind),
+    airVelocityMps: vec(s.airVelocity),
+    engineSpool: round(s.engineSpool),
+    afterburnerSpool: round(s.afterburnerSpool),
+    bodyRates: s.bodyRates ? copy(s.bodyRates) : null,
     iasKmh: round(s.ias * 3.6),
     mach: round(s.mach),
     aglM: round(s.agl),
@@ -151,11 +158,24 @@ function unitData(t, w) {
     seaWaypoint: vec(t.seaWaypoint),
     routeDistance: round(t.routeDistance),
     ai: ai ? copy(ai) : null,
+    windMps: vec(t.wind || t.flight?.wind),
+    airVelocityMps: vec(t.airVelocity || t.flight?.airVelocity),
+    navigationPhysics: t.navigationEngine
+      ? {
+          engineSpool: round(t.navigationEngine.engineSpool),
+          afterburnerSpool: round(t.navigationEngine.afterburnerSpool),
+          bodyRates: copy(t.navigationMotion?.bodyRates),
+        }
+      : null,
     flight: t.flight
       ? {
           spec: t.flight.spec.id,
           massKg: mass(t.flight),
           fuelKg: t.flight.fuel,
+          engineSpool: round(t.flight.engineSpool),
+          trueAirspeedMps: round(t.flight.trueAirspeed),
+          bodyRates: copy(t.flight.bodyRates),
+          forces: copy(t.flight.forces),
           orientation: { ...t.flight.orientation },
           parts: { ...t.flight.condition.parts },
           engines: [...(t.flight.condition.engines || [])],
@@ -209,6 +229,9 @@ export class FlightRecorder {
       startedAt: this.now(),
       mission: copy(mission.spec),
       aircraft: copy(s.spec),
+      flightModelVersion: 2,
+      flightModel: copy(flightModelProfile(s.spec)),
+      weather: copy(s.weather),
       physicsHz: 120,
       playerHz: 10,
       worldHz: 2,

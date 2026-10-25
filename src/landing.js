@@ -20,6 +20,7 @@ export function runwayState(s) {
     position: local(s.position),
     previousPosition: local(s.previousPosition || s.position),
     velocity: rotation.rotate(s.velocity),
+    wind: s.wind ? rotation.rotate(s.wind) : null,
     orientation: rotation.multiply(s.orientation),
     worldAltitude: s.position.y,
     airfieldLocal: true,
@@ -242,7 +243,10 @@ export function touchdownProblems(s, descent, speed) {
   const a = attitude(s.orientation),
     problems = [],
     limits = touchdownLimits(s),
-    ias = speed * Math.sqrt(atmosphere(s.worldAltitude ?? s.position.y).density / 1.225) * 3.6;
+    ias =
+      (s.wind?.length() > 0 ? s.velocity.clone().sub(s.wind).length() : speed) *
+      Math.sqrt(atmosphere(s.worldAltitude ?? s.position.y).density / 1.225) *
+      3.6;
   if (!s.gear) problems.push('A futómű nem volt kiengedve (G).');
   if (!onLandingRunway(s)) problems.push('A földetérés a pályán kívül történt.');
   if (descent >= 3)
@@ -274,7 +278,10 @@ export function assessTouchdown(s, descent, speed) {
   s = runwayState(s);
   const a = attitude(s.orientation),
     limits = touchdownLimits(s),
-    ias = speed * Math.sqrt(atmosphere(s.worldAltitude ?? s.position.y).density / 1.225) * 3.6;
+    ias =
+      (s.wind?.length() > 0 ? s.velocity.clone().sub(s.wind).length() : speed) *
+      Math.sqrt(atmosphere(s.worldAltitude ?? s.position.y).density / 1.225) *
+      3.6;
   const problems = touchdownProblems(s, descent, speed),
     sink = Math.max(0, descent),
     bank = Math.abs(a.bank / DEG),

@@ -1,3 +1,4 @@
+import { unitAirVelocity, advectNavigatingAircraft } from './flightEnvironment.js';
 import { moveOceanShip } from './oceanEnvironment.js';
 import { aiServiceInput, moveServiceTaxi } from './aiResupply.js';
 import { radarContact } from './sensors.js';
@@ -126,6 +127,9 @@ export function applyTargetHit(
     const spec = aircraftFlightSpec(target.aircraftId || 'mig29');
     target.flight = createAircraft(spec, { ammo: { gun: 0, aam: 0, agm: 0, bomb: 0 } });
     const s = target.flight;
+    s.weather = terrainWorld.weather;
+    s.engineSpool = target.navigationEngine?.engineSpool ?? target.throttle ?? 0.65;
+    s.elapsed = target.environmentClock || 0;
     s.position = target.position.clone();
     s.velocity = target.velocity.clone();
     s.orientation = Quat.euler(target.heading || Math.atan2(s.velocity.x, s.velocity.z), 0, 0);
@@ -192,6 +196,7 @@ export function updateTargets(targets, dt) {
       continue;
     }
     ageEvasion(t, dt);
+    if (t.kind === 'air' && !t.flight) t.velocity = unitAirVelocity(t);
     t.previousPosition = t.position.clone();
     t.agl = t.position.y - terrainHeight(t.position.x, t.position.z);
     if (t.pending) continue;
@@ -256,6 +261,13 @@ export function updateTargets(targets, dt) {
         moveOceanShip(t, t.seaDestination, terrainWorld.islands || [], terrainWorld.revision, dt);
       } else t.position.add(t.velocity.clone().scale(dt));
     }
+    if (t.alive && t.kind === 'air' && !t.flight)
+      advectNavigatingAircraft(
+        t,
+        terrainWorld.weather,
+        dt,
+        terrainHeight(t.position.x, t.position.z),
+      );
     if (t.alive && t.aiRole === 'escortee' && t.position.z >= t.exitZ) {
       t.exited = true;
       t.alive = false;

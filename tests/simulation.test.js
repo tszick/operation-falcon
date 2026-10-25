@@ -21,6 +21,7 @@ function inFlight() {
   s.gear = false;
   s.flaps = false;
   s.throttle = 0.75;
+  s.engineSpool = s.throttle;
   return s;
 }
 test('atmosphere thins with height; temperature floor keeps sound speed valid', () => {
@@ -443,13 +444,17 @@ test('fuel caution levels match actual fuel thresholds, including empty tanks', 
   assert.equal(fuelStatus(s).percent, 0);
   assert.equal(fuelStatus(s).kg, 0);
 });
-test('short bank input is gentle and releasing immediately holds the bank', () => {
+test('short bank input is gentle, release damps rotation and the settled bank stays stable', () => {
   const s = inFlight();
   for (let i = 0; i < 12; i++) stepAircraft(s, { roll: 1 });
   const bank = attitude(s.orientation).bank;
   assert.ok(bank > 0 && bank < 5 * DEG, `short input bank ${bank / DEG}`);
   for (let i = 0; i < 120; i++) stepAircraft(s, {});
-  assert.ok(Math.abs(attitude(s.orientation).bank - bank) < 1e-9);
+  const settled = attitude(s.orientation).bank;
+  assert.ok(settled > bank && settled < 10 * DEG);
+  assert.ok(Math.abs(s.bodyRates.roll) < 0.001);
+  for (let i = 0; i < 120; i++) stepAircraft(s, {});
+  assert.ok(Math.abs(attitude(s.orientation).bank - settled) < 0.01 * DEG);
 });
 test('reselecting the only radar contact preserves acquisition progress and lock', () => {
   const s = inFlight(),

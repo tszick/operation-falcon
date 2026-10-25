@@ -8,6 +8,7 @@ import { configureTerrain, terrainHeight } from '../src/terrain.js';
 import { updateTargets } from '../src/targeting.js';
 import { updateAircraftCollisions } from '../src/aircraftCollisions.js';
 import { groundAircraftHit } from '../src/groundModels.js';
+import { launchBallistic } from '../src/ballisticFlight.js';
 const spec = aircraft.find((a) => a.id === 'f16');
 function plane(x = 0, y = 1000, z = 0) {
   const s = createAircraft(spec);
@@ -183,4 +184,48 @@ test('a weakened large object can also be destroyed and an AI aircraft follows t
   assert.equal(carrier.alive, false);
   assert.equal(carrier.health, 0);
   assert.equal(p.dying, false);
+});
+
+test('ballistic targets never enter aircraft collision handling or create a fighter flight state', () => {
+  reset();
+  for (const groundImpact of [false, true]) {
+    const s = plane(groundImpact ? 5000 : 0, 3, 0),
+      truck = ground('truck'),
+      missile = launchBallistic(ground('ballistic-silo'), ground('airbase')),
+      w = new Weapons();
+    missile.previousPosition = new Vec3(0, 3, -60);
+    missile.position = new Vec3(0, 3, 0);
+    missile.velocity = new Vec3(0, 0, 3300);
+    missile.pitch = 0;
+    assert.doesNotThrow(() =>
+      updateAircraftCollisions(s, groundImpact ? [missile, truck] : [missile], w),
+    );
+    assert.equal(missile.flight, undefined);
+    assert.equal(missile.alive, true);
+    assert.equal(missile.health, 25);
+    assert.equal(s.dying, false);
+    assert.equal(truck.health, 60);
+    assert.equal(
+      w.events.some((e) => e.type === 'collision'),
+      false,
+    );
+  }
+});
+
+test('ordinary aircraft without a full flight state still receive fatal collision damage', () => {
+  reset();
+  const s = plane(),
+    target = unit('LIGHTWEIGHT', plane()),
+    w = new Weapons();
+  delete target.flight;
+  s.previousPosition.z = -60;
+  target.previousPosition.z = 60;
+  target.velocity = new Vec3(0, 0, -200);
+  target.heading = Math.PI;
+  updateAircraftCollisions(s, [target], w);
+  assert.equal(s.dying, true);
+  assert.equal(target.flight.dying, true);
+  assert.equal(target.alive, false);
+  assert.equal(target.falling, true);
+  assert.ok(target.flight.condition.source.includes('repülőgéppel'));
 });

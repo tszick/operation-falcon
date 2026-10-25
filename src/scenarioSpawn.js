@@ -35,7 +35,7 @@ function createCanonicalTargets(m, player, rng) {
           new Vec3(Math.sin(bearing) * radius, 0, Math.cos(bearing) * radius),
     enemies = player.faction === 'west' ? 'east' : 'west';
   configureTerrain(
-    { id: ['bridge-block', 'iron-veil'].includes(m.objective) ? 'bridge' : m.id },
+    { ...m, id: ['bridge-block', 'iron-veil'].includes(m.objective) ? 'bridge' : m.id },
     anchor,
     rng,
   );

@@ -1,3 +1,4 @@
+import { calmWeather } from '../src/flightEnvironment.js';
 import { atmosphere } from '../src/performance.js';
 import { evaluateApproach } from '../src/landing.js';
 import { aircraft, missions } from '../src/aircraftSpec.js';
@@ -9,7 +10,7 @@ import { Vec3, Quat, DEG } from '../src/math.js';
 import { stepAircraft } from '../src/physics.js';
 import { requestCatapult } from '../src/navalOps.js';
 export function navalScenario(mode = 'battle') {
-  const scenario = missions.find((m) => m.naval),
+  const scenario = { ...missions.find((m) => m.naval), weather: calmWeather() },
     spec = aircraft.find((a) => a.id === (mode.startsWith('harrier') ? 'harrier' : 'fa18'));
   let seed = 671;
   const random = () => {
@@ -58,6 +59,7 @@ export function navalScenario(mode = 'battle') {
     s.naval.nozzle = 90;
     s.throttle = 1;
   }
+  if (['trap', 'bolter', 'harrier-land'].includes(mode)) s.engineSpool = s.throttle;
   const air = atmosphere(s.position.y);
   s.speed = s.velocity.length();
   s.ias = s.speed * Math.sqrt(air.density / 1.225);

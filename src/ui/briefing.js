@@ -1,3 +1,4 @@
+import { missionWeather, weatherBrief } from '../flightEnvironment.js';
 import { missionGroups } from '../missionCatalog.js';
 import { trHtml, tr } from '../i18n.js';
 import { missionForSide } from '../missionSides.js';
@@ -171,6 +172,9 @@ export class Briefing {
     document.getElementById('equipment-mission-name').textContent = tr(mission.name);
     document.getElementById('equipment-brief').textContent =
       tr(mission.description) +
+      ' ' +
+      tr(weatherBrief(missionWeather(mission))) +
+      '.' +
       (selected.testProfile
         ? ' ' +
           tr(

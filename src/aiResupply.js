@@ -1,3 +1,5 @@
+import { windAt, windCorrectedHeading } from './flightEnvironment.js';
+import { thrustFactor } from './flightModel.js';
 import { airfieldForTarget } from './recoveryAirfields.js';
 import { initialiseNaval, requestCatapult } from './navalOps.js';
 import { Vec3, Quat, attitude, clamp, DEG } from './math.js';
@@ -6,7 +8,7 @@ import { aircraftFlightSpec } from './aiAircraftSpec.js';
 import { mass, atmosphere, approachSpeeds } from './performance.js';
 import { damageResponse } from './damage.js';
 import { teamOf } from './unitTypes.js';
-import { terrainHeight, runway } from './terrain.js';
+import { terrainHeight, runway, terrainWorld } from './terrain.js';
 import { beginRetreat, evasionFlightInput } from './aiDefense.js';
 export const aiServiceSeconds = 60;
 const terminal = (p, w) => p.dying || p.crashed || w.missionEnded;
@@ -24,6 +26,9 @@ function flightFor(t, u) {
   s.flaps = false;
   s.flapPosition = 0;
   s.throttle = 0.65;
+  s.engineSpool = t.navigationEngine?.engineSpool ?? s.throttle;
+  s.weather = terrainWorld.weather;
+  s.elapsed = t.environmentClock || 0;
   s.fuel = s.spec.fuelCapacity * 0.5;
   s.ammo = { gun: u.rounds, aam: u.missiles, agm: u.agm, bomb: u.bombs };
   const q = 0.5 * air.density * v * v,
@@ -233,6 +238,7 @@ export function updateAIResupply(p, targets, w, combat, dt) {
       s.previousPosition = position.clone();
       s.orientation = orientation;
       s.airfield = old.airfield;
+      s.weather = old.weather;
       Object.assign(u, {
         rounds: u.initialRounds,
         missiles: u.initialMissiles,
@@ -268,6 +274,8 @@ export function updateAIResupply(p, targets, w, combat, dt) {
         service.stage = 'inbound';
         s.onGround = false;
         s.airborne = true;
+        s.engineSpool = 0.65;
+        s.throttle = 0.65;
         s.gear = false;
         s.flaps = false;
         s.flapPosition = 0;
@@ -298,7 +306,7 @@ export function updateAIResupply(p, targets, w, combat, dt) {
 }
 function control(s, goal, { speed = 160, vertical = null, bankLimit = 25 } = {}) {
   const a = attitude(s.orientation),
-    v = Math.max(40, s.velocity.length()),
+    v = Math.max(40, s.trueAirspeed ?? s.velocity.length()),
     air = atmosphere(s.position.y),
     q = 0.5 * air.density * v * v,
     r = damageResponse(s),
@@ -310,14 +318,15 @@ function control(s, goal, { speed = 160, vertical = null, bankLimit = 25 } = {})
       -0.1,
       s.spec.stallAlpha * 0.8,
     ),
-    h = Math.atan2(goal.x - s.position.x, goal.z - s.position.z),
+    wind = windAt(s.weather, s.position, s.elapsed, terrainHeight(s.position.x, s.position.z)),
+    h = windCorrectedHeading(s.position, goal, v, wind),
     error = Math.atan2(Math.sin(h - a.heading), Math.cos(h - a.heading)),
     bank = clamp(error * 0.9, -bankLimit * DEG, bankLimit * DEG),
     vy = vertical ?? clamp((goal.y - s.position.y) * 0.06, -15, 20),
     pitch = alpha + Math.atan2(vy, v),
     rates = s.condition.rates,
     authority = clamp(q / 2800, 0.06, 1),
-    available = s.spec.thrust * clamp(air.density / 1.225, 0.23, 1) * r.engine * 0.9,
+    available = s.spec.thrust * thrustFactor(s.spec, air, v / air.soundSpeed) * r.engine * 0.9,
     drag =
       s.forces?.dragN ||
       q *

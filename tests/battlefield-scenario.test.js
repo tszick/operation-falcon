@@ -59,10 +59,19 @@ test('Taiwan uses three waves of three 3+1 flights, with one human seat and ordi
       }
       assert.equal(x.s.airborne, true);
       assert.equal(x.s.onGround, false);
-      assert.equal(x.s.recoveryExit, undefined);
-      assert.ok(x.s.airfield);
+      if (side === 'west') {
+        assert.equal(x.s.recoveryExit, undefined);
+        assert.ok(x.s.airfield);
+      } else {
+        assert.equal(x.s.airfield, undefined);
+        assert.ok(x.s.recoveryExit);
+      }
+      assert.equal(terrainWorld.islands.length, 1);
+      assert.equal(x.targets.filter((t) => t.type === 'airbase').length, 1);
+      assert.equal(x.by('EAST-AIRFIELD'), undefined);
+      assert.equal(terrainHeight(-45000, 17000), 0);
       if (!x.s.spec.carrierCapable) {
-        assert.equal(x.s.airfield.carrier, undefined);
+        assert.equal(x.s.airfield?.carrier, undefined);
         assert.equal(x.s.naval, undefined);
       }
       assert.equal(x.targets.filter((t) => t.type === 'sam-system').length, 4);
@@ -73,6 +82,32 @@ test('Taiwan uses three waves of three 3+1 flights, with one human seat and ordi
           assert.ok(Math.abs(terrainHeight(t.position.x, t.position.z + z) - t.position.y) < 0.01);
       }
     }
+});
+
+test('Taiwan rises from low shores to a level central airfield plateau', () => {
+  const x = setup(),
+    island = terrainWorld.islands[0],
+    airfield = x.by('WEST-AIRFIELD');
+  assert.equal(airfield.position.y, 650);
+  // The runway, overruns and nearby taxi area all sit on the same physical plateau.
+  for (const dx of [-300, 0, 300])
+    for (const dz of [-1800, 0, 1800])
+      assert.ok(Math.abs(terrainHeight(dx, dz) - airfield.position.y) < 0.01);
+  for (let ray = 0; ray < 8; ray++) {
+    const angle = (ray * Math.PI) / 4,
+      c = Math.cos(island.heading),
+      s = Math.sin(island.heading);
+    let previous = Infinity;
+    for (const radius of [0, 0.2, 0.4, 0.6, 0.8, 0.95, 1.2]) {
+      const localX = Math.cos(angle) * island.radiusX * radius,
+        localZ = Math.sin(angle) * island.radiusZ * radius,
+        height = terrainHeight(localX * c + localZ * s, -localX * s + localZ * c);
+      assert.ok(height <= previous + 0.01, 'terrain must descend toward every coast');
+      if (radius === 0.8) assert.ok(height < 250, 'coast must lie well below the airfield');
+      if (radius === 1.2) assert.equal(height, 0);
+      previous = height;
+    }
+  }
 });
 
 test('future waves cannot be counted as destroyed, and release exactly once at 180 and 360 seconds', () => {
@@ -99,7 +134,7 @@ test('future waves cannot be counted as destroyed, and release exactly once at 1
   );
 });
 
-test('western victory preserves either base, requires all enemy aircraft, and never requires destroying their ships', () => {
+test('western aircraft victory permits a surviving western base and does not require destroying eastern ships', () => {
   for (const destroyedBase of ['WEST-AIRFIELD', 'WEST-CARRIER']) {
     const x = setup();
     kill(x.by(destroyedBase));
@@ -262,10 +297,76 @@ test('physical-resupply flights cannot replenish off map when all compatible fri
     combat = new EnemyCombat(() => 0.4);
   const u = combat.unit(t);
   u.missiles = 0;
-  kill(x.by('EAST-AIRFIELD'));
   kill(x.by('EAST-CARRIER'));
   updateAIResupply(x.s, x.targets, x.w, combat, 1 / 60);
   assert.equal(t.service, undefined);
   assert.ok(t.retreat);
   assert.equal(u.missiles, 0);
+});
+
+test('western carrier victory ends immediately even before future eastern waves arrive', () => {
+  const west = setup();
+  kill(west.by('EAST-CARRIER'));
+  west.m.update(west.s, west.targets, west.w);
+  assert.equal(west.m.complete, true);
+  assert.ok(west.targets.some((t) => t.pending));
+  assert.ok(west.m.objectives.filter((r) => !r.optional).every((r) => r.done));
+  const east = setup('east');
+  kill(east.by('EAST-CARRIER'));
+  east.m.update(east.s, east.targets, east.w);
+  assert.equal(east.m.failed, true);
+});
+
+test('a mixture of destroyed and permanently withdrawn eastern aircraft satisfies western victory', () => {
+  const x = setup();
+  x.s.elapsed = 360;
+  x.m.update(x.s, x.targets, x.w);
+  const air = x.targets.filter((t) => t.coalition === 'east' && t.kind === 'air');
+  for (const [i, t] of air.entries()) {
+    if (i % 2) kill(t);
+    else {
+      t.alive = false;
+      t.exited = true;
+      t.retired = true;
+      t.retreat = { stage: 'departed', reason: 'ammunition' };
+    }
+  }
+  x.m.update(x.s, x.targets, x.w);
+  assert.equal(x.m.complete, true);
+  assert.ok(x.by('EAST-CARRIER').alive);
+  assert.ok(x.m.objectives.find((r) => r.id === 'invasion-bases').text.includes('36/36'));
+});
+
+test('retreating, temporarily servicing, and future aircraft do not count as permanently withdrawn', () => {
+  for (const mode of ['pending', 'returning', 'service']) {
+    const x = setup();
+    x.s.elapsed = mode === 'pending' ? 0 : 360;
+    x.m.update(x.s, x.targets, x.w);
+    const air = x.targets.filter((t) => t.coalition === 'east' && t.kind === 'air');
+    const last = mode === 'pending' ? air.find((t) => t.pending) : air[0];
+    for (const t of air) if (t !== last) kill(t);
+    if (mode === 'returning') last.retreat = { stage: 'exit', reason: 'ammunition' };
+    if (mode === 'service') {
+      last.exited = true;
+      last.retired = false;
+      last.retreat = { stage: 'departed', reason: 'resupply' };
+      last.service = { stage: 'servicing' };
+    }
+    x.m.update(x.s, x.targets, x.w);
+    assert.equal(x.m.complete, false, mode);
+  }
+});
+
+test('an eastern human pilot counts as withdrawn only after reaching the actual withdrawal point', () => {
+  const x = setup('east');
+  x.s.elapsed = 360;
+  x.m.update(x.s, x.targets, x.w);
+  for (const t of x.targets.filter((t) => t.coalition === 'east' && t.kind === 'air')) kill(t);
+  x.m.update(x.s, x.targets, x.w);
+  assert.equal(x.m.failed, false);
+  assert.equal(x.s.airfield, undefined);
+  assert.ok(x.s.recoveryExit.x < -40000);
+  x.s.position = x.s.recoveryExit.clone();
+  x.m.update(x.s, x.targets, x.w);
+  assert.equal(x.m.failed, true);
 });

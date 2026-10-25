@@ -43,7 +43,11 @@ export function fuelFlow(
   const [dry, wet] = families[s.spec.id] || [0.000025, 0.000065],
     tsfc = afterburner && s.spec.hasAB ? wet : dry;
   const lapse = clamp(density / 1.225, 0.23, 1),
-    ramFactor = clamp(1 - ((s.velocity?.length() || 0) / (s.spec.maxMach * 340)) * 0.22, 0.4, 1);
+    ramFactor = clamp(
+      1 - ((s.trueAirspeed ?? s.velocity?.length() ?? 0) / (s.spec.maxMach * 340)) * 0.22,
+      0.4,
+      1,
+    );
   const engineThrust = Math.max(s.spec.thrust * 0.065 * lapse * engine, thrust / ramFactor);
   // High Mach operation increases installed fuel cost; mass and stores enter
   // through the aircraft lift/drag/thrust demand, not a second fuel multiplier.
