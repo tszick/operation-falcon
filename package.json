@@ -27,6 +27,6 @@
     "prettier": "3.9.10"
   },
   "dependencies": {
-    "i18next": "26.5.4"
+    "i18next": "26.5.11"
   }
 }
