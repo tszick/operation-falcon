@@ -176,6 +176,9 @@ const deepFind = (obj, path, keySeparator = '.') => {
       }
       nextPath += tokens[j];
       next = current[nextPath];
+      if ((typeof next === 'function' || nextPath === '__proto__') && !Object.prototype.hasOwnProperty.call(current, nextPath)) {
+        next = undefined;
+      }
       if (next !== undefined) {
         if (['string', 'number', 'boolean'].includes(typeof next) && j < tokens.length - 1) {
           continue;
@@ -343,12 +346,12 @@ class ResourceStore extends EventEmitter {
       }
     }
     const result = getPath(this.data, path);
-    if (!result && !ns && !key && lng.includes('.')) {
+    if (result == null && !ns && !key && lng.includes('.')) {
       lng = path[0];
       ns = path[1];
       key = path.slice(2).join('.');
     }
-    if (result || !ignoreJSONStructure || !isString(key)) return result;
+    if (result != null || !ignoreJSONStructure || !isString(key)) return result;
     return deepFind(this.data?.[lng]?.[ns], key, keySeparator);
   }
   addResource(lng, ns, key, value, options = {
@@ -662,7 +665,7 @@ class Translator extends EventEmitter {
       }
     } else if (handleAsObjectInI18nFormat && isString(joinArrays) && Array.isArray(res)) {
       res = res.join(joinArrays);
-      if (res) res = this.extendTranslation(res, keys, opt, lastKey);
+      if (res) res = this.extendTranslation(res, keys, opt, resolved, lastKey);
     } else {
       let usedDefault = false;
       let usedKey = false;
@@ -987,7 +990,6 @@ class LanguageUtil {
           if (supportedLng === lngOnly) return true;
           if (!supportedLng.includes('-') && !lngOnly.includes('-')) return false;
           if (supportedLng.includes('-') && !lngOnly.includes('-') && supportedLng.slice(0, supportedLng.indexOf('-')) === lngOnly) return true;
-          if (supportedLng.startsWith(lngOnly) && lngOnly.length > 1) return true;
           return false;
         });
       });
@@ -1236,9 +1238,17 @@ class Interpolator {
       regex: this.regexp,
       safeValue: val => this.escapeValue ? this.escape(val) : val
     }];
+    const unescapedValues = [];
+    let shift = 0;
     todos.forEach(todo => {
       replaces = 0;
       while (match = todo.regex.exec(str)) {
+        const at = match.index - shift;
+        const written = unescapedValues.find(([start, end]) => at >= start && at < end);
+        if (written) {
+          todo.regex.lastIndex = written[1] + shift;
+          continue;
+        }
         const matchedVar = match[1].trim();
         value = handleFormat(matchedVar);
         if (value === undefined) {
@@ -1260,6 +1270,11 @@ class Interpolator {
         const safeValue = makeString(todo.safeValue(value));
         str = str.slice(0, match.index) + safeValue + str.slice(match.index + match[0].length);
         if (skipOnVariables) {
+          if (todo.regex === this.regexpUnescape) {
+            unescapedValues.push([match.index, match.index + safeValue.length]);
+          } else {
+            shift += safeValue.length - match[0].length;
+          }
           todo.regex.lastIndex += safeValue.length;
           todo.regex.lastIndex -= match[0].length;
         } else {
@@ -1380,7 +1395,12 @@ const createCachedFormatter = fn => {
         [o.interpolationkey]: undefined
       };
     }
-    const key = l + JSON.stringify(optForCache);
+    let key;
+    try {
+      key = l + JSON.stringify(optForCache);
+    } catch (e) {
+      return fn(getCleanedCode(l), o)(v);
+    }
     let frm = cache[key];
     if (!frm) {
       frm = fn(getCleanedCode(l), o);
@@ -2230,18 +2250,16 @@ class I18n extends EventEmitter {
       hasLoadedNamespace: clone.hasLoadedNamespace.bind(clone)
     };
     if (forkResourceStore) {
-      const clonedData = Object.keys(this.store.data).reduce((prev, l) => {
-        prev[l] = {
-          ...this.store.data[l]
+      const copyData = obj => {
+        const copied = Array.isArray(obj) ? [...obj] : {
+          ...obj
         };
-        prev[l] = Object.keys(prev[l]).reduce((acc, n) => {
-          acc[n] = {
-            ...prev[l][n]
-          };
-          return acc;
-        }, prev[l]);
-        return prev;
-      }, {});
+        Object.keys(copied).forEach(k => {
+          if (copied[k] && typeof copied[k] === 'object') copied[k] = copyData(copied[k]);
+        });
+        return copied;
+      };
+      const clonedData = copyData(this.store.data);
       clone.store = new ResourceStore(clonedData, mergedOptions);
       clone.services.resourceStore = clone.store;
     }
