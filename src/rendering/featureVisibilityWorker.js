@@ -17,7 +17,11 @@ export function prepareFeatureVisibility(value) {
 }
 // The browser worker is local; no mission data is transmitted to external services.
 if (typeof DedicatedWorkerGlobalScope !== 'undefined' && self instanceof DedicatedWorkerGlobalScope)
-  self.onmessage = ({ data: job }) => {
+  self.onmessage = (event) => {
+    // Dedicated Worker.postMessage events have an empty origin. Reject window-style
+    // messages; the surrounding DedicatedWorkerGlobalScope guard also excludes Window.
+    if (event.origin !== '') return;
+    const job = event.data;
     try {
       const result = prepareFeatureVisibility(job);
       self.postMessage(result, [result.mask.buffer]);
