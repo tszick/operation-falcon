@@ -407,10 +407,14 @@ export function stepAircraft(s, input, dt = STEP) {
     }
     s.position.y = floor;
     s.velocity.y = 0;
-    if (!rolloutSurface(s).allowed && (s.landing?.success || v > 35)) {
-      recordImpact(s, ['A gép a pályán kívüli terepnek ütközött.']);
-      return;
-    }
+  }
+  if (
+    s.onGround &&
+    !rolloutSurface(s).allowed &&
+    (!navalFlight(s) || (s.position.y <= floor && (s.landing?.success || v > 35)))
+  ) {
+    recordImpact(s, ['A gép a pályán kívüli terepnek ütközött.']);
+    return;
   }
   const obstacle = rolloutObstacle(s);
   if (obstacle) {
