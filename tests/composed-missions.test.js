@@ -49,7 +49,7 @@ function land(x) {
   x.m.update(x.s, x.targets, x.w, x.aim);
 }
 test('the mission compositions match their brief, with no radar station or armed airfield/transport', () => {
-  assert.equal(missions.length, 16);
+  assert.equal(missions.length, 17);
   assert.equal(unitTypes.radar, undefined);
   for (const m of missions) {
     const targets = createTargets(m, spec, { rng: seeded(4) });

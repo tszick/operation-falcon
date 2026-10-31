@@ -1,4 +1,6 @@
 import { windHudReadout } from './flightEnvironment.js';
+import { getRefuellingRoute } from './refuellingRoute.js';
+import { renderRefuellingCue } from './aerialRefuelling.js';
 import { drawingContext } from './rendering/createBackend.js';
 import { tr } from './i18n.js';
 import { renderCarrier } from './carrierVisuals.js';
@@ -420,6 +422,7 @@ export class Renderer {
     return this.worldVisible(p) ? screen : null;
   }
   runway(jammed = false) {
+    if (terrainWorld.noAirfield) return;
     if (terrainWorld.recoverySites) return;
     if (terrainWorld.ocean) {
       renderCarrier(this);
@@ -670,7 +673,11 @@ export class Renderer {
     this.runwayLightQueue = [];
     this.runway(jammed);
     this.worldOcclusion = false;
-    if (!this.cinematic) renderLandingRoute(this, getLandingRoute(s, { jammed }));
+    if (!this.cinematic)
+      renderLandingRoute(
+        this,
+        getRefuellingRoute(s, targets, { jammed }) || getLandingRoute(s, { jammed }),
+      );
     this.worldOcclusion = true;
     if (!this.cinematic) renderCanyonCourse(this, s);
     const contacts = this.cinematic ? [] : radarContacts(s, targets);
@@ -795,6 +802,7 @@ export class Renderer {
       );
     }
     if (
+      !s.noAirfield &&
       !jammed &&
       (s.recoveryExit ||
         s.airfield ||
@@ -811,6 +819,7 @@ export class Renderer {
       );
     const effectsStart = this.debugMetrics ? performance.now() : 0;
     renderWeapons(this, s, weapons);
+    renderRefuellingCue(this, s, targets);
     if (this.debugMetrics) this.effectsMs = performance.now() - effectsStart;
     const cmStart = this.debugMetrics ? performance.now() : 0;
     renderCountermeasures(this, s);
@@ -1160,14 +1169,16 @@ export function renderAircraftPreview(
 
 export function renderTargetPreview(canvas, mission, player, time, mode = 'vector') {
   const mesh =
-    mission.id === 'ballistic'
-      ? groundMesh('ballistic')
-      : mission.id === 'city-building'
-        ? groundMesh('city-building', 80)
-        : mission.kind === 'air'
-          ? aircraftMesh(enemyAircraft(mission, player).id)
-          : mission.objective === 'landing'
-            ? groundMesh('airbase')
-            : groundMesh(mission.id);
+    mission.id === 'tanker'
+      ? aircraftMesh('kc135')
+      : mission.id === 'ballistic'
+        ? groundMesh('ballistic')
+        : mission.id === 'city-building'
+          ? groundMesh('city-building', 80)
+          : mission.kind === 'air'
+            ? aircraftMesh(enemyAircraft(mission, player).id)
+            : mission.objective === 'landing'
+              ? groundMesh('airbase')
+              : groundMesh(mission.id);
   renderAircraftPreview(canvas, mission, time, mesh, mode);
 }

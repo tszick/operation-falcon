@@ -15,7 +15,14 @@ export function assignCoalitionRoster(targets, player, rng = Math.random) {
   const mode = modes[Math.min(modes.length - 1, Math.floor(rng() * modes.length))];
   let index = 0;
   for (const t of targets) {
-    if (t.kind !== 'air' || t.civilian || t.type === 'ballistic' || t.playerControlled) continue;
+    if (
+      t.kind !== 'air' ||
+      t.civilian ||
+      t.type === 'ballistic' ||
+      t.type === 'tanker' ||
+      t.playerControlled
+    )
+      continue;
     let id;
     if (t.faction === 'west')
       id = t.type === 'bomber' ? 'b52' : t.type === 'transport' ? 'c130' : t.aircraftId;

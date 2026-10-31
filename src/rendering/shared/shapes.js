@@ -19,7 +19,9 @@ export function rgba(value) {
     if (h.length === 6) h += 'ff';
     return [0, 2, 4, 6].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
   }
-  const numbers = value.match(/[-\d.]+/g)?.map(Number) || [];
+  // Fading effects can stringify tiny alpha values in exponential notation.
+  // Keep the exponent in the same token so near-zero opacity never flashes opaque.
+  const numbers = value.match(/[+-]?(?:\d*\.\d+|\d+\.?\d*)(?:e[+-]?\d+)?/gi)?.map(Number) || [];
   if (value.startsWith('hsl')) {
     const [h, s, l] = [numbers[0] / 360, numbers[1] / 100, numbers[2] / 100];
     const f = (n) => {

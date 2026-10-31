@@ -14,6 +14,54 @@ const guide = (id, name, description, steps, watch, pitfalls, related = [], sect
 });
 export const pilotEntries = [
   guide(
+    'aerial-refuelling',
+    'Légiutántöltés · KC–135R',
+    'Repülőtér nélküli bevetés az Arab-sivatag fölött. Nyugaton kevés üzemanyaggal tankolnod és harcolnod kell, keleten a tankert támadod.',
+    [
+      [
+        'I · SEGÉDÍV',
+        'Az I gomb ki- és bekapcsolja a lila tankolási segédívet a játéktéren és a radaron. A vonal a tanker mögé vezet, követi annak mozgását; csak iránymutatás, a sebességet és az irányítást te kezeled.',
+      ],
+      [
+        'MEGKÖZELÍTÉS',
+        'A tanker 2200 m MSL-en, 558 km/h valós légsebességgel repül. A KC–135R fegyvertelen; véges infracsapda- és dipólkészlete van.',
+      ],
+      [
+        'KONTAKT',
+        'Kövesd a türkiz tankolási pontot: tanker mögött 48 m, alatta 6 m. Futó, fékszárny, légfék és utánégető kikapcsolva.',
+      ],
+      [
+        'STABILITÁS',
+        '9 m-en belül, legfeljebb 6 m/s sebességkülönbséggel, 10 foknál kisebb irányeltéréssel tartsd 5 másodpercig. Kövesd a tanker enyhe bedöntését is.',
+      ],
+      [
+        'ÁTADÁS',
+        'A tankolás automatikus, 30 kg/s játékbeli sebességgel. Az átadott mennyiségnek el kell érnie a saját tartálykapacitás 50%-át. Kilépéskor azonnal megszakad, újraközelíthető.',
+      ],
+      [
+        'HARCFELADAT',
+        'Nyugaton az ellenséges vadászt is meg kell semmisíteni. Tankolás után a tanker elvesztése csak az opcionális célt buktatja. Keleten a tanker megsemmisítése a fő cél.',
+      ],
+    ],
+    [
+      'A Mission Control a távolságot, a relatív sebességet és az átvett üzemanyagot mutatja. A radar a tanker és a fenyegetések helyzetét jelzi.',
+    ],
+    [
+      'Nem kell billentyűvel tankolni. Nem töltesz újra fegyvert, és sérülésjavítás sincs. A tanker véges üzemanyagot ad; nincs leszállóhely.',
+      'A kontaktzóna és az átadási sebesség játékbeli közelítés; nem valós tankolási kiképzés.',
+    ],
+    ['tanker', 'guide-formation'],
+    [
+      {
+        title: 'Típusadatok forrása',
+        paragraphs: [
+          'USAF KC-135 Stratotanker: https://www.af.mil/About-Us/Fact-Sheets/Display/Article/1529736/kc-135-stratotanker/kc-135-stratotanker/',
+        ],
+      },
+    ],
+  ),
+
+  guide(
     'coalitions',
     'Oldalválasztás · nyugati és keleti hadviselés',
     'A gépkatalógus Nyugat és Kelet fejezetekre tagolódik, oldalanként három, magasabb asztali ablakban hat géppel. A kiválasztott gép automatikusan meghatározza az oldaladat; külön oldalválasztó nincs. A zászlók a típus fejlesztő országát vagy a közös program országait mutatják. A gyakorlatok továbbra is T–45C-vel indulnak.',

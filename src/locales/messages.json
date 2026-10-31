@@ -9250,5 +9250,237 @@
   "SZÉL {{v0}}° {{v1}} KM/H · ±{{v2}}": {
     "hu": "SZÉL {{v0}}° {{v1}} KM/H · ±{{v2}}",
     "en": "WIND {{v0}}° {{v1}} KM/H · ±{{v2}}"
+  },
+  "Légiutántöltés · KC–135R": {
+    "hu": "Légiutántöltés · KC–135R",
+    "en": "Aerial refuelling · KC–135R"
+  },
+  "A tanker 2200 m MSL-en, 558 km/h valós légsebességgel repül. A KC–135R fegyvertelen; véges infracsapda- és dipólkészlete van.": {
+    "hu": "A tanker 2200 m MSL-en, 558 km/h valós légsebességgel repül. A KC–135R fegyvertelen; véges infracsapda- és dipólkészlete van.",
+    "en": "The tanker flies at 2200 m MSL and 558 km/h true airspeed. The KC–135R is unarmed and has finite flare and chaff stocks."
+  },
+  "Kövesd a türkiz tankolási pontot: tanker mögött 48 m, alatta 6 m. Futó, fékszárny, légfék és utánégető kikapcsolva.": {
+    "hu": "Kövesd a türkiz tankolási pontot: tanker mögött 48 m, alatta 6 m. Futó, fékszárny, légfék és utánégető kikapcsolva.",
+    "en": "Follow the cyan contact point: 48 m behind and 6 m below the tanker. Retract gear, flaps and airbrake; afterburner off."
+  },
+  "STABILITÁS": {
+    "hu": "STABILITÁS",
+    "en": "STABILITY"
+  },
+  "9 m-en belül, legfeljebb 6 m/s sebességkülönbséggel, 10 foknál kisebb irányeltéréssel tartsd 5 másodpercig. Kövesd a tanker enyhe bedöntését is.": {
+    "hu": "9 m-en belül, legfeljebb 6 m/s sebességkülönbséggel, 10 foknál kisebb irányeltéréssel tartsd 5 másodpercig. Kövesd a tanker enyhe bedöntését is.",
+    "en": "Hold within 9 m, below 6 m/s relative speed and within 10 degrees of heading alignment for 5 seconds. Match the tanker's gentle bank too."
+  },
+  "ÁTADÁS": {
+    "hu": "ÁTADÁS",
+    "en": "TRANSFER"
+  },
+  "A tankolás automatikus, 30 kg/s játékbeli sebességgel. Az átadott mennyiségnek el kell érnie a saját tartálykapacitás 50%-át. Kilépéskor azonnal megszakad, újraközelíthető.": {
+    "hu": "A tankolás automatikus, 30 kg/s játékbeli sebességgel. Az átadott mennyiségnek el kell érnie a saját tartálykapacitás 50%-át. Kilépéskor azonnal megszakad, újraközelíthető.",
+    "en": "Refuelling starts automatically at a gameplay rate of 30 kg/s. Receive 50% of your own tank capacity. Leaving the envelope disconnects immediately; you can reconnect."
+  },
+  "Nyugaton az ellenséges vadászt is meg kell semmisíteni. Tankolás után a tanker elvesztése csak az opcionális célt buktatja. Keleten a tanker megsemmisítése a fő cél.": {
+    "hu": "Nyugaton az ellenséges vadászt is meg kell semmisíteni. Tankolás után a tanker elvesztése csak az opcionális célt buktatja. Keleten a tanker megsemmisítése a fő cél.",
+    "en": "In the West, also destroy the hostile fighter. Once refuelling is complete, tanker loss fails only the optional objective. In the East, destroying the tanker is primary."
+  },
+  "A Mission Control a távolságot, a relatív sebességet és az átvett üzemanyagot mutatja. A radar a tanker és a fenyegetések helyzetét jelzi.": {
+    "hu": "A Mission Control a távolságot, a relatív sebességet és az átvett üzemanyagot mutatja. A radar a tanker és a fenyegetések helyzetét jelzi.",
+    "en": "Mission Control shows contact distance, relative speed and fuel received. Radar shows the tanker and threats."
+  },
+  "Nem kell billentyűvel tankolni. Nem töltesz újra fegyvert, és sérülésjavítás sincs. A tanker véges üzemanyagot ad; nincs leszállóhely.": {
+    "hu": "Nem kell billentyűvel tankolni. Nem töltesz újra fegyvert, és sérülésjavítás sincs. A tanker véges üzemanyagot ad; nincs leszállóhely.",
+    "en": "No refuelling key is needed. Weapons and damage are not replenished or repaired. Tanker supply is finite; there is no landing site."
+  },
+  "A kontaktzóna és az átadási sebesség játékbeli közelítés; nem valós tankolási kiképzés.": {
+    "hu": "A kontaktzóna és az átadási sebesség játékbeli közelítés; nem valós tankolási kiképzés.",
+    "en": "The contact envelope and transfer rate are gameplay approximations, not real refuelling training."
+  },
+  "Típusadatok forrása": {
+    "hu": "Típusadatok forrása",
+    "en": "Aircraft data source"
+  },
+  "Fegyvertelen katonai tankergép": {
+    "hu": "Fegyvertelen katonai tankergép",
+    "en": "Unarmed military tanker"
+  },
+  "Légiutántöltés": {
+    "hu": "Légiutántöltés",
+    "en": "Aerial Refuelling"
+  },
+  "41,53 m hossz · 39,88 m fesztáv": {
+    "hu": "41,53 m hossz · 39,88 m fesztáv",
+    "en": "41.53 m long · 39.88 m wingspan"
+  },
+  "Négyhajtóműves amerikai légiutántöltő. Nincs támadófegyvere; véges infracsapda- és dipólkészlettel védekezik. A küldetésben 2200 m MSL-en, 558 km/h valós légsebességgel repül, majd köröz. A türkiz tankolási pont a gép mögött 48 m-rel, alatta 6 m-rel van; 9 m tűrés, legfeljebb 6 m/s relatív sebesség és 5 másodperc stabil helyzet után automatikusan indul az átadás, 30 kg/s játékbeli sebességgel. Az 50%-nyi tartálykapacitás átvétele teljesíti a tankolási célt. A kontaktzóna egyszerűsített, a játék mindkét töltési rendszerű vadászgépet fogadja; nem típusminősített eljárás.": {
+    "hu": "Négyhajtóműves amerikai légiutántöltő. Nincs támadófegyvere; véges infracsapda- és dipólkészlettel védekezik. A küldetésben 2200 m MSL-en, 558 km/h valós légsebességgel repül, majd köröz. A türkiz tankolási pont a gép mögött 48 m-rel, alatta 6 m-rel van; 9 m tűrés, legfeljebb 6 m/s relatív sebesség és 5 másodperc stabil helyzet után automatikusan indul az átadás, 30 kg/s játékbeli sebességgel. Az 50%-nyi tartálykapacitás átvétele teljesíti a tankolási célt. A kontaktzóna egyszerűsített, a játék mindkét töltési rendszerű vadászgépet fogadja; nem típusminősített eljárás.",
+    "en": "A four-engine American aerial tanker. It carries no offensive weapons and defends itself with finite flare and chaff stocks. In this mission it flies at 2200 m MSL and 558 km/h true airspeed, then orbits. The cyan contact point is 48 m behind and 6 m below it. Automatic transfer starts after 5 seconds within 9 m and below 6 m/s relative speed, at a gameplay rate of 30 kg/s. Receiving 50% of your tank capacity completes the refuelling objective. The simplified contact envelope accommodates both receiver systems; it is not a certified procedure."
+  },
+  "Kevés üzemanyaggal indulsz a levegőből. A szemközti oldalról érkező KC–135R 2200 méteren, 558 km/h valós légsebességgel tart az utántöltési körzetbe, majd köröz. Védd meg az ellenséges vadásztól, és tankolj a tanker mögött stabil kötelékben. Nincs repülőtér; a sikerhez tankolás és az ellenséges vadász megsemmisítése szükséges.": {
+    "hu": "Kevés üzemanyaggal indulsz a levegőből. A szemközti oldalról érkező KC–135R 2200 méteren, 558 km/h valós légsebességgel tart az utántöltési körzetbe, majd köröz. Védd meg az ellenséges vadásztól, és tankolj a tanker mögött stabil kötelékben. Nincs repülőtér; a sikerhez tankolás és az ellenséges vadász megsemmisítése szükséges.",
+    "en": "Start airborne with limited fuel. A KC–135R enters from the opposite side at 2200 m and 558 km/h true airspeed, then orbits. Protect it from the hostile fighter and refuel in stable formation behind it. There is no airfield; victory requires refuelling and destroying the enemy fighter."
+  },
+  "Vegyél át a saját tartálykapacitásod 50%-ának megfelelő üzemanyagot.": {
+    "hu": "Vegyél át a saját tartálykapacitásod 50%-ának megfelelő üzemanyagot.",
+    "en": "Receive fuel equal to 50% of your own tank capacity."
+  },
+  "Semmisítsd meg az ellenséges vadászgépet.": {
+    "hu": "Semmisítsd meg az ellenséges vadászgépet.",
+    "en": "Destroy the hostile fighter."
+  },
+  "Semmisítsd meg mindhárom ellenséges légvédelmi üteget.": {
+    "hu": "Semmisítsd meg mindhárom ellenséges légvédelmi üteget.",
+    "en": "Destroy all three hostile AAA batteries."
+  },
+  "A tanker a küldetés végéig életben marad.": {
+    "hu": "A tanker a küldetés végéig életben marad.",
+    "en": "The tanker survives until mission completion."
+  },
+  "Akadályozd meg a légiutántöltést": {
+    "hu": "Akadályozd meg a légiutántöltést",
+    "en": "Disrupt the Aerial Refuelling"
+  },
+  "Keleti támadóként a levegőből indulsz, három baráti légvédelmi üteg támogat. Semmisítsd meg a nyugati KC–135R tankert. Egy nyugati vadász kevés üzemanyaggal próbál tankolni és megvédeni azt. Nincs repülőtér; a tanker megsemmisítésével győzöl.": {
+    "hu": "Keleti támadóként a levegőből indulsz, három baráti légvédelmi üteg támogat. Semmisítsd meg a nyugati KC–135R tankert. Egy nyugati vadász kevés üzemanyaggal próbál tankolni és megvédeni azt. Nincs repülőtér; a tanker megsemmisítésével győzöl.",
+    "en": "Start airborne as the Eastern attacker, supported by three friendly AAA batteries. Destroy the Western KC–135R tanker. One Western fighter with limited fuel tries to refuel and protect it. There is no airfield; destroying the tanker wins the mission."
+  },
+  "Semmisítsd meg a nyugati tankergépet.": {
+    "hu": "Semmisítsd meg a nyugati tankergépet.",
+    "en": "Destroy the Western tanker."
+  },
+  "Semmisítsd meg a nyugati vadászgépet.": {
+    "hu": "Semmisítsd meg a nyugati vadászgépet.",
+    "en": "Destroy the Western fighter."
+  },
+  "Mindhárom baráti légvédelmi üteg túléli a küldetést.": {
+    "hu": "Mindhárom baráti légvédelmi üteg túléli a küldetést.",
+    "en": "All three friendly AAA batteries survive."
+  },
+  "Nincs repülőtér ezen a hadszíntéren.": {
+    "hu": "Nincs repülőtér ezen a hadszíntéren.",
+    "en": "There is no airfield in this theatre."
+  },
+  "TANKOLÁSI PONT": {
+    "hu": "TANKOLÁSI PONT",
+    "en": "REFUELLING CONTACT"
+  },
+  "Nyugati tanker megsemmisítve": {
+    "hu": "Nyugati tanker megsemmisítve",
+    "en": "Western tanker destroyed"
+  },
+  "Nyugati vadász megsemmisítve": {
+    "hu": "Nyugati vadász megsemmisítve",
+    "en": "Western fighter destroyed"
+  },
+  "Mindhárom baráti üteg megmaradt": {
+    "hu": "Mindhárom baráti üteg megmaradt",
+    "en": "All three friendly batteries survived"
+  },
+  "Átvett üzemanyag: {{v0}} / {{v1}} kg": {
+    "hu": "Átvett üzemanyag: {{v0}} / {{v1}} kg",
+    "en": "Fuel received: {{v0}} / {{v1}} kg"
+  },
+  "Ellenséges vadász megsemmisítve": {
+    "hu": "Ellenséges vadász megsemmisítve",
+    "en": "Hostile fighter destroyed"
+  },
+  "Mindhárom ellenséges üteg megsemmisítve": {
+    "hu": "Mindhárom ellenséges üteg megsemmisítve",
+    "en": "All three hostile batteries destroyed"
+  },
+  "A tanker túlélte a küldetést": {
+    "hu": "A tanker túlélte a küldetést",
+    "en": "The tanker survived the mission"
+  },
+  "A tanker elveszett vagy kifogyott, mielőtt elegendő üzemanyagot vettél át.": {
+    "hu": "A tanker elveszett vagy kifogyott, mielőtt elegendő üzemanyagot vettél át.",
+    "en": "The tanker was lost or ran out of transferable fuel before you received enough."
+  },
+  "TANKER ELFOGÁSA": {
+    "hu": "TANKER ELFOGÁSA",
+    "en": "TANKER INTERCEPTION"
+  },
+  "T: tanker befogása. Védd a baráti ütegeket; a nyugati vadász másodlagos cél.": {
+    "hu": "T: tanker befogása. Védd a baráti ütegeket; a nyugati vadász másodlagos cél.",
+    "en": "T: lock the tanker. Protect friendly batteries; the Western fighter is optional."
+  },
+  "Tankolás kész. Küzdd le az ellenséges vadászt; nincs kötelező leszállás.": {
+    "hu": "Tankolás kész. Küzdd le az ellenséges vadászt; nincs kötelező leszállás.",
+    "en": "Refuelling complete. Destroy the hostile fighter; no landing is required."
+  },
+  "ÜZEMANYAG ÁTADÁSA": {
+    "hu": "ÜZEMANYAG ÁTADÁSA",
+    "en": "FUEL TRANSFER"
+  },
+  "TANKER MEGKÖZELÍTÉSE": {
+    "hu": "TANKER MEGKÖZELÍTÉSE",
+    "en": "TANKER RENDEZVOUS"
+  },
+  "Keresd a KC–135R tankert; nincs repülőtér.": {
+    "hu": "Keresd a KC–135R tankert; nincs repülőtér.",
+    "en": "Find the KC–135R tanker; there is no airfield."
+  },
+  "Tartsd a helyzetet. Az üzemanyag átadása folyamatban.": {
+    "hu": "Tartsd a helyzetet. Az üzemanyag átadása folyamatban.",
+    "en": "Hold formation. Fuel transfer is in progress."
+  },
+  "Tankolási pont: {{v0}} m · sebességkülönbség {{v1}} m/s": {
+    "hu": "Tankolási pont: {{v0}} m · sebességkülönbség {{v1}} m/s",
+    "en": "Contact point: {{v0}} m · relative speed {{v1}} m/s"
+  },
+  "Védd az ütegeket; a tanker nem tud tüzelni.": {
+    "hu": "Védd az ütegeket; a tanker nem tud tüzelni.",
+    "en": "Protect the batteries; the tanker cannot fire."
+  },
+  "Tanker mögött 48 m-rel, 6 m-rel lejjebb; kövesd a türkiz pontot.": {
+    "hu": "Tanker mögött 48 m-rel, 6 m-rel lejjebb; kövesd a türkiz pontot.",
+    "en": "48 m behind and 6 m below the tanker; follow the cyan point."
+  },
+  "Futó, fékszárny, légfék és utánégető kikapcsolva.": {
+    "hu": "Futó, fékszárny, légfék és utánégető kikapcsolva.",
+    "en": "Gear, flaps and airbrake retracted; afterburner off."
+  },
+  "9 m-en belül, legfeljebb 6 m/s eltérés; tartsd 5 másodpercig.": {
+    "hu": "9 m-en belül, legfeljebb 6 m/s eltérés; tartsd 5 másodpercig.",
+    "en": "Within 9 m, below 6 m/s relative speed; hold for 5 seconds."
+  },
+  "Arab-sivatag · légiutántöltési folyosó": {
+    "hu": "Arab-sivatag · légiutántöltési folyosó",
+    "en": "Arabian Desert · aerial refuelling corridor"
+  },
+  "TANKER {{v0}}° · {{v1}} KM · IAS ~{{v2}}": {
+    "hu": "TANKER {{v0}}° · {{v1}} KM · IAS ~{{v2}}",
+    "en": "TANKER {{v0}}° · {{v1}} KM · IAS ~{{v2}}"
+  },
+  "TARTSD A HELYZETET {{v0}} / 5 S": {
+    "hu": "TARTSD A HELYZETET {{v0}} / 5 S",
+    "en": "HOLD POSITION {{v0}} / 5 S"
+  },
+  "PONT {{v0}} M · ZÁRÁS {{v1}} M/S": {
+    "hu": "PONT {{v0}} M · ZÁRÁS {{v1}} M/S",
+    "en": "CONTACT {{v0}} M · CLOSURE {{v1}} M/S"
+  },
+  "Repülőtér nélküli bevetés az Arab-sivatag fölött. Nyugaton kevés üzemanyaggal tankolnod és harcolnod kell, keleten a tankert támadod.": {
+    "hu": "Repülőtér nélküli bevetés az Arab-sivatag fölött. Nyugaton kevés üzemanyaggal tankolnod és harcolnod kell, keleten a tankert támadod.",
+    "en": "An air-start mission over the Arabian Desert with no airfield. In the West, refuel and fight with limited starting fuel; in the East, attack the tanker."
+  },
+  "TANKOLÁSI SEGÉDÍV BE — I": {
+    "hu": "TANKOLÁSI SEGÉDÍV BE — I",
+    "en": "REFUELLING GUIDE ON — I"
+  },
+  "TANKOLÁSI SEGÉDÍV KI — I": {
+    "hu": "TANKOLÁSI SEGÉDÍV KI — I",
+    "en": "REFUELLING GUIDE OFF — I"
+  },
+  "Az I gomb ki- és bekapcsolja a lila tankolási segédívet a játéktéren és a radaron. A vonal a tanker mögé vezet, követi annak mozgását; csak iránymutatás, a sebességet és az irányítást te kezeled.": {
+    "hu": "Az I gomb ki- és bekapcsolja a lila tankolási segédívet a játéktéren és a radaron. A vonal a tanker mögé vezet, követi annak mozgását; csak iránymutatás, a sebességet és az irányítást te kezeled.",
+    "en": "Press I to toggle the purple refuelling guide in the flight view and on radar. The line leads behind the tanker and follows its motion. It is guidance only; you control speed and flight."
+  },
+  "I · TANKOLÁSI SEGÉDÍV": {
+    "hu": "I · TANKOLÁSI SEGÉDÍV",
+    "en": "I · REFUELLING GUIDE"
+  },
+  "I: tankolási segédív ki/be": {
+    "hu": "I: tankolási segédív ki/be",
+    "en": "I: toggle refuelling guide"
   }
 }

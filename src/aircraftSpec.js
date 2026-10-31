@@ -509,6 +509,12 @@ aircraft.push(
 );
 export { missions } from './missionCatalog.js';
 export function suitability(s, m) {
+  if (m.objective === 'aerial-refuelling')
+    return armament(s).weapons.aam && s.emptyMass < 30000
+      ? s.maxMach > 1.2
+        ? 'good'
+        : 'ok'
+      : 'bad';
   if (s.transport) return ['escort-transport', 'iron-veil'].includes(m.objective) ? 'good' : 'bad';
   if (m.objective === 'escort' || m.objective === 'landing') return 'good';
   if (

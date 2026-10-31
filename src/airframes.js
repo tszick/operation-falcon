@@ -962,6 +962,39 @@ export const airframes = {
     canopyLength: 2.4,
     noseBlunt: true,
   },
+  kc135: {
+    engineMount: 'wing',
+    length: 41.53,
+    body: 1.8,
+    wing: [
+      [1.8, 4],
+      [19.94, -5],
+      [19.5, -8],
+      [1.8, -1],
+    ],
+    wingY: 0,
+    tail: [
+      [1, -13],
+      [7.3, -17],
+      [7, -19],
+      [1, -16],
+    ],
+    tailY: 2,
+    fins: 1,
+    finHeight: 8,
+    finStart: -12,
+    finEnd: -20,
+    engines: 4,
+    engineXs: [6, 12],
+    engineY: -1.7,
+    engineRadius: 1,
+    engineFront: 3,
+    engineBack: -3,
+    canopy: 16,
+    canopyLength: 2,
+    noseBlunt: true,
+    refuelBoom: true,
+  },
   c130: {
     engineMount: 'wing',
     length: 29.8,
@@ -1401,6 +1434,23 @@ export function aircraftMesh(id = 'f16', sweep = 0, flaps = 0) {
         ],
         6,
       );
+  if (p.refuelBoom) {
+    b.tube(
+      [
+        [-17, 0.35, 0.35, -1],
+        [-27, 0.16, 0.16, -5],
+        [-32, 0.1, 0.1, -6],
+      ],
+      6,
+    );
+    for (const side of [-1, 1])
+      b.face([
+        [0, -3, -23],
+        [side * 2.5, -3, -25],
+        [side * 2, -4, -27],
+        [0, -4, -26],
+      ]);
+  }
   const mesh = {
     ...b,
     id,

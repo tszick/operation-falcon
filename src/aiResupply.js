@@ -106,7 +106,8 @@ export function updateAIResupply(p, targets, w, combat, dt) {
             : t.lastAIWeapon === 'bomb'
               ? u.initialBombs > 0 && u.bombs === 0
               : u.initialMissiles > 0 && u.missiles === 0;
-      const lowFuel = t.flight && t.flight.fuel < t.flight.spec.fuelCapacity * 0.12;
+      const lowFuel =
+        !t.refuellingReceiver && t.flight && t.flight.fuel < t.flight.spec.fuelCapacity * 0.12;
       if (t.physicalRecovery && !home && (empty || lowFuel)) {
         flightFor(t, u);
         beginRetreat(t, targets, p, w);

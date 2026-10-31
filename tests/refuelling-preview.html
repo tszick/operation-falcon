@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="hu">
+  <meta charset="utf-8" /><title>Légiutántöltés · vizuális teszt</title
+  ><link rel="stylesheet" href="/style.css" /><link rel="stylesheet" href="/flight.css" /><style>
+    #refuel-test-controls {
+      position: fixed;
+      left: 12px;
+      top: 52px;
+      z-index: 1000;
+      background: #071511dd;
+      padding: 8px;
+      color: #baf37d;
+      font: 12px monospace;
+    }
+    #refuel-test-controls button {
+      padding: 6px;
+      margin: 3px;
+    }
+  </style>
+  <body>
+    <script type="module">
+      import { missions, aircraft } from '/src/aircraftSpec.js';
+      import { missionForSide } from '/src/missionSides.js';
+      import { createMissionAircraft } from '/src/missionStart.js';
+      import { createTargets, Targeting } from '/src/targeting.js';
+      import { Mission } from '/src/mission.js';
+      import { Weapons } from '/src/weapons.js';
+      import { Renderer } from '/src/renderer.js';
+      import { updateHUD } from '/src/hud.js';
+      import { toggleRefuellingRoute } from '/src/refuellingRoute.js';
+      import { refuellingStation } from '/src/aerialRefuelling.js';
+      import { Vec3, Quat } from '/src/math.js';
+      import { atmosphere } from '/src/performance.js';
+      import { calmWeather } from '/src/flightEnvironment.js';
+      const template = new DOMParser().parseFromString(
+        await (await fetch('/index.html')).text(),
+        'text/html',
+      );
+      template.querySelectorAll('script').forEach((n) => n.remove());
+      document.body.append(...template.body.childNodes);
+      for (const id of ['hangar', 'hangar-footer', 'overlay'])
+        document.getElementById(id).hidden = true;
+      document.getElementById('flight-ui').hidden = false;
+      document.body.classList.add('flying', 'guide-open');
+      const controls = document.createElement('aside');
+      controls.id = 'refuel-test-controls';
+      controls.innerHTML =
+        '<strong>VIZUÁLIS TESZT · HANG NÉLKÜL</strong><button id="west">Nyugat</button><button id="east">Kelet</button><button id="guide">I · Segédív</button><button id="approach">Megközelítés</button><button id="contact">Kontaktus + 12 s átadás</button><button id="hide-controls">Vezérlők elrejtése</button>';
+      document.body.append(controls);
+      const r = new Renderer(document.getElementById('world'));
+      r.surfaceMode = 'desert';
+      r.surfaceLines = false;
+      let x;
+      function setup(side = 'west') {
+        const mission = {
+            ...missionForSide(
+              missions.find((m) => m.id === 'aerial-refuelling'),
+              side,
+            ),
+            weather: calmWeather(),
+          },
+          spec = aircraft.find((a) => a.id === (side === 'west' ? 'f16' : 'mig29'));
+        const targets = createTargets(mission, spec, { rng: () => 0.3 }),
+          s = createMissionAircraft(spec, mission),
+          m = new Mission(mission),
+          w = new Weapons(),
+          aim = new Targeting();
+        x = { mission, targets, s, m, w, aim };
+        m.update(s, targets, w, aim);
+        draw();
+      }
+      function draw() {
+        const { s, m, w, targets, aim } = x;
+        r.render(s, targets, w, aim);
+        updateHUD(s, targets, w, aim, m, true);
+      }
+      document.getElementById('west').onclick = () => setup();
+      document.getElementById('east').onclick = () => setup('east');
+      const toggleGuide = () => {
+        if (x.s.aerialRefuel) {
+          toggleRefuellingRoute(x.s);
+          draw();
+        }
+      };
+      document.getElementById('guide').onclick = toggleGuide;
+      document.addEventListener('keydown', (e) => {
+        if (e.code === 'KeyI' && !e.repeat) toggleGuide();
+      });
+      document.getElementById('landing-route-button').onclick = toggleGuide;
+      document.getElementById('approach').onclick = () => {
+        setup();
+        const t = x.targets.find((t) => t.type === 'tanker');
+        t.position = new Vec3(0, 2200, 0);
+        t.heading = Math.PI;
+        t.velocity = new Vec3(0, 0, -155);
+        x.s.position = new Vec3(-1200, 2100, 6500);
+        const heading = Math.atan2(1200, -6500);
+        x.s.velocity = new Vec3(Math.sin(heading) * 180, 0, Math.cos(heading) * 180);
+        x.s.orientation = Quat.euler(heading, 0, 0);
+        x.m.update(x.s, x.targets, x.w, x.aim);
+        draw();
+      };
+      document.getElementById('contact').onclick = () => {
+        setup();
+        const t = x.targets.find((t) => t.type === 'tanker');
+        t.position = new Vec3(0, 2200, 0);
+        t.heading = 0;
+        t.velocity = new Vec3(0, 0, 155);
+        t.bank = 0;
+        x.s.position = refuellingStation(t);
+        x.s.velocity = t.velocity.clone();
+        x.s.orientation = new Quat();
+        x.s.speed = 155;
+        x.s.ias = 155 * Math.sqrt(atmosphere(2200).density / 1.225);
+        x.s.agl = 2200;
+        for (let i = 0; i < 1440; i++) {
+          x.s.elapsed += 1 / 120;
+          x.m.update(x.s, x.targets, x.w, x.aim);
+        }
+        draw();
+      };
+      document.getElementById('hide-controls').onclick = () => (controls.hidden = true);
+      await r.ready;
+      setup();
+      setTimeout(draw, 1200);
+    </script>
+  </body>
+</html>

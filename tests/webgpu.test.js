@@ -129,3 +129,9 @@ test('2D transform composition preserves instrument positions under translation,
   assert.ok(Math.abs(point[0] - (40 + 10 * Math.cos(angle) - 21 * Math.sin(angle))) < 1e-9);
   assert.ok(Math.abs(point[1] - (90 + 10 * Math.sin(angle) + 21 * Math.cos(angle))) < 1e-9);
 });
+
+test('GPU colour parsing keeps signed scientific notation in RGB and HSL components', () => {
+  assert.deepEqual(rgba('rgba(1e2,2E+1,3e+1,1e-7)'), [100 / 255, 20 / 255, 30 / 255, 1e-7]);
+  assert.deepEqual(rgba('hsla(0,100%,50%,7.9e-16)'), [1, 0, 0, 7.9e-16]);
+  assert.deepEqual(rgba('rgba(10,20,30,.25)'), [10 / 255, 20 / 255, 30 / 255, 0.25]);
+});

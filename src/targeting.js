@@ -1,3 +1,4 @@
+import { moveTanker, refuelReceiverInput } from './aerialRefuelling.js';
 import { unitAirVelocity, advectNavigatingAircraft } from './flightEnvironment.js';
 import { moveOceanShip } from './oceanEnvironment.js';
 import { aiServiceInput, moveServiceTaxi } from './aiResupply.js';
@@ -128,6 +129,7 @@ export function applyTargetHit(
     target.flight = createAircraft(spec, { ammo: { gun: 0, aam: 0, agm: 0, bomb: 0 } });
     const s = target.flight;
     s.weather = terrainWorld.weather;
+    s.noAirfield = !!terrainWorld.noAirfield;
     s.engineSpool = target.navigationEngine?.engineSpool ?? target.throttle ?? 0.65;
     s.elapsed = target.environmentClock || 0;
     s.position = target.position.clone();
@@ -227,9 +229,11 @@ export function updateTargets(targets, dt) {
             ? aiServiceInput(t)
             : t.evasion
               ? evasionFlightInput(t)
-              : t.aiRole === 'escortee'
-                ? escortFlightInput(t)
-                : combatFlightInput(t),
+              : t.aiRole === 'refuel-receiver'
+                ? refuelReceiverInput(t)
+                : ['escortee', 'tanker'].includes(t.aiRole)
+                  ? escortFlightInput(t)
+                  : combatFlightInput(t),
         dt,
       );
       t.position = t.flight.position.clone();
@@ -248,6 +252,7 @@ export function updateTargets(targets, dt) {
     } else if (t.alive && !moveEvasiveAircraft(t, dt)) {
       if (t.civilian) updateCivilFlight(t, dt);
       else if (t.aiRole === 'escortee') moveEscort(t, dt);
+      else if (t.aiRole === 'tanker') moveTanker(t, dt);
       else if (t.type === 'convoy') moveConvoy(t, targets, dt);
       else if (t.type === 'destroyer' && terrainWorld.ocean) {
         const carrier = targets.find(

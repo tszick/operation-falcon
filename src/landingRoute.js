@@ -249,9 +249,13 @@ export function renderLandingRoute(renderer, route) {
   for (let i = route.finalStart; i < route.points.length - 1; i += interval) {
     const p = route.points[i];
     if (p.distance(renderer.camera) < 100) continue;
-    renderer.line(p.clone().add(new Vec3(-40, -7, 0)), p.clone().add(new Vec3(-40, 7, 0)));
-    renderer.line(p.clone().add(new Vec3(-40, 7, 0)), p.clone().add(new Vec3(40, 7, 0)));
-    renderer.line(p.clone().add(new Vec3(40, 7, 0)), p.clone().add(new Vec3(40, -7, 0)));
+    const across = (route.gateRight || new Vec3(1, 0, 0)).clone().scale(40),
+      above = (route.gateUp || new Vec3(0, 1, 0)).clone().scale(7),
+      leftTop = p.clone().sub(across).add(above),
+      rightTop = p.clone().add(across).add(above);
+    renderer.line(p.clone().sub(across).sub(above), leftTop);
+    renderer.line(leftTop, rightTop);
+    renderer.line(rightTop, p.clone().add(across).sub(above));
   }
   c.stroke();
   c.restore();

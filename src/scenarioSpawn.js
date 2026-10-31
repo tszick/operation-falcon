@@ -1,3 +1,4 @@
+import { spawnRefuelling } from './aerialRefuelling.js';
 import { createBattlefieldTargets } from './battlefieldScenario.js';
 import { mirrorBattle } from './sideBattle.js';
 import { assignCoalitionRoster } from './coalitionRoster.js';
@@ -93,6 +94,10 @@ function createCanonicalTargets(m, player, rng) {
     if (t.aiRole === 'escortee') t.routeX = t.position.x;
     units.push(t);
     return t;
+  }
+  if (m.objective === 'aerial-refuelling') {
+    spawnRefuelling(m, player, add);
+    return units;
   }
   if (m.naval) {
     const home = add('BASE', 'carrier', 'ally', new Vec3(), {

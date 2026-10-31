@@ -21,6 +21,23 @@ const common = {
 // approximations, not certified charts; the modern B-52 no longer carries a gun.
 export const aiAircraft = [
   {
+    id: 'kc135',
+    name: 'KC-135R Stratotanker',
+    faction: 'west',
+    group: 'nato-classic',
+    role: 'Tanker',
+    emptyMass: 44663,
+    fuelCapacity: 90718,
+    wingArea: 226,
+    wingSpan: 39.88,
+    engineCount: 4,
+    thrust: 384900,
+    maxG: 2.5,
+    maxMach: 0.8,
+    ceiling: 15240,
+    countermeasureCapacity: 60,
+  },
+  {
     id: 'c130',
     transport: true,
     group: 'nato-classic',

@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Vec3 } from '../src/math.js';
+import { renderWeapons } from '../src/weaponRenderer.js';
+import { rgba } from '../src/rendering/shared/shapes.js';
 import { configureTerrain, terrainHeight } from '../src/terrain.js';
 import { clearWeaponLine, stepMissile, weaponProfiles } from '../src/weaponDynamics.js';
 test('accelerated weapon terrain checks exactly preserve the original samples and two-metre clearance', () => {
@@ -52,4 +54,34 @@ test('an autonomous IR seeker does not calculate unused launch-radar support', (
   stepMissile(p, target, launcher, 1 / 120);
   assert.equal(p.seekerLost, undefined);
   assert.ok(Number.isFinite(p.velocity.z));
+});
+
+test('missile smoke fades monotonically through its final 120 Hz lifetime tick without flashing', () => {
+  const trail = {
+    from: new Vec3(0, 1000, 100),
+    to: new Vec3(0, 1000, 120),
+    life: 3.5,
+    maxLife: 3.5,
+  };
+  const alphas = [];
+  const ctx = {
+    beginPath() {},
+    stroke() {
+      alphas.push(rgba(this.strokeStyle)[3]);
+    },
+  };
+  const renderer = { ctx, line() {} };
+  for (let i = 0; i <= 420; i++) {
+    renderWeapons(renderer, {}, { trails: [trail], projectiles: [], effects: [] });
+    trail.life -= 1 / 120;
+  }
+  assert.equal(alphas.length, 421);
+  for (let i = 1; i < alphas.length; i++) {
+    assert.ok(alphas[i] <= alphas[i - 1], `smoke brightened at tick ${i}: ${alphas[i]}`);
+    assert.ok(alphas[i] >= 0);
+  }
+  assert.ok(
+    alphas.at(-1) < 1e-12,
+    'the last visible smoke segment must stay effectively transparent',
+  );
 });

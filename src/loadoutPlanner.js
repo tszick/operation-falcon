@@ -133,8 +133,9 @@ export function configureAircraft(spec, choice) {
 export function initialWeapon(s, mission) {
   if (s.training) return 'none';
   const air =
-    ['escort', 'escort-transport', 'defend-base'].includes(mission.objective) ||
-    mission.kind === 'air';
+    ['escort', 'escort-transport', 'defend-base', 'aerial-refuelling'].includes(
+      mission.objective,
+    ) || mission.kind === 'air';
   return (
     (air ? ['aam', 'gun', 'agm', 'bomb'] : ['agm', 'bomb', 'aam', 'gun']).find(
       (type) => s.ammo[type] > 0,

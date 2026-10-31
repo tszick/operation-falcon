@@ -7,7 +7,7 @@ import { createMissionAircraft, landingStart } from '../src/missionStart.js';
 import { stepAircraft } from '../src/physics.js';
 import { attitude, DEG, Vec3, Quat } from '../src/math.js';
 import { evaluateApproach } from '../src/landing.js';
-import { terrainHeight, runway } from '../src/terrain.js';
+import { terrainHeight, runway, configureTerrain } from '../src/terrain.js';
 import { createTargets, Targeting } from '../src/targeting.js';
 import { Weapons } from '../src/weapons.js';
 import { Mission } from '../src/mission.js';
@@ -122,6 +122,7 @@ test('other missions still start on the runway with normal fuel and weapons', ()
   assert.equal(s.training, undefined);
 });
 test('the entire advertised glide path at either runway end is clear, while off-axis hills remain', () => {
+  configureTerrain({ id: 'landing' }, undefined, () => 0.99);
   for (const sign of [-1, 1])
     for (let distance = 250; distance <= 7000; distance += 100) {
       const z = sign * (runway.halfLength + distance),

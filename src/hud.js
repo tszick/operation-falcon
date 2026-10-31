@@ -284,9 +284,14 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
   $('approach-button').setAttribute('aria-pressed', String(landing));
   const routeButton = $('landing-route-button');
   if (routeButton) {
-    routeButton.hidden = !landing;
-    routeButton.setAttribute('aria-pressed', String(s.landingRouteEnabled !== false));
-    routeButton.textContent = tr(`I SEGÉDÍV ${s.landingRouteEnabled === false ? 'KI' : 'BE'}`);
+    const refuelling = !!s.aerialRefuel && !s.crashed && !s.dying && !jammed,
+      enabled = refuelling ? !!s.refuellingRouteEnabled : s.landingRouteEnabled !== false;
+    routeButton.hidden = !landing && !refuelling;
+    routeButton.title = tr(
+      refuelling ? 'I: tankolási segédív ki/be' : 'I: leszállási segédív ki/be',
+    );
+    routeButton.setAttribute('aria-pressed', String(enabled));
+    routeButton.textContent = tr(`I SEGÉDÍV ${enabled ? 'BE' : 'KI'}`);
   }
   if (landing) {
     $('approach-stage').textContent = tr(

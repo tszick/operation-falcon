@@ -1,6 +1,12 @@
 // Fictional operations placed on real geography. Coordinates are for the briefing map;
 // each flight still uses the simulator's local procedural world, not geospatial terrain.
 export const missionLocations = Object.freeze({
+  'aerial-refuelling': {
+    name: 'Arab-sivatag · légiutántöltési folyosó',
+    lat: 28.4,
+    lon: 48.2,
+    surface: 'desert',
+  },
   'taiwan-invasion': { name: 'Tajvan · Tajvani-szoros', lat: 23.7, lon: 121, surface: 'ocean' },
   'flight-test-us': {
     name: 'Edwards · Kalifornia, USA',

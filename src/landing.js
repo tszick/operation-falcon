@@ -27,6 +27,7 @@ export function runwayState(s) {
   };
 }
 export function onLandingRunway(s) {
+  if (s.noAirfield) return false;
   if (navalFlight(s) && s.spec.vtol && (s.naval?.nozzle || 0) >= 75)
     return onCarrierDeck(s.position, s.airfield);
   const v = runwayState(s),
@@ -42,6 +43,7 @@ export function landingGroundHeight(s, terrain) {
 }
 // Approach detection is independent of mission completion and works from both ends.
 export function evaluateApproach(s) {
+  if (s.noAirfield) return { active: false, instruction: 'Nincs repülőtér ezen a hadszíntéren.' };
   if (s.recoveryExit)
     return { active: false, instruction: 'Kivonulási pont: nincs saját fedélzeti leszállás.' };
   if (navalFlight(s) && s.spec.vtol && (s.naval?.nozzle || 0) >= 75) return vtolApproach(s);

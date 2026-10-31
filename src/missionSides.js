@@ -1,3 +1,4 @@
+import { refuellingEastBrief } from './refuellingData.js';
 import { superiorityRoster } from './airSuperiority.js';
 import { isPracticeMission } from './trainingAircraft.js';
 export const sideName = (side) => (side === 'east' ? 'KELETI' : 'NYUGATI');
@@ -60,6 +61,8 @@ const reversed = {
 };
 export function missionForSide(m, side = 'west') {
   if (!canChooseSide(m) || m.side === side) return m;
+  if (m.objective === 'aerial-refuelling')
+    return { ...m, ...(side === 'east' ? refuellingEastBrief : {}), side, mirrored: false };
   if (m.battlefield) {
     const brief = m.sideBriefings?.[side] || {};
     return {
