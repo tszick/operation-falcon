@@ -32,9 +32,9 @@ export function carrierDeckMeshes() {
   }
   return { deck, markings };
 }
-export function renderCarrier(r) {
+export function renderCarrier(r, position = origin, orientation = identity) {
   const { deck, markings } = carrierDeckMeshes();
-  r.mesh(groundMesh('carrier'), origin, identity, 1, '#aeb7b8', null, 'concrete');
-  r.mesh(deck, origin, identity, 1, '#d2d5c2', null, 'asphalt');
-  r.mesh(markings, origin, identity, 1, '#e4e2cd', null, 'runway');
+  r.mesh(groundMesh('carrier'), position, orientation, 1, '#aeb7b8', null, 'concrete');
+  r.mesh(deck, position, orientation, 1, '#d2d5c2', null, 'asphalt');
+  r.mesh(markings, position, orientation, 1, '#e4e2cd', null, 'runway');
 }

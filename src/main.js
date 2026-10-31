@@ -1,3 +1,4 @@
+import { missionWeather, weatherBrief } from './flightEnvironment.js';
 import { FlightInstrumentLayer } from './rendering/flightInstrumentLayer.js';
 import { tr, trHtml, formatNumber } from './i18n.js';
 import { missionForSide } from './missionSides.js';
@@ -272,12 +273,16 @@ function updateDeparture() {
       : `${kg(Math.abs(difference))} kg-mal ${difference < 0 ? 'könnyebb' : 'nehezebb'} a teljes tankkal${training ? '' : ' és alapfegyverzettel'} induló gépnél.`,
   );
   $('departure-warning').textContent = tr(
-    fraction === 0
-      ? 'Üres tank: a hajtómű nem ad tolóerőt.'
-      : fraction < 0.1
-        ? 'Kevés üzemanyag: a hazatéréshez is hagyj tartalékot.'
-        : '',
+    !plan.withinLimits
+      ? `Túl nagy felszállótömeg: ${kg(plan.totalKg)} / ${kg(plan.maxTakeoffKg)} kg. Ezzel a teherrel legfeljebb ${Math.floor(plan.maxFuelFraction * 100)}% üzemanyag választható.`
+      : fraction === 0
+        ? 'Üres tank: a hajtómű nem ad tolóerőt.'
+        : fraction < 0.1
+          ? 'Kevés üzemanyag: a hazatéréshez is hagyj tartalékot.'
+          : '',
   );
+  $('launch').disabled =
+    !plan.withinLimits || (!training && !validateLoadout(selected, selectedLoadout()).valid);
   if (training)
     $('planner-stores').textContent = tr(
       `FEGYVERZET NÉLKÜL · ${Math.round(fraction * 100)}% ÜZEMANYAG`,
@@ -297,7 +302,8 @@ function updateLoadout() {
     preset = armament(selected),
     training = unarmedPractice(selectedMission),
     check = validateLoadout(selected, choice);
-  $('loadout-editor').hidden = isPracticeMission(selectedMission) || !!selected.transport;
+  $('loadout-editor').hidden =
+    isPracticeMission(selectedMission) || !!selected.experimentalOnly || !!selected.transport;
   $('equipment-stores-info').innerHTML = trHtml(
     Object.entries(preset.weapons)
       .map(
@@ -353,7 +359,7 @@ function updateLoadout() {
     `${check.count} / ${check.limits.maxStores} függesztmény · ${Math.round(check.payloadKg)} / ${check.limits.maxPayloadKg} kg engedélyezett játékbeli fegyverterhelés`,
   );
   $('loadout-errors').textContent = tr(check.errors.join(' '));
-  $('launch').disabled = !training && !check.valid;
+
   const configured = check.valid ? configureAircraft(selected, choice) : selected;
   const selectedRating = $('preview-rating');
   if (selectedRating) {
@@ -434,9 +440,10 @@ function renderMissionBrief(briefMission) {
   $('mission-empty').hidden = true;
   $('mission-details').hidden = false;
   const location = missionLocation(briefMission);
-  $('mission-location').textContent = tr(
-    location.name + ' · ' + surfaceStyles[location.surface].label,
-  );
+  $('mission-location').textContent =
+    tr(location.name + ' · ' + surfaceStyles[location.surface].label) +
+    ' · ' +
+    tr(weatherBrief(missionWeather(briefMission)));
   $('mission-threat-icons').innerHTML = trHtml(threatMarkup(briefMission));
   $('mission-code').textContent = tr(briefMission.difficulty + ' / ' + briefMission.code);
   $('mission-name').textContent = tr(briefMission.name);
@@ -494,16 +501,24 @@ function updatePlanner() {
   $('preview-role').textContent = tr(selected.role.toUpperCase());
   $('preview-designation').textContent = tr(selected.name.toUpperCase());
   const stats = [
-    ['MAX. SEBESSÉG', selected.maxMach.toFixed(2), 'MACH'],
+    [
+      selected.limitIsDesign ? 'TERVEZETT SEBESSÉGHATÁR' : 'MAX. SEBESSÉG',
+      selected.maxMach.toFixed(2),
+      'MACH',
+    ],
     ['TOLÓERŐ', Math.round(selected.abThrust / 1000), 'KN'],
     ['MAX. TERHELÉS', selected.maxG, 'G'],
     ['ÜZEMANYAG', formatNumber(selected.fuelCapacity), 'KG'],
     [
-      selected.syntheticRadar ? 'SZIM. RADAR' : 'RADAR',
-      Math.round(selected.radarRange / 1000),
-      'KM',
+      selected.testProfile ? 'TESZTMAGASSÁG' : selected.syntheticRadar ? 'SZIM. RADAR' : 'RADAR',
+      selected.testProfile ? selected.testProfile.altitude : Math.round(selected.radarRange / 1000),
+      selected.testProfile ? 'M' : 'KM',
     ],
-    ['CSÚCSMAGASSÁG', (selected.ceiling / 1000).toFixed(1), 'KM'],
+    [
+      selected.testProfile ? 'TESZTSEBESSÉG' : 'CSÚCSMAGASSÁG',
+      selected.testProfile ? selected.testProfile.ias : (selected.ceiling / 1000).toFixed(1),
+      selected.testProfile ? 'KM/H' : 'KM',
+    ],
   ];
   $('specs').innerHTML = trHtml(
     stats.map(([l, v, u]) => `<div><small>${l}</small><b>${v}<span>${u}</span></b></div>`).join(''),
@@ -661,6 +676,14 @@ function toast(text, duration = 4) {
   postFlightMessage(text, state?.elapsed || 0, duration);
 }
 async function launch() {
+  const departure = plannedDeparture(selected, selectedLoadout(), {
+    fuelFraction: selectedFuel(),
+    unarmed: unarmedPractice(selectedMission),
+  });
+  if (!departure.withinLimits) {
+    updateDeparture();
+    return;
+  }
   try {
     await renderer.ready;
     if (graphicsFailed) return;

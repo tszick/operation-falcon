@@ -6,7 +6,8 @@ export function advisedTarget(s, targets, aim, mission) {
   if (selected) return selected;
   visible.sort((a, b) => a.position.distance(s.position) - b.position.distance(s.position));
   return (
-    (['escort-transport', 'defend-base', 'defend-city', 'air-superiority'].includes(
+    (mission.battlefield ||
+    ['escort-transport', 'defend-base', 'defend-city', 'air-superiority'].includes(
       mission.objective,
     )
       ? visible.find((t) => t.kind === 'air')

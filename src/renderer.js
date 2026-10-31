@@ -1,3 +1,4 @@
+import { windHudReadout } from './flightEnvironment.js';
 import { drawingContext } from './rendering/createBackend.js';
 import { tr } from './i18n.js';
 import { renderCarrier } from './carrierVisuals.js';
@@ -419,6 +420,7 @@ export class Renderer {
     return this.worldVisible(p) ? screen : null;
   }
   runway(jammed = false) {
+    if (terrainWorld.recoverySites) return;
     if (terrainWorld.ocean) {
       renderCarrier(this);
       return;
@@ -716,7 +718,9 @@ export class Renderer {
           t.flight?.condition,
           'aircraft',
         );
-      } else renderGroundTarget(this, t);
+      } else if (t.type === 'carrier')
+        renderCarrier(this, t.position, Quat.euler(t.heading || 0, 0, 0));
+      else renderGroundTarget(this, t);
     }
     if ((this.thirdPerson || wreck || this.cinematic) && !s.crashed)
       this.mesh(
@@ -740,7 +744,8 @@ export class Renderer {
       if (
         !t.exited &&
         !t.playerControlled &&
-        !t.home &&
+        (!t.home || s.multipleAirfields) &&
+        t.id !== s.airfield?.targetId &&
         !t.city &&
         t.alive &&
         !jammed &&
@@ -798,8 +803,8 @@ export class Renderer {
         s.position.length() > 3500)
     )
       this.marker(
-        s.recoveryExit || baseMarkerPosition(targets, terrainWorld.ocean),
-        `${s.recoveryExit ? 'KIVONULÁS' : terrainWorld.ocean ? 'ANYAHAJÓ' : 'BASE'} ${(s.position.distance(s.recoveryExit || s.airfield?.position || new Vec3()) / 1000).toFixed(1)} KM`,
+        s.recoveryExit || s.airfield?.position || baseMarkerPosition(targets, terrainWorld.ocean),
+        `${s.recoveryExit ? 'KIVONULÁS' : s.airfield?.carrier ? 'ANYAHAJÓ' : 'BASE'} ${(s.position.distance(s.recoveryExit || s.airfield?.position || new Vec3()) / 1000).toFixed(1)} KM`,
         '#baf37d',
         false,
         { offscreenLabel: true },
@@ -1008,6 +1013,29 @@ export class Renderer {
       cx - span - 30,
       cockpitHudFooterY(w, h),
     );
+    const wind = windHudReadout(s),
+      wx = Math.max(28, cx - span - 220),
+      wy = cockpitHudFooterY(w, h) + 20;
+    c.save();
+    c.font = '11px Consolas,monospace';
+    c.fillStyle = '#a8d6c5';
+    c.strokeStyle = '#a8d6c5';
+    c.fillText(tr(wind.text), wx, wy);
+    if (!wind.calm) {
+      const angle = wind.directionToRad - a.heading,
+        dx = Math.sin(angle) * 7,
+        dy = -Math.cos(angle) * 7;
+      const x = wx - 13,
+        y = wy - 4;
+      c.beginPath();
+      c.moveTo(x - dx, y - dy);
+      c.lineTo(x + dx, y + dy);
+      c.moveTo(x + dx - dx * 0.5 - dy * 0.4, y + dy - dy * 0.5 + dx * 0.4);
+      c.lineTo(x + dx, y + dy);
+      c.lineTo(x + dx - dx * 0.5 + dy * 0.4, y + dy - dy * 0.5 - dx * 0.4);
+      c.stroke();
+    }
+    c.restore();
     c.fillText(tr(`AGL ${Math.round(s.agl)} M`), cx + span - 40, cockpitHudFooterY(w, h));
     c.fillText(
       tr(`V/S ${s.velocity.y >= 0 ? '+' : ''}${s.velocity.y.toFixed(1)} M/S`),

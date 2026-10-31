@@ -1,14 +1,18 @@
+import { experimentalAircraft } from './experimentalAircraft.js';
+export { experimentalAircraft } from './experimentalAircraft.js';
 import { harrier } from './navalData.js';
 import { trainingAircraft, isPracticeMission } from './trainingAircraft.js';
 export { trainingAircraft } from './trainingAircraft.js';
 export const missionAircraftChoices = (m) =>
-  m.naval
-    ? ['fa18', 'f14', 'harrier'].map((id) => aircraft.find((a) => a.id === id))
-    : isPracticeMission(m)
-      ? [trainingAircraft]
-      : ['escort-transport', 'iron-veil'].includes(m.objective)
-        ? [...aircraft, ...transportAircraft]
-        : aircraft;
+  m.objective === 'flight-test'
+    ? experimentalAircraft.filter((a) => a.faction === (m.side || 'west'))
+    : m.naval
+      ? ['fa18', 'f14', 'harrier'].map((id) => aircraft.find((a) => a.id === id))
+      : isPracticeMission(m)
+        ? [trainingAircraft]
+        : ['escort-transport', 'iron-veil'].includes(m.objective)
+          ? [...aircraft, ...transportAircraft]
+          : aircraft;
 export { transportAircraft } from './heavyAircraftData.js';
 import { aiAircraft, transportAircraft } from './heavyAircraftData.js';
 // Approximate gameplay data in SI units; not certified aircraft performance.

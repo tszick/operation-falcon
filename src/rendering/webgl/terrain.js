@@ -18,7 +18,7 @@ void main(){if(ocean){
  vec3 n=normalize(cross(dFdx(worldPosition),dFdy(worldPosition)));
  float light=0.58+0.42*abs(dot(n,normalize(vec3(-0.36,0.86,-0.36))));
  vec3 color=mix(vec3(0.075,0.61,0.65),vec3(0.10,0.30,0.42),smoothstep(0.0,650.0,d));
- if(worldPosition.y>0.0)color=vec3(0.91,0.77,0.51)*(0.7+texture(surfaceMap,worldPosition.xz/textureScale).rgb*0.55)*light;
+ if(worldPosition.y>0.0)color=tint*(0.7+texture(surfaceMap,worldPosition.xz/textureScale).rgb*0.55);
  float foam=exp(-pow(d/22.0,2.0))*(worldPosition.y<0.0?0.22:0.0);
  color=mix(color,vec3(0.78,0.91,0.85),foam);
  color=mix(color,haze,smoothstep(7000.0,40000.0,depth)*0.45);

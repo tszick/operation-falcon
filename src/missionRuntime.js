@@ -1,8 +1,10 @@
+import { updateBattlefieldRuntime } from './battlefieldScenario.js';
 import { updateMirroredRuntime } from './sideRuntime.js';
 import { updateIronVeil } from './ironVeil.js';
 import { launchBallistic } from './ballisticFlight.js';
 export function updateMissionRuntime(s, m, targets, w) {
-  if (m.spec.mirrored) updateMirroredRuntime(s, m, targets, w);
+  if (m.spec.battlefield) updateBattlefieldRuntime(s, m, targets, w);
+  else if (m.spec.mirrored) updateMirroredRuntime(s, m, targets, w);
   else if (m.spec.objective === 'iron-veil') updateIronVeil(s, m, targets, w);
   if (m.spec.naval) m.wave = 1;
   if (m.spec.objective === 'defend-city') {

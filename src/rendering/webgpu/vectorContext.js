@@ -136,7 +136,7 @@ export class VectorContext {
   async loadAtlas() {
     // The browser decodes a static glyph atlas; no Canvas2D context is allocated.
     const chars = Array.from({ length: 512 }, (_, i) => String.fromCodePoint(i + 32)).concat([
-      ...'→←↑↓↗⊡●○—−°×✓ⓘ≈≤≥±∞△▽✕',
+      ...'→←↑↓↗⊡●○—−°×✓ⓘ≈≤≥±∞△▽✕…',
     ]);
     this.glyphs = new Map(chars.map((c, i) => [c, i]));
     const escape = (s) =>

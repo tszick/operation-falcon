@@ -1,3 +1,5 @@
+import { selectRecoveryAirfield } from './recoveryAirfields.js';
+import { updateFlightTest } from './flightTest.js';
 import { recoveryComplete } from './navalOps.js';
 import { syncPlayerTransport } from './transportRole.js';
 import { updateBombingPractice } from './bombingPractice.js';
@@ -101,6 +103,7 @@ export class Mission {
       w.missionEnded = !!(this.complete || this.failed || this.recovered || s.crashed || s.dying);
   }
   updateState(s, targets, w, aim = null) {
+    if (s.multipleAirfields) selectRecoveryAirfield(s, targets);
     syncPlayerTransport(s, targets);
     if (this.complete || this.failed || this.recovered) return;
     const practice = this.spec.objective === 'landing',
@@ -126,7 +129,12 @@ export class Mission {
       const report = this.spec.composition
         ? battleObjectives(this, s, targets, w)
         : { failure: '' };
-      if (recoveryComplete(s) && !s.recoveryExit && !report.failure && !this.failed) {
+      if (
+        ((this.spec.endOnObjectives && report.complete) ||
+          (recoveryComplete(s) && !s.recoveryExit)) &&
+        !report.failure &&
+        !this.failed
+      ) {
         this.aborted = false;
         this.interruptedObjectives = [];
         this.recovered = false;
@@ -143,6 +151,10 @@ export class Mission {
         this.updateReturn(s);
         return;
       }
+    }
+    if (this.spec.objective === 'flight-test') {
+      updateFlightTest(s, this, w);
+      return;
     }
     if (this.spec.objective === 'practice-bombing') {
       updateBombingPractice(s, this, targets, w);
@@ -191,7 +203,13 @@ export class Mission {
       }
     }
 
-    if (!practice && s.airborne && !s.onGround && (s.damage >= 40 || s.fuel <= 0)) {
+    if (
+      !practice &&
+      !(this.spec.endOnObjectives && this.objectiveComplete) &&
+      s.airborne &&
+      !s.onGround &&
+      (s.damage >= 40 || s.fuel <= 0)
+    ) {
       this.abortToReturn(
         s,
         targets,
@@ -202,18 +220,23 @@ export class Mission {
       return;
     }
 
-    if (this.objectiveComplete && s.airborne && recoveryComplete(s)) {
+    if (
+      this.objectiveComplete &&
+      (this.spec.endOnObjectives || (s.airborne && recoveryComplete(s)))
+    ) {
       this.complete = true;
       this.setPhase(
         'complete',
         'KÜLDETÉS TELJESÍTVE',
-        practice
-          ? 'Biztonságos földetérés és megállás. Sikeres leszállási gyakorlat.'
-          : civil
-            ? 'A civil gép békés elfogása és a biztonságos hazatérés teljesítve.'
-            : s.recoveryExit
-              ? 'Ellenséges célok megsemmisítve, biztonságos kivonulás.'
-              : 'Cél megsemmisítve, biztonságos hazatérés.',
+        this.spec.endOnObjectives
+          ? 'A győzelmi feltételek teljesültek.'
+          : practice
+            ? 'Biztonságos földetérés és megállás. Sikeres leszállási gyakorlat.'
+            : civil
+              ? 'A civil gép békés elfogása és a biztonságos hazatérés teljesítve.'
+              : s.recoveryExit
+                ? 'Ellenséges célok megsemmisítve, biztonságos kivonulás.'
+                : 'Cél megsemmisítve, biztonságos hazatérés.',
       );
       this.score = Math.max(
         0,

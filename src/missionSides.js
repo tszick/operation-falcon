@@ -1,6 +1,7 @@
+import { superiorityRoster } from './airSuperiority.js';
 import { isPracticeMission } from './trainingAircraft.js';
 export const sideName = (side) => (side === 'east' ? 'KELETI' : 'NYUGATI');
-export const canChooseSide = (m) => !isPracticeMission(m);
+export const canChooseSide = (m) => !isPracticeMission(m) && m.objective !== 'flight-test';
 const reversed = {
   'defend-base': [
     'Támadd meg a repteret',
@@ -59,6 +60,16 @@ const reversed = {
 };
 export function missionForSide(m, side = 'west') {
   if (!canChooseSide(m) || m.side === side) return m;
+  if (m.battlefield) {
+    const brief = m.sideBriefings?.[side] || {};
+    return {
+      ...m,
+      ...brief,
+      side,
+      mirrored: false,
+      roster: superiorityRoster({ ...m, side }, { role: 'fighter' }),
+    };
+  }
   const east = side === 'east',
     variant = east && reversed[m.objective];
   const common = { ...m, side: east ? 'east' : 'west', mirrored: !!variant };

@@ -33,7 +33,7 @@ function landed(x) {
 test('practice and story order, numbering and difficulty match the requested campaign', () => {
   assert.deepEqual(
     missionGroups.map((g) => g.id),
-    ['practice', 'story1'],
+    ['practice', 'flight-test', 'story1'],
   );
   assert.deepEqual(
     missions.filter((m) => m.group === 'practice').map((m) => m.id),
@@ -51,6 +51,7 @@ test('practice and story order, numbering and difficulty match the requested cam
       ['air-superiority', 7, 'TOP-GUN'],
       ['iron-veil', 8, 'TOP-GUN'],
       ['carrier-defense', 9, 'TOP-GUN'],
+      ['taiwan-invasion', 10, 'TOP-GUN'],
     ],
   );
 });

@@ -1,3 +1,4 @@
+import { createBattlefieldTargets } from './battlefieldScenario.js';
 import { mirrorBattle } from './sideBattle.js';
 import { assignCoalitionRoster } from './coalitionRoster.js';
 import { transportAircraft } from './heavyAircraftData.js';
@@ -14,6 +15,7 @@ import {
 import { unitDefinition } from './unitTypes.js';
 import { enemyAircraft } from './enemies.js';
 export function createBattleTargets(m, player, { rng = Math.random } = {}) {
+  if (m.battlefield) return createBattlefieldTargets(m, player, rng);
   const canonical = m.mirrored
     ? { ...player, faction: 'west', id: m.naval ? 'fa18' : 'f16' }
     : player;
@@ -33,7 +35,7 @@ function createCanonicalTargets(m, player, rng) {
           new Vec3(Math.sin(bearing) * radius, 0, Math.cos(bearing) * radius),
     enemies = player.faction === 'west' ? 'east' : 'west';
   configureTerrain(
-    { id: ['bridge-block', 'iron-veil'].includes(m.objective) ? 'bridge' : m.id },
+    { ...m, id: ['bridge-block', 'iron-veil'].includes(m.objective) ? 'bridge' : m.id },
     anchor,
     rng,
   );

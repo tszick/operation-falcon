@@ -1,3 +1,4 @@
+import { carrierLocalPosition } from './recoveryAirfields.js';
 import { navalFlight, onCarrierDeck, carrierTouchdown, vtolApproach } from './navalOps.js';
 import { attitude, DEG, Quat } from './math.js';
 import { runway, homeHangars } from './terrain.js';
@@ -19,6 +20,7 @@ export function runwayState(s) {
     position: local(s.position),
     previousPosition: local(s.previousPosition || s.position),
     velocity: rotation.rotate(s.velocity),
+    wind: s.wind ? rotation.rotate(s.wind) : null,
     orientation: rotation.multiply(s.orientation),
     worldAltitude: s.position.y,
     airfieldLocal: true,
@@ -26,14 +28,14 @@ export function runwayState(s) {
 }
 export function onLandingRunway(s) {
   if (navalFlight(s) && s.spec.vtol && (s.naval?.nozzle || 0) >= 75)
-    return onCarrierDeck(s.position);
+    return onCarrierDeck(s.position, s.airfield);
   const v = runwayState(s),
     strip = s.airfield || runway;
   return Math.abs(v.position.x) < strip.halfWidth && Math.abs(v.position.z) < strip.halfLength;
 }
 export function landingGroundHeight(s, terrain) {
-  return navalFlight(s) && onCarrierDeck(s.position)
-    ? 20
+  return navalFlight(s) && onCarrierDeck(s.position, s.airfield)
+    ? s.airfield.elevation
     : s.airfield && onLandingRunway(s)
       ? s.airfield.elevation
       : terrain;
@@ -241,7 +243,10 @@ export function touchdownProblems(s, descent, speed) {
   const a = attitude(s.orientation),
     problems = [],
     limits = touchdownLimits(s),
-    ias = speed * Math.sqrt(atmosphere(s.worldAltitude ?? s.position.y).density / 1.225) * 3.6;
+    ias =
+      (s.wind?.length() > 0 ? s.velocity.clone().sub(s.wind).length() : speed) *
+      Math.sqrt(atmosphere(s.worldAltitude ?? s.position.y).density / 1.225) *
+      3.6;
   if (!s.gear) problems.push('A futómű nem volt kiengedve (G).');
   if (!onLandingRunway(s)) problems.push('A földetérés a pályán kívül történt.');
   if (descent >= 3)
@@ -273,7 +278,10 @@ export function assessTouchdown(s, descent, speed) {
   s = runwayState(s);
   const a = attitude(s.orientation),
     limits = touchdownLimits(s),
-    ias = speed * Math.sqrt(atmosphere(s.worldAltitude ?? s.position.y).density / 1.225) * 3.6;
+    ias =
+      (s.wind?.length() > 0 ? s.velocity.clone().sub(s.wind).length() : speed) *
+      Math.sqrt(atmosphere(s.worldAltitude ?? s.position.y).density / 1.225) *
+      3.6;
   const problems = touchdownProblems(s, descent, speed),
     sink = Math.max(0, descent),
     bank = Math.abs(a.bank / DEG),
@@ -331,7 +339,7 @@ export function rolloutMargins(speed) {
   };
 }
 export function rolloutSurface(s) {
-  if (navalFlight(s)) return { shoulder: false, allowed: onCarrierDeck(s.position) };
+  if (navalFlight(s)) return { shoulder: false, allowed: onCarrierDeck(s.position, s.airfield) };
   s = runwayState(s);
   const strip = s.airfield || runway,
     margins = rolloutMargins(Math.hypot(s.velocity.x, s.velocity.z)),
@@ -347,14 +355,12 @@ export function rolloutSurface(s) {
   return { ...margins, shoulder, allowed: onLandingRunway(s) || shoulder };
 }
 export function rolloutObstacle(s, from = s.previousPosition || s.position, to = s.position) {
-  if (navalFlight(s))
-    return s.position.y < 52 &&
-      s.position.x > 18 &&
-      s.position.x < 36 &&
-      s.position.z > -15 &&
-      s.position.z < 55
+  if (navalFlight(s)) {
+    const p = carrierLocalPosition(s.position, s.airfield);
+    return p.y < 52 && p.x > 18 && p.x < 36 && p.z > -15 && p.z < 55
       ? 'A gép az anyahajó felépítményének gurult.'
       : null;
+  }
   if (!s.onGround) return null;
   if (s.airfield && !s.airfield.home) return null;
   if (s.airfield) {

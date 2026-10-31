@@ -1,3 +1,4 @@
+import { experimentalAircraft } from './experimentalAircraft.js';
 // Representative, conservative presets for the named variants; not a complete
 // catalogue of every operator/upgrade. Locations are schematic metres (x, z).
 // References and intentional simulation simplifications: README armament notes.
@@ -267,6 +268,8 @@ export const armaments = {
     'FAB-250',
   ),
 };
+for (const a of experimentalAircraft)
+  armaments[a.id] = { variant: a.name, weapons: {}, stations: [] };
 export const weaponKeys = { gun: '1', aam: '2', agm: '3', bomb: '4' };
 export function armament(spec) {
   const p = spec.configuredArmament || armaments[spec.id];
@@ -291,4 +294,26 @@ export function loadedStations(s) {
 }
 export function nextStation(s, type) {
   return loadedStations(s).find((station) => station.type === type && station.loaded);
+}
+
+const externalCache = new WeakMap();
+// Internal bay weapons add mass but no external-store drag. Recompute only on release.
+export function externalStoreCount(s) {
+  const old = externalCache.get(s),
+    { aam, agm, bomb } = s.ammo;
+  if (old && old.spec === s.spec && old.aam === aam && old.agm === agm && old.bomb === bomb)
+    return old.count;
+  const p = s.spec.configuredArmament || armaments[s.spec.id],
+    used = {};
+  if (!p) return (aam || 0) + (agm || 0) + (bomb || 0);
+  let count = 0;
+  for (const station of p.stations) {
+    const type = station.type,
+      spent = (p.weapons[type]?.quantity || 0) - (s.ammo[type] || 0),
+      ordinal = used[type] || 0;
+    used[type] = ordinal + 1;
+    if (ordinal >= spent && !station.internal) count++;
+  }
+  externalCache.set(s, { spec: s.spec, aam, agm, bomb, count });
+  return count;
 }

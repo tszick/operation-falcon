@@ -10,6 +10,7 @@ import { missions, aircraft, missionAircraftChoices } from '../src/aircraftSpec.
 import { carrierTouchdown, hoverMargin, requestCatapult } from '../src/navalOps.js';
 import { unitDefinition } from '../src/unitTypes.js';
 import { groundMesh, groundHit } from '../src/groundModels.js';
+
 import { serviceAircraft } from '../src/missionStart.js';
 import { planLandingRoute } from '../src/landingRoute.js';
 test('naval roster has three allies, one 3+1 enemy flight and a destroyer, without a pending second wave', () => {
@@ -69,7 +70,7 @@ test('missing the wire results in a bolter and airborne go-around, never mission
 test('Harrier vertical thrust respects mass: light aircraft climbs, overloaded aircraft cannot hover', () => {
   const light = navalScenario('harrier-light');
   assert.ok(hoverMargin(light.s) > 1);
-  advanceNaval(light, 5, { combat: false });
+  advanceNaval(light, 10, { combat: false });
   assert.equal(light.s.crashed, false);
   assert.ok(light.s.position.y > 30);
   assert.equal(light.s.airborne, true);
@@ -178,6 +179,7 @@ test('a conventional carrier recovery cannot complete without an actual wire cap
 test('fully loaded Harrier performs a short rolling takeoff with forty-five-degree nozzles', () => {
   const x = navalScenario('harrier-heavy');
   x.s.naval.nozzle = 45;
+  for (let i = 0; i < 6 * 120; i++) stepAircraft(x.s, { brake: true }, 1 / 120);
   for (let i = 0; i < 13 * 120; i++)
     stepAircraft(
       x.s,

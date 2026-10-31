@@ -1,3 +1,4 @@
+import { experimentalAircraft } from './experimentalAircraft.js';
 import { trHtml, tr, formatNumber } from './i18n.js';
 import { nationalityMarkup } from './aircraftNations.js';
 import { escapeHtml as escape } from './ui/html.js';
@@ -42,18 +43,20 @@ const entries = [
       kind: 'air',
       category: unitTypes[type].category,
     })),
-  ...[...aircraft, ...transportAircraft, trainingAircraft].map((spec) => ({
+  ...[...aircraft, ...transportAircraft, ...experimentalAircraft, trainingAircraft].map((spec) => ({
     id: spec.id,
     spec,
     kind: 'air',
     name: spec.name,
-    category: spec.trainingOnly
-      ? 'Kizárólag gyakorlópályákon'
-      : spec.faction !== 'west'
-        ? 'Keleti repülőgép · oldaltól és feladattól függően választható'
-        : spec.transport
-          ? 'Szállítós küldetésen választható'
-          : 'Nyugati repülőgép · küldetéstől függően választható',
+    category: spec.experimentalOnly
+      ? 'Berepülés · kísérleti repülőgépek'
+      : spec.trainingOnly
+        ? 'Kizárólag gyakorlópályákon'
+        : spec.faction !== 'west'
+          ? 'Keleti repülőgép · oldaltól és feladattól függően választható'
+          : spec.transport
+            ? 'Szállítós küldetésen választható'
+            : 'Nyugati repülőgép · küldetéstől függően választható',
   })),
   ...weaponEntries,
   ...countermeasureEntries,
@@ -170,6 +173,7 @@ function detail() {
             'A négy gyakorlópálya rögzített gépe. Nincs utánégető vagy harci fegyverzet. A civil elfogáshoz VMTS jellegű szimulált kontaktokat mutatunk, nem valódi fedélzeti harci radart. A tolóerő, méretek és üres tömeg nyilvános típusadatok; a légellenállási, felhajtóerő- és kormányegyütthatók játékbeli közelítések.',
           )
         : '',
+      a.experimentalOnly ? tr(a.history) : '',
       tr('Ugyanaz a térbeli modell és fegyverkészlet szerepel az adatlapon és a repülésben.'),
     ]
       .filter(Boolean)
@@ -177,7 +181,10 @@ function detail() {
 
     rows = [
       ['Szerep', a.role],
-      ['Maximális sebesség', `Mach ${a.maxMach.toFixed(2)}`],
+      [
+        a.limitIsDesign ? 'Tervezett sebességhatár' : 'Maximális sebesség',
+        `Mach ${a.maxMach.toFixed(2)}`,
+      ],
       ['Terhelési határ', `${a.maxG} G`],
       ['Üres tömeg', `${formatNumber(a.emptyMass)} kg`],
       ['Üzemanyag', `${formatNumber(a.fuelCapacity)} kg`],
@@ -185,7 +192,7 @@ function detail() {
         a.syntheticRadar ? 'Szimulált kiképzési érzékelő' : 'Radar',
         `${a.radarRange / 1000} km · ${a.radarCone}° félkúp`,
       ],
-      ['Csúcsmagasság', `${a.ceiling / 1000} km`],
+      [a.limitIsDesign ? 'Tervezett csúcsmagasság' : 'Csúcsmagasság', `${a.ceiling / 1000} km`],
       [
         'Fegyverzet',
         [...Object.values(preset.weapons), ...(preset.tailGun ? [preset.tailGun] : [])]
@@ -193,6 +200,21 @@ function detail() {
           .join(' · '),
       ],
       ...defensiveGunRows(a.id),
+      ...(a.experimentalOnly
+        ? [
+            ['Első repülés', String(a.firstFlight)],
+            ['Repült prototípusok', String(a.prototypes)],
+            [
+              'Berepülési tesztpont',
+              a.testProfile.altitude + ' m · IAS ' + a.testProfile.ias + ' km/h',
+            ],
+            ['Forrás', a.source],
+            [
+              'Paraméterek',
+              'Nyilvános típusadatok és tervezési célok; a repülési együtthatók és részben nem közölt tömegek játékbeli becslések.',
+            ],
+          ]
+        : []),
       ...(a.vtol
         ? [
             [

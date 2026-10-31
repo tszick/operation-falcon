@@ -157,5 +157,18 @@ export function plannedDeparture(spec, choice, { fuelFraction = 1, unarmed = fal
   if (!unarmed && preset.tailGun) ammo.tailGun = choice.tailGun ?? 0;
   const fraction = Number.isFinite(fuelFraction) ? clamp(fuelFraction, 0, 1) : 1,
     fuel = spec.fuelCapacity * fraction;
-  return { ammo, fuel, fuelFraction: fraction, ...massBreakdown({ spec, ammo, fuel }) };
+  const breakdown = massBreakdown({ spec, ammo, fuel }),
+    maxTakeoffKg = spec.maxTakeoffMass ?? Infinity;
+  return {
+    ammo,
+    fuel,
+    fuelFraction: fraction,
+    ...breakdown,
+    maxTakeoffKg,
+    withinLimits: breakdown.totalKg <= maxTakeoffKg,
+    maxFuelFraction: Math.max(
+      0,
+      Math.min(1, (maxTakeoffKg - breakdown.totalKg + fuel) / spec.fuelCapacity),
+    ),
+  };
 }

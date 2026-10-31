@@ -1,14 +1,14 @@
 import { clamp, right } from './math.js';
 // Reduced-order aerodynamic departure model; not type-certified spin data.
-export function airflow(s, f, u, v) {
-  const along = s.velocity.dot(f),
-    normal = -s.velocity.dot(u),
-    lateral = s.velocity.dot(right(s.orientation));
+export function airflow(s, f, u, v, velocity = s.velocity) {
+  const along = velocity.dot(f),
+    normal = -velocity.dot(u),
+    lateral = velocity.dot(right(s.orientation));
   const alpha = Math.atan2(normal, along),
     beta = Math.atan2(lateral, Math.hypot(along, normal));
   const stalled = Math.abs(alpha) > s.spec.stallAlpha && v > 35;
   let cl = clamp(
-    0.22 + s.spec.clSlope * alpha + s.flapPosition * 0.45,
+    (s.spec.liftZero ?? 0.22) + s.spec.clSlope * alpha + s.flapPosition * 0.45,
     -s.spec.maxCL,
     s.spec.maxCL + s.flapPosition * 0.35,
   );

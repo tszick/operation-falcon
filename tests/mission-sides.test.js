@@ -48,10 +48,14 @@ test('side selection is combat-only, both coalitions have compatible choices, an
       assert.ok(choices.length, original.id + ':' + side);
       if (!canChooseSide(original)) {
         assert.equal(spec, original);
-        assert.deepEqual(
-          choices.map((a) => a.id),
-          ['t45'],
-        );
+        if (original.objective === 'flight-test') {
+          assert.equal(choices.length, 3);
+          assert.ok(choices.every((a) => a.experimentalOnly && a.faction === original.side));
+        } else
+          assert.deepEqual(
+            choices.map((a) => a.id),
+            ['t45'],
+          );
       } else for (const a of choices) assert.equal(a.faction === 'west', side === 'west');
       assert.equal(original.name, missions.find((m) => m.id === original.id).name);
       assert.equal(spec.id, original.id);

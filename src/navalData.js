@@ -1,12 +1,18 @@
-import { Vec3, DEG } from './math.js';
+import { Vec3, Quat, DEG } from './math.js';
 export const carrierDeck = { halfWidth: 36, halfLength: 160, elevation: 20 };
-export function carrierAirfield() {
+export function carrierAirfield(carrier = null) {
+  const position = carrier?.position?.clone() || new Vec3(),
+    heading = carrier?.heading || 0;
   return {
     carrier: true,
     home: true,
-    position: new Vec3(-7, 0, -10),
-    heading: -8 * DEG,
-    elevation: 20,
+    position: Quat.euler(heading, 0, 0)
+      .rotate(new Vec3(-7, 0, -10))
+      .add(position),
+    heading: heading - 8 * DEG,
+    elevation: position.y + 20,
+    deckPosition: position,
+    deckHeading: heading,
     halfWidth: 13,
     halfLength: 140,
     touchdownOffset: 80,

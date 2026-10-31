@@ -102,6 +102,9 @@ export const aiAircraft = [
   },
   {
     id: 'b52',
+    maxTakeoffMass: 221353,
+    // Effective 6-degree wing incidence in the reduced-order lift model.
+    liftZero: 0.22 + (5.2 * Math.PI) / 30,
     radarRange: 60000,
     defensiveGun: {
       profile: 'm61',

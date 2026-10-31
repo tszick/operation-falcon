@@ -194,7 +194,7 @@ export function damageMotion(s, q, m, cl, engineDemand, dt) {
   const d = ensureDamage(s),
     p = d.parts,
     r = d.rates,
-    v = Math.max(0, s.velocity.length()),
+    v = Math.max(0, s.trueAirspeed ?? s.velocity.length()),
     span = Math.sqrt(s.spec.wingArea * 3.5),
     length = span * 1.45;
   const response = damageResponse(s),

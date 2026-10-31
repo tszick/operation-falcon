@@ -104,7 +104,7 @@ body.flying #flight-help {
   height: 100%;
   display: grid;
   grid-template-columns: 30% minmax(0, 1fr);
-  grid-template-rows: 15px minmax(0, 1fr);
+  grid-template-rows: 28px minmax(0, 1fr);
   gap: 0 5px;
   color: #9bd47e;
 }
@@ -112,16 +112,23 @@ body.flying #flight-help {
   grid-column: 1/-1;
   grid-row: 1;
   display: flex;
-  justify-content: space-between;
-  font: 10px/1 var(--mono);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  font: 11px/1.1 var(--mono);
   letter-spacing: 0;
   padding-right: 32px;
+  min-width: 0;
 }
 #cockpit .stores-heading span {
+  white-space: nowrap;
   color: #baf37d;
 }
 #cockpit .stores-heading small {
   font: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 #cockpit #stores-display svg {
   grid-row: 2;
@@ -152,6 +159,12 @@ body.flying #flight-help {
   grid-auto-rows: minmax(0, 1fr);
   gap: 1px;
   min-height: 0;
+}
+#cockpit .store-options > small {
+  font: 11px/1.2 var(--mono);
+  align-self: start;
+  margin-top: 3px;
+  white-space: nowrap;
 }
 #cockpit .store-option {
   font: 11px/1.05 var(--mono);
@@ -256,6 +269,8 @@ body.flying #flight-help {
   font-size: 10px;
 }
 #cockpit #fuel-range {
+  white-space: nowrap;
+  flex-shrink: 0;
   font: inherit;
 }
 #cockpit #fuel-quantity {
@@ -1360,6 +1375,7 @@ body.flying #cockpit-annunciator {
   flex: 0 0 auto;
 }
 #cockpit .mission-goal-group li > span:last-child {
+  flex: 1;
   min-width: 0;
 }
 #cockpit #mission-card.dense-objectives {

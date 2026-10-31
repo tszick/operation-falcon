@@ -25,7 +25,7 @@
       const [
         { Renderer },
         { FlightInstrumentLayer },
-        { aircraft, missions },
+        { aircraft, experimentalAircraft, missions },
         { createTargets, Targeting },
         { createMissionAircraft },
         { Weapons },
@@ -50,8 +50,17 @@
       const params = new URLSearchParams(location.search),
         spec = missions.find((m) => m.id === (params.get('mission') || 'landing')),
         plane =
-          aircraft.find(
-            (a) => a.id === (params.get('aircraft') || (spec.naval ? 'fa18' : 'f16')),
+          [...aircraft, ...experimentalAircraft].find(
+            (a) =>
+              a.id ===
+              (params.get('aircraft') ||
+                (spec.objective === 'flight-test'
+                  ? spec.side === 'east'
+                    ? 'su47'
+                    : 'x29'
+                  : spec.naval
+                    ? 'fa18'
+                    : 'f16')),
           ) || aircraft[0];
       if (!spec) throw new Error('Unknown mission fixture');
       const targets = createTargets(spec, plane, { rng: () => 0.3 }),
@@ -170,6 +179,23 @@
       function frame(time = performance.now()) {
         try {
           const start = performance.now();
+          if (params.get('scene') === 'missile-close' && renderer.f) {
+            const position = renderer.camera
+              .clone()
+              .add(renderer.f.clone().scale(2.1))
+              .add(renderer.r.clone().scale(0.1))
+              .add(renderer.u.clone().scale(0.1));
+            weapons.projectiles = [
+              {
+                id: 'close-visual',
+                type: 'aam',
+                position,
+                velocity: renderer.r.clone().scale(500).add(renderer.f.clone().scale(800)),
+                profile: { burn: 6 },
+                age: 1,
+              },
+            ];
+          }
           if (params.has('turn')) {
             const turn = frames / 60;
             state.orientation = TurnQuat.euler(

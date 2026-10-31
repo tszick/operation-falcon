@@ -1,9 +1,11 @@
+import { battlefieldObjectives } from './battlefieldScenario.js';
 import { mirroredObjectives } from './sideObjectives.js';
 import { recoveryComplete } from './navalOps.js';
 import { ironVeilObjectives } from './ironVeil.js';
 import { isHostile } from './unitTypes.js';
 const row = (id, text, done, optional = false) => ({ id, text, done: !!done, optional });
 export function battleObjectives(m, s, targets, w) {
+  if (m.spec.battlefield) return battlefieldObjectives(m, s, targets, w);
   if (m.spec.mirrored) return mirroredObjectives(m, s, targets, w);
   const by = (id) => targets.find((t) => t.id === id),
     base = by('BASE'),

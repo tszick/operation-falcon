@@ -1,3 +1,5 @@
+import { missionWeather, windAt } from './flightEnvironment.js';
+import { selectRecoveryAirfield } from './recoveryAirfields.js';
 import { initialiseNaval } from './navalOps.js';
 import { trainingAircraft, isPracticeMission, unarmedPractice } from './trainingAircraft.js';
 import { superiorityPlan } from './airSuperiority.js';
@@ -30,7 +32,15 @@ export function createMissionAircraft(
   else if (spec.transport && !['escort-transport', 'iron-veil'].includes(mission.objective))
     throw new Error('Szállító csak szállítós küldetésen választható.');
   else if (spec.trainingOnly) throw new Error('A kiképzőgép csak gyakorlópályán használható.');
+  if (
+    spec.experimentalOnly &&
+    (mission.objective !== 'flight-test' || spec.faction !== mission.side)
+  )
+    throw new Error('Ez a kísérleti gép csak a saját berepülési programjában választható.');
+  if (mission.objective === 'flight-test' && !spec.experimentalOnly)
+    throw new Error('A berepüléshez kísérleti repülőgép szükséges.');
   const s = createAircraft(spec);
+  s.weather = missionWeather(mission);
   s.practice = isPracticeMission(mission);
   if (spec.transport) s.radioCallSign = { flight: 'Nomad', number: 1 };
   if (unarmedPractice(mission)) {
@@ -63,10 +73,16 @@ export function createMissionAircraft(
     const v = start.speed,
       air = atmosphere(s.position.y),
       q = 0.5 * air.density * v * v;
-    const alpha = clamp(((mass(s) * 9.81) / (q * spec.wingArea) - 0.22) / spec.clSlope, 0, 0.16);
+    const alpha = clamp(
+      ((mass(s) * 9.81) / (q * spec.wingArea) - (spec.liftZero ?? 0.22)) / spec.clSlope,
+      spec.liftZero ? -0.12 : 0,
+      0.16,
+    );
     s.orientation = Quat.euler(start.heading, alpha, 0);
     s.velocity = new Vec3(Math.sin(start.heading) * v, 0, Math.cos(start.heading) * v);
     s.throttle = 0.7;
+    s.engineSpool = s.throttle;
+    s.velocity.add(windAt(s.weather, s.position, 0, terrainHeight(s.position.x, s.position.z)));
     s.speed = v;
     s.ias = v * Math.sqrt(air.density / 1.225);
     s.mach = v / air.soundSpeed;
@@ -91,8 +107,9 @@ export function createMissionAircraft(
       const p = canyonPoint(-1600);
       s.position = new Vec3(p.x, terrainHeight(p.x, p.z) + 220, p.z);
     }
-    const formation =
-      mission.objective === 'air-superiority'
+    const formation = mission.battlefield
+      ? terrainWorld.battlefieldStart
+      : mission.objective === 'air-superiority'
         ? terrainWorld.airBattle?.playerStart || superiorityPlan(spec).playerStart
         : null;
     if (formation) {
@@ -101,20 +118,32 @@ export function createMissionAircraft(
       s.formationSlot = formation.slot;
       s.formationRole = formation.role;
       s.radioCallSign = formation.radioCallSign;
+      s.fallbackRecoveryExit = formation.withdrawalPoint?.clone();
     }
     const heading = formation?.heading || 0,
       air = atmosphere(s.position.y),
       v = 165;
     s.velocity = new Vec3(Math.sin(heading) * v, 0, Math.cos(heading) * v);
     const q = 0.5 * air.density * v * v,
-      alpha = clamp(((mass(s) * 9.81) / (q * spec.wingArea) - 0.22) / spec.clSlope, 0, 0.2);
+      alpha = clamp(
+        ((mass(s) * 9.81) / (q * spec.wingArea) - (spec.liftZero ?? 0.22)) / spec.clSlope,
+        spec.liftZero ? -0.12 : 0,
+        0.2,
+      );
     s.orientation = Quat.euler(heading, alpha, 0);
     s.throttle = 0.65;
+    s.engineSpool = s.throttle;
+    s.velocity.add(windAt(s.weather, s.position, 0, terrainHeight(s.position.x, s.position.z)));
     s.speed = v;
     s.ias = v * Math.sqrt(air.density / 1.225);
     s.mach = v / air.soundSpeed;
     s.agl = s.position.y - terrainHeight(s.position.x, s.position.z);
     s.previousPosition = s.position.clone();
+    if (mission.battlefield) {
+      s.coalition = mission.side || 'west';
+      s.multipleAirfields = true;
+      selectRecoveryAirfield(s, terrainWorld.recoverySites || []);
+    }
     return s;
   }
   if (mission.naval) return initialiseNaval(s);
@@ -136,7 +165,11 @@ export function createMissionAircraft(
     q = 0.5 * air.density * v * v,
     m = mass(s),
     cl = (m * 9.81 * Math.cos(glide)) / (q * spec.wingArea),
-    alpha = clamp((cl - 0.22) / spec.clSlope, 0, spec.stallAlpha * 0.85);
+    alpha = clamp(
+      (cl - (spec.liftZero ?? 0.22)) / spec.clSlope,
+      spec.liftZero ? -0.12 : 0,
+      spec.stallAlpha * 0.85,
+    );
   s.position = new Vec3(0, height, -runway.halfLength - landingStart.distance);
   s.previousPosition = s.position.clone();
   s.velocity = new Vec3(0, -v * Math.sin(glide), v * Math.cos(glide));
@@ -151,6 +184,8 @@ export function createMissionAircraft(
     0.08,
     0.75,
   );
+  s.engineSpool = s.throttle;
+  s.velocity.add(windAt(s.weather, s.position, 0, terrainHeight(s.position.x, s.position.z)));
   s.speed = v;
   s.ias = ias;
   s.mach = v / air.soundSpeed;
@@ -167,8 +202,12 @@ export function serviceAircraft(s) {
   const naval = !!s.airfield?.carrier,
     fresh = createAircraft(s.spec),
     keep = {
+      weather: s.weather,
       airfield: s.airfield,
+      coalition: s.coalition,
+      multipleAirfields: s.multipleAirfields,
       recoveryExit: s.recoveryExit,
+      fallbackRecoveryExit: s.fallbackRecoveryExit,
       practice: s.practice,
       training: s.training,
       elapsed: s.elapsed,

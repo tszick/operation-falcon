@@ -1,4 +1,6 @@
-import { carrierAirfield } from './navalData.js';
+import { windAt, windCorrectedHeading } from './flightEnvironment.js';
+import { thrustFactor } from './flightModel.js';
+import { airfieldForTarget } from './recoveryAirfields.js';
 import { initialiseNaval, requestCatapult } from './navalOps.js';
 import { Vec3, Quat, attitude, clamp, DEG } from './math.js';
 import { createAircraft } from './physics.js';
@@ -6,7 +8,7 @@ import { aircraftFlightSpec } from './aiAircraftSpec.js';
 import { mass, atmosphere, approachSpeeds } from './performance.js';
 import { damageResponse } from './damage.js';
 import { teamOf } from './unitTypes.js';
-import { terrainHeight, runway } from './terrain.js';
+import { terrainHeight, runway, terrainWorld } from './terrain.js';
 import { beginRetreat, evasionFlightInput } from './aiDefense.js';
 export const aiServiceSeconds = 60;
 const terminal = (p, w) => p.dying || p.crashed || w.missionEnded;
@@ -24,12 +26,16 @@ function flightFor(t, u) {
   s.flaps = false;
   s.flapPosition = 0;
   s.throttle = 0.65;
+  s.engineSpool = t.navigationEngine?.engineSpool ?? s.throttle;
+  s.weather = terrainWorld.weather;
+  s.elapsed = t.environmentClock || 0;
   s.fuel = s.spec.fuelCapacity * 0.5;
   s.ammo = { gun: u.rounds, aam: u.missiles, agm: u.agm, bomb: u.bombs };
   const q = 0.5 * air.density * v * v,
     alpha = clamp(
-      ((mass(s) * 9.81) / Math.max(1, q * s.spec.wingArea) - 0.22) / s.spec.clSlope,
-      0,
+      ((mass(s) * 9.81) / Math.max(1, q * s.spec.wingArea) - (s.spec.liftZero ?? 0.22)) /
+        s.spec.clSlope,
+      s.spec.liftZero ? -0.12 : 0,
       0.15,
     );
   s.orientation = Quat.euler(
@@ -73,7 +79,8 @@ export function updateAIResupply(p, targets, w, combat, dt) {
       bases = targets.filter(
         (a) =>
           (a.type === 'airbase' ||
-            (a.type === 'carrier' && t.flight?.spec?.carrierCapable) ||
+            (a.type === 'carrier' &&
+              (t.flight?.spec || aircraftFlightSpec(t.aircraftId)).carrierCapable) ||
             (a.type === 'carrier' && t.aircraftId === 'fa18')) &&
           a.alive &&
           teamOf(a, p) === teamOf(t, p),
@@ -100,6 +107,11 @@ export function updateAIResupply(p, targets, w, combat, dt) {
               ? u.initialBombs > 0 && u.bombs === 0
               : u.initialMissiles > 0 && u.missiles === 0;
       const lowFuel = t.flight && t.flight.fuel < t.flight.spec.fuelCapacity * 0.12;
+      if (t.physicalRecovery && !home && (empty || lowFuel)) {
+        flightFor(t, u);
+        beginRetreat(t, targets, p, w);
+        continue;
+      }
       if (!(damage && home) && !empty && !lowFuel) continue;
       if (
         !damage &&
@@ -128,7 +140,7 @@ export function updateAIResupply(p, targets, w, combat, dt) {
       t.aiRole = 'resupply';
       t.aiTargetId = null;
       if (home?.type === 'carrier') {
-        t.flight.airfield = carrierAirfield();
+        t.flight.airfield = airfieldForTarget(home);
         t.flight.naval = { nozzle: 0, hook: true, arrested: false };
       } else if (home) {
         t.flight.airfield = {
@@ -151,6 +163,22 @@ export function updateAIResupply(p, targets, w, combat, dt) {
         t.retired = true;
         t.exited = true;
         t.alive = false;
+        continue;
+      }
+      const alternative = bases.find((a) => a.id !== service.homeId);
+      if (alternative) {
+        service.homeId = alternative.id;
+        service.stage = 'holding';
+        t.flight.airfield = airfieldForTarget(alternative);
+        if (alternative.type === 'carrier')
+          t.flight.naval ??= { nozzle: 0, hook: true, arrested: false };
+        emit(w, t, 'ai-service-rerouted');
+        continue;
+      }
+      if (t.physicalRecovery) {
+        delete t.service;
+        delete t.retreat;
+        beginRetreat(t, targets, p, w);
         continue;
       }
       service.homeId = null;
@@ -210,6 +238,7 @@ export function updateAIResupply(p, targets, w, combat, dt) {
       s.previousPosition = position.clone();
       s.orientation = orientation;
       s.airfield = old.airfield;
+      s.weather = old.weather;
       Object.assign(u, {
         rounds: u.initialRounds,
         missiles: u.initialMissiles,
@@ -245,6 +274,8 @@ export function updateAIResupply(p, targets, w, combat, dt) {
         service.stage = 'inbound';
         s.onGround = false;
         s.airborne = true;
+        s.engineSpool = 0.65;
+        s.throttle = 0.65;
         s.gear = false;
         s.flaps = false;
         s.flapPosition = 0;
@@ -275,7 +306,7 @@ export function updateAIResupply(p, targets, w, combat, dt) {
 }
 function control(s, goal, { speed = 160, vertical = null, bankLimit = 25 } = {}) {
   const a = attitude(s.orientation),
-    v = Math.max(40, s.velocity.length()),
+    v = Math.max(40, s.trueAirspeed ?? s.velocity.length()),
     air = atmosphere(s.position.y),
     q = 0.5 * air.density * v * v,
     r = damageResponse(s),
@@ -283,18 +314,19 @@ function control(s, goal, { speed = 160, vertical = null, bankLimit = 25 } = {})
       (mass(s) * 9.81) /
       Math.max(1, q * s.spec.wingArea * r.lift * Math.max(0.6, Math.cos(a.bank))),
     alpha = clamp(
-      (cl - 0.22 - (s.flapPosition || 0) * 0.45) / s.spec.clSlope,
+      (cl - (s.spec.liftZero ?? 0.22) - (s.flapPosition || 0) * 0.45) / s.spec.clSlope,
       -0.1,
       s.spec.stallAlpha * 0.8,
     ),
-    h = Math.atan2(goal.x - s.position.x, goal.z - s.position.z),
+    wind = windAt(s.weather, s.position, s.elapsed, terrainHeight(s.position.x, s.position.z)),
+    h = windCorrectedHeading(s.position, goal, v, wind),
     error = Math.atan2(Math.sin(h - a.heading), Math.cos(h - a.heading)),
     bank = clamp(error * 0.9, -bankLimit * DEG, bankLimit * DEG),
     vy = vertical ?? clamp((goal.y - s.position.y) * 0.06, -15, 20),
     pitch = alpha + Math.atan2(vy, v),
     rates = s.condition.rates,
     authority = clamp(q / 2800, 0.06, 1),
-    available = s.spec.thrust * clamp(air.density / 1.225, 0.23, 1) * r.engine * 0.9,
+    available = s.spec.thrust * thrustFactor(s.spec, air, v / air.soundSpeed) * r.engine * 0.9,
     drag =
       s.forces?.dragN ||
       q *

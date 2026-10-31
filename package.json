@@ -1,9 +1,9 @@
 {
   "name": "vector-flight",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Böngészős vadászrepülő-szimulátor",
+  "description": "B\u00c3\u00b6ng\u00c3\u00a9sz\u00c5\u2018s vad\u00c3\u00a1szrep\u00c3\u00bcl\u00c5\u2018-szimul\u00c3\u00a1tor",
   "scripts": {
     "start": "node server.mjs",
     "test": "node --test",
@@ -27,6 +27,9 @@
     "prettier": "3.9.10"
   },
   "dependencies": {
-    "i18next": "26.5.4"
+    "i18next": "26.5.11"
+  },
+  "overrides": {
+    "minimatch": "11.0.1"
   }
 }

@@ -56,7 +56,7 @@ test('player briefing offers only usable Western aircraft, with recommended type
     assert.equal(new Set(choices.map((a) => a.id)).size, choices.length);
     for (let i = 0; i < choices.length; i++) {
       const spec = choices[i];
-      assert.equal(spec.faction, 'west');
+      assert.equal(spec.faction, mission.side || 'west');
       assert.notEqual(suitability(spec, mission), 'bad');
       if (mission.naval) assert.ok(spec.carrierCapable);
       if (i)

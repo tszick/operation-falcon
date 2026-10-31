@@ -38,7 +38,8 @@ export const trainingAircraft = {
 };
 export const isPracticeMission = (m) =>
   m.group === 'practice' || ['landing', 'canyon', 'civil', 'practice-bombing'].includes(m.id);
-export const unarmedPractice = (m) => isPracticeMission(m) && m.objective !== 'practice-bombing';
+export const unarmedPractice = (m) =>
+  m.objective === 'flight-test' || (isPracticeMission(m) && m.objective !== 'practice-bombing');
 // JP-5 usable fuel: 2904 lb, rounded to kg (CNATRA engineering training text).
 export const trainerReferences = [
   [

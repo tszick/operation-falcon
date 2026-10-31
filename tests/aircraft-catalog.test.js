@@ -26,7 +26,7 @@ test('three-card pages preserve coalition boundaries, order and incomplete final
   for (const mission of missions) {
     const choices = catalogueAircraft(mission),
       pages = cataloguePages(choices);
-    assert.equal(pages[0].side, 'west');
+    assert.equal(pages[0].side, mission.side || 'west');
     assert.deepEqual(
       pages.flatMap((p) => p.aircraft).map((a) => a.id),
       choices.map((a) => a.id),
@@ -37,7 +37,10 @@ test('three-card pages preserve coalition boundaries, order and incomplete final
     }
     if (!canChooseSide(mission)) {
       assert.equal(pages.length, 1);
-      assert.equal(pages[0].aircraft[0].id, 't45');
+      if (mission.objective === 'flight-test') {
+        assert.equal(choices.length, 3);
+        assert.ok(choices.every((a) => a.experimentalOnly && a.faction === mission.side));
+      } else assert.equal(pages[0].aircraft[0].id, 't45');
       continue;
     }
     const ranks = { soviet: 0, 'russia-modern': 1, 'china-modern': 2 };

@@ -1,3 +1,4 @@
+import { missileAppearance } from './missileVisuals.js';
 import { Vec3, forward, right, up, clamp } from './math.js';
 import { terrainHeight } from './terrain.js';
 const project = (r, p) => (r.projectWorld ? r.projectWorld(p) : r.project(p));
@@ -31,6 +32,7 @@ export function renderWeapons(renderer, s, weapons) {
     c = r.ctx;
   // Detached smoke remains briefly after impact and drifts instead of following the missile.
   for (const trail of weapons.trails || []) {
+    if (r.local && (r.local(trail.from).z < 6 || r.local(trail.to).z < 6)) continue;
     const age = trail.maxLife - trail.life,
       drift = new Vec3(age * 0.8, age * 0.6, 0);
     c.strokeStyle = `rgba(170,183,164,${0.28 * (trail.life / trail.maxLife)})`;
@@ -71,29 +73,32 @@ export function renderWeapons(renderer, s, weapons) {
       r.line(tail, p.position);
       c.stroke();
     } else if (p.type === 'aam' || p.type === 'agm') {
-      c.strokeStyle = '#d9e2cc';
-      c.lineWidth = 1.1;
-      c.beginPath();
-      r.line(
-        p.position.clone().sub(direction.clone().scale(3)),
-        p.position.clone().add(direction.clone().scale(1.5)),
-      );
-      c.stroke();
-      if (p.age < (p.profile?.burn || 6)) {
-        const tail = p.position.clone().sub(direction.clone().scale(3)),
-          end = tail.clone().sub(direction.clone().scale(9 + Math.sin(p.age * 130) * 2));
-        c.strokeStyle = 'rgba(255,142,46,.65)';
-        c.lineWidth = 3;
+      const appearance = missileAppearance(r, p);
+      if (!appearance) continue;
+      const { point, axis, bodyPixels, flamePixels, flame, glowPixels } = appearance;
+      const line = (a, b, color, width) => {
+        c.strokeStyle = color;
+        c.lineWidth = width;
         c.beginPath();
-        r.line(tail, end);
+        c.moveTo(point.x + axis.x * a, point.y + axis.y * a);
+        c.lineTo(point.x + axis.x * b, point.y + axis.y * b);
         c.stroke();
-        c.strokeStyle = '#fff6d2';
-        c.lineWidth = 1;
-        c.beginPath();
-        r.line(tail, end.clone().add(direction.clone().scale(3)));
-        c.stroke();
-        const screen = project(r, tail);
-        if (screen) glow(c, screen, clamp((5 * r.focal) / screen.depth, 1, 18), 0.5);
+      };
+      line(-bodyPixels * 0.33, bodyPixels * 0.67, '#d9e2cc', 1.1);
+      if (flame > 0) {
+        line(
+          bodyPixels * 0.67,
+          bodyPixels * 0.67 + flamePixels,
+          'rgba(255,142,46,' + flame * 0.65 + ')',
+          2.5,
+        );
+        line(
+          bodyPixels * 0.67,
+          bodyPixels * 0.67 + flamePixels * 0.65,
+          'rgba(255,246,210,' + flame + ')',
+          1,
+        );
+        glow(c, point, glowPixels, flame * 0.5);
       }
     } else {
       c.strokeStyle = '#bdc4ac';

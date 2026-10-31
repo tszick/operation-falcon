@@ -1,4 +1,5 @@
 import { drawingContext } from './createBackend.js';
+import { ellipsizeText } from './instrumentText.js';
 // DOM remains the semantic/input/layout model. Only WebGPU paints the flight instruments.
 const imageCache = new Map();
 let imageRevision = 0;
@@ -191,14 +192,18 @@ function paintText(context, element, node, matrix, style) {
       } else line += (line ? ' ' : '') + word;
     }
   if (line) lines.push(line);
-  for (const line of lines) {
+  for (const rawLine of lines) {
+    const line =
+      style.textOverflow === 'ellipsis'
+        ? ellipsizeText(rawLine, width, (text) => context.measureText(text).width)
+        : rawLine;
     const textWidth = context.measureText(line).width;
     let tx = x;
     if (style.textAlign === 'center') tx += Math.max(0, (width - textWidth) / 2);
     else if (style.textAlign === 'right') tx += Math.max(0, width - textWidth);
     context.save();
     context.setProjectiveTransform(matrix);
-    context.fillText(line, tx, y, style.textOverflow === 'ellipsis' ? width : undefined);
+    context.fillText(line, tx, y);
     context.restore();
     y += lineHeight;
   }
