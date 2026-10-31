@@ -48,13 +48,28 @@ export function battleObjectives(m, s, targets, w) {
     failure = report.failure;
   } else if (m.spec.objective === 'bridge-block') {
     const bridge = by('BRIDGE'),
-      convoy = by('CONVOY');
+      convoy = by('CONVOY'),
+      command = by('DRONE-COMMAND'),
+      incoming = targets.filter(
+        (t) =>
+          t.type === 'attack-drone' && t.team === 'enemy' && t.aiTargetId === 'BASE' && t.alive,
+      );
+    if (dead(base)) failure = 'A dróntámadás megsemmisítette a saját repülőteret.';
     if (convoy?.crossedBridge && !m.bridgeSecured)
       failure = 'A konvoj átjutott a hídon. Az átkelőt előbb kellett volna lerombolni.';
     if (dead(bridge) && !convoy?.crossedBridge) m.bridgeSecured = true;
-    complete = !!m.bridgeSecured;
+    complete = !!m.bridgeSecured && dead(command) && !!base?.alive && !incoming.length;
     rows = [
-      row('bridge', 'Híd lezárva az átkelés előtt', complete),
+      row('bridge', 'Híd lezárva az átkelés előtt', !!m.bridgeSecured),
+      row('drone-command', 'Drónirányító megsemmisítve', dead(command)),
+      row(
+        'base',
+        `Saját reptér: ${Math.round(((base?.health || 0) / (base?.maxHealth || 1)) * 100)}%`,
+        base?.alive,
+      ),
+      ...(incoming.length ? [row('drones', `Beérkező drónok: ${incoming.length}`, false)] : []),
+      row('mobile-jammer', 'Mobil jelzavaró megsemmisítve', dead(by('MOBILE-JAMMER')), true),
+      row('mobile-sam', 'Mobil rakétavédelem megsemmisítve', dead(by('MOBILE-SAM')), true),
       row('convoy', 'Konvoj megsemmisítve', dead(convoy), true),
     ];
   } else if (m.spec.objective === 'defend-base') {

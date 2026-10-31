@@ -1,5 +1,6 @@
 import { unitDefinition } from './unitTypes.js';
 export const threatTypes = {
+  drone: { name: 'Csapásmérő drónok', path: 'M2 6H14M5 3L8 6L11 3M8 6V14M5 12H11' },
   ballistic: { name: 'Interkontinentális csapás', path: 'M3 14L8 2L13 14M5 10H11M8 2V12' },
   bomb: { name: 'Bombavetés', path: 'M6 3L4 1M10 3L12 1M6 3H10V10L8 14L6 10ZM5 8H11' },
   jammer: {

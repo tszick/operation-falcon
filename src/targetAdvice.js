@@ -4,13 +4,14 @@ export function advisedTarget(s, targets, aim, mission) {
   const visible = sensorTargets(s, targets).filter((t) => t.alive),
     selected = visible.find((t) => t.id === aim?.id);
   if (selected) return selected;
-  visible.sort((a, b) => a.position.distance(s.position) - b.position.distance(s.position));
+  const objectives = visible.filter((t) => !t.incidental);
+  objectives.sort((a, b) => a.position.distance(s.position) - b.position.distance(s.position));
   return (
     (mission.battlefield ||
     ['escort-transport', 'defend-base', 'defend-city', 'air-superiority'].includes(
       mission.objective,
     )
-      ? visible.find((t) => t.kind === 'air')
-      : null) || visible[0]
+      ? objectives.find((t) => t.kind === 'air')
+      : null) || objectives[0]
   );
 }

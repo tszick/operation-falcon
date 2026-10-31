@@ -1,3 +1,7 @@
+import { TerrainBuildQueue } from './terrainBuildQueue.js';
+import { packedTerrainBuffers } from './rendering/shared/terrainData.js';
+import { groundVehiclePatches } from './vehicleGrounding.js';
+import { refinedTerrainTriangles } from './terrainRefinement.js';
 import { oceanSurface } from './oceanEnvironment.js';
 import { terrainTint } from './surfaceStyle.js';
 import { Vec3, clamp } from './math.js';
@@ -28,7 +32,12 @@ export function terrainAxis(center) {
 }
 let sampleRevision = -1,
   sampleCache = new Map();
-export function buildTerrainSurface(cx, cz, heightAt = terrainHeight) {
+export function buildTerrainSurface(
+  cx,
+  cz,
+  heightAt = terrainHeight,
+  { vehiclePatches = [] } = {},
+) {
   if (terrainWorld.ocean && heightAt === terrainHeight)
     return oceanSurface(terrainWorld.islands || [], cx, cz);
   const xs = terrainAxis(cx),
@@ -95,6 +104,10 @@ export function buildTerrainSurface(cx, cz, heightAt = terrainHeight) {
       color: `rgb(${Math.round(12 + light * 8)},${Math.round(27 + light * 18)},${Math.round(20 + light * 10)})`,
     });
   };
+  if (vehiclePatches.length) {
+    for (const triangle of refinedTerrainTriangles(xs, zs, point, vehiclePatches)) add(triangle);
+    return faces;
+  }
   for (let z = 0; z < points.length - 1; z++)
     for (let x = 0; x < xs.length - 1; x++) {
       const a = points[z][x],
@@ -131,16 +144,94 @@ export function terrainGridCenter(camera, previous = null) {
     revision: terrainWorld.revision,
   };
 }
-export function renderTerrainSurface(r) {
+const workerQueues = new WeakMap();
+function terrainQueue(r) {
+  if (workerQueues.has(r)) return workerQueues.get(r);
+  let queue = null;
+  if (typeof Worker !== 'undefined') {
+    try {
+      queue = new TerrainBuildQueue(
+        new Worker(new URL('./terrainWorker.js', import.meta.url), { type: 'module' }),
+      );
+    } catch {
+      /* Synchronous rendering remains available if workers are unavailable. */
+    }
+  }
+  workerQueues.set(r, queue);
+  return queue;
+}
+export function terrainSnapshot() {
+  const world = {};
+  for (const key of [
+    'revision',
+    'noAirfield',
+    'ocean',
+    'islands',
+    'canyon',
+    'peaks',
+    'road',
+    'river',
+    'site',
+    'bridge',
+    'bridges',
+    'cityRoads',
+    'bridgeRevision',
+    'airfields',
+  ])
+    if (terrainWorld[key] !== undefined) world[key] = terrainWorld[key];
+  return world;
+}
+export function renderTerrainSurface(r, targets = []) {
   const center = (r.terrainGridCenter = terrainGridCenter(r.camera, r.terrainGridCenter)),
     cx = center.x,
     cz = center.z,
-    key = `${terrainWorld.revision}:${cx}:${cz}`;
-  if (r.terrainSurfaceKey !== key) {
+    patches = terrainWorld.ocean ? [] : groundVehiclePatches(targets, cx, cz),
+    patchKey = patches.map((p) => `${p.x},${p.z},${p.radius}`).join(';'),
+    key = `${terrainWorld.revision}:${cx}:${cz}:${patchKey}:${r.surfaceLines !== false}`;
+  const start = performance.now(),
+    queue = r.gpuModels ? terrainQueue(r) : null;
+  r.terrainRebuilt = false;
+  const buildSync = () => {
+    r.terrainSurface = buildTerrainSurface(cx, cz, terrainHeight, { vehiclePatches: patches });
+    r.terrainBuffers = r.gpuModels
+      ? packedTerrainBuffers(r.terrainSurface, { wire: r.surfaceLines !== false })
+      : null;
     r.terrainSurfaceKey = key;
-    r.terrainSurface = buildTerrainSurface(cx, cz);
+    r.terrainRevision = terrainWorld.revision;
+    r.terrainDeferred = false;
+    r.terrainRebuilt = true;
+  };
+  // The first frame of a mission is synchronous; never display another mission's terrain.
+  if (!r.terrainSurface || r.terrainRevision !== terrainWorld.revision) buildSync();
+  else if (r.terrainSurfaceKey !== key) {
+    if (queue && !queue.failed) {
+      queue.request({
+        key,
+        revision: terrainWorld.revision,
+        cx,
+        cz,
+        patches,
+        wire: r.surfaceLines !== false,
+        world: terrainSnapshot(),
+      });
+      const ready = queue.take(terrainWorld.revision);
+      if (ready) {
+        r.terrainBuffers = ready;
+        r.terrainSurface = [];
+        r.terrainSurfaceKey = ready.key;
+        r.terrainDeferred = true;
+        r.terrainWorkerMs = ready.buildMs;
+        r.terrainRebuilt = true;
+      }
+    } else buildSync();
   }
-  if (r.gpuModels?.renderTerrain(r)) return;
+  if (r.gpuModels?.renderTerrain(r)) {
+    r.terrainFrameMs = performance.now() - start;
+    return;
+  }
+  // Reconstruct Vec3 faces only for the CPU fallback, not for the normal GPU path.
+  if (r.terrainDeferred || r.terrainSurfaceKey !== key) buildSync();
+  r.terrainFrameMs = performance.now() - start;
   if (r.debugMetrics)
     r.terrainMetrics = { backend: 'Canvas2D', triangles: r.terrainSurface.length };
   const faces = [],

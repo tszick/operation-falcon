@@ -1,9 +1,10 @@
 import { guidedFlightInput } from './aiDefense.js';
 import { Vec3, clamp } from './math.js';
-import { convoyPose } from './terrain.js';
+import { convoyPose, stopAtBrokenBridge } from './terrain.js';
 export function moveConvoy(t, targets, dt) {
   const direction = t.routeDirection || 1,
-    previous = t.position.clone();
+    previous = t.position.clone(),
+    routeStart = t.routeDistance || 0;
   if (t.routeMode === 'bridge') {
     const bridge = targets.find((u) => u.id === t.bridgeId),
       stop = -(bridge?.radius || 100) - 100;
@@ -24,6 +25,9 @@ export function moveConvoy(t, targets, dt) {
       t.routeDirection = -direction;
     }
   }
+  const roadEnd = stopAtBrokenBridge(routeStart, t.routeDistance);
+  if (roadEnd !== t.routeDistance) t.stopped = true;
+  t.routeDistance = roadEnd;
   Object.assign(t, convoyPose(t));
   t.velocity = t.position
     .clone()

@@ -146,3 +146,16 @@ export class Surface {
     this.context?.unconfigure();
   }
 }
+
+// Keep buffer capacity across terrain rebuilds instead of destroying three GPU allocations.
+export function updateBuffer(device, previous, values, usage) {
+  const needed = Math.max(4, values.byteLength),
+    size = 2 ** Math.ceil(Math.log2(needed));
+  let buffer = previous;
+  if (!buffer || buffer.size < needed) {
+    buffer?.destroy();
+    buffer = device.createBuffer({ size, usage });
+  }
+  if (values.byteLength) device.queue.writeBuffer(buffer, 0, values);
+  return buffer;
+}

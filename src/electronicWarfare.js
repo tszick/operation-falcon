@@ -1,7 +1,8 @@
 // Combined radar/GNSS denial is an explicit game rule, not a universal EW model.
 import { teamOf } from './unitTypes.js';
 export const jammerMissions = new Set(['airbase']);
-export const activeJammers = (targets) => targets.filter((t) => t.alive && t.type === 'jammer');
+export const activeJammers = (targets) =>
+  targets.filter((t) => t.alive && !t.exited && ['jammer', 'mobile-jammer'].includes(t.type));
 export function navigationJammed(s, targets) {
   return activeJammers(targets).some(
     (t) =>

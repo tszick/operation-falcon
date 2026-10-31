@@ -14,6 +14,46 @@ const guide = (id, name, description, steps, watch, pitfalls, related = [], sect
 });
 export const pilotEntries = [
   guide(
+    'mobile-threats',
+    'Mobil légvédelem és drónok',
+    'A konvojt mozgó légvédelem és jelzavaró védi, miközben egy külön drónindító a repteret fenyegeti.',
+    [
+      ['HÍD', 'Az átkelőt időben rombold le. A konvoj pusztítása továbbra is opcionális.'],
+      [
+        'DRÓNIRÁNYÍTÓ',
+        'A kocsit korán keresd meg és semmisítsd meg. A már felszállt drónokat külön kell elfognod; a kocsi pusztulása nem tünteti el őket.',
+      ],
+      [
+        'DRÓNELFOGÁS',
+        'A drón légi cél: levegő–levegő rakétát vagy rövid gépágyúsorozatot használj. Lassú és kicsi; nagy sebességnél könnyen túlfutsz rajta.',
+      ],
+      [
+        'ZAVARÓ ÉS RAKÉTÁK',
+        'A mobil zavaró 3 km-en belül tiltja a befogást. A mobil SAM négy, 6 km-es névleges lőtávú IR-rakétával védekezik. Infracsapda és kitérő manőver segíthet.',
+      ],
+      [
+        'HAZATÉRÉS',
+        'A reptér maradjon életben, a drónindító és a még közeledő drónok legyenek leküzdve, majd szállj le.',
+      ],
+    ],
+    ['A két aktív drón az indítókocsi korlátja; nyolc darabos készletéből újabb raj is indulhat.'],
+    [
+      'A drónnak nincs légi támadási képessége. A 40 pontos találati sebzés játékbeli skála; nem valós robbanóanyag-egyenérték.',
+    ],
+    ['mobile-sam', 'mobile-jammer', 'drone-command', 'attack-drone', 'weapon-mobileSam'],
+    [
+      {
+        title: 'Nyilvános képességadatok',
+        paragraphs: [
+          'Verba/Gibka képességosztály: https://elements.rostec.ru/en/media/news/a-salvo-from-manpads-the-dzhigit-and-gibka-s-systems-part-i/',
+          'Switchblade 600 képességosztály: https://www.avinc.com/solution/switchblade-600/',
+          'A modellek általánosak, a 3 km-es zavarókör, a készletek, a sebzés és az előkészítési idő játékbeli hangolás.',
+        ],
+      },
+    ],
+  ),
+
+  guide(
     'aerial-refuelling',
     'Légiutántöltés · KC–135R',
     'Repülőtér nélküli bevetés az Arab-sivatag fölött. Nyugaton kevés üzemanyaggal tankolnod és harcolnod kell, keleten a tankert támadod.',

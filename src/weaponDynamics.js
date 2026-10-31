@@ -144,6 +144,16 @@ export const weaponProfiles = {
     activeRange: 12000,
     groundLaunchSpeed: 260,
   }),
+  mobileSam: missile('mobileSam', 6000, 12, 1800, 2.5, 0.072, 'ir', {
+    minRange: 250,
+    life: 25,
+    groundLaunchSpeed: 150,
+    terminalReserve: 160,
+    minGuideSpeed: 100,
+    damage: 26,
+    maxTargetAltitude: 3500,
+    minTargetAltitude: 10,
+  }),
   defense: missile('defense', 14000, 90, 10000, 3.4, 0.127),
   m61: gun('m61', 1030, 0.1, 0.02, 0.002, 1400),
   gau22: gun('gau22', 1040, 0.18, 0.025, 0.0018, 1600),
@@ -205,6 +215,7 @@ export function weaponProfile(spec, type) {
   return weaponProfiles[match[1]];
 }
 export function enemyProfile(t, type) {
+  if (t.type === 'mobile-sam' && type === 'aam') return weaponProfiles.mobileSam;
   if (['carrier', 'destroyer'].includes(t.type) && type === 'aam') return weaponProfiles.seaSparrow;
   if (t.type === 'carrier' && type === 'gun') return weaponProfiles.carrierGun;
   if (t.type === 'bomber' && type === 'gun')
@@ -462,7 +473,11 @@ export function guidedLaunchStatus(s, target, profile, { envelope = null } = {})
       effectiveRange: Math.min(rawReach.effectiveRange, s.spec.radarRange),
     },
     near = distance < profile.minRange,
-    far = distance > Math.min(profile.maxRange, reach.maxRange),
+    far =
+      distance > Math.min(profile.maxRange, reach.maxRange) ||
+      (profile.maxTargetAltitude !== undefined &&
+        ((target.agl ?? target.position.y) > profile.maxTargetAltitude ||
+          (target.agl ?? target.position.y) < profile.minTargetAltitude)),
     angle = offAxis > Math.min(profile.seeker, 50 * DEG),
     terrain = !clearWeaponLine(s.position, target.position),
     marginal = distance > reach.effectiveRange;

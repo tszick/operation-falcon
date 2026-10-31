@@ -1,3 +1,4 @@
+import { roadWet } from './terrainFeatures.js';
 import { drawingContext } from './rendering/createBackend.js';
 import { tr } from './i18n.js';
 import { transportExitPosition } from './transportRole.js';
@@ -6,7 +7,7 @@ import { getLandingRoute } from './landingRoute.js';
 import { navigationJammed } from './electronicWarfare.js';
 import { attitude, DEG } from './math.js';
 import { radarContacts } from './targeting.js';
-import { terrainHeight, runway, terrainWorld, pathPoint, pathCoordinates } from './terrain.js';
+import { terrainHeight, runway, terrainWorld, pathPoint } from './terrain.js';
 export const mapZoomLevel = (value) => ([1, 2, 3].includes(value) ? value : 1);
 export const nextMapZoom = (value) => (mapZoomLevel(value) % 3) + 1;
 export function tacticalMapState(
@@ -399,12 +400,7 @@ function renderMapRoutes(c, map) {
       let started = false;
       for (let t = -90000; t <= 90000; t += 300) {
         const p = pathPoint(path, t),
-          wet =
-            kind === 'road' &&
-            terrainWorld.river &&
-            !terrainWorld.bridge &&
-            Math.abs(pathCoordinates(terrainWorld.river, p.x, p.z).across) <
-              terrainWorld.river.width * 0.5 + 15;
+          wet = kind === 'road' && roadWet(path, t);
         if (
           (kind === 'road' &&
             (path.min !== undefined

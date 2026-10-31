@@ -1,3 +1,4 @@
+import { attachRoadBridges } from './bridgeCrossings.js';
 import { spawnRefuelling } from './aerialRefuelling.js';
 import { createBattlefieldTargets } from './battlefieldScenario.js';
 import { mirrorBattle } from './sideBattle.js';
@@ -16,11 +17,11 @@ import {
 import { unitDefinition } from './unitTypes.js';
 import { enemyAircraft } from './enemies.js';
 export function createBattleTargets(m, player, { rng = Math.random } = {}) {
-  if (m.battlefield) return createBattlefieldTargets(m, player, rng);
+  if (m.battlefield) return attachRoadBridges(createBattlefieldTargets(m, player, rng));
   const canonical = m.mirrored
     ? { ...player, faction: 'west', id: m.naval ? 'fa18' : 'f16' }
     : player;
-  const units = createCanonicalTargets(m, canonical, rng);
+  const units = attachRoadBridges(createCanonicalTargets(m, canonical, rng));
   if (m.mirrored) mirrorBattle(units, m, player);
   if (m.side) assignCoalitionRoster(units, player, rng);
   return units;
@@ -68,6 +69,7 @@ function createCanonicalTargets(m, player, rng) {
       radius: air ? 28 : 60,
       health: def.health || 100,
       maxHealth: def.health || 100,
+      ...(def.weapons.includes('jammer') ? { jamRadius: def.range } : {}),
       combatSeed: Math.floor(rng() * 0xffffffff),
       ...extra,
     };
@@ -249,7 +251,27 @@ function createCanonicalTargets(m, player, rng) {
       bridgeId: bridge.id,
     });
     Object.assign(convoy, convoyPose(convoy));
-    return [bridge, convoy, home];
+    add('MOBILE-JAMMER', 'mobile-jammer', 'enemy', convoy.position, {
+      followId: convoy.id,
+      followGap: 240,
+      routeDistance: convoy.routeDistance - 240,
+      routeDirection: 1,
+    });
+    add('MOBILE-SAM', 'mobile-sam', 'enemy', convoy.position, {
+      followId: convoy.id,
+      followGap: 140,
+      routeDistance: convoy.routeDistance - 140,
+      routeDirection: 1,
+    });
+    for (const t of units.filter((t) => t.followId)) Object.assign(t, convoyPose(t));
+    const droneStart = anchor.clone().normalize().scale(14000);
+    droneStart.y = 0;
+    add('DRONE-COMMAND', 'drone-command', 'enemy', droneStart, {
+      aiTargetId: home.id,
+      droneStock: 8,
+      droneSalvo: 2,
+    });
+    return units;
   }
   if (m.objective === 'defend-base') {
     const a = anchor.clone().normalize(),
@@ -491,6 +513,13 @@ function createCanonicalTargets(m, player, rng) {
       aiTargetId: home.id,
     });
     Object.assign(convoy, convoyPose(convoy));
+    const escort = add('ATTACK-MOBILE-SAM', 'mobile-sam', 'enemy', convoy.position, {
+      followId: convoy.id,
+      followGap: 180,
+      routeDirection: -1,
+      routeDistance: convoy.routeDistance + 180,
+    });
+    Object.assign(escort, convoyPose(escort));
     return units;
   }
   return units;

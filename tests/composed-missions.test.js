@@ -77,9 +77,9 @@ test('outside jamming every hostile is selectable, including the passive airfiel
   }
   assert.equal(navigationJammed(x.s, x.targets), false);
   const eligible = sensorTargets(x.s, x.targets);
-  assert.equal(eligible.length, 4);
+  assert.equal(eligible.length, 5);
   const ids = new Set();
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < eligible.length; i++) {
     x.aim.cycle(x.s, x.targets);
     ids.add(x.aim.id);
   }
@@ -114,9 +114,12 @@ test('landing training remains unarmed and manual, while transport escort starts
     assert.ok(escort.ammo.gun + escort.ammo.aam + escort.ammo.agm + escort.ammo.bomb > 0);
   }
 });
-test('bridge mission succeeds after timely bridge destruction and landing without requiring the optional convoy kill', () => {
+test('bridge mission requires the drone command and base defence, then landing without optional kills', () => {
   const x = setup('convoy');
   applyTargetHit(x.by('BRIDGE'), 'bomb');
+  x.m.update(x.s, x.targets, x.w);
+  assert.equal(x.m.objectiveComplete, false);
+  applyTargetHit(x.by('DRONE-COMMAND'), 'bomb');
   x.m.update(x.s, x.targets, x.w);
   assert.equal(x.m.objectiveComplete, true);
   assert.equal(x.m.complete, false);

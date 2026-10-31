@@ -45,6 +45,7 @@ export function defenseState(t) {
 export const militaryAircraft = (t) =>
   t.kind === 'air' &&
   t.type !== 'ballistic' &&
+  t.type !== 'attack-drone' &&
   !t.civilian &&
   !t.playerControlled &&
   t.faction !== 'neutral';

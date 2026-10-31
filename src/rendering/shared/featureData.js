@@ -19,7 +19,12 @@ export function featureWindow(camera, previous = null) {
     revision: terrainWorld.revision,
     high,
     centers,
-    key: [terrainWorld.revision, high, ...Object.entries(centers).flat()].join(':'),
+    key: [
+      terrainWorld.revision,
+      terrainWorld.bridgeRevision || 0,
+      high,
+      ...Object.entries(centers).flat(),
+    ].join(':'),
   };
 }
 export function buildFeatureBuffers(camera, window = featureWindow(camera)) {
@@ -51,7 +56,7 @@ export function buildFeatureBuffers(camera, window = featureWindow(camera)) {
       t < Math.min(path.max ?? Infinity, center + extent + 1000);
       t += step
     ) {
-      const key = [pathId, step, t].join(':');
+      const key = [pathId, step, t, terrainWorld.bridgeRevision || 0].join(':');
       let values = cache.get(key);
       if (!values) {
         values = [];

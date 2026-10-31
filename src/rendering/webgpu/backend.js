@@ -1,11 +1,11 @@
 import { meshBuffers, rotationMatrix, meshBounds } from '../shared/meshData.js';
-import { terrainBuffers } from '../shared/terrainData.js';
+import { packedTerrainBuffers } from '../shared/terrainData.js';
 import { featureWindow, buildFeatureBuffers, featurePatchInView } from '../shared/featureData.js';
 import { materialPixels } from '../shared/materialPixels.js';
 import { rgba } from '../shared/shapes.js';
 import { surfaceStyle, materialIds } from '../../surfaceStyle.js';
-import { cachedFeatureVisible } from '../../terrainFeatures.js';
-import { uploadBuffer } from './device.js';
+import { FeatureVisibility } from '../featureVisibility.js';
+import { uploadBuffer, updateBuffer } from './device.js';
 import * as shaders from './shaders.js';
 let panorama;
 function horizonImage() {
@@ -328,23 +328,13 @@ export class WebGPUBackend {
   }
   updateTerrain(r) {
     if (this.terrainKey === r.terrainSurfaceKey) return;
-    this.terrainFill?.destroy();
-    this.terrainLines?.destroy();
-    this.terrainMask?.destroy();
-    const data = terrainBuffers(r.terrainSurface),
-      lines = new Float32Array(data.lines.length * 2),
-      mask = new Float32Array(r.terrainSurface.length * 15);
-    for (let i = 0; i < data.lines.length / 3; i++)
-      lines.set(data.lines.subarray(i * 3, i * 3 + 3), i * 6);
-    let cursor = 0;
-    for (const face of r.terrainSurface)
-      for (const p of face.points) {
-        mask.set([p.x, p.y, p.z, 0, 0], cursor);
-        cursor += 5;
-      }
-    this.terrainFill = uploadBuffer(this.device, data.fills, GPUBufferUsage.VERTEX);
-    this.terrainLines = uploadBuffer(this.device, lines, GPUBufferUsage.VERTEX);
-    this.terrainMask = uploadBuffer(this.device, mask, GPUBufferUsage.VERTEX);
+    const data =
+        r.terrainBuffers ||
+        packedTerrainBuffers(r.terrainSurface, { wire: r.surfaceLines !== false }),
+      usage = GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST;
+    this.terrainFill = updateBuffer(this.device, this.terrainFill, data.fills, usage);
+    this.terrainLines = updateBuffer(this.device, this.terrainLines, data.gpuLines, usage);
+    this.terrainMask = updateBuffer(this.device, this.terrainMask, data.mask, usage);
     this.terrainCount = data.fills.length / 6;
     this.terrainLineCount = data.lines.length / 3;
     this.terrainKey = r.terrainSurfaceKey;
@@ -436,10 +426,12 @@ export class WebGPUBackend {
         r.featureMetrics = { backend: 'WebGPU', triangles: 0, uploads: this.featureUploads };
       return true;
     }
-    this.patches.forEach((p, i) => {
-      this.visibility[i] =
-        featurePatchInView(r, p) && cachedFeatureVisible(r.camera, p.center) ? 1 : 0;
-    });
+    this.featureVisibility ??= new FeatureVisibility();
+    const candidates = Uint8Array.from(this.patches, (p) => (featurePatchInView(r, p) ? 1 : 0)),
+      mask = this.featureVisibility.update(r.camera, this.patches, candidates, this.featureKey);
+    for (let i = 0; i < this.patches.length; i++)
+      this.visibility[i] = candidates[i] && mask[i] ? 1 : 0;
+    r.featureWorkerMs = this.featureVisibility.workerMs || 0;
     this.device.queue.writeBuffer(this.featureMask, 0, this.visibility);
     const encoder = this.begin(),
       pass = this.surface.pass(encoder),
@@ -582,6 +574,7 @@ export class WebGPUBackend {
     return true;
   }
   destroy() {
+    this.featureVisibility?.destroy();
     this.uniformBuffer?.destroy();
     for (const item of this.resources) item.buffers.forEach((b) => b.destroy());
     this.resources.clear();

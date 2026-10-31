@@ -54,7 +54,9 @@ export function fighterTarget(t, player, targets, opponents, u, combatUnits) {
     }
     const weapons = target.threats || unitDefinition(target.type).weapons;
     if (ground) {
-      const dangerous = weapons.some((w) => ['missile', 'flak', 'gun', 'ballistic'].includes(w));
+      const dangerous = weapons.some((w) =>
+        ['missile', 'flak', 'gun', 'ballistic', 'drone'].includes(w),
+      );
       if (dangerous) {
         score += 80;
         reason = 'armed-ground-threat';

@@ -65,7 +65,8 @@ export class GpuTerrain {
     const g = this.gl,
       l = this.locations;
     if (this.key !== r.terrainSurfaceKey) {
-      const data = terrainBuffers(r.terrainSurface);
+      const data =
+        r.terrainBuffers || terrainBuffers(r.terrainSurface, { wire: r.surfaceLines !== false });
       g.bindBuffer(g.ARRAY_BUFFER, this.fills);
       g.bufferData(g.ARRAY_BUFFER, data.fills, g.STATIC_DRAW);
       g.bindBuffer(g.ARRAY_BUFFER, this.lines);

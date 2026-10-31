@@ -19,6 +19,7 @@ export function assignCoalitionRoster(targets, player, rng = Math.random) {
       t.kind !== 'air' ||
       t.civilian ||
       t.type === 'ballistic' ||
+      t.type === 'attack-drone' ||
       t.type === 'tanker' ||
       t.playerControlled
     )

@@ -1,3 +1,6 @@
+import { attachRoadBridges, destroyRoadBridge } from './bridgeCrossings.js';
+import { moveMobileGround } from './mobileGround.js';
+import { moveAttackDrone } from './droneOps.js';
 import { moveTanker, refuelReceiverInput } from './aerialRefuelling.js';
 import { unitAirVelocity, advectNavigatingAircraft } from './flightEnvironment.js';
 import { moveOceanShip } from './oceanEnvironment.js';
@@ -40,7 +43,7 @@ export function createTargets(m, playerSpec = { faction: 'west' }, { rng = Math.
   if (m.composition) return createBattleTargets(m, playerSpec, { rng });
   if (m.objective === 'landing' || m.objective === 'flight-test') {
     configureTerrain(m, undefined, rng);
-    return [];
+    return attachRoadBridges([]);
   }
   const enemy = enemyAircraft(m, playerSpec),
     spawn = targetSpawn(m, rng);
@@ -98,14 +101,14 @@ export function createTargets(m, playerSpec = { faction: 'west' }, { rng = Math.
       threats: [],
     });
   }
-  return result;
+  return attachRoadBridges(result);
 }
 export function applyTargetHit(
   target,
   weapon,
   { part = null, engineIndex = null, amount = null } = {},
 ) {
-  if (target.type === 'ballistic') {
+  if (['ballistic', 'attack-drone'].includes(target.type)) {
     target.health = Math.max(0, target.health - (amount ?? (weapon === 'gun' ? 18 : 50)));
     target.damage = 100 * (1 - target.health / target.maxHealth);
     if (target.health <= 0) {
@@ -122,6 +125,7 @@ export function applyTargetHit(
       if (target.health > 0) return false;
     }
     target.alive = false;
+    if (target.type === 'bridge') destroyRoadBridge(target);
     return true;
   }
   if (!target.flight) {
@@ -176,6 +180,18 @@ const staticPoseCache = new WeakMap();
 export function updateTargets(targets, dt) {
   for (const t of targets) {
     if (t.playerControlled || t.pending || t.exited) continue;
+    if (
+      t.type === 'attack-drone' ||
+      ['mobile-sam', 'mobile-jammer', 'drone-command'].includes(t.type)
+    ) {
+      t.previousPosition = t.position.clone();
+      if (t.alive) {
+        if (t.type === 'attack-drone') moveAttackDrone(t, targets, dt);
+        else moveMobileGround(t, targets, dt);
+      }
+      t.agl = t.position.y - terrainHeight(t.position.x, t.position.z);
+      continue;
+    }
     if (t.kind === 'ground' && t.type !== 'convoy' && t.type !== 'destroyer') {
       const p = staticPoseCache.get(t);
       if (

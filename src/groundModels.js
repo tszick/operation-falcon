@@ -1,3 +1,4 @@
+import { isGroundVehicle, vehicleGroundPose } from './vehicleGrounding.js';
 import { meshSegmentHit } from './hitGeometry.js';
 import { homeHangars } from './terrain.js';
 import { renderAirfield } from './runwayVisuals.js';
@@ -263,6 +264,30 @@ export function groundMesh(type, span = 220, dimensions = {}) {
       ]);
     }
     b.points = b.points.map((p) => new Vec3(p.x, -p.z, p.y - 7));
+  } else if (['mobile-sam', 'mobile-jammer', 'drone-command'].includes(type)) {
+    b.truck(0, 0, type !== 'mobile-sam');
+    if (type === 'mobile-sam') {
+      b.box(0, 3.3, -1.4, 0.8, 0.7, 1);
+      for (const x of [-1, 1]) for (const y of [4.2, 4.9]) b.box(x, y, -1.7, 0.23, 0.3, 2.3);
+      b.box(0, 4.1, 0.5, 0.35, 0.7, 0.4);
+    } else if (type === 'mobile-jammer') {
+      b.box(0, 5.3, -2, 0.22, 4.5, 0.22);
+      for (const x of [-1, 1]) {
+        b.box(x * 1.8, 4.5, -2.3, 0.14, 3.4, 0.14);
+        b.box(x * 1.8, 7.4, -2.3, 0.8, 0.2, 0.2);
+      }
+      b.box(0, 5.4, 0, 1.3, 0.35, 0.8);
+    } else {
+      b.box(0, 5.3, -2.8, 0.14, 2.6, 0.14);
+      b.box(0, 7.5, -2.8, 0.7, 0.7, 0.25);
+      for (const x of [-0.9, 0.9]) b.box(x, 5.4, -0.6, 0.35, 0.5, 1.6);
+    }
+  } else if (type === 'attack-drone') {
+    b.box(0, -0.1, 0, 0.11, 0.22, 0.85);
+    b.box(0, 0, 0.2, 1.25, 0.05, 0.15);
+    b.box(0, 0, -0.65, 0.5, 0.05, 0.12);
+    b.box(0, 0, -0.7, 0.035, 0.3, 0.15);
+    b.box(0, -0.25, -0.9, 0.035, 0.5, 0.03);
   } else if (type === 'convoy') {
     for (let i = -2; i <= 2; i++) b.truck(0, i * 30);
   } else if (type === 'truck') b.truck();
@@ -351,9 +376,10 @@ export function groundMesh(type, span = 220, dimensions = {}) {
     b.box(-3, 2, -2, 1, 3, 1);
     b.dish(4, 7, -3);
   } else if (type === 'bridge') {
-    const half = span * 0.5;
-    b.box(0, 0, 0, 10, 2, half);
-    for (const x of [-10, 10]) {
+    const half = span * 0.5,
+      width = (dimensions.width || 20) / 2;
+    b.box(0, 0, 0, width, 2, half);
+    for (const x of [-width, width]) {
       b.line([x, 4, -half], [x, 4, half]);
       for (let z = -half; z < half; z += 25) {
         b.line([x, 2, z], [x, 4, z]);
@@ -398,31 +424,20 @@ export function groundMesh(type, span = 220, dimensions = {}) {
   return mesh;
 }
 const instanceCache = new WeakMap();
-function preparedInstance(position, heading, mesh) {
-  const rotation = Quat.euler(heading, 0, 0),
-    inverse = Quat.euler(-heading, 0, 0),
+function preparedInstance(position, heading, mesh, rotation = Quat.euler(heading, 0, 0)) {
+  const inverse = new Quat(-rotation.x, -rotation.y, -rotation.z, rotation.w),
     bounds = mesh.bounds,
-    c = Math.cos(heading),
-    s = Math.sin(heading),
-    xs = [],
-    zs = [];
+    worldBounds = { x: [Infinity, -Infinity], y: [Infinity, -Infinity], z: [Infinity, -Infinity] };
   for (const x of bounds.x)
-    for (const z of bounds.z) {
-      xs.push(position.x + x * c + z * s);
-      zs.push(position.z - x * s + z * c);
-    }
-  return {
-    position,
-    heading,
-    mesh,
-    rotation,
-    inverse,
-    worldBounds: {
-      x: [Math.min(...xs), Math.max(...xs)],
-      y: bounds.y.map((y) => position.y + y),
-      z: [Math.min(...zs), Math.max(...zs)],
-    },
-  };
+    for (const y of bounds.y)
+      for (const z of bounds.z) {
+        const p = rotation.rotate(new Vec3(x, y, z)).add(position);
+        for (const axis of ['x', 'y', 'z']) {
+          worldBounds[axis][0] = Math.min(worldBounds[axis][0], p[axis]);
+          worldBounds[axis][1] = Math.max(worldBounds[axis][1], p[axis]);
+        }
+      }
+  return { position, heading, mesh, rotation, inverse, worldBounds };
 }
 export function groundInstances(t, { detail = 'near' } = {}) {
   const key = [
@@ -439,6 +454,8 @@ export function groundInstances(t, { detail = 'near' } = {}) {
     t.buildingWidth,
     t.buildingDepth,
     terrainWorld.river?.width,
+    t.bridgeSpan,
+    t.bridgeWidth,
   ].join(':');
   let cached = instanceCache.get(t);
   if (!cached || cached.key !== key) {
@@ -449,8 +466,9 @@ export function groundInstances(t, { detail = 'near' } = {}) {
   let result;
   if (t.type === 'convoy')
     result = [-2, -1, 0, 1, 2].map((i) => {
-      const pose = convoyPose(t, i * 30);
-      return preparedInstance(pose.position, pose.heading, groundMesh('truck'));
+      const roadPose = convoyPose(t, i * 30),
+        pose = vehicleGroundPose(roadPose.position, roadPose.heading);
+      return preparedInstance(pose.position, pose.heading, groundMesh('truck'), pose.rotation);
     });
   else {
     const mesh = groundMesh(
@@ -460,14 +478,17 @@ export function groundInstances(t, { detail = 'near' } = {}) {
             ? t.buildingHeight
             : 2
           : t.type === 'bridge'
-            ? (terrainWorld.river?.width || 180) + 70
+            ? t.bridgeSpan || (terrainWorld.river?.width || 180) + 70
             : 220,
-        { width: t.buildingWidth, depth: t.buildingDepth, detail },
+        { width: t.bridgeWidth || t.buildingWidth, depth: t.buildingDepth, detail },
       ),
       position = t.position.clone();
     if (['carrier', 'destroyer'].includes(t.type)) position.y = 0;
     else if (t.type !== 'bridge') position.y = terrainHeight(position.x, position.z) + 0.5;
-    result = [preparedInstance(position, t.heading || 0, mesh)];
+    if (isGroundVehicle(t)) {
+      const pose = vehicleGroundPose(position, t.heading || 0);
+      result = [preparedInstance(pose.position, pose.heading, mesh, pose.rotation)];
+    } else result = [preparedInstance(position, t.heading || 0, mesh)];
   }
   cached.levels.set(detail, result);
   return result;

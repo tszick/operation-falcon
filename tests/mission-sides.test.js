@@ -292,7 +292,7 @@ test('briefing rosters match real opposing formations, including the replaced pl
       for (const r of superiorityRoster(spec, player))
         expected.set(r.team + ':' + r.type, (expected.get(r.team + ':' + r.type) || 0) + r.count);
       const actual = new Map();
-      for (const t of targets)
+      for (const t of targets.filter((t) => !t.incidental))
         actual.set(t.team + ':' + t.type, (actual.get(t.team + ':' + t.type) || 0) + 1);
       assert.deepEqual(actual, expected, spec.id + ':' + player.id);
       const names = targets

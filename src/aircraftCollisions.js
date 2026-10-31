@@ -127,7 +127,8 @@ export function updateAircraftCollisions(player, targets, weapons) {
       .filter(
         (t) =>
           t.kind === 'air' &&
-          t.type !== 'ballistic' &&
+          // Expendable aerial threats resolve flight and impact in their own modules.
+          !['ballistic', 'attack-drone'].includes(t.type) &&
           !t.playerControlled &&
           !t.pending &&
           !t.exited &&

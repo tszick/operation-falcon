@@ -1,4 +1,6 @@
+import { mobileUnitTypes } from './mobileUnitData.js';
 export const unitTypes = {
+  ...mobileUnitTypes,
   tanker: {
     name: 'KC-135R Stratotanker',
     category: 'Fegyvertelen katonai tankergép',
