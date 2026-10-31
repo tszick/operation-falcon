@@ -1,7 +1,9 @@
+import { readTerrainJob } from './terrainSnapshot.js';
 import { withTerrainSnapshot } from './terrain.js';
 import { buildTerrainSurface } from './terrainSurface.js';
 import { packedTerrainBuffers } from './rendering/shared/terrainData.js';
-export function prepareTerrain(job) {
+export function prepareTerrain(value) {
+  const job = readTerrainJob(value);
   const start = performance.now();
   const data = withTerrainSnapshot(job.world, () =>
     packedTerrainBuffers(
