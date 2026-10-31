@@ -58,8 +58,15 @@ export function groundCombatRows(type) {
   if (def.weapons.includes('missile'))
     rows.push([
       'Rakéta lőtáv',
-      `${(['carrier', 'destroyer'].includes(type) ? weaponProfiles.seaSparrow : weaponProfiles.sam).minRange / 1000}–${(['carrier', 'destroyer'].includes(type) ? weaponProfiles.seaSparrow : weaponProfiles.sam).maxRange / 1000} km névleges; a tényleges indítást a radar, a mozgás és a terep is korlátozza.`,
+      `${(['carrier', 'destroyer'].includes(type) ? weaponProfiles.seaSparrow : type === 'mobile-sam' ? weaponProfiles.mobileSam : weaponProfiles.sam).minRange / 1000}–${(['carrier', 'destroyer'].includes(type) ? weaponProfiles.seaSparrow : type === 'mobile-sam' ? weaponProfiles.mobileSam : weaponProfiles.sam).maxRange / 1000} km névleges; a tényleges indítást a radar, a mozgás és a terep is korlátozza.`,
     ]);
+  if (def.weapons.includes('jammer'))
+    rows.push(['Zavarási sugár', `${def.range / 1000} km · játékbeli radar/GPS-kiesés`]);
+  if (type === 'drone-command')
+    rows.push(
+      ['Drónkészlet', '8 db · egyszerre legfeljebb 2 aktív'],
+      ['Támadási tartomány', '40 km · kizárólag földi ellenséges célok'],
+    );
   if (def.weapons.includes('gun'))
     rows.push([
       'Gépágyú hatásos táv',

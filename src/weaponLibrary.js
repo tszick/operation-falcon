@@ -110,6 +110,27 @@ for (const a of [...aircraft, trainingAircraft])
     if (!entry.aliases.includes(mount.name)) entry.aliases.push(mount.name);
     entry.carriers.push(a.name);
   }
+map.set('mobileSam', {
+  id: 'weapon-mobileSam',
+  name: 'Mobil IR légvédelmi rakéta',
+  kind: 'weapon',
+  category: 'Rövid hatótávú föld–levegő rakéta',
+  type: 'aam',
+  profile: weaponProfiles.mobileSam,
+  aliases: ['Mobil IR légvédelmi rakéta'],
+  carriers: ['Mobil rakétás légvédelem · 4 db'],
+  related: ['mobile-sam', 'cm-flare'],
+  description:
+    'Általános Verba/Gibka osztályú infravörös játékprofil, 6 km névleges lőtávval és 10–3500 m célmagassággal. Kisebb harci rész és sebzés a nehéz földi SAM-rendszernél.',
+  usable: 'Ellenséges repülőgépek és csapásmérő drónok.',
+  excellent: 'Alacsonyan vagy közepes magasságban közeledő, kevéssé kitérő légi cél.',
+  cannot:
+    'Földi célra, hajóra és baráti egységre nem indítható. A névleges lőtáv nem garantált találat.',
+  operation:
+    'Automatikus indítás az AI-nál, mindkét oldalon azonos profillal; négy rakéta, véges készlet. Nem szerelhető a játékos repülőgépére.',
+  counter:
+    '5: infracsapda vagy C: vegyes elterelő, kitérő manőverrel együtt. Tereptakarás és az indítókocsi megsemmisítése is csökkenti a fenyegetést.',
+});
 map.set('seaSparrow', {
   id: 'weapon-seaSparrow',
   name: 'RIM-7 Sea Sparrow',
@@ -232,7 +253,9 @@ export function weaponLibraryRows(e) {
         'Játékos, ellenség és szövetséges azonos fegyverprofillal, radar- és lőtávkorlátokkal működik. A nagyobb névleges lőtáv nem garantált találat.',
       ]);
     rows.push([
-      ['seaSparrow', 'ram'].includes(e.profile.id) ? 'Hordozó egységek' : 'Felszerelhető gépek',
+      ['seaSparrow', 'ram', 'mobileSam'].includes(e.profile.id)
+        ? 'Hordozó egységek'
+        : 'Felszerelhető gépek',
       e.carriers.join(' · '),
     ]);
     if (e.aliases.length > 1) rows.push(['Játékbeli változatok', e.aliases.join(' · ')]);

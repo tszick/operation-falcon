@@ -21,6 +21,10 @@ export default [
   },
   { files: ['src/**/*.js'], languageOptions: { globals: globals.browser } },
   {
+    files: ['src/terrainWorker.js', 'src/rendering/featureVisibilityWorker.js'],
+    languageOptions: { globals: globals.worker },
+  },
+  {
     files: ['server/**/*.mjs', 'server.mjs', 'scripts/**/*.mjs', 'eslint.config.js'],
     languageOptions: { globals: globals.node },
   },

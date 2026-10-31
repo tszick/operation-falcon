@@ -71,13 +71,15 @@ export class EnemyCombat {
         gun: 1,
         flakBurst: 0,
         gunBurst: 0,
-        missiles: preset
-          ? preset.weapons.aam?.quantity || 0
-          : t.type === 'carrier'
-            ? 2
-            : t.kind === 'ground'
-              ? 6
-              : 0,
+        missiles:
+          unitDefinition(t.type).missileStock ??
+          (preset
+            ? preset.weapons.aam?.quantity || 0
+            : t.type === 'carrier'
+              ? 2
+              : t.kind === 'ground'
+                ? 6
+                : 0),
         agm: preset?.weapons.agm?.quantity || 0,
         shells: 90,
         rounds: preset
@@ -210,7 +212,7 @@ export class EnemyCombat {
       age: 0,
       travelled: 0,
       fuse,
-      damage: kind === 'missile' ? 50 : kind === 'flak' ? 7 : ground ? 1.8 : 18,
+      damage: kind === 'missile' ? (profile.damage ?? 50) : kind === 'flak' ? 7 : ground ? 1.8 : 18,
       trailTimer: 0,
       trailAnchor: origin.clone(),
       sourceId: t.id,
@@ -399,6 +401,7 @@ export class EnemyCombat {
         t.exited ||
         t.aiRole === 'takeoff' ||
         t.type === 'ballistic-silo' ||
+        t.type === 'drone-command' ||
         t.civilian ||
         t.faction === 'neutral' ||
         t.flight?.dying ||
@@ -546,9 +549,10 @@ export class EnemyCombat {
 
       const groundStrike = t.kind === 'air' && s.kind === 'ground',
         missileStores = groundStrike ? { missiles: u.agm, initialMissiles: u.initialAgm } : u,
-        missileProfile = types.includes('missile')
-          ? enemyProfile(t, groundStrike ? 'agm' : 'aam')
-          : null,
+        missileProfile =
+          types.includes('missile') && !(t.kind === 'ground' && s.kind === 'ground')
+            ? enemyProfile(t, groundStrike ? 'agm' : 'aam')
+            : null,
         source = missileProfile ? combatSource(t, player) : null;
       if (
         distance > Math.max(16000, missileProfile?.maxRange || 0) ||

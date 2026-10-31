@@ -1,6 +1,13 @@
 import { terrainSightCeiling } from './terrainSight.js';
 import { Vec3, clamp } from './math.js';
-import { terrainWorld, terrainHeight, pathCoordinates, pathPoint } from './terrain.js';
+import {
+  terrainWorld,
+  terrainHeight,
+  pathCoordinates,
+  pathPoint,
+  roadBridges,
+  roadDeckHeight,
+} from './terrain.js';
 export function terrainFeatureVisible(camera, point) {
   const dx = point.x - camera.x,
     dy = point.y - camera.y,
@@ -51,20 +58,19 @@ export function terrainFeaturePaths() {
 }
 export function roadSurface(path, p, x = 0, z = 0) {
   const ground = terrainHeight(p.x + x, p.z + z) + 0.8;
-  if (!terrainWorld.bridge) return ground;
-  const t = Math.abs(pathCoordinates(path, p.x, p.z).along),
-    half = terrainWorld.bridge.span * 0.5,
-    blend = clamp((half + 220 - t) / 220, 0, 1);
-  return ground * (1 - blend) + (terrainWorld.river.level + 16.1) * blend;
+  return roadDeckHeight(path, pathCoordinates(path, p.x, p.z).along, ground);
 }
 export function roadWet(path, t) {
-  if (!terrainWorld.river || terrainWorld.bridge) return false;
+  const bridge = roadBridges(path).find((b) => t >= b.from && t <= b.to);
+  if (bridge) return !bridge.alive;
+  if (!terrainWorld.river) return false;
   const p = pathPoint(path, t);
   return (
     Math.abs(pathCoordinates(terrainWorld.river, p.x, p.z).across) <
     terrainWorld.river.width * 0.5 + 15
   );
 }
+
 export function roadSection(path, t, length, width = path.width) {
   const a = pathPoint(path, t),
     b = pathPoint(path, t + length),
@@ -145,10 +151,12 @@ export function renderTerrainFeatures(r) {
     patches = [];
   if (
     r.terrainFeatureCache?.revision !== terrainWorld.revision ||
+    r.terrainFeatureCache?.bridgeRevision !== terrainWorld.bridgeRevision ||
     r.terrainFeatureCache.tiles.size > 4000
   )
     r.terrainFeatureCache = {
       revision: terrainWorld.revision,
+      bridgeRevision: terrainWorld.bridgeRevision,
       tiles: new Map(),
       details: new WeakMap(),
     };

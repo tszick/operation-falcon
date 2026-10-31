@@ -160,7 +160,7 @@ export const missions = [
   {
     id: 'convoy',
     name: 'Konvoj megállítása',
-    difficulty: 'KEZDŐ',
+    difficulty: 'HALADÓ',
     icon: '╫',
     kind: 'ground',
     objective: 'bridge-block',
@@ -169,15 +169,24 @@ export const missions = [
     needs: ['agm', 'bomb'],
     speed: 0,
     description:
-      'A konvoj a híd felé halad. Elsőként rombold le a hidat, mielőtt a konvoj átjut rajta. Mindkét cél szabadon kijelölhető; a konvoj megsemmisítése opcionális.',
+      'A híd felé haladó konvojt mobil rakétás légvédelem és mögötte jelzavaró teherautó kíséri. Zárd le a hidat az átkelés előtt! Közben egy drónirányító a saját reptered felé tart: pusztítsd el, és hárítsd el az elindított drónokat is, majd szállj le.',
     primary: [
       'Semmisítsd meg a hidat a konvoj átkelése előtt.',
+      'Óvd meg a repteret és semmisítsd meg a drónirányítót.',
+      'Hárítsd el a még közeledő csapásmérő drónokat.',
       'Térj haza, szállj le és állj meg.',
     ],
-    optional: ['Semmisítsd meg a feltartóztatott konvojt.'],
+    optional: [
+      'Semmisítsd meg a feltartóztatott konvojt.',
+      'Pusztítsd el a jelzavaró teherautót.',
+      'Semmisítsd meg a mobil rakétás légvédelmet.',
+    ],
     roster: [
       { type: 'bridge', count: 1, team: 'enemy' },
       { type: 'convoy', count: 1, team: 'enemy' },
+      { type: 'mobile-sam', count: 1, team: 'enemy' },
+      { type: 'mobile-jammer', count: 1, team: 'enemy' },
+      { type: 'drone-command', count: 1, team: 'enemy' },
     ],
   },
   {
@@ -257,6 +266,7 @@ export const missions = [
       { type: 'jammer', count: 1, team: 'enemy' },
       { type: 'sam-system', count: 1, team: 'enemy' },
       { type: 'convoy', count: 1, team: 'enemy' },
+      { type: 'mobile-sam', count: 1, team: 'enemy' },
     ],
   },
   {

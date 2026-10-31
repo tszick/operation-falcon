@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="hu">
+  <head>
+    <meta charset="utf-8" />
+    <title>Mobil egységek · modellpróba</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 24px;
+        color: #c0ee99;
+        background: #06150f;
+        font:
+          16px Consolas,
+          monospace;
+      }
+      h1 {
+        font-size: 24px;
+        margin: 0 0 8px;
+      }
+      p {
+        color: #8da08e;
+        margin: 0 0 16px;
+      }
+      main {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      article {
+        border: 1px solid #38533c;
+        padding: 12px;
+        background: #0a1d14;
+      }
+      h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+      canvas {
+        width: 100%;
+        height: 240px;
+        display: block;
+      }
+      footer {
+        font-size: 13px;
+        color: #9caf99;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Operation Falcon: Redline · mobil fenyegetések</h1>
+    <p>Kitöltött játékmodellek · fejlesztői nézet · hang nélkül</p>
+    <main id="models"></main>
+    <script type="module">
+      import { renderTargetPreview } from '/src/renderer.js';
+      import { setLanguage } from '/src/i18n.js';
+      import { unitTypes } from '/src/unitTypes.js';
+      import { aircraft } from '/src/aircraftSpec.js';
+      setLanguage('hu', { persist: false });
+      const spec = aircraft.find((a) => a.id === 'f16'),
+        cards = [];
+      for (const [id, info] of [
+        ['mobile-sam', '4 IR-rakéta · 6 km névleges lőtáv'],
+        ['mobile-jammer', '3 km zavarókör · mozgó konvojkíséret'],
+        ['drone-command', '8 drón · legfeljebb 2 aktív'],
+        ['attack-drone', '40 km · 113 / 185 km/h · földi célok'],
+      ]) {
+        const article = document.createElement('article'),
+          h = document.createElement('h2'),
+          canvas = document.createElement('canvas'),
+          footer = document.createElement('footer');
+        h.textContent = unitTypes[id].name;
+        footer.textContent = info;
+        canvas.setAttribute('aria-label', unitTypes[id].name + ' kitöltött 3D modell');
+        article.append(h, canvas, footer);
+        document.getElementById('models').append(article);
+        cards.push({ id, canvas });
+      }
+      function draw() {
+        for (const { id, canvas } of cards)
+          renderTargetPreview(canvas, { id, kind: unitTypes[id].kind }, spec, 3, 'surface');
+        requestAnimationFrame(draw);
+      }
+      requestAnimationFrame(draw);
+    </script>
+  </body>
+</html>

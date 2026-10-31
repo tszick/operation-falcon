@@ -394,8 +394,8 @@ export class Renderer {
       c.stroke();
     }
   }
-  terrain() {
-    renderTerrainSurface(this);
+  terrain(targets = []) {
+    renderTerrainSurface(this, targets);
   }
   worldVisible(p) {
     if (!this.visibilityColumns || this.visibilityRevision !== terrainWorld.revision) {
@@ -663,10 +663,10 @@ export class Renderer {
     this.worldOcclusion = false;
     this.skyStars();
     if (!this.gpuModels?.renderHorizon(this, true)) this.groundHorizon();
-    this.terrain();
-    const featureStart = this.debugMetrics ? performance.now() : 0;
+    this.terrain(targets);
+    const featureStart = performance.now();
     renderTerrainFeatures(this);
-    if (this.debugMetrics) this.featureMs = performance.now() - featureStart;
+    this.featureMs = performance.now() - featureStart;
     const jammed = navigationJammed(s, targets);
     this.worldOcclusion = true;
     this.meshQueue = [];
@@ -700,7 +700,17 @@ export class Renderer {
           (t.alive || t.falling),
       )
       .sort((a, b) => this.local(b.position).z - this.local(a.position).z)) {
-      if (t.type === 'ballistic') {
+      if (t.type === 'attack-drone') {
+        this.mesh(
+          groundMesh('attack-drone'),
+          t.position,
+          Quat.euler(t.heading || 0, t.pitch || 0, 0),
+          1,
+          '#959c8c',
+          null,
+          'aircraft',
+        );
+      } else if (t.type === 'ballistic') {
         this.mesh(
           groundMesh('ballistic'),
           t.position,
@@ -1171,14 +1181,16 @@ export function renderTargetPreview(canvas, mission, player, time, mode = 'vecto
   const mesh =
     mission.id === 'tanker'
       ? aircraftMesh('kc135')
-      : mission.id === 'ballistic'
-        ? groundMesh('ballistic')
-        : mission.id === 'city-building'
-          ? groundMesh('city-building', 80)
-          : mission.kind === 'air'
-            ? aircraftMesh(enemyAircraft(mission, player).id)
-            : mission.objective === 'landing'
-              ? groundMesh('airbase')
-              : groundMesh(mission.id);
+      : mission.id === 'attack-drone'
+        ? groundMesh('attack-drone')
+        : mission.id === 'ballistic'
+          ? groundMesh('ballistic')
+          : mission.id === 'city-building'
+            ? groundMesh('city-building', 80)
+            : mission.kind === 'air'
+              ? aircraftMesh(enemyAircraft(mission, player).id)
+              : mission.objective === 'landing'
+                ? groundMesh('airbase')
+                : groundMesh(mission.id);
   renderAircraftPreview(canvas, mission, time, mesh, mode);
 }

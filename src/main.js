@@ -189,6 +189,8 @@ function logFramePerformance(report) {
   recorder.event('performance', {
     ...report,
     visualStyle: renderer.surfaceMode,
+    terrainWorkerMs: renderer.terrainWorkerMs || 0,
+    featureWorkerMs: renderer.featureWorkerMs || 0,
     view: state.dying || state.crashed ? 'wreck' : state.rearView ? 'tail-gunner' : 'cockpit',
     modelBackend:
       renderer.gpuModels && !renderer.gpuModels.lost
@@ -1173,14 +1175,23 @@ function frame(time) {
     else renderer.render(state, targets, weapons, aim);
     const renderMs = performance.now() - renderStart,
       uiStart = performance.now();
+    let hudMs = 0,
+      instrumentMs = 0,
+      audioMs = 0;
     if (!missionResult.active) {
       uiElapsed += delta;
       if (uiElapsed > 0.1) {
         uiElapsed = 0;
+        const hudStart = performance.now();
         updateHUD(state, targets, weapons, aim, mission, audio.muted);
+        hudMs = performance.now() - hudStart;
       }
+      const instrumentStart = performance.now();
       flightInstruments.render();
+      instrumentMs = performance.now() - instrumentStart;
+      const audioStart = performance.now();
       audio.update(state, aim, !paused, mission, targets);
+      audioMs = performance.now() - audioStart;
     }
     if (active && !paused)
       logFramePerformance(
@@ -1188,6 +1199,12 @@ function frame(time) {
           frameMs,
           simulationMs,
           renderMs,
+          terrainMs: renderer.terrainFrameMs || 0,
+          featureMs: renderer.featureMs || 0,
+          hudMs,
+          instrumentMs,
+          audioMs,
+          terrainRebuilt: !!renderer.terrainRebuilt,
           uiMs: performance.now() - uiStart,
           cpuMs: performance.now() - start,
         }),

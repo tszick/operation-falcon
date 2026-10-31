@@ -1,3 +1,5 @@
+import { seededRandom } from '../src/oceanEnvironment.js';
+import { isHostile } from '../src/unitTypes.js';
 import { trainingAircraft } from '../src/trainingAircraft.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -39,27 +41,37 @@ test('landing practice always uses the trainer, overriding combat aircraft selec
     assert.ok(Math.abs(s.position.x) < 1e-5);
   }
 });
-test('practice has no hostile targets and does not activate landing help until manual N mode', () => {
-  const s = createMissionAircraft(aircraft[2], practice),
-    w = new Weapons(),
-    m = new Mission(practice),
-    aim = new Targeting();
-  assert.deepEqual(createTargets(practice, s.spec), []);
-  m.update(s, [], w, aim);
-  assert.equal(m.phaseId, 'landing-setup');
-  assert.equal(m.objectiveComplete, false);
-  assert.equal(m.destroyed, false);
-  assert.equal(phaseGuide(s, m, aim, w, [])[0].key, 'N');
-  assert.equal(s.approach.active, false);
-  s.landingMode = 'on';
-  s.approach = evaluateApproach(s);
-  m.update(s, [], w, aim);
-  assert.equal(s.approach.active, true);
-  assert.equal(m.phaseId, 'landing');
-  s.landingMode = 'off';
-  s.approach = evaluateApproach(s);
-  m.update(s, [], w, aim);
-  assert.equal(m.phaseId, 'landing-setup');
+test('practice allows neutral scenery but has no hostile targets and requires manual N mode', () => {
+  const sceneryCases = new Set();
+  for (const seed of [1, 2, 3, 4, 5, 42]) {
+    const s = createMissionAircraft(aircraft[2], practice),
+      w = new Weapons(),
+      m = new Mission(practice),
+      aim = new Targeting();
+    const targets = createTargets(practice, s.spec, { rng: seededRandom(seed) });
+    sceneryCases.add(targets.length > 0);
+    assert.equal(
+      targets.some((t) => isHostile(t, s)),
+      false,
+    );
+    assert.ok(targets.every((t) => t.team === 'neutral' && t.incidental && t.type === 'bridge'));
+    m.update(s, targets, w, aim);
+    assert.equal(m.phaseId, 'landing-setup');
+    assert.equal(m.objectiveComplete, false);
+    assert.equal(m.destroyed, false);
+    assert.equal(phaseGuide(s, m, aim, w, targets)[0].key, 'N');
+    assert.equal(s.approach.active, false);
+    s.landingMode = 'on';
+    s.approach = evaluateApproach(s);
+    m.update(s, targets, w, aim);
+    assert.equal(s.approach.active, true);
+    assert.equal(m.phaseId, 'landing');
+    s.landingMode = 'off';
+    s.approach = evaluateApproach(s);
+    m.update(s, targets, w, aim);
+    assert.equal(m.phaseId, 'landing-setup');
+  }
+  assert.deepEqual(sceneryCases, new Set([false, true]));
 });
 test('safe landing alone is not enough until rollout stops; destruction is never required', () => {
   const s = createMissionAircraft(aircraft[2], practice),

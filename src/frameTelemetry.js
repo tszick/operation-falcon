@@ -32,6 +32,15 @@ export class FrameTelemetry {
         simulationMs: mean('simulationMs'),
         renderMs: mean('renderMs'),
         uiMs: mean('uiMs'),
+        maxSimulationMs: round(Math.max(...samples.map((s) => s.simulationMs || 0))),
+        maxRenderMs: round(Math.max(...samples.map((s) => s.renderMs || 0))),
+        maxUiMs: round(Math.max(...samples.map((s) => s.uiMs || 0))),
+        maxTerrainMs: round(Math.max(...samples.map((s) => s.terrainMs || 0))),
+        maxFeatureMs: round(Math.max(...samples.map((s) => s.featureMs || 0))),
+        maxHudMs: round(Math.max(...samples.map((s) => s.hudMs || 0))),
+        maxInstrumentMs: round(Math.max(...samples.map((s) => s.instrumentMs || 0))),
+        maxAudioMs: round(Math.max(...samples.map((s) => s.audioMs || 0))),
+        terrainRebuilds: samples.filter((s) => s.terrainRebuilt).length,
       };
     this.reset();
     return result;

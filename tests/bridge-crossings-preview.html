@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="hu">
+  <head>
+    <meta charset="utf-8" />
+    <title>Járművek a terepen · illeszkedési próba</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/flight.css" />
+    <style>
+      #grounding-controls {
+        position: fixed;
+        z-index: 999;
+        top: 52px;
+        left: 12px;
+        padding: 10px;
+        background: #071711de;
+        color: #c0ef9a;
+        font: 13px monospace;
+      }
+      #grounding-controls button {
+        padding: 7px;
+        margin: 3px;
+      }
+      #grounding-info {
+        display: block;
+        margin: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      import { aircraft, missions } from '/src/aircraftSpec.js';
+      import { createMissionAircraft } from '/src/missionStart.js';
+      import { createTargets, updateTargets, Targeting } from '/src/targeting.js';
+      import { Renderer } from '/src/renderer.js';
+      import { Weapons } from '/src/weapons.js';
+      import { groundInstances } from '/src/groundModels.js';
+      import { terrainHeight, terrainWorld } from '/src/terrain.js';
+      import { attachRoadBridges } from '/src/bridgeCrossings.js';
+      import { applyTargetHit } from '/src/targeting.js';
+      import { Vec3, Quat } from '/src/math.js';
+      const template = new DOMParser().parseFromString(
+        await (await fetch('/index.html')).text(),
+        'text/html',
+      );
+      template.querySelectorAll('script').forEach((n) => n.remove());
+      document.body.append(...template.body.childNodes);
+      for (const id of ['hangar', 'hangar-footer', 'overlay', 'flight-ui'])
+        document.getElementById(id).hidden = true;
+      const controls = document.createElement('aside');
+      controls.id = 'grounding-controls';
+      controls.innerHTML =
+        '<strong>TEREPILLESZKEDÉS · HANG NÉLKÜL</strong><button data-unit="mobile-sam">Mobil SAM</button><button data-unit="mobile-jammer">Jelzavaró</button><button data-unit="drone-command">Drónirányító</button><button data-unit="convoy">Konvoj</button><button id="advance">+10 s mozgás</button><button id="hide">Elrejtés</button><span id="grounding-info"></span>';
+      document.body.append(controls);
+      const spec = aircraft.find((a) => a.id === 'f16'),
+        mission = missions.find((m) => m.id === 'convoy'),
+        targets = createTargets(mission, spec, { rng: () => 0.3 }),
+        s = createMissionAircraft(spec, mission),
+        w = new Weapons(),
+        aim = new Targeting(),
+        r = new Renderer(document.getElementById('world'));
+      r.surfaceMode = 'desert';
+      r.surfaceLines = false;
+      Object.assign(s, {
+        onGround: false,
+        airborne: true,
+        gear: false,
+        flaps: false,
+        flapPosition: 0,
+        landingMode: 'off',
+        speed: 120,
+        ias: 120,
+      });
+      Object.assign(terrainWorld, {
+        road: { x: 20000, z: 0, angle: 0.3, bend: 0, phase: 0, width: 14 },
+        river: { x: 20000, z: 0, angle: Math.PI / 2, bend: 0, phase: 0, width: 200, level: 40 },
+        bridge: null,
+        bridges: undefined,
+        peaks: [],
+        cityRoads: [],
+      });
+      targets.splice(0);
+      attachRoadBridges(targets);
+      controls.innerHTML =
+        '<strong>ROAD / RIVER BRIDGE - SILENT TEST</strong><button id="destroy-bridge">Destroy bridge</button><span id="grounding-info"></span>';
+      let selected = 'bridge';
+      function draw() {
+        const t = targets.find((t) => t.type === selected),
+          pose = groundInstances(t)[0],
+          goal = pose.position.clone().add(new Vec3(0, 3, 0));
+        s.position = goal.clone().add(new Vec3(-240, 190, -270));
+        s.position.y = Math.max(s.position.y, terrainHeight(s.position.x, s.position.z) + 10);
+        const d = goal.clone().sub(s.position);
+        s.orientation = Quat.euler(Math.atan2(d.x, d.z), Math.atan2(d.y, Math.hypot(d.x, d.z)), 0);
+        s.velocity = new Vec3(0, 0, 120);
+        s.agl = s.position.y - terrainHeight(s.position.x, s.position.z);
+        aim.id = t.id;
+        r.render(s, targets, w, aim);
+        document.getElementById('grounding-info').textContent =
+          t.name + ' · a modell és a találati geometria együtt követi a lejtőt';
+      }
+      document.getElementById('destroy-bridge').onclick = () => {
+        applyTargetHit(targets[0], 'bomb');
+        draw();
+        setTimeout(draw, 200);
+      };
+      await r.ready;
+      updateTargets(targets, 1 / 120);
+      draw();
+      let repeats = 0;
+      const settle = () => {
+        draw();
+        if (++repeats < 15) setTimeout(settle, 150);
+      };
+      settle();
+    </script>
+  </body>
+</html>

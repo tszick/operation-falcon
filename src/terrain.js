@@ -12,6 +12,16 @@ export const homeHangars = [-900, -650, -400].map((z) => ({
 }));
 let revision = 0;
 export let terrainWorld = { revision: 0, river: null, road: null, canyon: null, peaks: [] };
+// Worker builds use a snapshot without re-generating or changing the live mission.
+export function withTerrainSnapshot(snapshot, build) {
+  const previous = terrainWorld;
+  terrainWorld = snapshot;
+  try {
+    return build();
+  } finally {
+    terrainWorld = previous;
+  }
+}
 const smooth = (t) => {
   t = clamp(t, 0, 1);
   return t * t * (3 - 2 * t);
@@ -270,9 +280,11 @@ export function terrainHeight(x, z) {
   const road = terrainWorld.road;
   if (road) {
     const { along, across } = pathCoordinates(road, x, z),
-      blend = 1 - smooth((Math.abs(across) - road.width * 0.5) / 18),
-      center = pathPoint(road, along);
-    base = base * (1 - blend) + landscape(center.x, center.z) * blend;
+      blend = 1 - smooth((Math.abs(across) - road.width * 0.5) / 18);
+    if (blend > 0) {
+      const center = pathPoint(road, along);
+      base = base * (1 - blend) + landscape(center.x, center.z) * blend;
+    }
   }
   if (terrainWorld.noAirfield) return base;
   // Keep the home runway and both three-degree approach corridors unobstructed.
@@ -306,13 +318,48 @@ export function convoyPose(t, offset = 0) {
   const distance = (t.routeDistance || 0) + offset * (t.routeDirection || 1),
     p = pathPoint(road, distance);
   p.y = terrainHeight(p.x, p.z) + 0.05;
-  if (terrainWorld.bridge) {
-    const half = terrainWorld.bridge.span * 0.5,
-      blend = clamp((half + 220 - Math.abs(distance)) / 220, 0, 1);
-    p.y = p.y * (1 - blend) + (terrainWorld.river.level + 16.15) * blend;
-  }
+  p.y = roadDeckHeight(road, distance, p.y);
+
   return {
     position: p,
     heading: pathHeading(road, distance) + (t.routeDirection < 0 ? Math.PI : 0),
   };
+}
+
+export function roadBridges(path) {
+  if (terrainWorld.bridges)
+    return terrainWorld.bridges.filter(
+      (b) => b.pathKey === (path.bridgeKey || (path === terrainWorld.road ? 'road' : '')),
+    );
+  return path === terrainWorld.road && terrainWorld.bridge
+    ? [
+        {
+          along: 0,
+          span: terrainWorld.bridge.span,
+          from: -terrainWorld.bridge.span / 2,
+          to: terrainWorld.bridge.span / 2,
+          deckY: terrainWorld.river.level + 16.1,
+          alive: true,
+        },
+      ]
+    : [];
+}
+export function roadDeckHeight(path, along, ground) {
+  for (const bridge of roadBridges(path)) {
+    if (!bridge.alive) continue;
+    const distance = Math.max(bridge.from - along, along - bridge.to, 0),
+      blend = clamp(1 - distance / 220, 0, 1);
+    if (blend > 0) return ground * (1 - blend) + bridge.deckY * blend;
+  }
+  return ground;
+}
+
+// Keep road traffic on the near bank after an incidental bridge has been destroyed.
+export function stopAtBrokenBridge(from, to) {
+  for (const bridge of terrainWorld.bridges || []) {
+    if (bridge.alive || bridge.pathKey !== 'road') continue;
+    if (to > from && from <= bridge.from - 30 && to > bridge.from - 30) return bridge.from - 30;
+    if (to < from && from >= bridge.to + 30 && to < bridge.to + 30) return bridge.to + 30;
+  }
+  return to;
 }

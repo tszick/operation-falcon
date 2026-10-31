@@ -486,7 +486,7 @@ export class Weapons {
           )
         )
           continue;
-        if (t.type === 'ballistic') {
+        if (['ballistic', 'attack-drone'].includes(t.type)) {
           hitInfo = ballisticHit(
             t,
             p.previous,

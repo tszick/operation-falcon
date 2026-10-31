@@ -41,10 +41,18 @@
     import { Vec3, Quat, DEG } from '/src/math.js';
     import { explosionEffect } from '/src/effects.js';
     import { HeadLook } from '/src/headLook.js';
-    const data = await (await fetch('/tests/fixtures/stutter-scenes.json')).json(),
+    const data = await (
+        await fetch(
+          new URLSearchParams(location.search).get('scenario') === 'convoy'
+            ? '/tests/fixtures/convoy-stutter-scenes.json'
+            : '/tests/fixtures/stutter-scenes.json',
+        )
+      ).json(),
       r = new Renderer(document.getElementById('world'));
     Object.assign(terrainWorld, data.terrain);
     r.debugMetrics = true;
+    r.surfaceMode = data.surfaceMode || 'vector';
+    r.surfaceLines = data.surfaceLines ?? true;
     const vec = (p) => new Vec3(p.x, p.y, p.z),
       quat = (p) => new Quat(p.x, p.y, p.z, p.w);
     let generation = 0,
@@ -156,7 +164,7 @@
           t = {
             ...initial,
             ...u,
-            kind: u.aircraftId ? 'air' : 'ground',
+            kind: u.kind || (u.aircraftId ? 'air' : 'ground'),
             home: u.id === 'BASE',
             falling: !!u.flight?.dying && !u.flight?.crashed,
             radius: u.aircraftId ? 28 : 60,
@@ -209,7 +217,7 @@
             return effect;
           })
           .filter((e) => e.life > 0),
-        w = { selected: 'aam', projectiles, effects, trails: [] },
+        w = { selected: data.selected || 'aam', projectiles, effects, trails: [] },
         aim = { id: scene.target.id, locked: scene.target.locked };
       const samples = [];
       document.getElementById('report').textContent = 'Mérés…';
@@ -219,6 +227,8 @@
         counts = {};
         timing = {};
         const start = performance.now();
+        if (new URLSearchParams(location.search).has('motion'))
+          s.position.add(s.velocity.clone().scale(1 / 60));
         r.render(s, targets, w, aim);
         if (frame >= 5)
           samples.push({
@@ -257,10 +267,22 @@
         2,
       );
     }
+    const aside = document.querySelector('aside');
+    aside.querySelectorAll('button').forEach((b) => b.remove());
+    for (const scene of data.scenes) {
+      const button = document.createElement('button');
+      button.dataset.time = String(Math.round(scene.time));
+      button.textContent = `${Math.round(scene.time)} s`;
+      aside.insertBefore(button, document.getElementById('report'));
+    }
     for (const b of document.querySelectorAll('button'))
       b.onclick = () => run(Number(b.dataset.time));
-    run(Number(new URLSearchParams(location.search).get('time') || 84)).catch(
-      (e) => (document.getElementById('report').textContent = e.stack),
-    );
+    run(
+      Number(
+        new URLSearchParams(location.search).get('time') ||
+          data.scenes[1]?.time ||
+          data.scenes[0].time,
+      ),
+    ).catch((e) => (document.getElementById('report').textContent = e.stack));
   </script>
 </html>

@@ -42,7 +42,7 @@ test('practice and story order, numbering and difficulty match the requested cam
   assert.deepEqual(
     missions.filter((m) => m.group === 'story1').map((m) => [m.id, m.order, m.difficulty]),
     [
-      ['convoy', 1, 'KEZDŐ'],
+      ['convoy', 1, 'HALADÓ'],
       ['defend-base', 2, 'KEZDŐ'],
       ['escort-transport', 3, 'HALADÓ'],
       ['defend-city', 4, 'TOP-GUN'],

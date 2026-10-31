@@ -9482,5 +9482,253 @@
   "I: tankolási segédív ki/be": {
     "hu": "I: tankolási segédív ki/be",
     "en": "I: toggle refuelling guide"
+  },
+  "Mobil rakétás légvédelem": {
+    "hu": "Mobil rakétás légvédelem",
+    "en": "Mobile Short-Range SAM"
+  },
+  "Tüzelő mobil egység": {
+    "hu": "Tüzelő mobil egység",
+    "en": "Armed mobile unit"
+  },
+  "Közeli rakétás légvédelem": {
+    "hu": "Közeli rakétás légvédelem",
+    "en": "Short-range missile air defence"
+  },
+  "Könnyű terepjáró · négy indítócső": {
+    "hu": "Könnyű terepjáró · négy indítócső",
+    "en": "Light vehicle · four launch tubes"
+  },
+  "Könnyű mobil légvédelem, négy infravörös rakétával. Névleges lőtáv 0,25–6 km, célmagasság 10–3500 m AGL; tereptakarás és a tényleges rakétaenergia is korlátozza. A nehéz SAM-nél rövidebb hatótávú és kisebb sebzésű, gépágyúja nincs. Infracsapdával eltéríthető. Általános játékmodell a Verba/Gibka képességosztály alapján, nem pontos típusmásolat.": {
+    "hu": "Könnyű mobil légvédelem, négy infravörös rakétával. Névleges lőtáv 0,25–6 km, célmagasság 10–3500 m AGL; tereptakarás és a tényleges rakétaenergia is korlátozza. A nehéz SAM-nél rövidebb hatótávú és kisebb sebzésű, gépágyúja nincs. Infracsapdával eltéríthető. Általános játékmodell a Verba/Gibka képességosztály alapján, nem pontos típusmásolat.",
+    "en": "Light mobile air defence carrying four infrared missiles. Nominal range 0.25–6 km and target altitude 10–3500 m AGL; terrain and actual missile energy also limit launches. Shorter range and less damage than the heavy SAM, with no cannon. Flares can decoy it. A generic game model inspired by the Verba/Gibka capability class, not an exact replica."
+  },
+  "Jelzavaró teherautó": {
+    "hu": "Jelzavaró teherautó",
+    "en": "Jammer Truck"
+  },
+  "Mobil zavaró egység": {
+    "hu": "Mobil zavaró egység",
+    "en": "Mobile electronic warfare unit"
+  },
+  "Mozgó radar / GPS zavarás": {
+    "hu": "Mozgó radar / GPS zavarás",
+    "en": "Moving radar / GPS denial"
+  },
+  "Antennás híradó-teherautó": {
+    "hu": "Antennás híradó-teherautó",
+    "en": "Communications truck with antennas"
+  },
+  "A konvoj mögött haladó, fegyvertelen zavarókocsi. 3 km-es játékbeli zónája kisebb az állandó zavaróállomás 7 km-es körénél. Csak az ellenoldal navigációját és befogását zavarja; a fizikai objektumok továbbra is látszanak. Ágyúval vagy bombával a zónán belül is megsemmisíthető. Az együttes radar/GPS-kiesés és a pontos körhatár játékbeli egyszerűsítés.": {
+    "hu": "A konvoj mögött haladó, fegyvertelen zavarókocsi. 3 km-es játékbeli zónája kisebb az állandó zavaróállomás 7 km-es körénél. Csak az ellenoldal navigációját és befogását zavarja; a fizikai objektumok továbbra is látszanak. Ágyúval vagy bombával a zónán belül is megsemmisíthető. Az együttes radar/GPS-kiesés és a pontos körhatár játékbeli egyszerűsítés.",
+    "en": "An unarmed jammer truck following the convoy. Its 3 km gameplay zone is smaller than the fixed station’s 7 km radius. Only opposing navigation and acquisition are denied; physical objects remain visible. Guns and bombs work inside the zone. Combined radar/GPS loss and the circular boundary are gameplay simplifications."
+  },
+  "Mobil drónirányító": {
+    "hu": "Mobil drónirányító",
+    "en": "Mobile Drone Command Vehicle"
+  },
+  "Tüzelő mobil parancsnoki egység": {
+    "hu": "Tüzelő mobil parancsnoki egység",
+    "en": "Armed mobile command unit"
+  },
+  "Földi objektumok dróntámadása": {
+    "hu": "Földi objektumok dróntámadása",
+    "en": "Drone strikes against ground objects"
+  },
+  "Parancsnoki teherautó · indítócsövekkel": {
+    "hu": "Parancsnoki teherautó · indítócsövekkel",
+    "en": "Command truck · launch tubes"
+  },
+  "Nyolc egyszer használatos csapásmérő drónt hordoz. Egyszerre legfeljebb kettő repülhet saját indításából, 1–2 darabos rajokban; az első előkészítés 120 s, az új rajok között legalább 90 s telik el. Csak ellenséges földi objektumot vagy egységet támad, repülő vadászt nem. A már elindított drónok a kocsi pusztulása után is folytatják előre kijelölt feladatukat. A készlet és az indítási ütem játékbeli érték.": {
+    "hu": "Nyolc egyszer használatos csapásmérő drónt hordoz. Egyszerre legfeljebb kettő repülhet saját indításából, 1–2 darabos rajokban; az első előkészítés 120 s, az új rajok között legalább 90 s telik el. Csak ellenséges földi objektumot vagy egységet támad, repülő vadászt nem. A már elindított drónok a kocsi pusztulása után is folytatják előre kijelölt feladatukat. A készlet és az indítási ütem játékbeli érték.",
+    "en": "Carries eight single-use attack drones. No more than two from this launcher can be airborne at once, launched in batches of one or two. Initial preparation takes 120 s, with at least 90 s between batches. It attacks hostile ground objects and units only, never airborne fighters. Drones already launched continue their assigned mission after the truck is destroyed. Stock and launch cadence are gameplay values."
+  },
+  "Csapásmérő drón": {
+    "hu": "Csapásmérő drón",
+    "en": "Attack Drone"
+  },
+  "Földi célú önálló légi fenyegetés": {
+    "hu": "Földi célú önálló légi fenyegetés",
+    "en": "Independent air threat against ground targets"
+  },
+  "Egyszer használatos földi csapás": {
+    "hu": "Egyszer használatos földi csapás",
+    "en": "Single-use ground strike"
+  },
+  "Kb. 2,5 m fesztáv": {
+    "hu": "Kb. 2,5 m fesztáv",
+    "en": "Approx. 2.5 m wingspan"
+  },
+  "A Switchblade 600 alapváltozat képességosztályára hangolt, általános drón: 40 km repült út, legfeljebb 40 perc repülés, 113 km/h utazó- és 185 km/h végfázis-sebesség. Páncéltörő jellegű, helyi csapást mér; egy találat nem pusztít el teljes repülőteret (40 játékbeli életerőpont). Légi célra nem támad. Gépágyúval és levegő–levegő rakétával lelőhető; infracsapda és dipól nem állítja meg. A sebzés, terepkövetés és autonóm rávezetés játékbeli közelítés, nem valós fegyverhatás-számítás.": {
+    "hu": "A Switchblade 600 alapváltozat képességosztályára hangolt, általános drón: 40 km repült út, legfeljebb 40 perc repülés, 113 km/h utazó- és 185 km/h végfázis-sebesség. Páncéltörő jellegű, helyi csapást mér; egy találat nem pusztít el teljes repülőteret (40 játékbeli életerőpont). Légi célra nem támad. Gépágyúval és levegő–levegő rakétával lelőhető; infracsapda és dipól nem állítja meg. A sebzés, terepkövetés és autonóm rávezetés játékbeli közelítés, nem valós fegyverhatás-számítás.",
+    "en": "A generic drone in the original Switchblade 600 capability class: 40 km travelled range, up to 40 minutes endurance, 113 km/h cruise and 185 km/h terminal speed. Its anti-armour-like local strike cannot destroy a whole airfield with one hit (40 gameplay health points). It never attacks airborne targets. Guns and air-to-air missiles can shoot it down; flares and chaff cannot stop it. Damage, terrain following and autonomous guidance are gameplay approximations, not real weapon-effect calculations."
+  },
+  "Mobil IR légvédelmi rakéta": {
+    "hu": "Mobil IR légvédelmi rakéta",
+    "en": "Mobile IR Air-Defence Missile"
+  },
+  "Rövid hatótávú föld–levegő rakéta": {
+    "hu": "Rövid hatótávú föld–levegő rakéta",
+    "en": "Short-range surface-to-air missile"
+  },
+  "Általános Verba/Gibka osztályú infravörös játékprofil, 6 km névleges lőtávval és 10–3500 m célmagassággal. Kisebb harci rész és sebzés a nehéz földi SAM-rendszernél.": {
+    "hu": "Általános Verba/Gibka osztályú infravörös játékprofil, 6 km névleges lőtávval és 10–3500 m célmagassággal. Kisebb harci rész és sebzés a nehéz földi SAM-rendszernél.",
+    "en": "A generic Verba/Gibka-class infrared game profile with 6 km nominal range and target altitudes of 10–3500 m. Smaller warhead and damage than the heavy ground SAM system."
+  },
+  "Ellenséges repülőgépek és csapásmérő drónok.": {
+    "hu": "Ellenséges repülőgépek és csapásmérő drónok.",
+    "en": "Hostile aircraft and attack drones."
+  },
+  "Alacsonyan vagy közepes magasságban közeledő, kevéssé kitérő légi cél.": {
+    "hu": "Alacsonyan vagy közepes magasságban közeledő, kevéssé kitérő légi cél.",
+    "en": "Low- or medium-altitude approaching air targets with limited evasive movement."
+  },
+  "Földi célra, hajóra és baráti egységre nem indítható. A névleges lőtáv nem garantált találat.": {
+    "hu": "Földi célra, hajóra és baráti egységre nem indítható. A névleges lőtáv nem garantált találat.",
+    "en": "Cannot target ground objects, ships or friendly units. Nominal range does not guarantee a hit."
+  },
+  "Automatikus indítás az AI-nál, mindkét oldalon azonos profillal; négy rakéta, véges készlet. Nem szerelhető a játékos repülőgépére.": {
+    "hu": "Automatikus indítás az AI-nál, mindkét oldalon azonos profillal; négy rakéta, véges készlet. Nem szerelhető a játékos repülőgépére.",
+    "en": "AI launches automatically using the same profile on either side. Four missiles, finite stock. Not available for the player aircraft loadout."
+  },
+  "5: infracsapda vagy C: vegyes elterelő, kitérő manőverrel együtt. Tereptakarás és az indítókocsi megsemmisítése is csökkenti a fenyegetést.": {
+    "hu": "5: infracsapda vagy C: vegyes elterelő, kitérő manőverrel együtt. Tereptakarás és az indítókocsi megsemmisítése is csökkenti a fenyegetést.",
+    "en": "5: flares or C: mixed countermeasures, combined with evasive flight. Terrain cover and destroying the launcher also reduce the threat."
+  },
+  "Mobil rakétás légvédelem · 4 db": {
+    "hu": "Mobil rakétás légvédelem · 4 db",
+    "en": "Mobile Short-Range SAM · 4 missiles"
+  },
+  "A híd felé haladó konvojt mobil rakétás légvédelem és mögötte jelzavaró teherautó kíséri. Zárd le a hidat az átkelés előtt! Közben egy drónirányító a saját reptered felé tart: pusztítsd el, és hárítsd el az elindított drónokat is, majd szállj le.": {
+    "hu": "A híd felé haladó konvojt mobil rakétás légvédelem és mögötte jelzavaró teherautó kíséri. Zárd le a hidat az átkelés előtt! Közben egy drónirányító a saját reptered felé tart: pusztítsd el, és hárítsd el az elindított drónokat is, majd szállj le.",
+    "en": "A short-range SAM vehicle and a following jammer truck escort the convoy toward the bridge. Destroy the bridge before they cross. A drone command truck is advancing on your airfield: destroy it and intercept any drones already launched, then land."
+  },
+  "Óvd meg a repteret és semmisítsd meg a drónirányítót.": {
+    "hu": "Óvd meg a repteret és semmisítsd meg a drónirányítót.",
+    "en": "Protect the airfield and destroy the drone command vehicle."
+  },
+  "Hárítsd el a még közeledő csapásmérő drónokat.": {
+    "hu": "Hárítsd el a még közeledő csapásmérő drónokat.",
+    "en": "Intercept attack drones still approaching."
+  },
+  "Pusztítsd el a jelzavaró teherautót.": {
+    "hu": "Pusztítsd el a jelzavaró teherautót.",
+    "en": "Destroy the jammer truck."
+  },
+  "Semmisítsd meg a mobil rakétás légvédelmet.": {
+    "hu": "Semmisítsd meg a mobil rakétás légvédelmet.",
+    "en": "Destroy the mobile short-range SAM."
+  },
+  "Csapásmérő drónok": {
+    "hu": "Csapásmérő drónok",
+    "en": "Attack drones"
+  },
+  "Drónirányító megsemmisítve": {
+    "hu": "Drónirányító megsemmisítve",
+    "en": "Drone command vehicle destroyed"
+  },
+  "Mobil jelzavaró megsemmisítve": {
+    "hu": "Mobil jelzavaró megsemmisítve",
+    "en": "Mobile jammer destroyed"
+  },
+  "Mobil rakétavédelem megsemmisítve": {
+    "hu": "Mobil rakétavédelem megsemmisítve",
+    "en": "Mobile SAM destroyed"
+  },
+  "Beérkező drónok: {{n}}": {
+    "hu": "Beérkező drónok: {{n}}",
+    "en": "Incoming drones: {{n}}"
+  },
+  "A dróntámadás megsemmisítette a saját repülőteret.": {
+    "hu": "A dróntámadás megsemmisítette a saját repülőteret.",
+    "en": "The drone attack destroyed your airfield."
+  },
+  "Drónkészlet": {
+    "hu": "Drónkészlet",
+    "en": "Drone stock"
+  },
+  "8 db · egyszerre legfeljebb 2 aktív": {
+    "hu": "8 db · egyszerre legfeljebb 2 aktív",
+    "en": "8 drones · no more than 2 active at once"
+  },
+  "Támadási tartomány": {
+    "hu": "Támadási tartomány",
+    "en": "Strike range"
+  },
+  "40 km · kizárólag földi ellenséges célok": {
+    "hu": "40 km · kizárólag földi ellenséges célok",
+    "en": "40 km · hostile ground targets only"
+  },
+  "{{n}} km · játékbeli radar/GPS-kiesés": {
+    "hu": "{{n}} km · játékbeli radar/GPS-kiesés",
+    "en": "{{n}} km · gameplay radar/GPS denial"
+  },
+  "Mobil légvédelem és drónok": {
+    "hu": "Mobil légvédelem és drónok",
+    "en": "Mobile Air Defence and Drones"
+  },
+  "A konvojt mozgó légvédelem és jelzavaró védi, miközben egy külön drónindító a repteret fenyegeti.": {
+    "hu": "A konvojt mozgó légvédelem és jelzavaró védi, miközben egy külön drónindító a repteret fenyegeti.",
+    "en": "Mobile air defence and a jammer protect the convoy while a separate drone launcher threatens the airfield."
+  },
+  "HÍD": {
+    "hu": "HÍD",
+    "en": "BRIDGE"
+  },
+  "DRÓNIRÁNYÍTÓ": {
+    "hu": "DRÓNIRÁNYÍTÓ",
+    "en": "DRONE COMMAND"
+  },
+  "DRÓNELFOGÁS": {
+    "hu": "DRÓNELFOGÁS",
+    "en": "DRONE INTERCEPTION"
+  },
+  "ZAVARÓ ÉS RAKÉTÁK": {
+    "hu": "ZAVARÓ ÉS RAKÉTÁK",
+    "en": "JAMMER AND MISSILES"
+  },
+  "Az átkelőt időben rombold le. A konvoj pusztítása továbbra is opcionális.": {
+    "hu": "Az átkelőt időben rombold le. A konvoj pusztítása továbbra is opcionális.",
+    "en": "Destroy the crossing in time. Destroying the convoy remains optional."
+  },
+  "A kocsit korán keresd meg és semmisítsd meg. A már felszállt drónokat külön kell elfognod; a kocsi pusztulása nem tünteti el őket.": {
+    "hu": "A kocsit korán keresd meg és semmisítsd meg. A már felszállt drónokat külön kell elfognod; a kocsi pusztulása nem tünteti el őket.",
+    "en": "Find and destroy the truck early. Drones already airborne must be intercepted separately; destroying the truck does not remove them."
+  },
+  "A drón légi cél: levegő–levegő rakétát vagy rövid gépágyúsorozatot használj. Lassú és kicsi; nagy sebességnél könnyen túlfutsz rajta.": {
+    "hu": "A drón légi cél: levegő–levegő rakétát vagy rövid gépágyúsorozatot használj. Lassú és kicsi; nagy sebességnél könnyen túlfutsz rajta.",
+    "en": "A drone is an air target: use air-to-air missiles or short cannon bursts. It is slow and small, so a fast aircraft can easily overshoot."
+  },
+  "A mobil zavaró 3 km-en belül tiltja a befogást. A mobil SAM négy, 6 km-es névleges lőtávú IR-rakétával védekezik. Infracsapda és kitérő manőver segíthet.": {
+    "hu": "A mobil zavaró 3 km-en belül tiltja a befogást. A mobil SAM négy, 6 km-es névleges lőtávú IR-rakétával védekezik. Infracsapda és kitérő manőver segíthet.",
+    "en": "The mobile jammer denies acquisition within 3 km. The mobile SAM carries four IR missiles with 6 km nominal range. Flares and evasive flight can help."
+  },
+  "A reptér maradjon életben, a drónindító és a még közeledő drónok legyenek leküzdve, majd szállj le.": {
+    "hu": "A reptér maradjon életben, a drónindító és a még közeledő drónok legyenek leküzdve, majd szállj le.",
+    "en": "Keep the airfield alive, destroy the drone launcher, intercept drones still approaching, then land."
+  },
+  "A két aktív drón az indítókocsi korlátja; nyolc darabos készletéből újabb raj is indulhat.": {
+    "hu": "A két aktív drón az indítókocsi korlátja; nyolc darabos készletéből újabb raj is indulhat.",
+    "en": "The two-active-drone limit applies per launcher; it can launch more batches from its eight-drone stock."
+  },
+  "A drónnak nincs légi támadási képessége. A 40 pontos találati sebzés játékbeli skála; nem valós robbanóanyag-egyenérték.": {
+    "hu": "A drónnak nincs légi támadási képessége. A 40 pontos találati sebzés játékbeli skála; nem valós robbanóanyag-egyenérték.",
+    "en": "The drone cannot attack airborne targets. Its 40-point impact damage is a gameplay scale, not a real explosive equivalent."
+  },
+  "Nyilvános képességadatok": {
+    "hu": "Nyilvános képességadatok",
+    "en": "Public Capability References"
+  },
+  "A modellek általánosak, a 3 km-es zavarókör, a készletek, a sebzés és az előkészítési idő játékbeli hangolás.": {
+    "hu": "A modellek általánosak, a 3 km-es zavarókör, a készletek, a sebzés és az előkészítési idő játékbeli hangolás.",
+    "en": "Models are generic. The 3 km denial radius, stocks, damage and preparation times are gameplay tuning."
+  },
+  "Feladat": {
+    "hu": "Feladat",
+    "en": "Role"
+  },
+  "Szerkezeti pont": {
+    "hu": "Szerkezeti pont",
+    "en": "Structural health"
   }
 }

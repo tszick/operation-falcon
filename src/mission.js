@@ -353,7 +353,7 @@ export class Mission {
     }
     if (
       activeJammers(targets).some((t) => isHostile(t, s)) &&
-      targets.find((t) => t.id === aim?.id)?.type === 'jammer'
+      ['jammer', 'mobile-jammer'].includes(targets.find((t) => t.id === aim?.id)?.type)
     ) {
       this.setPhase(
         'jammer-attack',
