@@ -18,3 +18,7 @@ updates:
       cronjob: '40 22 * * *'
       timezone: Europe/Budapest
     open-pull-requests-limit: 5
+    groups:
+      codeql:
+        patterns:
+          - github/codeql-action/*
