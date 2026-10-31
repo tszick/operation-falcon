@@ -59,3 +59,5 @@ A helyi, MIT-licencű i18next-csomag az egyetlen kivétel a böngészőmodulok `
 ## Grafikus megvalósítások
 
 A `rendering/createBackend` választja ki a WebGPU-megvalósítást vagy a kifejezetten kért régi referenciát. Az API-specifikus kód a `rendering/webgpu` és `rendering/webgl` mappákban, a geometria és a pixeladatok a `rendering/shared` alatt találhatók. A `rendering/flightInstrumentLayer` a szemantikus HTML-műszerfalat GPU-primitívekkel jeleníti meg, miközben az eredeti vezérlők fogadják a bemenetet. Az inicializálás aszinkron (`Renderer.ready`); a fő ciklus és a szimuláció képkockái továbbra is szinkron módon állítják össze a képet. Lásd: [WebGPU-megjelenítés](rendering-webgpu.md).
+
+The minimatch 11.0.1 override pins the first patched version for GHSA-g3hv-75wg-m249. It is used only by development lint tools; the installed ESLint 10 dependency ranges still select vulnerable minimatch 10. CI checks the complete lint/test suite and dependency audit with this override. Vendored i18next files must be regenerated and committed with dependency updates; CI verifies the regenerated bundle matches the checked-in files.
