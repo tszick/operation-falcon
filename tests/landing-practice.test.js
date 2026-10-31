@@ -1,3 +1,4 @@
+import { seededRandom } from '../src/oceanEnvironment.js';
 import { isHostile } from '../src/unitTypes.js';
 import { trainingAircraft } from '../src/trainingAircraft.js';
 import test from 'node:test';
@@ -41,12 +42,14 @@ test('landing practice always uses the trainer, overriding combat aircraft selec
   }
 });
 test('practice allows neutral scenery but has no hostile targets and requires manual N mode', () => {
-  for (const seed of [0.2, 0.3, 0.4, 0.7, 0.9]) {
+  const sceneryCases = new Set();
+  for (const seed of [1, 2, 3, 4, 5, 42]) {
     const s = createMissionAircraft(aircraft[2], practice),
       w = new Weapons(),
       m = new Mission(practice),
       aim = new Targeting();
-    const targets = createTargets(practice, s.spec, { rng: () => seed });
+    const targets = createTargets(practice, s.spec, { rng: seededRandom(seed) });
+    sceneryCases.add(targets.length > 0);
     assert.equal(
       targets.some((t) => isHostile(t, s)),
       false,
@@ -68,6 +71,7 @@ test('practice allows neutral scenery but has no hostile targets and requires ma
     m.update(s, targets, w, aim);
     assert.equal(m.phaseId, 'landing-setup');
   }
+  assert.deepEqual(sceneryCases, new Set([false, true]));
 });
 test('safe landing alone is not enough until rollout stops; destruction is never required', () => {
   const s = createMissionAircraft(aircraft[2], practice),
