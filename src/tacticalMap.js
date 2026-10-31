@@ -1,6 +1,7 @@
 import { drawingContext } from './rendering/createBackend.js';
 import { tr } from './i18n.js';
 import { transportExitPosition } from './transportRole.js';
+import { getRefuellingRoute } from './refuellingRoute.js';
 import { getLandingRoute } from './landingRoute.js';
 import { navigationJammed } from './electronicWarfare.js';
 import { attitude, DEG } from './math.js';
@@ -20,7 +21,7 @@ export function tacticalMapState(
   const contacts = radarContacts(s, targets).filter((c) => c.visible && !c.target.home);
   const base = s.approach?.active ? 10000 : 30000,
     jammed = navigationJammed(s, targets),
-    landingRoute = getLandingRoute(s, { jammed });
+    landingRoute = getRefuellingRoute(s, targets, { jammed }) || getLandingRoute(s, { jammed });
   const homePoint = s.recoveryExit || s.airfield?.position || { x: 0, z: 0 };
   const reach = Math.max(
     Math.abs(homePoint.x),
@@ -252,7 +253,7 @@ export function renderTacticalMap(canvas, s, targets, aim, options = {}) {
     c.arc(base.x, base.y, Math.max(5, 2500 * map.scale), 0, Math.PI * 2);
     c.stroke();
     c.fillText(tr('KIVONULÁS'), base.x + 7, base.y + 12);
-  } else {
+  } else if (!s.noAirfield) {
     c.strokeStyle = '#9fc37388';
     c.setLineDash([3, 4]);
     c.beginPath();
@@ -320,7 +321,7 @@ export function renderTacticalMap(canvas, s, targets, aim, options = {}) {
     c.stroke();
     c.fillStyle = route.color;
     c.font = '12px Consolas,monospace';
-    c.fillText(tr('I · SEGÉDÍV'), 9, height - 22);
+    c.fillText(tr(route.tankerId ? 'I · TANKOLÁSI SEGÉDÍV' : 'I · SEGÉDÍV'), 9, height - 22);
     c.restore();
   }
   if (s.canyonTraining) {

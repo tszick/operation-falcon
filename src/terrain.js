@@ -43,6 +43,18 @@ function buildTerrain(m, anchor, rng) {
     };
     return terrainWorld;
   }
+  if (m.noAirfield) {
+    terrainWorld = {
+      revision: ++revision,
+      skySeed: 417,
+      noAirfield: true,
+      river: null,
+      road: null,
+      canyon: null,
+      peaks: [],
+    };
+    return terrainWorld;
+  }
   if (m.naval || m.id === 'carrier-defense') {
     terrainWorld = {
       revision: ++revision,
@@ -262,6 +274,7 @@ export function terrainHeight(x, z) {
       center = pathPoint(road, along);
     base = base * (1 - blend) + landscape(center.x, center.z) * blend;
   }
+  if (terrainWorld.noAirfield) return base;
   // Keep the home runway and both three-degree approach corridors unobstructed.
   const across = 1 - smooth((Math.abs(x) - 120) / 480),
     along = smooth((Math.abs(z) - 1600) / 500) * (1 - smooth((Math.abs(z) - 8500) / 2000));

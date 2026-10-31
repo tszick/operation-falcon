@@ -1,3 +1,4 @@
+import { refuellingMission } from './refuellingData.js';
 import { taiwanMission } from './taiwanMission.js';
 import { flightTestMissions } from './experimentalAircraft.js';
 import { navalMission } from './navalData.js';
@@ -311,7 +312,7 @@ export const missions = [
     ],
   },
 ];
-missions.push(navalMission, taiwanMission);
+missions.push(navalMission, taiwanMission, refuellingMission);
 const order = [
   'landing',
   'canyon',
@@ -327,6 +328,7 @@ const order = [
   'iron-veil',
   'carrier-defense',
   'taiwan-invasion',
+  'aerial-refuelling',
 ];
 missions.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
 for (const m of missions) {

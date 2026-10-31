@@ -35,6 +35,7 @@ const bombBay = () =>
     internal: true,
   }));
 export const armaments = {
+  kc135: { variant: 'KC-135R Stratotanker', weapons: {}, stations: [] },
   ...Object.fromEntries(
     ['c130', 'c130j', 'il76', 'il76md90a', 'y20'].map((id) => [
       id,

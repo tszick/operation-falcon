@@ -52,6 +52,7 @@ test('practice and story order, numbering and difficulty match the requested cam
       ['iron-veil', 8, 'TOP-GUN'],
       ['carrier-defense', 9, 'TOP-GUN'],
       ['taiwan-invasion', 10, 'TOP-GUN'],
+      ['aerial-refuelling', 11, 'TOP-GUN'],
     ],
   );
 });

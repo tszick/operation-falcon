@@ -1,3 +1,8 @@
+import {
+  refuellingRules,
+  refuellingAttackerStart,
+  refuellingAttackerHeading,
+} from './aerialRefuelling.js';
 import { missionWeather, windAt } from './flightEnvironment.js';
 import { selectRecoveryAirfield } from './recoveryAirfields.js';
 import { initialiseNaval } from './navalOps.js';
@@ -11,6 +16,8 @@ import { mass, atmosphere, approachSpeeds } from './performance.js';
 import { evaluateApproach } from './landing.js';
 export const landingStart = { distance: 6000, glide: 3, fuelFraction: 0.15 };
 export function defaultMissionFuel(mission, spec = null) {
+  if (mission.objective === 'aerial-refuelling' && mission.side !== 'east')
+    return refuellingRules.startFuel;
   return mission.objective === 'landing'
     ? landingStart.fuelFraction
     : mission.objective === 'canyon'
@@ -52,6 +59,9 @@ export function createMissionAircraft(
   s.fuel =
     spec.fuelCapacity *
     (Number.isFinite(fuelFraction) ? clamp(fuelFraction, 0, 1) : defaultMissionFuel(mission));
+  s.noAirfield = !!mission.noAirfield;
+  if (mission.objective === 'aerial-refuelling' && mission.side !== 'east')
+    s.fuel = Math.min(s.fuel, spec.fuelCapacity * refuellingRules.startFuel);
   s.enginePower = s.fuel > 0 ? 1 : 0;
   if (mission.objective === 'canyon') {
     if (!terrainWorld.canyon?.training) configureTerrain(mission);
@@ -103,6 +113,12 @@ export function createMissionAircraft(
     s.flapPosition = 0;
     s.landingMode = 'off';
     s.position = new Vec3(0, 1700, mission.objective === 'escort-transport' ? -23000 : -9000);
+    if (mission.noAirfield)
+      s.position = new Vec3(
+        mission.side === 'east' ? refuellingAttackerStart.x : 0,
+        mission.side === 'east' ? refuellingAttackerStart.y : 2200,
+        mission.side === 'east' ? refuellingAttackerStart.z : -18000,
+      );
     if (s.canyonTraining) {
       const p = canyonPoint(-1600);
       s.position = new Vec3(p.x, terrainHeight(p.x, p.z) + 220, p.z);
@@ -120,7 +136,10 @@ export function createMissionAircraft(
       s.radioCallSign = formation.radioCallSign;
       s.fallbackRecoveryExit = formation.withdrawalPoint?.clone();
     }
-    const heading = formation?.heading || 0,
+    const heading =
+        mission.noAirfield && mission.side === 'east'
+          ? refuellingAttackerHeading
+          : formation?.heading || 0,
       air = atmosphere(s.position.y),
       v = 165;
     s.velocity = new Vec3(Math.sin(heading) * v, 0, Math.cos(heading) * v);

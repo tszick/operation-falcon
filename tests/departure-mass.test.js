@@ -59,10 +59,20 @@ test('default tanking stays full for ordinary missions and fifteen percent for l
           ? aircraft.find((a) => a.id === 'fa18')
           : f16;
     const actual = isPracticeMission(m) ? trainingAircraft : a;
-    const expected = m.objective === 'landing' ? 0.15 : m.objective === 'canyon' ? 0.5 : 1;
+    const expected =
+      m.objective === 'landing'
+        ? 0.15
+        : m.objective === 'canyon'
+          ? 0.5
+          : m.objective === 'aerial-refuelling'
+            ? 0.12
+            : 1;
     assert.equal(defaultMissionFuel(m), expected);
     close(createMissionAircraft(a, m).fuel, actual.fuelCapacity * expected);
-    close(createMissionAircraft(a, m, { fuelFraction: 0.42 }).fuel, actual.fuelCapacity * 0.42);
+    close(
+      createMissionAircraft(a, m, { fuelFraction: 0.42 }).fuel,
+      actual.fuelCapacity * (m.objective === 'aerial-refuelling' ? 0.12 : 0.42),
+    );
   }
   const m = missions.find((m) => m.id === 'civil');
   close(createMissionAircraft(f16, m, { fuelFraction: 5 }).fuel, trainingAircraft.fuelCapacity);

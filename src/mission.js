@@ -1,3 +1,4 @@
+import { updateRefuellingMission } from './aerialRefuelling.js';
 import { selectRecoveryAirfield } from './recoveryAirfields.js';
 import { updateFlightTest } from './flightTest.js';
 import { recoveryComplete } from './navalOps.js';
@@ -125,6 +126,10 @@ export class Mission {
       return;
     }
     updateMissionRuntime(s, this, targets, w);
+    if (this.spec.objective === 'aerial-refuelling') {
+      updateRefuellingMission(s, this, targets, w);
+      return;
+    }
     if (this.aborted) {
       const report = this.spec.composition
         ? battleObjectives(this, s, targets, w)

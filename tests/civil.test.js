@@ -30,7 +30,7 @@ function setup() {
   return { s, targets, m, aim, w };
 }
 test('grouped compositions replace the old target-type menu', () => {
-  assert.equal(catalog.length, 16);
+  assert.equal(catalog.length, 17);
   assert.equal(catalog[0].id, 'landing');
   assert.equal(catalog[1].id, 'canyon');
   assert.equal(catalog[2].id, 'civil');

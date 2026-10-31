@@ -1,4 +1,16 @@
 export const unitTypes = {
+  tanker: {
+    name: 'KC-135R Stratotanker',
+    category: 'Fegyvertelen katonai tankergép',
+    kind: 'air',
+    weapons: [],
+    speed: 155,
+    health: 100,
+    role: 'Légiutántöltés',
+    size: '41,53 m hossz · 39,88 m fesztáv',
+    description:
+      'Négyhajtóműves amerikai légiutántöltő. Nincs támadófegyvere; véges infracsapda- és dipólkészlettel védekezik. A küldetésben 2200 m MSL-en, 558 km/h valós légsebességgel repül, majd köröz. A türkiz tankolási pont a gép mögött 48 m-rel, alatta 6 m-rel van; 9 m tűrés, legfeljebb 6 m/s relatív sebesség és 5 másodperc stabil helyzet után automatikusan indul az átadás, 30 kg/s játékbeli sebességgel. Az 50%-nyi tartálykapacitás átvétele teljesíti a tankolási célt. A kontaktzóna egyszerűsített, a játék mindkét töltési rendszerű vadászgépet fogadja; nem típusminősített eljárás.',
+  },
   carrier: {
     name: 'Anyahajó',
     category: 'Tüzelő hadihajó · saját bázis',

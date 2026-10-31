@@ -32,6 +32,7 @@ import {
   plannedDeparture,
 } from './loadoutPlanner.js';
 import { HeadLook } from './headLook.js';
+import { toggleRefuellingRoute } from './refuellingRoute.js';
 import { clearLandingRoute } from './landingRoute.js';
 import { FlightRecorder } from './flightRecorder.js';
 import { FlightLogStorage, downloadFlightLog } from './flightLogStorage.js';
@@ -238,7 +239,11 @@ const loadoutChoices = new Map(),
   fuelChoices = new Map();
 const fuelKey = () => `${selected.id}:${unarmedPractice(selectedMission) ? 'landing' : 'standard'}`;
 function selectedFuel() {
-  return fuelChoices.get(fuelKey()) ?? defaultMissionFuel(selectedMission, selected);
+  if (selectedMission.objective === 'aerial-refuelling' && selectedSide !== 'east') return 0.12;
+  return (
+    fuelChoices.get(fuelKey()) ??
+    defaultMissionFuel(missionForSide(selectedMission, selectedSide), selected)
+  );
 }
 const kg = (value) => formatNumber(value, { maximumFractionDigits: 1 });
 function updateDeparture() {
@@ -249,6 +254,8 @@ function updateDeparture() {
       unarmed: training,
     }),
     full = plannedDeparture(selected, defaultLoadout(selected), { unarmed: training });
+  $('start-fuel').disabled =
+    selectedMission.objective === 'aerial-refuelling' && selectedSide !== 'east';
   $('start-fuel').value = Math.round(fraction * 100);
   $('start-fuel-value').textContent = tr(
     `${Math.round(fraction * 100)}% · ${kg(plan.fuelKg)} / ${kg(selected.fuelCapacity)} kg`,
@@ -537,6 +544,12 @@ function setGuideVisible(visible) {
 }
 function toggleLandingRoute() {
   if (!playing || paused || state.crashed || state.dying) return;
+  if (state.aerialRefuel) {
+    const enabled = toggleRefuellingRoute(state);
+    recorder.event('refuelling-route', { enabled });
+    toast(`TANKOLÁSI SEGÉDÍV ${enabled ? 'BE' : 'KI'} — I`);
+    return;
+  }
   landingRouteEnabled = state.landingRouteEnabled === false;
   state.landingRouteEnabled = landingRouteEnabled;
   clearLandingRoute(state);

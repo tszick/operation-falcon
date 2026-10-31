@@ -1,3 +1,4 @@
+import { refuellingHint } from './aerialRefuelling.js';
 import { ironVeilGuide } from './ironVeil.js';
 import { advisedTarget } from './targetAdvice.js';
 import { firingStatus } from './firingStatus.js';
@@ -10,6 +11,20 @@ import { sensorTargets, navigationJammed } from './electronicWarfare.js';
 // Short, ordered cockpit reminders. Detailed instructions remain in H.
 export function phaseGuide(s, mission, aim, weapons, targets) {
   const step = (key, text, done = false) => ({ key, text, done });
+  if (mission.spec.objective === 'aerial-refuelling')
+    return (
+      mission.spec.side === 'east'
+        ? [
+            step('T / 2', mission.phaseHint),
+            step('C', 'Védd az ütegeket; a tanker nem tud tüzelni.'),
+          ]
+        : [
+            step('A / D / W / S', refuellingHint(s)),
+            step('R / F', 'Tanker mögött 48 m-rel, 6 m-rel lejjebb; kövesd a türkiz pontot.'),
+            step('G / X / B / SHIFT', 'Futó, fékszárny, légfék és utánégető kikapcsolva.'),
+            step('—', '9 m-en belül, legfeljebb 6 m/s eltérés; tartsd 5 másodpercig.'),
+          ]
+    ).map((v, i) => ({ ...v, active: i === 0 }));
   if (mission.spec.objective === 'flight-test' && !s.approach?.active)
     return [
       step('R / W / S', mission.phaseHint),
