@@ -331,6 +331,7 @@ export function assessTouchdown(s, descent, speed) {
 
 // A shoulder is available only after a surviving runway touchdown, not for off-field landing.
 export const rolloutLateralTolerance = 120;
+export const takeoffOverrunTolerance = 300;
 export function rolloutMargins(speed) {
   const factor = Math.max(0, Math.min(1, (90 - speed) / 70)) ** 2;
   return {
@@ -352,7 +353,19 @@ export function rolloutSurface(s) {
     !onLandingRunway(s) &&
     (lateral / margins.lateralTolerance) ** 2 + (longitudinal / margins.endTolerance) ** 2 <= 1
   );
-  return { ...margins, shoulder, allowed: onLandingRunway(s) || shoulder };
+  const takeoffOverrun = !!(
+    s.onGround &&
+    !s.airborne &&
+    s.gear &&
+    lateral === 0 &&
+    longitudinal > 0 &&
+    longitudinal <= takeoffOverrunTolerance
+  );
+  return {
+    ...margins,
+    shoulder: shoulder || takeoffOverrun,
+    allowed: onLandingRunway(s) || shoulder || takeoffOverrun,
+  };
 }
 export function rolloutObstacle(s, from = s.previousPosition || s.position, to = s.position) {
   if (navalFlight(s)) {

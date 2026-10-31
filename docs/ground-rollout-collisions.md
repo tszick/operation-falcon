@@ -1,6 +1,6 @@
 # Általános kigurulás és ütközések
 
-A kigurulási tűrés a közös `landing.js` és `physics.js` része. Minden szárazföldi küldetésen és mindkét oldalon működik, a saját repülőtér helyi koordinátáiban, elforgatott és távoli pályán is. Csak egy túlélt, pályán történt földetérés után érvényes; a pályán kívüli földetérést nem teszi szabályossá. Az anyahajó fedélzete nem kap szárazföldi vállat.
+A kigurulási tűrés a közös `landing.js` és `physics.js` része. Minden szárazföldi küldetésen és mindkét oldalon működik, a saját repülőtér helyi koordinátáiban, elforgatott és távoli pályán is. A leszállási váll csak egy túlélt, pályán történt földetérés után érvényes; a pályán kívüli földetérést nem teszi szabályossá. Az anyahajó fedélzete nem kap szárazföldi vállat.
 
 A megengedett oldalirányú és hosszirányú távolság a pillanatnyi vízszintes talajsebességtől függ. A sarokterület ellipszissel korlátozott, így nem adódik össze a teljes oldalsó és hosszirányú engedmény.
 
@@ -18,3 +18,5 @@ Az `aircraftCollisions.js` a közös fegyver- és harcfrissítésben fut minden 
 Légi ütközéskor mindkét gép végzetes szerkezeti sérülést kap, megtartja a mozgását, és a közös sérülési fizikával zuhan tovább a becsapódásig. Földi helyzetben az ütköző gép azonnal elveszik. Objektumba repüléskor a gép végzetesen sérül, az objektumra pedig a relatív sebesség és a gép tömegéből számított mozgási energia hat. A játékbeli sebzés `energia / 2 000 000`, 5 és 400 életerőpont között. A teherautóhoz hasonló kis cél elpusztulhat, a nagy objektum a megmaradt életerejével tovább működik; a város külön épületei önálló célok. Ha az objektum életereje elfogy, megsemmisül és robbanás keletkezik.
 
 Az ütközés és a kölcsönös találat naplózott esemény. Egy gép ugyanarra az objektumra nem okoz minden képkockán újabb ütközési sebzést. A távoli objektumokat és géppárokat egyszerű térbeli előszűrés kihagyja; a változatlan földi modellek befoglaló dobozait és háromszögeit gyorsítótár őrzi.
+
+Felszállási gurulás vagy megszakított felszállás esetén a pálya tengelyében legfeljebb 300 méter túlfutás engedett, sebességtől függetlenül. Ez nem enged oldalirányú legurulást vagy pályán kívüli földetérést. A földi pályaelhagyást minden fizikai lépés ellenőrzi, kis gurulási sebességnél és a gép alól lejtő terepnél is.

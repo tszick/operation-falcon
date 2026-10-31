@@ -149,3 +149,64 @@ test('overrun tolerance follows a translated and rotated remote runway', () => {
     assert.equal(rolloutSurface(s).allowed, false);
   }
 });
+
+test('takeoff overruns stop within 300 metres even at taxi speed and above descending terrain', () => {
+  for (const sign of [-1, 1]) {
+    for (const speed of [1, 20, 65]) {
+      const s = rolling(0, sign * (runway.halfLength + 290), speed);
+      s.velocity.z *= sign;
+      s.airborne = false;
+      s.landing = null;
+      stepAircraft(s, { brake: true }, dt);
+      assert.equal(s.crashed, false, 'short aborted takeoff overrun');
+      s.position.z = sign * (runway.halfLength + 301);
+      s.position.y = 10;
+      stepAircraft(s, { brake: true }, dt);
+      assert.equal(s.crashed, true, `unbounded takeoff roll at ${speed} m/s`);
+    }
+  }
+});
+
+test('slow takeoff taxi cannot escape sideways and overrun checks follow a remote runway', () => {
+  const side = rolling(runway.halfWidth + 1, 0, 1);
+  side.airborne = false;
+  side.landing = null;
+  stepAircraft(side, {}, dt);
+  assert.equal(side.crashed, true);
+  const s = rolling(0, 0, 10),
+    position = new Vec3(12000, 0, 18000),
+    rotation = Quat.euler(Math.PI / 2, 0, 0);
+  s.airborne = false;
+  s.landing = null;
+  s.airfield = {
+    position,
+    elevation: 0,
+    heading: Math.PI / 2,
+    halfWidth: 45,
+    halfLength: 1600,
+    home: false,
+  };
+  s.position = rotation.rotate(new Vec3(0, 2, 1850)).add(position);
+  s.velocity = rotation.rotate(new Vec3(0, 0, 10));
+  assert.equal(rolloutSurface(s).allowed, true);
+  s.position = rotation.rotate(new Vec3(0, 10, 1901)).add(position);
+  stepAircraft(s, {}, dt);
+  assert.equal(s.crashed, true);
+});
+
+test('a loaded B-52 actually rolling beyond either runway end crashes within the finite overrun', () => {
+  for (const sign of [-1, 1]) {
+    const s = rolling(0, sign * (runway.halfLength - 5), 30);
+    s.spec = aircraft.find((a) => a.id === 'b52');
+    s.ammo = createAircraft(s.spec).ammo;
+    s.fuel = s.spec.fuelCapacity;
+    s.airborne = false;
+    s.landing = null;
+    s.velocity.z *= sign;
+    s.orientation = Quat.euler(sign === 1 ? 0 : Math.PI, 0, 0);
+    for (let i = 0; i < 120 * 40 && !s.crashed; i++) stepAircraft(s, {}, dt);
+    assert.equal(s.crashed, true);
+    assert.ok(Math.abs(s.position.z) > runway.halfLength + 299);
+    assert.ok(Math.abs(s.position.z) <= runway.halfLength + 301);
+  }
+});
