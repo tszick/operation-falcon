@@ -27,7 +27,7 @@
     "prettier": "3.9.10"
   },
   "dependencies": {
-    "i18next": "26.5.11"
+    "i18next": "26.5.12"
   },
   "overrides": {
     "minimatch": "11.0.1"
