@@ -1,3 +1,4 @@
+import { catalogLabel, renameEquipmentText } from './equipmentCatalog.js';
 import { trHtml } from './i18n.js';
 import { aircraftMesh } from './airframes.js';
 import { armament, loadedStations, weaponKeys } from './armament.js';
@@ -17,7 +18,8 @@ export const integrityColor = (health) => `hsl(${Math.round(clamp(health, 0, 1) 
 const categories = { gun: 'GÉPÁGYÚ', aam: 'LÉGI RAKÉTA', agm: 'FÖLDI RAKÉTA', bomb: 'BOMBA' };
 export function storesMarkup(s, selected, { compact = false } = {}) {
   const p = armament(s.spec),
-    mesh = aircraftMesh(s.spec.id, 0);
+    mesh = aircraftMesh(s.spec.id, 0),
+    publicVariant = catalogLabel('aircraft', s.spec.id, { compact }) || p.variant;
   const zMin = Math.min(...mesh.points.map((p) => p.z)),
     zMax = Math.max(...mesh.points.map((p) => p.z));
   const scale = Math.min(
@@ -55,7 +57,7 @@ export function storesMarkup(s, selected, { compact = false } = {}) {
   let rows = Object.entries(p.weapons)
     .map(
       ([type, w]) =>
-        `<button type="button" data-weapon="${type}" class="store-option ${type === selected ? 'selected' : ''}" aria-pressed="${type === selected}" ${s.ammo[type] ? '' : 'disabled'} title="${categories[type]}"><kbd>${weaponKeys[type]}</kbd><span>${w.name}</span><b>${s.ammo[type]}</b></button>`,
+        `<button type="button" data-weapon="${type}" class="store-option ${type === selected ? 'selected' : ''}" aria-pressed="${type === selected}" ${s.ammo[type] ? '' : 'disabled'} title="${categories[type]}"><kbd>${weaponKeys[type]}</kbd><span>${compact ? renameEquipmentText(w.name, { compact: true }) : w.name}</span><b>${s.ammo[type]}</b></button>`,
     )
     .join('');
   if (p.tailGun)
@@ -66,7 +68,7 @@ export function storesMarkup(s, selected, { compact = false } = {}) {
       ? `${minX - 8} ${cy - zMax * scale - 8} ${maxX - minX + 16} ${(zMax - zMin) * scale + 16}`
       : '0 0 216 136';
   const health = Math.max(0, Math.round(100 - s.damage));
-  return `<div class="stores-heading"><span>FEGYVERZET / ÁLLAPOT</span><small>${p.variant}</small></div><svg viewBox="${box}" role="img" aria-label="${p.variant} sematikus felülnézet; sérült részek sárgától pirosig"><path class="stores-silhouette" d="${silhouette}"/>${damage}<path class="stores-airframe" d="${lines}"/>${s.training ? '' : stations}${s.training ? '' : gun}</svg><div class="stores-health"><span>GÉP ÁLLAPOTA</span><b style="color:${s.damage ? integrityColor(health / 100) : '#c4ef96'}">${health}%</b></div><div class="store-options">${s.training ? '<small>FEGYVERZET NÉLKÜL</small>' : rows}</div>`;
+  return `<div class="stores-heading"><span>FEGYVERZET / ÁLLAPOT</span><small>${publicVariant}</small></div><svg viewBox="${box}" role="img" aria-label="${publicVariant} sematikus felülnézet; sérült részek sárgától pirosig"><path class="stores-silhouette" d="${silhouette}"/>${damage}<path class="stores-airframe" d="${lines}"/>${s.training ? '' : stations}${s.training ? '' : gun}</svg><div class="stores-health"><span>GÉP ÁLLAPOTA</span><b style="color:${s.damage ? integrityColor(health / 100) : '#c4ef96'}">${health}%</b></div><div class="store-options">${s.training ? '<small>FEGYVERZET NÉLKÜL</small>' : rows}</div>`;
 }
 let signature = '';
 export function updateStores(s, weapons, options = {}) {

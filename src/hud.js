@@ -1,3 +1,4 @@
+import { equipmentLabel } from './equipmentCatalog.js';
 import { tr, trHtml } from './i18n.js';
 import { ironVeilVisibleRows } from './ironVeil.js';
 import { tailGunStatus } from './tailGunnery.js';
@@ -243,7 +244,7 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
       : mission.spec.objective === 'landing'
         ? 'LESZÁLLÁSI GYAKORLAT · BASE'
         : selected?.visible
-          ? `${selected.target.name.toUpperCase()} · ${(selected.distance / 1000).toFixed(1)} KM · ${aim.locked ? 'BEFOGVA' : lock.state === 'acquiring' ? 'BEFOGÁS' : 'KIJELÖLVE'}`
+          ? `${equipmentLabel(selected.target, { compact: true }).toUpperCase()} · ${(selected.distance / 1000).toFixed(1)} KM · ${aim.locked ? 'BEFOGVA' : lock.state === 'acquiring' ? 'BEFOGÁS' : 'KIJELÖLVE'}`
           : mission.spec.objective === 'escort' && mission.objectiveComplete
             ? 'CIVIL TÁVOZOTT · RTB'
             : mission.civilIntercepted

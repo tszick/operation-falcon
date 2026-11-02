@@ -1,0 +1,754 @@
+[
+  {
+    "kind": "aircraft",
+    "id": "f14",
+    "code": "US-INT-102",
+    "nickname": "Twinwatch",
+    "legacyAliases": ["F-14 Tomcat", "F-14A", "F-14", "F14"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "f15",
+    "code": "US-AS-101",
+    "nickname": "Highguard",
+    "legacyAliases": ["F-15 Eagle", "F-15C", "F-15", "F15"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "f16",
+    "code": "US-MR-101",
+    "nickname": "Skywarden",
+    "legacyAliases": ["F-16 Fighting Falcon", "F-16C", "F-16", "F16"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "fa18",
+    "code": "US-MR-102",
+    "nickname": "Seawing",
+    "legacyAliases": ["F/A-18C Hornet", "F/A-18 Hornet", "F/A-18C", "F/A-18", "F-18", "FA18"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "mirage",
+    "code": "FR-MR-101",
+    "nickname": "Sunveil",
+    "legacyAliases": ["Mirage 2000C", "Mirage 2000", "Mirage"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "rafale",
+    "code": "FR-MR-102",
+    "nickname": "Windspire",
+    "legacyAliases": ["Dassault Rafale", "Rafale C", "Rafale"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "euro",
+    "code": "EU-MR-101",
+    "nickname": "Stormward",
+    "legacyAliases": ["Eurofighter Typhoon", "Typhoon FGR4", "Eurofighter", "Typhoon"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "gripen",
+    "code": "SE-MR-101",
+    "nickname": "Pinewing",
+    "legacyAliases": ["JAS 39 Gripen", "JAS 39C", "JAS 39", "Gripen"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "f4",
+    "code": "US-ATK-101",
+    "nickname": "Ironwake",
+    "legacyAliases": ["F-4 Phantom II", "F-4E", "F-4", "F4"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "f15e",
+    "code": "US-ATK-102",
+    "nickname": "Stormlance",
+    "legacyAliases": ["F-15E Strike Eagle", "F-15E", "F15E"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "tornado",
+    "code": "EU-ATK-101",
+    "nickname": "Rainhammer",
+    "legacyAliases": ["Tornado IDS", "Tornado"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "a10",
+    "code": "US-ATK-103",
+    "nickname": "Groundwarden",
+    "legacyAliases": ["A-10 Thunderbolt II", "Warthog", "A-10A", "A-10", "A10"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "mig25",
+    "code": "SU-INT-201",
+    "nickname": "Frostwatch",
+    "legacyAliases": ["MiG-25 Foxbat", "MiG-25PD", "MiG-25", "MIG25"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "mig31",
+    "code": "SU-INT-202",
+    "nickname": "Icewarden",
+    "legacyAliases": ["MiG-31 Foxhound", "MiG-31B", "MiG-31", "MIG31"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "su27",
+    "code": "SU-AS-201",
+    "nickname": "Snowlance",
+    "legacyAliases": ["Su-27 Flanker", "Su-27S", "Su-27", "SU27"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "mig29",
+    "code": "SU-MR-201",
+    "nickname": "Frostwing",
+    "legacyAliases": ["MiG-29 Fulcrum", "MiG-29A", "MiG-29", "MIG29"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "su24",
+    "code": "SU-ATK-201",
+    "nickname": "Ironfrost",
+    "legacyAliases": ["Su-24 Fencer", "Su-24M", "Su-24", "SU24"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "mig27",
+    "code": "SU-ATK-202",
+    "nickname": "Stonewing",
+    "legacyAliases": ["MiG-27 Flogger", "MiG-27K", "MiG-27", "MIG27"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "su25",
+    "code": "SU-ATK-203",
+    "nickname": "Mudwarden",
+    "legacyAliases": ["Su-25 Frogfoot", "Su-25", "SU25"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "f22",
+    "code": "US-AS-102",
+    "nickname": "Nightwarden",
+    "legacyAliases": ["F-22A Raptor", "F-22A", "F-22", "F22"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "f35",
+    "code": "US-MR-103",
+    "nickname": "Duskspear",
+    "legacyAliases": ["F-35A Lightning II", "F-35A", "F-35", "F35"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "su35",
+    "code": "RU-MR-201",
+    "nickname": "Winterspire",
+    "legacyAliases": ["Su-35S Flanker-E", "Su-35S", "Su-35", "SU35"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "su57",
+    "code": "RU-AS-201",
+    "nickname": "Duskveil",
+    "legacyAliases": ["Su-57E Felon", "Su-57E", "Su-57", "SU57"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "j10",
+    "code": "CN-MR-301",
+    "nickname": "Jadewing",
+    "legacyAliases": ["Chengdu J-10C", "J-10C", "J-10", "J10"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "j20",
+    "code": "CN-AS-301",
+    "nickname": "Jadeveil",
+    "legacyAliases": ["Chengdu J-20", "J-20", "J20"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "harrier",
+    "code": "US-ATK-104",
+    "nickname": "Hoverwing",
+    "legacyAliases": ["AV-8B Harrier II Plus", "AV-8B II Plus", "HARRIER", "Harrier", "AV-8B"],
+    "legacyForms": [
+      {
+        "text": "Harriernek",
+        "suffix": " gépnek"
+      },
+      {
+        "text": "Harriers",
+        "suffix": " aircraft"
+      }
+    ]
+  },
+  {
+    "kind": "aircraft",
+    "id": "b52",
+    "code": "US-BMR-101",
+    "nickname": "Longwatch",
+    "legacyAliases": ["B-52 Stratofortress", "B-52H", "B-52", "B52"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "tu95",
+    "code": "SU-BMR-201",
+    "nickname": "Northwind",
+    "legacyAliases": ["Tu-95 Bear", "Tu-95", "TU95"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "kc135",
+    "code": "US-TNK-101",
+    "nickname": "Highspring",
+    "legacyAliases": ["KC-135R Stratotanker", "KC-135R", "KC-135", "KC135"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "c130",
+    "code": "US-TRP-101",
+    "nickname": "Waybridge",
+    "legacyAliases": ["C-130H Hercules", "C-130 Hercules", "C-130H", "C-130", "C130"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "il76",
+    "code": "SU-TRP-201",
+    "nickname": "Snowbridge",
+    "legacyAliases": ["Il-76 Candid", "Il-76", "IL76"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "c130j",
+    "code": "US-TRP-102",
+    "nickname": "Wayfarer",
+    "legacyAliases": ["C-130J Super Hercules", "C-130J", "C130J"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "il76md90a",
+    "code": "RU-TRP-201",
+    "nickname": "Northbridge",
+    "legacyAliases": ["Il-76MD-90A", "IL76MD90A"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "y20",
+    "code": "CN-TRP-301",
+    "nickname": "Cloudbridge",
+    "legacyAliases": ["Y-20 Kunpeng", "Y-20", "Y20"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "airliner",
+    "code": "CIV-TRP-001",
+    "nickname": "Skylane",
+    "legacyAliases": ["Civil utasszállító", "Civilian airliner"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "x29",
+    "code": "US-EXP-101",
+    "nickname": "Forewing",
+    "legacyAliases": ["Grumman X-29A", "X-29A", "X-29", "X29"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "yf23",
+    "code": "US-EXP-102",
+    "nickname": "Nightweave",
+    "legacyAliases": ["Northrop YF-23A Black Widow II", "YF-23A", "YF-23", "YF23"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "x32",
+    "code": "US-EXP-103",
+    "nickname": "Widewake",
+    "legacyAliases": ["Boeing X-32A", "X-32A", "X-32", "X32"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "t4",
+    "code": "SU-EXP-201",
+    "nickname": "Redspire",
+    "legacyAliases": ["Szuhoj T-4 Sotka", "Sukhoi T-4 Sotka", "T-4 Sotka", "T-4", "T4"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "su47",
+    "code": "RU-EXP-201",
+    "nickname": "Backwind",
+    "legacyAliases": [
+      "Szuhoj Szu-47 Berkut",
+      "Sukhoi Su-47 Berkut",
+      "Su-47 Berkut",
+      "Szu-47",
+      "Su-47",
+      "SU47"
+    ]
+  },
+  {
+    "kind": "aircraft",
+    "id": "mig144",
+    "code": "RU-EXP-202",
+    "nickname": "Iceweave",
+    "legacyAliases": ["MiG 1.44 MFI", "MiG-1.44", "MiG 1.44", "MIG144"]
+  },
+  {
+    "kind": "aircraft",
+    "id": "t45",
+    "code": "US-TRN-101",
+    "nickname": "Daybreak",
+    "legacyAliases": ["T-45C Goshawk", "T-45C", "T-45", "T45"],
+    "legacyForms": [
+      {
+        "text": "T-45C Goshawkkal",
+        "suffix": " géppel"
+      }
+    ]
+  },
+  {
+    "kind": "weapon",
+    "id": "m61",
+    "code": "US-GUN-101",
+    "nickname": "Needle",
+    "legacyAliases": ["M61A2", "M61A1", "M61"]
+  },
+  {
+    "kind": "weapon",
+    "id": "defa",
+    "code": "FR-GUN-101",
+    "nickname": "Flint",
+    "legacyAliases": ["DEFA 554"]
+  },
+  {
+    "kind": "weapon",
+    "id": "giat",
+    "code": "FR-GUN-102",
+    "nickname": "Cinder",
+    "legacyAliases": ["30 M 791"]
+  },
+  {
+    "kind": "weapon",
+    "id": "bk27",
+    "code": "DE-GUN-101",
+    "nickname": "Rivet",
+    "legacyAliases": ["BK-27"]
+  },
+  {
+    "kind": "weapon",
+    "id": "gau8",
+    "code": "US-GUN-102",
+    "nickname": "Stoneburst",
+    "legacyAliases": ["GAU-8/A"]
+  },
+  {
+    "kind": "weapon",
+    "id": "gsh23",
+    "code": "SU-GUN-201",
+    "nickname": "Frostburst",
+    "legacyAliases": ["GSh-6-23M", "GSh-6-23", "GSh-23"]
+  },
+  {
+    "kind": "weapon",
+    "id": "gsh30",
+    "code": "SU-GUN-202",
+    "nickname": "Iceburst",
+    "legacyAliases": ["GSh-30-2", "GSh-30-1"]
+  },
+  {
+    "kind": "weapon",
+    "id": "gsh630",
+    "code": "SU-GUN-203",
+    "nickname": "Ironburst",
+    "legacyAliases": ["GSh-6-30"]
+  },
+  {
+    "kind": "weapon",
+    "id": "gau22",
+    "code": "US-GUN-103",
+    "nickname": "Duskburst",
+    "legacyAliases": ["GAU-22/A"]
+  },
+  {
+    "kind": "weapon",
+    "id": "gau12",
+    "code": "US-GUN-104",
+    "nickname": "Hoverburst",
+    "legacyAliases": ["GAU-12/U"]
+  },
+  {
+    "kind": "weapon",
+    "id": "aim7m",
+    "code": "US-AAM-103",
+    "nickname": "Brightwatch",
+    "legacyAliases": ["AIM-7M Sparrow", "Sparrow", "AIM-7M"]
+  },
+  {
+    "kind": "weapon",
+    "id": "aim9m",
+    "code": "US-AAM-101",
+    "nickname": "Spark",
+    "legacyAliases": ["AIM-9M Sidewinder", "Sidewinder", "AIM-9M"]
+  },
+  {
+    "kind": "weapon",
+    "id": "magic2",
+    "code": "FR-AAM-101",
+    "nickname": "Starflare",
+    "legacyAliases": ["R550 Magic II", "Magic II", "R550"]
+  },
+  {
+    "kind": "weapon",
+    "id": "mica",
+    "code": "FR-AAM-102",
+    "nickname": "Sunneedle",
+    "legacyAliases": ["MICA IR", "MICA"]
+  },
+  {
+    "kind": "weapon",
+    "id": "aim120",
+    "code": "US-AAM-105",
+    "nickname": "Farpoint",
+    "legacyAliases": ["AIM-120 AMRAAM", "AIM-120", "AMRAAM"]
+  },
+  {
+    "kind": "weapon",
+    "id": "aim9l",
+    "code": "US-AAM-104",
+    "nickname": "Glow",
+    "legacyAliases": ["AIM-9L Sidewinder", "AIM-9L"]
+  },
+  {
+    "kind": "weapon",
+    "id": "aim7e",
+    "code": "US-AAM-102",
+    "nickname": "Watchfire",
+    "legacyAliases": ["AIM-7E Sparrow", "AIM-7E"]
+  },
+  {
+    "kind": "weapon",
+    "id": "r40",
+    "code": "SU-AAM-201",
+    "nickname": "Frostreach",
+    "legacyAliases": ["R-40"]
+  },
+  {
+    "kind": "weapon",
+    "id": "r33",
+    "code": "SU-AAM-202",
+    "nickname": "Icepoint",
+    "legacyAliases": ["R-33"]
+  },
+  {
+    "kind": "weapon",
+    "id": "r73",
+    "code": "SU-AAM-203",
+    "nickname": "Frostspark",
+    "legacyAliases": ["R-73"]
+  },
+  {
+    "kind": "weapon",
+    "id": "r60m",
+    "code": "SU-AAM-204",
+    "nickname": "Coldspark",
+    "legacyAliases": ["R-60M"]
+  },
+  {
+    "kind": "weapon",
+    "id": "aim120c",
+    "code": "US-AAM-106",
+    "nickname": "Farpoint-II",
+    "legacyAliases": ["AIM-120C AMRAAM", "AIM-120C"]
+  },
+  {
+    "kind": "weapon",
+    "id": "r771",
+    "code": "RU-AAM-201",
+    "nickname": "Winterreach",
+    "legacyAliases": ["R-77-1", "R-77"]
+  },
+  {
+    "kind": "weapon",
+    "id": "rvvsdm",
+    "code": "RU-AAM-202",
+    "nickname": "Duskreach",
+    "legacyAliases": ["RVV-SDM"]
+  },
+  {
+    "kind": "weapon",
+    "id": "pl15",
+    "code": "CN-AAM-301",
+    "nickname": "Jadereach",
+    "legacyAliases": ["PL-15"]
+  },
+  {
+    "kind": "weapon",
+    "id": "mobileSam",
+    "code": "OF-SAM-101",
+    "nickname": "Trailguard",
+    "legacyAliases": ["Mobile IR Air-Defence Missile", "Mobil IR légvédelmi rakéta"]
+  },
+  {
+    "kind": "weapon",
+    "id": "seaSparrow",
+    "code": "US-SAM-101",
+    "nickname": "Seawatch",
+    "legacyAliases": ["RIM-7 Sea Sparrow", "Sea Sparrow", "RIM-7"]
+  },
+  {
+    "kind": "weapon",
+    "id": "ram",
+    "code": "US-CIW-101",
+    "nickname": "Wakeguard",
+    "legacyAliases": ["RIM-116 RAM", "RIM-116", "RAM"]
+  },
+  {
+    "kind": "weapon",
+    "id": "searam",
+    "code": "US-CIW-102",
+    "nickname": "Wakeshield",
+    "legacyAliases": ["SeaRAM rendszer", "SeaRAM system", "Phalanx", "SeaRAM"]
+  },
+  {
+    "kind": "weapon",
+    "id": "maverick",
+    "code": "US-AGM-201",
+    "nickname": "Stonepiercer",
+    "legacyAliases": [
+      "AGM-65D Maverick",
+      "AGM-65F Maverick",
+      "AGM-65 Maverick",
+      "Maverick",
+      "AGM-65F",
+      "AGM-65D",
+      "AGM-65"
+    ]
+  },
+  {
+    "kind": "weapon",
+    "id": "brimstone",
+    "code": "UK-AGM-201",
+    "nickname": "Groundneedle",
+    "legacyAliases": ["Brimstone"]
+  },
+  {
+    "kind": "weapon",
+    "id": "kh29",
+    "code": "SU-AGM-201",
+    "nickname": "Stonefrost",
+    "legacyAliases": ["Kh-29L"]
+  },
+  {
+    "kind": "weapon",
+    "id": "kh25",
+    "code": "SU-AGM-202",
+    "nickname": "Groundfrost",
+    "legacyAliases": ["Kh-25ML"]
+  },
+  {
+    "kind": "weapon",
+    "id": "mk82",
+    "code": "US-BMB-301",
+    "nickname": "Stonefall",
+    "legacyAliases": ["Mk 82-EP", "Mk 82"]
+  },
+  {
+    "kind": "weapon",
+    "id": "fab250",
+    "code": "SU-BMB-301",
+    "nickname": "Frostfall",
+    "legacyAliases": ["FAB-250"]
+  },
+  {
+    "kind": "weapon",
+    "id": "mk76",
+    "code": "US-TRB-301",
+    "nickname": "Chalkdrop",
+    "legacyAliases": ["Mk 76"]
+  },
+  {
+    "kind": "weapon",
+    "id": "type23",
+    "code": "CN-GUN-301",
+    "nickname": "Jadeburst",
+    "legacyAliases": ["Type 23-3"]
+  },
+  {
+    "kind": "unit",
+    "id": "mobile-sam",
+    "code": "OF-MSAM-101",
+    "nickname": "Trailshield",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "mobile-jammer",
+    "code": "OF-MEW-101",
+    "nickname": "Hazeweaver",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "drone-command",
+    "code": "OF-UAVC-101",
+    "nickname": "Swarmward",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "attack-drone",
+    "code": "OF-UAV-101",
+    "nickname": "Dusklet",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "carrier",
+    "code": "OF-CV-101",
+    "nickname": "Oceanward",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "destroyer",
+    "code": "OF-DD-101",
+    "nickname": "Ironwake-Sea",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "target-range",
+    "code": "OF-RNG-101",
+    "nickname": "Chalkring",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "city-building",
+    "code": "OF-CITY-101",
+    "nickname": "Cityblock",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "ballistic-silo",
+    "code": "OF-SILO-101",
+    "nickname": "Deepvault",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "ballistic",
+    "code": "OF-ICBM-101",
+    "nickname": "Skyreach",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "airbase",
+    "code": "OF-BASE-101",
+    "nickname": "Haven",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "bridge",
+    "code": "OF-BRG-101",
+    "nickname": "Spanwatch",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "bunker",
+    "code": "OF-BKR-101",
+    "nickname": "Stonekeep",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "fighter",
+    "code": "OF-FTR-001",
+    "nickname": "Airguard",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "bomber",
+    "code": "OF-BMR-001",
+    "nickname": "Strikeguard",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "transport",
+    "code": "OF-TRP-001",
+    "nickname": "Cargoward",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "convoy",
+    "code": "OF-CVY-101",
+    "nickname": "Trailchain",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "sam",
+    "code": "OF-AAA-101",
+    "nickname": "Skyburst",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "sam-system",
+    "code": "OF-SAM-201",
+    "nickname": "Skyshield",
+    "legacyAliases": []
+  },
+  {
+    "kind": "unit",
+    "id": "jammer",
+    "code": "OF-EW-101",
+    "nickname": "Veilweaver",
+    "legacyAliases": []
+  },
+  {
+    "kind": "countermeasure",
+    "id": "cm-flare",
+    "code": "OF-CM-101",
+    "nickname": "Heatveil",
+    "legacyAliases": []
+  },
+  {
+    "kind": "countermeasure",
+    "id": "cm-chaff",
+    "code": "OF-CM-102",
+    "nickname": "Echoveil",
+    "legacyAliases": []
+  },
+  {
+    "kind": "component",
+    "id": "vtol-engine",
+    "code": "US-ENG-101",
+    "nickname": "Liftwind",
+    "legacyAliases": ["Pegasus F402-RR-408A", "F402-RR-408A", "Pegasus"]
+  },
+  {
+    "kind": "weapon",
+    "id": "9a14071k",
+    "code": "RU-GUN-201",
+    "nickname": "Winterburst",
+    "legacyAliases": ["9A1-4071K"]
+  }
+]

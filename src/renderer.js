@@ -1,3 +1,4 @@
+import { catalogLabel, equipmentLabel } from './equipmentCatalog.js';
 import { windHudReadout } from './flightEnvironment.js';
 import { getRefuellingRoute } from './refuellingRoute.js';
 import { renderRefuellingCue } from './aerialRefuelling.js';
@@ -770,7 +771,7 @@ export class Renderer {
       ) {
         const contact = contacts.find((x) => x.target === t),
           locked = aim.id === t.id && aim.locked;
-        let name = t.name;
+        let name = equipmentLabel(t, { compact: true });
         if (t.team === 'ally' && t.kind === 'air')
           name =
             t.displayCallSign ||
@@ -780,7 +781,9 @@ export class Renderer {
                 ? formatCallSign({ flight: 'Falcon', number: friendlyFighters.indexOf(t) + 2 })
                 : 'Transport');
         else if (isHostile(t, s) && t.kind === 'air' && t.aircraftId)
-          name = aircraftFlightSpec(t.aircraftId).name;
+          name =
+            catalogLabel('aircraft', t.aircraftId, { compact: true }) ||
+            aircraftFlightSpec(t.aircraftId).name;
         // Unlocked hostile contacts keep their geometry/marker, without a wall of names.
         const label =
           isHostile(t, s) && !locked
@@ -1170,7 +1173,22 @@ export function renderAircraftPreview(
     c.fillStyle = '#759268';
     c.font = '10px Consolas,monospace';
     c.textAlign = 'left';
-    c.fillText(tr((model ? 'TARGET / ' : 'AIRFRAME / ') + spec.id.toUpperCase()), 15, h - 15);
+    c.fillText(
+      tr(
+        (model ? 'TARGET / ' : 'AIRFRAME / ') +
+          (catalogLabel(
+            model
+              ? spec.kind === 'weapon' || spec.kind === 'countermeasure'
+                ? spec.kind
+                : 'unit'
+              : 'aircraft',
+            spec.id,
+            { compact: true },
+          ) || spec.id.toUpperCase()),
+      ),
+      15,
+      h - 15,
+    );
     c.textAlign = 'right';
     c.fillText(tr(mode === 'vector' ? 'VECTOR MODEL' : 'SURFACE PREVIEW'), w - 15, h - 15);
     c.textAlign = 'left';

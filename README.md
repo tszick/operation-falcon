@@ -80,3 +80,11 @@ Az i18next rögzített npm-függőség, helyi ESM-példánya az `assets/vendor/i
 Az új [Invázió: Tajvan](docs/taiwan-invasion.md) bevetés a közös hullám-, harci és feltöltési rendszerekből épül fel.
 
 A [közös repülési modell](docs/flight-model.md) széllel, hajtómű-késleltetéssel, forgási csillapítással, talajhatással és Mach-függő hullámellenállással működik. A mérő- és elemzőscript exportált repülési naplókból ellenőrzi a működést.
+
+## Játékbeli névkatalógus
+
+A megjelenő típusnevek formája: `EREDET-SZEREP-SOROZAT (Fantázianév)`, például `US-MR-101 (Skywarden)`. A repülőgépek, fegyverek, földi és tengeri rendszerek közös adatai a `src/equipmentCatalogData.json` fájlban vannak; a névfeloldás a `src/equipmentCatalog.js` feladata. A wiki „Játékbeli típusjelölések” fejezete ismerteti a kódokat. A szűk repülési kijelzők csak a rövid kódot használják. A többnemzetiségű programok kódja EU, az országfüggetlen játékbeli eszközöké OF.
+
+A névkatalógus a megjelenítési réteghez tartozik. A szimuláció azonosítói, a fegyverprofilok és a régi naplók kompatibilisek maradnak. A régi megnevezések belső megfeleltetésként megmaradnak; a játékosnak megjelenő szövegek mindkét nyelven az új neveket használják. Az új naplók a katalógus verzióját és a megjelenítési nevet is rögzítik. Új típus felvételekor a katalógus és a fizikai profil külön-külön bővítendő.
+
+A saját elnevezések nem jelentenek gyártói jóváhagyást vagy jogi névellenőrzést. A műszaki modellek egyszerűsített játékbeli közelítések. A névkatalógus bevezetése nem módosítja a modellek formáját vagy a képi eszközök felhasználási feltételeit.

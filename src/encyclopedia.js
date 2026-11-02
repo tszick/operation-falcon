@@ -1,3 +1,4 @@
+import { catalogEntry, catalogLabel, renameEquipmentText } from './equipmentCatalog.js';
 import { experimentalAircraft } from './experimentalAircraft.js';
 import { trHtml, tr, formatNumber } from './i18n.js';
 import { nationalityMarkup } from './aircraftNations.js';
@@ -25,7 +26,7 @@ const entries = [
     id,
     unit,
     kind: unit.kind,
-    name: unit.name,
+    name: catalogLabel('unit', id) || unit.name,
     category: unit.category,
   })),
   ...[
@@ -58,8 +59,11 @@ const entries = [
             ? 'Szállítós küldetésen választható'
             : 'Nyugati repülőgép · küldetéstől függően választható',
   })),
-  ...weaponEntries,
-  ...countermeasureEntries,
+  ...weaponEntries.map((e) => ({ ...e, name: renameEquipmentText(e.name) })),
+  ...countermeasureEntries.map((e) => ({
+    ...e,
+    name: catalogLabel('countermeasure', e.id) || e.name,
+  })),
 ];
 
 function hashId() {
@@ -135,7 +139,7 @@ function detail() {
               `<section><h3>${escape(section.title)}</h3>${section.paragraphs.map((text) => `<p>${escape(text)}</p>`).join('')}</section>`,
           )
           .join('') +
-          `<section><h3>Forrás az elnevezéshez</h3><p><a href="${escape(extra.reference.url)}" target="_blank" rel="noopener">${escape(extra.reference.title)} ↗</a></p></section>`
+          `<section><h3>Műszaki háttérforrás</h3><p><a href="${escape(extra.reference.url)}" target="_blank" rel="noopener">${escape(extra.reference.title)} ↗</a></p></section>`
       : article
         ? pilotMarkup(selected)
         : '',
@@ -290,6 +294,18 @@ function detail() {
       ['Irányítás', 'Gépi vezérlés, a küldetésben kiosztott oldalon'],
     ];
   }
+  const identity = catalogEntry(
+    selected.spec || selected.modelId
+      ? 'aircraft'
+      : selected.kind === 'weapon'
+        ? 'weapon'
+        : selected.kind === 'countermeasure'
+          ? 'countermeasure'
+          : 'unit',
+    selected.id,
+  );
+  if (identity)
+    rows.unshift(['Katalógusjelölés', identity.code], ['Fantázianév', identity.nickname]);
   $('unit-table').hidden = !rows.length;
   $('unit-data').innerHTML = trHtml(
     rows
