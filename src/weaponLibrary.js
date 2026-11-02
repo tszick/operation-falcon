@@ -1,3 +1,4 @@
+import { renameEquipmentText } from './equipmentCatalog.js';
 import { trainingAircraft } from './trainingAircraft.js';
 import { aircraft } from './aircraftSpec.js';
 import { armament } from './armament.js';
@@ -258,7 +259,11 @@ export function weaponLibraryRows(e) {
         : 'Felszerelhető gépek',
       e.carriers.join(' · '),
     ]);
-    if (e.aliases.length > 1) rows.push(['Játékbeli változatok', e.aliases.join(' · ')]);
+    if (e.aliases.length > 1)
+      rows.push([
+        'Játékbeli változatok',
+        [...new Set(e.aliases.map((name) => renameEquipmentText(name)))].join(' · '),
+      ]);
     if (p.kind === 'missile')
       rows.push(
         ['Rávezetés', guidance[p.guidance]],

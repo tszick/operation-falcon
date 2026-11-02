@@ -1307,3 +1307,45 @@ pilotEntries.push(
     ['carrier', 'destroyer', 'harrier', 'fa18', 'guide-landing'],
   ),
 );
+
+pilotEntries.unshift(
+  guide(
+    'equipment-catalog',
+    'Játékbeli típusjelölések',
+    'Minden konkrét gép és fegyver saját katalóguskódot és zárójeles fantázianevet kap. A nevek a játékhoz tartoznak, nem hivatalos gyártói jelölések.',
+    [
+      [
+        'KÓD',
+        'A jelölés rendje: eredet – szerepkör – saját sorozatszám. Példa: US-MR-101 (Skywarden).',
+      ],
+      [
+        'EREDET',
+        'US, UK, FR, DE, SE, SU, RU és CN: a program eredete; EU: többnemzetiségű európai program; CIV: civil; OF: közös, fiktív játékbeli eszköz. A zászlók továbbra is az eredetet mutatják.',
+      ],
+      [
+        'REPÜLŐGÉPEK',
+        'MR: többfeladatú; AS: légiuralmi; INT: elfogó; ATK: csapásmérő; BMR: bombázó; TRN: kiképző; TRP: szállító; TNK: tanker; EXP: kísérleti.',
+      ],
+      [
+        'FEGYVEREK',
+        'GUN: gépágyú; AAM: levegő–levegő; AGM: levegő–föld; BMB: bomba; TRB: inert gyakorlóbomba; SAM: légvédelmi rakéta; CIW: közeli hajóvédelem; CM: elterelő.',
+      ],
+      [
+        'FÖLDI ÉS TENGERI EGYSÉGEK',
+        'AAA: légvédelmi üteg; MSAM: mobil rakétás légvédelem; EW/MEW: álló/mobil zavaró; UAV/UAVC: drón/drónirányító; CV/DD: anyahajó/romboló; SILO/ICBM: siló/interkontinentális rakéta.',
+      ],
+      [
+        'KIJELZŐ',
+        'A katalógusban a teljes kód és a fantázianév látható. A szűk repülési kijelzőkön csak a rövid kód jelenik meg. A baráti pilóták hívójele nem változik.',
+      ],
+    ],
+    [
+      'A fegyverkód mellett a rávezetést, lőtávot és célkompatibilitást is nézd meg a fegyver adatlapján.',
+    ],
+    [
+      'A sorozatszám saját katalógusszám: nem évjárat, képességi sorrend vagy valós típusjelzés.',
+      'A műszaki adatok valós forrásokból kiinduló, egyszerűsített játékbeli közelítések. Az adatlapok nem hivatalos gyártói dokumentumok.',
+    ],
+    ['f16', 't45', 'weapon-aim9m', 'carrier'],
+  ),
+);

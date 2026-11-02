@@ -23,7 +23,7 @@ test('live text translation handles templates, uppercase, markup fragments and s
   assert.equal(tr('Támadók leküzdve: 2/4'), 'Attackers neutralized: 2/4');
   assert.equal(tr('BEFOGÁS 73%'), 'ACQUIRING 73%');
   assert.equal(tr('SZERKEZET 81%'), 'STRUCTURE 81%');
-  assert.equal(tr('F-14 Tomcat'), 'F-14 Tomcat');
+  assert.equal(tr('F-14 Tomcat'), 'US-INT-102 (Twinwatch)');
   assert.equal(tr('  250 km/h  '), '  250 km/h  ');
   const value = tr('KIJELÖLVE / Védd meg a repteret · Lappföld · Észak-Finnország');
   assert.ok(value.startsWith('SELECTED / Defend the Airfield'));

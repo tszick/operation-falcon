@@ -9730,5 +9730,85 @@
   "Szerkezeti pont": {
     "hu": "Szerkezeti pont",
     "en": "Structural health"
+  },
+  "Játékbeli típusjelölések": {
+    "hu": "Játékbeli típusjelölések",
+    "en": "In-game equipment designations"
+  },
+  "Minden konkrét gép és fegyver saját katalóguskódot és zárójeles fantázianevet kap. A nevek a játékhoz tartoznak, nem hivatalos gyártói jelölések.": {
+    "hu": "Minden konkrét gép és fegyver saját katalóguskódot és zárójeles fantázianevet kap. A nevek a játékhoz tartoznak, nem hivatalos gyártói jelölések.",
+    "en": "Each aircraft and weapon has a catalogue code and a fictional name in parentheses. These are game-specific names, not official manufacturer designations."
+  },
+  "KÓD": {
+    "hu": "KÓD",
+    "en": "CODE"
+  },
+  "EREDET": {
+    "hu": "EREDET",
+    "en": "ORIGIN"
+  },
+  "REPÜLŐGÉPEK": {
+    "hu": "REPÜLŐGÉPEK",
+    "en": "AIRCRAFT"
+  },
+  "FEGYVEREK": {
+    "hu": "FEGYVEREK",
+    "en": "WEAPONS"
+  },
+  "FÖLDI ÉS TENGERI EGYSÉGEK": {
+    "hu": "FÖLDI ÉS TENGERI EGYSÉGEK",
+    "en": "GROUND AND NAVAL UNITS"
+  },
+  "A jelölés rendje: eredet – szerepkör – saját sorozatszám. Példa: US-MR-101 (Skywarden).": {
+    "hu": "A jelölés rendje: eredet – szerepkör – saját sorozatszám. Példa: US-MR-101 (Skywarden).",
+    "en": "Designation format: origin – role – catalogue serial. Example: US-MR-101 (Skywarden)."
+  },
+  "US, UK, FR, DE, SE, SU, RU és CN: a program eredete; EU: többnemzetiségű európai program; CIV: civil; OF: közös, fiktív játékbeli eszköz. A zászlók továbbra is az eredetet mutatják.": {
+    "hu": "US, UK, FR, DE, SE, SU, RU és CN: a program eredete; EU: többnemzetiségű európai program; CIV: civil; OF: közös, fiktív játékbeli eszköz. A zászlók továbbra is az eredetet mutatják.",
+    "en": "US, UK, FR, DE, SE, SU, RU and CN: programme origin; EU: multinational European programme; CIV: civilian; OF: shared fictional game equipment. Flags still show programme origin."
+  },
+  "MR: többfeladatú; AS: légiuralmi; INT: elfogó; ATK: csapásmérő; BMR: bombázó; TRN: kiképző; TRP: szállító; TNK: tanker; EXP: kísérleti.": {
+    "hu": "MR: többfeladatú; AS: légiuralmi; INT: elfogó; ATK: csapásmérő; BMR: bombázó; TRN: kiképző; TRP: szállító; TNK: tanker; EXP: kísérleti.",
+    "en": "MR: multirole; AS: air superiority; INT: interceptor; ATK: attack; BMR: bomber; TRN: trainer; TRP: transport; TNK: tanker; EXP: experimental."
+  },
+  "GUN: gépágyú; AAM: levegő–levegő; AGM: levegő–föld; BMB: bomba; TRB: inert gyakorlóbomba; SAM: légvédelmi rakéta; CIW: közeli hajóvédelem; CM: elterelő.": {
+    "hu": "GUN: gépágyú; AAM: levegő–levegő; AGM: levegő–föld; BMB: bomba; TRB: inert gyakorlóbomba; SAM: légvédelmi rakéta; CIW: közeli hajóvédelem; CM: elterelő.",
+    "en": "GUN: cannon; AAM: air-to-air; AGM: air-to-ground; BMB: bomb; TRB: inert practice bomb; SAM: surface-to-air missile; CIW: close-in naval defence; CM: countermeasure."
+  },
+  "AAA: légvédelmi üteg; MSAM: mobil rakétás légvédelem; EW/MEW: álló/mobil zavaró; UAV/UAVC: drón/drónirányító; CV/DD: anyahajó/romboló; SILO/ICBM: siló/interkontinentális rakéta.": {
+    "hu": "AAA: légvédelmi üteg; MSAM: mobil rakétás légvédelem; EW/MEW: álló/mobil zavaró; UAV/UAVC: drón/drónirányító; CV/DD: anyahajó/romboló; SILO/ICBM: siló/interkontinentális rakéta.",
+    "en": "AAA: anti-aircraft battery; MSAM: mobile SAM; EW/MEW: fixed/mobile jammer; UAV/UAVC: drone/drone controller; CV/DD: carrier/destroyer; SILO/ICBM: silo/intercontinental missile."
+  },
+  "A katalógusban a teljes kód és a fantázianév látható. A szűk repülési kijelzőkön csak a rövid kód jelenik meg. A baráti pilóták hívójele nem változik.": {
+    "hu": "A katalógusban a teljes kód és a fantázianév látható. A szűk repülési kijelzőkön csak a rövid kód jelenik meg. A baráti pilóták hívójele nem változik.",
+    "en": "The catalogue shows the full code and fictional name. Compact flight displays show only the short code. Friendly pilot call signs remain unchanged."
+  },
+  "A fegyverkód mellett a rávezetést, lőtávot és célkompatibilitást is nézd meg a fegyver adatlapján.": {
+    "hu": "A fegyverkód mellett a rávezetést, lőtávot és célkompatibilitást is nézd meg a fegyver adatlapján.",
+    "en": "Alongside the weapon code, check guidance, range and target compatibility on its data sheet."
+  },
+  "A sorozatszám saját katalógusszám: nem évjárat, képességi sorrend vagy valós típusjelzés.": {
+    "hu": "A sorozatszám saját katalógusszám: nem évjárat, képességi sorrend vagy valós típusjelzés.",
+    "en": "The serial is a catalogue number, not a year, capability ranking or real type designation."
+  },
+  "A műszaki adatok valós forrásokból kiinduló, egyszerűsített játékbeli közelítések. Az adatlapok nem hivatalos gyártói dokumentumok.": {
+    "hu": "A műszaki adatok valós forrásokból kiinduló, egyszerűsített játékbeli közelítések. Az adatlapok nem hivatalos gyártói dokumentumok.",
+    "en": "Technical data are simplified gameplay approximations informed by real sources. These data sheets are not official manufacturer documents."
+  },
+  "Katalógusjelölés": {
+    "hu": "Katalógusjelölés",
+    "en": "Catalogue designation"
+  },
+  "Fantázianév": {
+    "hu": "Fantázianév",
+    "en": "Fictional name"
+  },
+  "Műszaki háttérforrás": {
+    "hu": "Műszaki háttérforrás",
+    "en": "Technical background reference"
+  },
+  "TÍPUSJELÖLÉSEK": {
+    "hu": "TÍPUSJELÖLÉSEK",
+    "en": "TYPE DESIGNATIONS"
   }
 }

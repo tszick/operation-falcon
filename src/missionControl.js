@@ -1,3 +1,4 @@
+import { equipmentLabel } from './equipmentCatalog.js';
 import { weatherBrief } from './flightEnvironment.js';
 import { drawingContext } from './rendering/createBackend.js';
 import { tr, trHtml } from './i18n.js';
@@ -23,7 +24,7 @@ export function missionControlSnapshot(
           t.displayCallSign ||
           (t.radioCallSign
             ? `${t.radioCallSign.flight} ${numbers[t.radioCallSign.number] || t.radioCallSign.number}`
-            : t.name || t.type);
+            : equipmentLabel(t, { compact: true }));
       return {
         id: t.id,
         label,

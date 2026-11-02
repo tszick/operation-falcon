@@ -1,3 +1,4 @@
+import { renameEquipmentText } from './equipmentCatalog.js';
 import i18next from '../assets/vendor/i18next/i18next.js';
 import messages from './locales/messages.json' with { type: 'json' };
 import { readPreference, writePreference } from './ui/preferences.js';
@@ -121,6 +122,7 @@ export function tr(value) {
       : text;
   result =
     input.slice(0, input.indexOf(raw)) + result + input.slice(input.indexOf(raw) + raw.length);
+  result = renameEquipmentText(result);
   if (cache.size >= 1024) cache.delete(cache.keys().next().value);
   cache.set(input, result);
   return result;

@@ -1,3 +1,4 @@
+import { equipmentCatalogVersion, catalogLabel, equipmentLabel } from './equipmentCatalog.js';
 import { flightModelProfile } from './flightModel.js';
 import { afterburnerActive } from './engineState.js';
 import { attitude, DEG } from './math.js';
@@ -108,6 +109,7 @@ function unitData(t, w) {
     formationSlot: t.formationSlot,
     radioCallSign: t.radioCallSign,
     name: t.name,
+    displayName: equipmentLabel(t),
     displayCallSign: t.displayCallSign,
     operationWave: t.operationWave,
     cancelled: t.cancelled,
@@ -243,6 +245,8 @@ export class FlightRecorder {
       startedAt: this.now(),
       mission: copy(mission.spec),
       aircraft: copy(s.spec),
+      equipmentCatalogVersion,
+      aircraftDisplayName: catalogLabel('aircraft', s.spec.id),
       flightModelVersion: 2,
       flightModel: copy(flightModelProfile(s.spec)),
       weather: copy(s.weather),
