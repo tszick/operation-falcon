@@ -36,11 +36,15 @@ struct Farmland {colors:array<vec4f,5>, bounds:vec4f};
 @group(0) @binding(3) var farmlandMap:texture_2d<f32>;
 @group(0) @binding(4) var farmlandSampler:sampler;
 @group(0) @binding(5) var<uniform> farmland:Farmland;
-struct Out {@builtin(position) position:vec4f,@location(0) tint:vec3f,@location(1) depth:f32,@location(2) world:vec3f};
+struct Out {@builtin(position) position:vec4f,@location(0) tint:vec3f,@location(1) depth:f32,@location(2) world:vec3f,@location(3) canopyKind:f32,@location(4) canopyElevation:f32};
 @vertex fn vs(@location(0) position:vec3f,@location(1) shade:vec3f)->Out {
- var o:Out;var point=position;if(u.ground.w>0.5){point.y=max(0.03,point.y);}let relative=point-u.translation.xyz;o.position=project(relative);o.tint=shade;o.depth=(u.view*relative).z;o.world=position;return o;
+ var o:Out;var point=position;o.canopyKind=select(0.0,shade.r,shade.r>0.5&&u.ground.w<0.5);o.canopyElevation=0.0;
+ if(o.canopyKind>0.0){let lod=(1-smoothstep(2200.0,6000.0,length(position.xz-u.translation.xz)))*(1-smoothstep(1500.0,3200.0,max(0.0,u.translation.y-position.y)));o.canopyElevation=shade.b*64*lod;point.y-=shade.b*64-o.canopyElevation;}
+ if(u.ground.w>0.5){point.y=max(0.03,point.y);}let relative=point-u.translation.xyz;o.position=project(relative);o.tint=shade;o.depth=(u.view*relative).z;o.world=select(point,position,u.ground.w>0.5);return o;
 }
 @fragment fn fs(o:Out)->@location(0) vec4f {
+ if(o.canopyKind>0.0&&o.canopyElevation<0.75){discard;}
+ if(u.style.z< -0.5){return vec4f(0);}
  let grain=textureSample(surfaceMap,surfaceSampler,o.world.xz/u.style.w).rgb;
  if(u.ground.w>0.5){
   if(abs(o.world.y)<0.0001){discard;}
@@ -56,22 +60,37 @@ struct Out {@builtin(position) position:vec4f,@location(0) tint:vec3f,@location(
  }
  let normal=normalize(cross(dpdx(o.world),dpdy(o.world)));let slope=1-abs(normal.y);
  if(u.style.y>0.5){if(u.style.z>0.5){return vec4f(u.ground.rgb*0.72*0.16,0.16);}
- let light=clamp((o.tint.g-27.0/255.0)/(18.0/255.0),0.0,1.0);
+ let light=select(clamp((o.tint.g-27.0/255.0)/(18.0/255.0),0.0,1.0),o.tint.g,o.canopyKind>0.0);
  let rock=smoothstep(0.12,0.58,slope)*u.climate.x;
  let snow=u.climate.y*smoothstep(u.climate.z,u.climate.z+u.climate.w,o.world.y)*(1-smoothstep(0.25,0.68,slope));
  var base=mix(mix(u.ground.rgb,u.rock.rgb,rock),vec3f(0.89,0.92,0.95),snow);
  let landUV=o.world.xz/farmland.bounds.x+0.5;
  let field=textureSample(farmlandMap,farmlandSampler,clamp(landUV,vec2f(0),vec2f(1)));
- let fieldData=field.rgb;
+ let atlasSize=textureDimensions(farmlandMap);
+ let fieldData=textureLoad(farmlandMap,clamp(vec2i(landUV*vec2f(atlasSize)),vec2i(0),vec2i(atlasSize)-1),0).rgb;
+ let forestMaterial=1-step(0.15,fieldData.g+fieldData.b);
+ let cropValue=fieldData.r*255.0/223.0;
  let edge=max(fwidth(field.a),0.002);
  var cultivated=smoothstep(0.5-edge,0.5+edge,field.a)*(1-smoothstep(0.06,0.19,slope));
  cultivated*=step(0.0,landUV.x)*step(landUV.x,1.0)*step(0.0,landUV.y)*step(landUV.y,1.0);
  if(u.climate.z>0.0){cultivated*=1-snow;}
- var cropIndex=4u;if(fieldData.r<0.27){cropIndex=0u;}else if(fieldData.r<0.51){cropIndex=1u;}else if(fieldData.r<0.74){cropIndex=2u;}else if(fieldData.r<0.96){cropIndex=3u;}
+ cultivated*=1-forestMaterial;
+ var cropIndex=4u;if(cropValue<0.27){cropIndex=0u;}else if(cropValue<0.51){cropIndex=1u;}else if(cropValue<0.74){cropIndex=2u;}else if(cropValue<0.96){cropIndex=3u;}
  let direction=normalize(fieldData.gb*2-1+vec2f(0.0001));
  let row=dot(o.world.xz,direction)/8;
  let furrow=sin(row*6.2831853)*0.09*(1-smoothstep(0.2,0.7,fwidth(row)));
  base=mix(base,farmland.colors[cropIndex].rgb*(1+furrow),cultivated*0.86);
+ let treeType=select(step(0.96,fieldData.r),step(0.7,o.canopyKind),o.canopyKind>0.0);
+ var leaf=mix(vec3f(0.11,0.25,0.065),vec3f(0.065,0.18,0.11),treeType);
+ var crown=sin(o.world.x*0.17+sin(o.world.z*0.11))*sin(o.world.z*0.15+sin(o.world.x*0.13))*0.14;
+ crown*=1-smoothstep(0.3,1.2,max(fwidth(o.world.x),fwidth(o.world.z))*0.1);
+ leaf*=0.94+crown;
+ if(u.ground.r>0.6&&u.climate.z>0.0){leaf=mix(leaf,vec3f(0.31,0.30,0.13),0.7);}
+ let winter=u.climate.y*(1-step(0.0,u.climate.z));
+ leaf=mix(leaf,vec3f(0.73,0.79,0.76),winter*clamp(abs(normal.y)*0.58+0.15+crown,0.0,1.0));
+ var forestWeight=forestMaterial*smoothstep(0.5-edge,0.5+edge,field.a)*(1-smoothstep(0.20,0.55,slope))*(1-smoothstep(1500.0,2100.0,o.world.y));
+ if(o.canopyKind>0.0){forestWeight=1.0;}
+ base=mix(base,leaf,forestWeight);
  let color=base*(0.48+0.52*light)*(0.78+grain*0.42)*u.style.x;
  let fog=smoothstep(u.haze.w*0.18,u.haze.w,o.depth)*0.72;return vec4f(mix(color,u.haze.rgb,fog),1);}
  if(u.style.z>0.5){var alpha=0.32;if(o.depth<3200){alpha=0.72;}else if(o.depth<10000){alpha=0.54;}return vec4f(vec3f(115.0,163.0,96.0)/255.0*alpha,alpha);}

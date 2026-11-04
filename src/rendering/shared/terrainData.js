@@ -16,13 +16,15 @@ export function terrainBuffers(faces, { wire = true } = {}) {
         .map((v) => v / 255);
       colors.set(face.color, color);
     }
+    let vertexIndex = 0;
     for (const p of face.points) {
       fills[offset++] = p.x;
       fills[offset++] = p.y;
       fills[offset++] = p.z;
       fills[offset++] = color[0];
       fills[offset++] = color[1];
-      fills[offset++] = color[2];
+      fills[offset++] = face.canopyHeights ? face.canopyHeights[vertexIndex] / 64 : color[2];
+      vertexIndex++;
     }
     if (!wire) continue;
     for (let i = 0; i < 3; i++) {
@@ -42,17 +44,8 @@ export function terrainBuffers(faces, { wire = true } = {}) {
 }
 export function packedTerrainBuffers(faces, { wire = true } = {}) {
   const data = terrainBuffers(faces, { wire }),
-    mask = new Float32Array(faces.length * 15),
     gpuLines = new Float32Array(data.lines.length * 2);
-  let cursor = 0;
-  for (const face of faces)
-    for (const p of face.points) {
-      mask[cursor++] = p.x;
-      mask[cursor++] = p.y;
-      mask[cursor++] = p.z;
-      cursor += 2;
-    }
   for (let i = 0; i < data.lines.length / 3; i++)
     gpuLines.set(data.lines.subarray(i * 3, i * 3 + 3), i * 6);
-  return { ...data, mask, gpuLines, faceCount: faces.length };
+  return { ...data, gpuLines, faceCount: faces.length };
 }

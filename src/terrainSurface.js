@@ -1,3 +1,4 @@
+import { forestCanopyFaces } from './forests.js';
 import { TerrainBuildQueue } from './terrainBuildQueue.js';
 import { packedTerrainBuffers } from './rendering/shared/terrainData.js';
 import { groundVehiclePatches } from './vehicleGrounding.js';
@@ -91,6 +92,33 @@ export function buildTerrainSurface(
     }
     return p;
   };
+  // Drape vegetation onto the rendered triangles, rather than the denser analytic
+  // height field, so a canopy edge cannot intersect the coarser ground mesh.
+  const interval = (values, value) => {
+    let lo = 0,
+      hi = values.length - 1;
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      if (values[mid] <= value) lo = mid;
+      else hi = mid;
+    }
+    return Math.min(values.length - 2, lo);
+  };
+  const surfaceAt = (x, z) => {
+    const ix = interval(xs, x),
+      iz = interval(zs, z);
+    const x0 = xs[ix],
+      x1 = xs[ix + 1],
+      z0 = zs[iz],
+      z1 = zs[iz + 1];
+    const tx = (x - x0) / (x1 - x0),
+      tz = (z - z0) / (z1 - z0);
+    const a = point(x0, z0).y,
+      b = point(x1, z0).y,
+      c = point(x1, z1).y,
+      d = point(x0, z1).y;
+    return tx >= tz ? a + (b - a) * tx + (c - b) * tz : a + (c - d) * tx + (d - a) * tz;
+  };
   const points = zs.map((z) => xs.map((x) => point(x, z))),
     faces = [];
   const add = (pts) => {
@@ -106,6 +134,8 @@ export function buildTerrainSurface(
   };
   if (vehiclePatches.length) {
     for (const triangle of refinedTerrainTriangles(xs, zs, point, vehiclePatches)) add(triangle);
+    if (heightAt === terrainHeight)
+      faces.push(...forestCanopyFaces(cx, cz, terrainWorld, terrainHeight, surfaceAt));
     return faces;
   }
   for (let z = 0; z < points.length - 1; z++)
@@ -117,6 +147,8 @@ export function buildTerrainSurface(
       add([a, b, c]);
       add([a, c, d]);
     }
+  if (heightAt === terrainHeight)
+    faces.push(...forestCanopyFaces(cx, cz, terrainWorld, terrainHeight, surfaceAt));
   return faces;
 }
 export function terrainGridCenter(camera, previous = null) {
@@ -164,6 +196,7 @@ export function terrainSnapshot() {
   const world = {};
   for (const key of [
     'revision',
+    'skySeed',
     'noAirfield',
     'ocean',
     'islands',
@@ -264,7 +297,7 @@ export function renderTerrainSurface(r, targets = []) {
     c.closePath();
     // Opaque fill covers the far slope, stars and all previously painted grid lines.
     const color =
-      !face.ocean && r.surfaceMode && r.surfaceMode !== 'vector'
+      !face.forest && !face.ocean && r.surfaceMode && r.surfaceMode !== 'vector'
         ? `rgb(${terrainTint(
             r.surfaceMode,
             face.normal.y,
@@ -273,7 +306,11 @@ export function renderTerrainSurface(r, targets = []) {
           )
             .map((v) => Math.round(v * 255))
             .join(',')})`
-        : face.color;
+        : face.forest
+          ? r.surfaceMode === 'winter'
+            ? 'rgb(112,139,126)'
+            : 'rgb(24,57,25)'
+          : face.color;
     c.fillStyle = color;
     c.fill();
     c.strokeStyle = color;

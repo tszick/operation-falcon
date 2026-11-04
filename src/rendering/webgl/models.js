@@ -163,6 +163,18 @@ export class GpuModels {
   }
   terrainDepth(r) {
     if (!r.worldOcclusion || !r.terrainSurface) return;
+    // Reuse the terrain vertex transform so the canopy and its depth mask have identical LOD.
+    if (this.terrainPainter) {
+      const g = this.gl;
+      g.colorMask(false, false, false, false);
+      try {
+        this.terrainPainter.render(r, { depthOnly: true });
+      } finally {
+        g.colorMask(true, true, true, true);
+        g.useProgram(this.program);
+      }
+      return;
+    }
     const g = this.gl,
       l = this.locations;
     if (this.terrainKey !== r.terrainSurfaceKey) {

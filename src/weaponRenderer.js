@@ -6,14 +6,18 @@ const project = (r, p) => (r.projectWorld ? r.projectWorld(p) : r.project(p));
 function glow(c, p, radius, alpha = 1) {
   const r = Math.max(1, radius),
     gradient = c.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
-  gradient.addColorStop(0, `rgba(255,250,210,${alpha})`);
-  gradient.addColorStop(0.2, `rgba(255,211,115,${alpha * 0.85})`);
-  gradient.addColorStop(0.55, `rgba(248,128,45,${alpha * 0.45})`);
+  gradient.addColorStop(0, 'rgba(255,250,210,1)');
+  gradient.addColorStop(0.2, 'rgba(255,211,115,.85)');
+  gradient.addColorStop(0.55, 'rgba(248,128,45,.45)');
   gradient.addColorStop(1, 'rgba(238,94,25,0)');
+  // Opacity belongs to the draw, not the gradient texture cache key.
+  const opacity = c.globalAlpha;
+  c.globalAlpha = opacity * alpha;
   c.fillStyle = gradient;
   c.beginPath();
   c.arc(p.x, p.y, r, 0, Math.PI * 2);
   c.fill();
+  c.globalAlpha = opacity;
 }
 function contour(c, p, radius, phase, age) {
   c.beginPath();
