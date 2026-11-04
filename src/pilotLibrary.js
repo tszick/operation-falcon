@@ -1349,3 +1349,36 @@ pilotEntries.unshift(
     ['f16', 't45', 'weapon-aim9m', 'carrier'],
   ),
 );
+
+pilotEntries.unshift(
+  guide(
+    'altitude-performance',
+    'Magassági teljesítmény',
+    'A csúcsmagasság közelében elfogy az emelkedési tartalék. A tömeg, a fegyverzet és a sérülések módosítják, milyen magasan tartható a repülés.',
+    [
+      [
+        'REFERENCIA',
+        'Az adatlap csúcsmagassága tiszta, sérülésmentes gépre, fél belső üzemanyaggal és maximális hajtómű-teljesítménnyel hangolt játékbeli referencia.',
+      ],
+      [
+        'EMELKEDÉS',
+        'Nagy magasságon finoman emelkedj. Az orr túlzott felhúzása sebességvesztést és átesést okozhat. Figyeld az IAS, Mach és V/S értékeket.',
+      ],
+      [
+        'TELJESÍTMÉNY',
+        'Ha elfogyott az emelkedési tartalék, engedd le az orrot, őrizd meg a sebességet és szükség szerint süllyedj. Utánégetős típusnál a SHIFT segíthet, de több üzemanyagot fogyaszt.',
+      ],
+      [
+        'TERHELÉS',
+        'Több üzemanyag, nehezebb fegyverzet, nyitott futómű vagy fék, illetve hajtómű- és szárnysérülés csökkenti az elérhető magasságot.',
+      ],
+    ],
+    [
+      'A csúcsmagasság nem láthatatlan fal: lendületből vagy könnyebb géppel átmenetileg fölé is emelkedhetsz.',
+    ],
+    [
+      'Az alacsony IAS nagy valódi sebesség mellett is átesésveszélyt jelezhet. A csúcsmagasság nem jelent biztonságos manőverezési magasságot.',
+    ],
+    ['guide-takeoff', 'guide-return', 'guide-landing'],
+  ),
+);

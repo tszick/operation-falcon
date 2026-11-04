@@ -9810,5 +9810,65 @@
   "TÍPUSJELÖLÉSEK": {
     "hu": "TÍPUSJELÖLÉSEK",
     "en": "TYPE DESIGNATIONS"
+  },
+  "EMELKEDÉSI TARTALÉK ELFOGYOTT": {
+    "hu": "EMELKEDÉSI TARTALÉK ELFOGYOTT",
+    "en": "CLIMB PERFORMANCE EXHAUSTED"
+  },
+  "Magassági teljesítmény": {
+    "hu": "Magassági teljesítmény",
+    "en": "High-altitude performance"
+  },
+  "A csúcsmagasság közelében elfogy az emelkedési tartalék. A tömeg, a fegyverzet és a sérülések módosítják, milyen magasan tartható a repülés.": {
+    "hu": "A csúcsmagasság közelében elfogy az emelkedési tartalék. A tömeg, a fegyverzet és a sérülések módosítják, milyen magasan tartható a repülés.",
+    "en": "Climb reserve diminishes near the service ceiling. Weight, stores and damage change the altitude at which flight can be sustained."
+  },
+  "REFERENCIA": {
+    "hu": "REFERENCIA",
+    "en": "REFERENCE"
+  },
+  "Az adatlap csúcsmagassága tiszta, sérülésmentes gépre, fél belső üzemanyaggal és maximális hajtómű-teljesítménnyel hangolt játékbeli referencia.": {
+    "hu": "Az adatlap csúcsmagassága tiszta, sérülésmentes gépre, fél belső üzemanyaggal és maximális hajtómű-teljesítménnyel hangolt játékbeli referencia.",
+    "en": "The listed ceiling is a gameplay reference calibrated for a clean, undamaged aircraft with half internal fuel and maximum installed thrust."
+  },
+  "EMELKEDÉS": {
+    "hu": "EMELKEDÉS",
+    "en": "CLIMB"
+  },
+  "Nagy magasságon finoman emelkedj. Az orr túlzott felhúzása sebességvesztést és átesést okozhat. Figyeld az IAS, Mach és V/S értékeket.": {
+    "hu": "Nagy magasságon finoman emelkedj. Az orr túlzott felhúzása sebességvesztést és átesést okozhat. Figyeld az IAS, Mach és V/S értékeket.",
+    "en": "Climb gently at high altitude. Excessive nose-up attitude can bleed speed and cause a stall. Watch IAS, Mach and V/S."
+  },
+  "TELJESÍTMÉNY": {
+    "hu": "TELJESÍTMÉNY",
+    "en": "PERFORMANCE"
+  },
+  "Ha elfogyott az emelkedési tartalék, engedd le az orrot, őrizd meg a sebességet és szükség szerint süllyedj. Utánégetős típusnál a SHIFT segíthet, de több üzemanyagot fogyaszt.": {
+    "hu": "Ha elfogyott az emelkedési tartalék, engedd le az orrot, őrizd meg a sebességet és szükség szerint süllyedj. Utánégetős típusnál a SHIFT segíthet, de több üzemanyagot fogyaszt.",
+    "en": "When climb reserve is exhausted, lower the nose, preserve airspeed and descend as needed. SHIFT can help on an afterburning aircraft, at the cost of more fuel."
+  },
+  "TERHELÉS": {
+    "hu": "TERHELÉS",
+    "en": "LOAD"
+  },
+  "Több üzemanyag, nehezebb fegyverzet, nyitott futómű vagy fék, illetve hajtómű- és szárnysérülés csökkenti az elérhető magasságot.": {
+    "hu": "Több üzemanyag, nehezebb fegyverzet, nyitott futómű vagy fék, illetve hajtómű- és szárnysérülés csökkenti az elérhető magasságot.",
+    "en": "More fuel, heavier stores, extended gear or brakes, and engine or wing damage reduce attainable altitude."
+  },
+  "A csúcsmagasság nem láthatatlan fal: lendületből vagy könnyebb géppel átmenetileg fölé is emelkedhetsz.": {
+    "hu": "A csúcsmagasság nem láthatatlan fal: lendületből vagy könnyebb géppel átmenetileg fölé is emelkedhetsz.",
+    "en": "The ceiling is not an invisible wall: momentum or a lighter aircraft can carry you above it."
+  },
+  "Az alacsony IAS nagy valódi sebesség mellett is átesésveszélyt jelezhet. A csúcsmagasság nem jelent biztonságos manőverezési magasságot.": {
+    "hu": "Az alacsony IAS nagy valódi sebesség mellett is átesésveszélyt jelezhet. A csúcsmagasság nem jelent biztonságos manőverezési magasságot.",
+    "en": "Low IAS can indicate stall risk even at high true airspeed. The service ceiling is not a safe manoeuvring altitude."
+  },
+  "Magassági referencia": {
+    "hu": "Magassági referencia",
+    "en": "Altitude reference"
+  },
+  "Tiszta gép · 50% belső üzemanyag · maximális tolóerő": {
+    "hu": "Tiszta gép · 50% belső üzemanyag · maximális tolóerő",
+    "en": "Clean aircraft · 50% internal fuel · maximum thrust"
   }
 }

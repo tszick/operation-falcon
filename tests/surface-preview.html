@@ -60,6 +60,7 @@
         <option value="models">Gépek és katonai járművek</option>
         <option value="busy">Sok gép és város</option>
         <option value="high">Nagy magasság</option>
+        <option value="farmland">Művelt földek</option>
       </select></label
     ><button id="benchmark">Tájváltozatok összehasonlítása</button><a href="/">Játék</a
     ><small>Hang nélkül, álló tesztjelenet · a játék fizikáját nem módosítja.</small>
@@ -154,7 +155,10 @@
       })),
     ];
     function pose() {
-      if ($('scene').value === 'busy') {
+      if ($('scene').value === 'farmland') {
+        s.position = new Vec3(3000, 2500, -6500);
+        s.orientation = Quat.euler(0.5, -0.55, 0);
+      } else if ($('scene').value === 'busy') {
         s.position = new Vec3(0, 900, -380);
         s.orientation = Quat.euler(0, -0.12, 0);
       } else if ($('scene').value === 'models') {

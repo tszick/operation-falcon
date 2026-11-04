@@ -190,9 +190,10 @@ export function steerCoordinatedFlight(t, plan, dt) {
     engineSpool: t.throttle ?? 0.65,
     afterburnerSpool: 0,
   });
-  engine.throttle = plan.targetSpeed > speed ? 1 : 0.5;
+  engine.throttle = plan.targetSpeed > speed || plan.position.y > t.position.y + 100 ? 1 : 0.5;
   const thrust =
     stepEngine(engine, dt, plan.afterburner) * thrustFactor(limits.spec, limits.air, mach);
+  const availableClimb = ((thrust - drag) * speed) / (limits.mass * 9.81);
   const acceleration = Math.min(6, (thrust - drag) / limits.mass),
     deceleration = Math.min(
       3.5,
@@ -219,15 +220,24 @@ export function steerCoordinatedFlight(t, plan, dt) {
         plan.groundAttack ? -60 : -15,
         plan.groundAttack ? 45 : 22,
       );
-  t.airVelocity = new Vec3(Math.sin(t.heading) * next, vertical, Math.cos(t.heading) * next);
+  // Positive climb spends excess power; it is never free scripted altitude gain.
+  // Negative excess is already removed from horizontal speed, avoiding a double energy loss.
+  const climb = Math.min(vertical, Math.max(0, availableClimb));
+  const climbCost = (9.81 * Math.max(0, climb)) / speed;
+  const climbSpeed = Math.max(1, next - climbCost * dt);
+  t.airVelocity = new Vec3(
+    Math.sin(t.heading) * climbSpeed,
+    climb,
+    Math.cos(t.heading) * climbSpeed,
+  );
   t.velocity = t.airVelocity.clone();
   if (t.wind) {
     t.velocity.add(t.wind);
     t.windAppliedVelocity = t.velocity;
   }
-  t.pitch = Math.atan2(vertical, next);
+  t.pitch = Math.atan2(climb, climbSpeed);
   t.afterburner = plan.afterburner;
-  t.throttle = plan.targetSpeed > speed ? 1 : 0.5;
+  t.throttle = engine.throttle;
 }
 
 export function areaDefensePlan(t, target, context) {

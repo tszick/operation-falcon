@@ -5,6 +5,7 @@ import {
   groundEffectFactor,
   waveDragCoefficient,
   thrustFactor,
+  altitudePerformance,
 } from './flightModel.js';
 import { externalStoreCount } from './armament.js';
 import {
@@ -254,7 +255,19 @@ export function stepAircraft(s, input, dt = STEP) {
     .add(liftDir.scale(lift / m))
     .add(new Vec3(0, -9.81, 0));
   if (s.naval?.catapult) acc.add(navalAcceleration(s));
+  // At most two small envelope scans per simulated second; no per-frame ceiling search.
+  if (!s.altitudePerformance || s.elapsed >= (s.nextAltitudeCheck || 0)) {
+    s.altitudePerformance = altitudePerformance(spec, s.position.y, m, {
+      engine: response.engine,
+      lift: response.lift,
+      drag: cd - spec.cd0 - spec.inducedDrag * cl * cl * groundFactor - waveCd,
+      thrust: isAB ? spec.abThrust : spec.thrust,
+    });
+    s.nextAltitudeCheck = s.elapsed + 0.5;
+  }
   s.forces = {
+    maximumSustainedClimbMps: s.altitudePerformance.maxClimbMps,
+    bestClimbTASMps: s.altitudePerformance.bestSpeedMps,
     catapultN: s.naval?.catapult ? 40 * m : 0,
     nozzleDeg: s.naval?.nozzle || 0,
     massKg: m,
@@ -457,19 +470,24 @@ export function stepAircraft(s, input, dt = STEP) {
                 ? 'TÚL NAGY SEBESSÉG'
                 : s.position.y > spec.ceiling
                   ? 'CSÚCSMAGASSÁG FELETT'
-                  : s.fuel <= 0
-                    ? 'HAJTÓMŰ LEÁLLT'
-                    : s.fuel < spec.fuelCapacity * 0.1
-                      ? 'KRITIKUS ÜZEMANYAG'
-                      : s.fuel < spec.fuelCapacity * 0.25
-                        ? 'BINGO FUEL'
-                        : s.onGround && !s.landing?.success && v > spec.approachSpeed
-                          ? 'ROTATE — EMELD AZ ORROT'
-                          : !s.onGround && s.gear && v > 140
-                            ? 'HÚZD BE A FUTÓMŰVET'
-                            : !s.onGround && s.agl < 200 && s.velocity.y < -4
-                              ? 'TÚL NAGY SÜLLYEDÉS'
-                              : '';
+                  : !s.onGround &&
+                      s.fuel > 0 &&
+                      s.position.y > spec.ceiling * 0.7 &&
+                      !s.altitudePerformance.canSustain
+                    ? 'EMELKEDÉSI TARTALÉK ELFOGYOTT'
+                    : s.fuel <= 0
+                      ? 'HAJTÓMŰ LEÁLLT'
+                      : s.fuel < spec.fuelCapacity * 0.1
+                        ? 'KRITIKUS ÜZEMANYAG'
+                        : s.fuel < spec.fuelCapacity * 0.25
+                          ? 'BINGO FUEL'
+                          : s.onGround && !s.landing?.success && v > spec.approachSpeed
+                            ? 'ROTATE — EMELD AZ ORROT'
+                            : !s.onGround && s.gear && v > 140
+                              ? 'HÚZD BE A FUTÓMŰVET'
+                              : !s.onGround && s.agl < 200 && s.velocity.y < -4
+                                ? 'TÚL NAGY SÜLLYEDÉS'
+                                : '';
   if (s.naval?.bolter && !s.onGround && s.agl < 80) s.warning = 'BOLTER — ÁTSTARTOLÁS, TELJES GÁZ';
   if (s.dying) s.warning = 'IRÁNYÍTÁS ELVESZETT — VÉGZETES SZERKEZETI KÁR';
   else if (!s.warning && rolloutSurface(s).shoulder)

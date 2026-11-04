@@ -1,5 +1,5 @@
 import { equipmentCatalogVersion, catalogLabel, equipmentLabel } from './equipmentCatalog.js';
-import { flightModelProfile } from './flightModel.js';
+import { flightModelProfile, altitudeProfile } from './flightModel.js';
 import { afterburnerActive } from './engineState.js';
 import { attitude, DEG } from './math.js';
 import { mass, massBreakdown } from './performance.js';
@@ -249,6 +249,7 @@ export class FlightRecorder {
       aircraftDisplayName: catalogLabel('aircraft', s.spec.id),
       flightModelVersion: 2,
       flightModel: copy(flightModelProfile(s.spec)),
+      altitudeModel: copy(altitudeProfile(s.spec)),
       weather: copy(s.weather),
       physicsHz: 120,
       playerHz: 10,

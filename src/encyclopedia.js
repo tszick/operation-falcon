@@ -197,6 +197,7 @@ function detail() {
         `${a.radarRange / 1000} km · ${a.radarCone}° félkúp`,
       ],
       [a.limitIsDesign ? 'Tervezett csúcsmagasság' : 'Csúcsmagasság', `${a.ceiling / 1000} km`],
+      ['Magassági referencia', 'Tiszta gép · 50% belső üzemanyag · maximális tolóerő'],
       [
         'Fegyverzet',
         [...Object.values(preset.weapons), ...(preset.tailGun ? [preset.tailGun] : [])]

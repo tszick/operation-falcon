@@ -32,6 +32,10 @@ struct Out {@builtin(position) position:vec4f,@location(0) health:f32,@location(
 export const terrain =
   uniforms +
   `
+struct Farmland {colors:array<vec4f,5>, bounds:vec4f};
+@group(0) @binding(3) var farmlandMap:texture_2d<f32>;
+@group(0) @binding(4) var farmlandSampler:sampler;
+@group(0) @binding(5) var<uniform> farmland:Farmland;
 struct Out {@builtin(position) position:vec4f,@location(0) tint:vec3f,@location(1) depth:f32,@location(2) world:vec3f};
 @vertex fn vs(@location(0) position:vec3f,@location(1) shade:vec3f)->Out {
  var o:Out;var point=position;if(u.ground.w>0.5){point.y=max(0.03,point.y);}let relative=point-u.translation.xyz;o.position=project(relative);o.tint=shade;o.depth=(u.view*relative).z;o.world=position;return o;
@@ -55,7 +59,19 @@ struct Out {@builtin(position) position:vec4f,@location(0) tint:vec3f,@location(
  let light=clamp((o.tint.g-27.0/255.0)/(18.0/255.0),0.0,1.0);
  let rock=smoothstep(0.12,0.58,slope)*u.climate.x;
  let snow=u.climate.y*smoothstep(u.climate.z,u.climate.z+u.climate.w,o.world.y)*(1-smoothstep(0.25,0.68,slope));
- let base=mix(mix(u.ground.rgb,u.rock.rgb,rock),vec3f(0.89,0.92,0.95),snow);
+ var base=mix(mix(u.ground.rgb,u.rock.rgb,rock),vec3f(0.89,0.92,0.95),snow);
+ let landUV=o.world.xz/farmland.bounds.x+0.5;
+ let field=textureSample(farmlandMap,farmlandSampler,clamp(landUV,vec2f(0),vec2f(1)));
+ let fieldData=field.rgb;
+ let edge=max(fwidth(field.a),0.002);
+ var cultivated=smoothstep(0.5-edge,0.5+edge,field.a)*(1-smoothstep(0.06,0.19,slope));
+ cultivated*=step(0.0,landUV.x)*step(landUV.x,1.0)*step(0.0,landUV.y)*step(landUV.y,1.0);
+ if(u.climate.z>0.0){cultivated*=1-snow;}
+ var cropIndex=4u;if(fieldData.r<0.27){cropIndex=0u;}else if(fieldData.r<0.51){cropIndex=1u;}else if(fieldData.r<0.74){cropIndex=2u;}else if(fieldData.r<0.96){cropIndex=3u;}
+ let direction=normalize(fieldData.gb*2-1+vec2f(0.0001));
+ let row=dot(o.world.xz,direction)/8;
+ let furrow=sin(row*6.2831853)*0.09*(1-smoothstep(0.2,0.7,fwidth(row)));
+ base=mix(base,farmland.colors[cropIndex].rgb*(1+furrow),cultivated*0.86);
  let color=base*(0.48+0.52*light)*(0.78+grain*0.42)*u.style.x;
  let fog=smoothstep(u.haze.w*0.18,u.haze.w,o.depth)*0.72;return vec4f(mix(color,u.haze.rgb,fog),1);}
  if(u.style.z>0.5){var alpha=0.32;if(o.depth<3200){alpha=0.72;}else if(o.depth<10000){alpha=0.54;}return vec4f(vec3f(115.0,163.0,96.0)/255.0*alpha,alpha);}
