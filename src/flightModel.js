@@ -1,3 +1,4 @@
+import { atmosphere } from './atmosphere.js';
 import { clamp } from './math.js';
 const profiles = new WeakMap();
 export function flightModelProfile(spec) {
@@ -54,9 +55,89 @@ export function waveDragCoefficient(spec, mach) {
   return (p.waveDragPeak * rise) / Math.sqrt(1 + 3 * Math.max(0, mach - 1.05) ** 2);
 }
 
-// Installed thrust lapse: a bounded gameplay approximation, shared with AI demand prediction.
+// Type-calibrated thrust lapse, shared by player physics and AI prediction.
+// The published ceiling is a gameplay reference: clean, half fuel, healthy engines,
+// maximum installed thrust, 0.508 m/s residual climb. Not a certified engine deck.
+const altitudeProfiles = new WeakMap();
+const machThrust = (spec, mach) => clamp(1 - (mach / spec.maxMach) * 0.22, 0.4, 1);
+const installedMaximum = (spec) => (spec.hasAB ? spec.abThrust || spec.thrust : spec.thrust);
+function lapse(density, anchorDensity, exponent) {
+  const ratio = clamp(density / 1.225, 0, 1);
+  return ratio >= anchorDensity
+    ? ratio ** 0.75
+    : anchorDensity ** 0.75 * (ratio / anchorDensity) ** exponent;
+}
+function climbScan(
+  spec,
+  height,
+  massKg,
+  factorAt,
+  { engine = 1, lift = 1, drag = 0, thrust = installedMaximum(spec) } = {},
+) {
+  const air = atmosphere(height),
+    weight = massKg * 9.81;
+  const minSpeed =
+    Math.sqrt((2 * weight) / (air.density * spec.wingArea * spec.maxCL * Math.max(0.01, lift))) *
+    1.05;
+  const maxSpeed = spec.maxMach * air.soundSpeed * 0.98;
+  let best = null,
+    bestSpeed = null;
+  for (let i = 0; i <= 96 && minSpeed <= maxSpeed; i++) {
+    const speed = minSpeed + ((maxSpeed - minSpeed) * i) / 96,
+      mach = speed / air.soundSpeed;
+    const q = 0.5 * air.density * speed * speed;
+    const delivered = thrust * engine * factorAt(air, mach);
+    let cl = weight / (q * spec.wingArea * Math.max(0.01, lift)),
+      alpha;
+    for (let trim = 0; trim < 8; trim++) {
+      alpha = (cl - (spec.liftZero ?? 0.22)) / spec.clSlope;
+      cl = (weight - delivered * Math.sin(alpha)) / (q * spec.wingArea * Math.max(0.01, lift));
+    }
+    alpha = (cl - (spec.liftZero ?? 0.22)) / spec.clSlope;
+    if (Math.abs(alpha) > spec.stallAlpha || Math.abs(cl) > spec.maxCL) continue;
+    const resistance =
+      q *
+      spec.wingArea *
+      (spec.cd0 + spec.inducedDrag * cl * cl + waveDragCoefficient(spec, mach) + drag);
+    const climb = ((delivered * Math.cos(alpha) - resistance) * speed) / weight;
+    if (best === null || climb > best) {
+      best = climb;
+      bestSpeed = speed;
+    }
+  }
+  return { maxClimbMps: best, bestSpeedMps: bestSpeed, canSustain: best !== null && best >= 0 };
+}
+export function altitudeProfile(spec) {
+  if (altitudeProfiles.has(spec)) return altitudeProfiles.get(spec);
+  const referenceMassKg = spec.ceilingReferenceMassKg ?? spec.emptyMass + spec.fuelCapacity * 0.5;
+  const anchorDensity = atmosphere(spec.ceiling * 0.55).density / 1.225;
+  let lo = 0.02,
+    hi = 8;
+  for (let i = 0; i < 36; i++) {
+    const exponent = (lo + hi) / 2;
+    const p = climbScan(
+      spec,
+      spec.ceiling,
+      referenceMassKg,
+      (air, mach) => lapse(air.density, anchorDensity, exponent) * machThrust(spec, mach),
+    );
+    if (p.maxClimbMps !== null && p.maxClimbMps > 0.508) lo = exponent;
+    else hi = exponent;
+  }
+  const profile = {
+    referenceMassKg,
+    referenceClimbMps: 0.508,
+    referenceAltitudeM: spec.ceiling,
+    anchorDensity,
+    lapseExponent: (lo + hi) / 2,
+  };
+  altitudeProfiles.set(spec, profile);
+  return profile;
+}
 export function thrustFactor(spec, air, mach) {
-  return (
-    clamp((air.density / 1.225) ** 0.75, 0.015, 1) * clamp(1 - (mach / spec.maxMach) * 0.22, 0.4, 1)
-  );
+  const p = altitudeProfile(spec);
+  return lapse(air.density, p.anchorDensity, p.lapseExponent) * machThrust(spec, mach);
+}
+export function altitudePerformance(spec, height, massKg, options = {}) {
+  return climbScan(spec, height, massKg, (air, mach) => thrustFactor(spec, air, mach), options);
 }

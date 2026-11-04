@@ -1,3 +1,5 @@
+import { buildFarmland, farmlandSize, farmlandExtent, farmlandPalette } from '../../farmland.js';
+import { terrainWorld } from '../../terrain.js';
 import { meshBuffers, rotationMatrix, meshBounds } from '../shared/meshData.js';
 import { packedTerrainBuffers } from '../shared/terrainData.js';
 import { featureWindow, buildFeatureBuffers, featurePatchInView } from '../shared/featureData.js';
@@ -83,6 +85,34 @@ export class WebGPUBackend {
         { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
       ],
     });
+    this.farmlandTexture = d.createTexture({
+      size: [farmlandSize, farmlandSize],
+      format: 'rgba8unorm',
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+    });
+    this.farmlandUniform = d.createBuffer({
+      size: 96,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    this.farmlandSampler = d.createSampler({ minFilter: 'linear', magFilter: 'linear' });
+    this.terrainLayout = d.createBindGroupLayout({
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          buffer: { type: 'uniform', hasDynamicOffset: true, minBindingSize: 288 },
+        },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: {} },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
+        { binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: {} },
+        { binding: 4, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
+        {
+          binding: 5,
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: { type: 'uniform', minBindingSize: 96 },
+        },
+      ],
+    });
     this.featureLayout = d.createBindGroupLayout({
       entries: [
         {
@@ -133,10 +163,12 @@ export class WebGPUBackend {
     this.edgePipeline = this.pipeline(shaders.models, [modelLayout], { lines: true });
     this.depthPipeline = this.pipeline(shaders.models, [modelLayout], { mask: true });
     this.terrainPipeline = this.pipeline(shaders.terrain, [terrainLayout], {
+      layout: this.terrainLayout,
       bias: true,
       blend: true,
     });
     this.terrainEdgePipeline = this.pipeline(shaders.terrain, [terrainLayout], {
+      layout: this.terrainLayout,
       lines: true,
       blend: true,
     });
@@ -228,13 +260,13 @@ export class WebGPUBackend {
     this.textures.set(kind, t);
     return t;
   }
-  bind(texture, mask = null, horizon = false) {
+  bind(texture, mask = null, horizon = false, farmland = false) {
     let cached = this.bindingCache.get(texture);
     if (!cached) {
       cached = { masks: new WeakMap() };
       this.bindingCache.set(texture, cached);
     }
-    const key = horizon ? 'horizon' : 'standard';
+    const key = farmland ? 'farmland' : horizon ? 'horizon' : 'standard';
     const existing = mask ? cached.masks.get(mask) : cached[key];
     if (existing) return existing;
     const entries = [
@@ -242,9 +274,15 @@ export class WebGPUBackend {
       { binding: 1, resource: texture.createView() },
       { binding: 2, resource: horizon ? this.horizonSampler : this.sampler },
     ];
+    if (farmland)
+      entries.push(
+        { binding: 3, resource: this.farmlandTexture.createView() },
+        { binding: 4, resource: this.farmlandSampler },
+        { binding: 5, resource: { buffer: this.farmlandUniform } },
+      );
     if (mask) entries.push({ binding: 3, resource: { buffer: mask } });
     const binding = this.device.createBindGroup({
-      layout: mask ? this.featureLayout : this.layout,
+      layout: farmland ? this.terrainLayout : mask ? this.featureLayout : this.layout,
       entries,
     });
     if (mask) cached.masks.set(mask, binding);
@@ -374,6 +412,22 @@ export class WebGPUBackend {
   renderTerrain(r) {
     if (!this.available) return false;
     this.updateTerrain(r);
+    if (this.farmlandWorld !== terrainWorld) {
+      this.device.queue.writeTexture(
+        { texture: this.farmlandTexture },
+        buildFarmland().pixels,
+        { bytesPerRow: farmlandSize * 4 },
+        [farmlandSize, farmlandSize],
+      );
+      this.farmlandWorld = terrainWorld;
+    }
+    if (this.farmlandMode !== r.surfaceMode) {
+      const colors = new Float32Array(24);
+      farmlandPalette(r.surfaceMode).forEach((rgb, i) => colors.set(rgb, i * 4));
+      colors[20] = farmlandExtent;
+      this.device.queue.writeBuffer(this.farmlandUniform, 0, colors);
+      this.farmlandMode = r.surfaceMode;
+    }
     const encoder = this.begin(),
       pass = this.surface.pass(encoder, true),
       data = this.frameUniform(r);
@@ -382,6 +436,9 @@ export class WebGPUBackend {
       this.texture(
         r.surfaceMode === 'ocean' ? 'terrain-sand' : surfaceStyle(r.surfaceMode).texture,
       ),
+      null,
+      false,
+      true,
     );
     pass.setPipeline(this.terrainPipeline);
     pass.setBindGroup(0, bind, [this.uniform(data)]);
@@ -576,6 +633,8 @@ export class WebGPUBackend {
   destroy() {
     this.featureVisibility?.destroy();
     this.uniformBuffer?.destroy();
+    this.farmlandTexture?.destroy();
+    this.farmlandUniform?.destroy();
     for (const item of this.resources) item.buffers.forEach((b) => b.destroy());
     this.resources.clear();
     for (const t of this.textures.values()) t.destroy();
