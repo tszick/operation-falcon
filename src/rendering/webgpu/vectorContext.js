@@ -1,5 +1,5 @@
 import { Surface } from './device.js';
-import { rgba, transformPoint, multiply, triangulate } from '../shared/shapes.js';
+import { cachedRgba as rgba, transformPoint, multiply, triangulate } from '../shared/shapes.js';
 const surfaces = new WeakMap();
 export const shader = `
 diagnostic(off, derivative_uniformity);

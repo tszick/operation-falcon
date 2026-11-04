@@ -8,12 +8,7 @@ if (typeof DedicatedWorkerGlobalScope !== 'undefined' && self instanceof Dedicat
     const job = event.data;
     try {
       const result = prepareTerrain(job);
-      self.postMessage(result, [
-        result.fills.buffer,
-        result.lines.buffer,
-        result.mask.buffer,
-        result.gpuLines.buffer,
-      ]);
+      self.postMessage(result, [result.fills.buffer, result.lines.buffer, result.gpuLines.buffer]);
     } catch (error) {
       self.postMessage({ error: String(error), key: job.key, revision: job.revision });
     }

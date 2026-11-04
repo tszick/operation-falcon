@@ -61,6 +61,8 @@
         <option value="busy">Sok gép és város</option>
         <option value="high">Nagy magasság</option>
         <option value="farmland">Művelt földek</option>
+        <option value="forest">Erdő · lombkoronaszint</option>
+        <option value="forest-high">Erdő · magasból</option>
       </select></label
     ><button id="benchmark">Tájváltozatok összehasonlítása</button><a href="/">Játék</a
     ><small>Hang nélkül, álló tesztjelenet · a játék fizikáját nem módosítja.</small>
@@ -75,7 +77,7 @@
     import { createTargets, Targeting } from '/src/targeting.js';
     import { Vec3, Quat } from '/src/math.js';
     import { Weapons } from '/src/weapons.js';
-    import { homeHangars } from '/src/terrain.js';
+    import { homeHangars, terrainHeight } from '/src/terrain.js';
     const $ = (id) => document.getElementById(id),
       r = new Renderer($('world')),
       s = createAircraft(aircraft.find((a) => a.id === 'f16')),
@@ -155,7 +157,13 @@
       })),
     ];
     function pose() {
-      if ($('scene').value === 'farmland') {
+      if ($('scene').value === 'forest') {
+        s.position = new Vec3(-4800, terrainHeight(-4800, 4000) + 45, 4000);
+        s.orientation = Quat.euler(0, -0.02, 0);
+      } else if ($('scene').value === 'forest-high') {
+        s.position = new Vec3(-3800, 2300, 3200);
+        s.orientation = Quat.euler(-0.2, -0.55, 0);
+      } else if ($('scene').value === 'farmland') {
         s.position = new Vec3(3000, 2500, -6500);
         s.orientation = Quat.euler(0.5, -0.55, 0);
       } else if ($('scene').value === 'busy') {

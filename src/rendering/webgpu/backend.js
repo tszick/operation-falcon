@@ -4,7 +4,7 @@ import { meshBuffers, rotationMatrix, meshBounds } from '../shared/meshData.js';
 import { packedTerrainBuffers } from '../shared/terrainData.js';
 import { featureWindow, buildFeatureBuffers, featurePatchInView } from '../shared/featureData.js';
 import { materialPixels } from '../shared/materialPixels.js';
-import { rgba } from '../shared/shapes.js';
+import { cachedRgba as rgba } from '../shared/shapes.js';
 import { surfaceStyle, materialIds } from '../../surfaceStyle.js';
 import { FeatureVisibility } from '../featureVisibility.js';
 import { uploadBuffer, updateBuffer } from './device.js';
@@ -52,6 +52,9 @@ export class WebGPUBackend {
     this.textures = new Map();
     this.bindingCache = new WeakMap();
     this.frame = 0;
+    this.drawUniforms = [];
+    this.drawUniformCount = 0;
+    this.flapUniform = new Float32Array(80);
     this.ready = false;
     this.initialization = this.surface.ready.then(() => this.initialize());
     this.initialization.catch((error) => {
@@ -161,7 +164,10 @@ export class WebGPUBackend {
     this.modelPipeline = this.pipeline(shaders.models, [modelLayout], { bias: true });
     this.asphaltPipeline = this.pipeline(shaders.models, [modelLayout]);
     this.edgePipeline = this.pipeline(shaders.models, [modelLayout], { lines: true });
-    this.depthPipeline = this.pipeline(shaders.models, [modelLayout], { mask: true });
+    this.terrainDepthPipeline = this.pipeline(shaders.terrain, [terrainLayout], {
+      mask: true,
+      layout: this.terrainLayout,
+    });
     this.terrainPipeline = this.pipeline(shaders.terrain, [terrainLayout], {
       layout: this.terrainLayout,
       bias: true,
@@ -316,7 +322,15 @@ export class WebGPUBackend {
     this.context.flush();
     this.surface.resize();
     this.uniformCount = 0;
+    this.drawUniformCount = 0;
     return this.device.createCommandEncoder();
+  }
+  drawUniform(base) {
+    const index = this.drawUniformCount++;
+    if (index >= 8192) throw new Error('WebGPU uniform draw budget exceeded');
+    const data = (this.drawUniforms[index] ??= new Float32Array(80));
+    data.set(base);
+    return data;
   }
   uniform(data) {
     const index = this.uniformCount++;
@@ -372,7 +386,6 @@ export class WebGPUBackend {
       usage = GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST;
     this.terrainFill = updateBuffer(this.device, this.terrainFill, data.fills, usage);
     this.terrainLines = updateBuffer(this.device, this.terrainLines, data.gpuLines, usage);
-    this.terrainMask = updateBuffer(this.device, this.terrainMask, data.mask, usage);
     this.terrainCount = data.fills.length / 6;
     this.terrainLineCount = data.lines.length / 3;
     this.terrainKey = r.terrainSurfaceKey;
@@ -409,6 +422,16 @@ export class WebGPUBackend {
     this.submit(encoder);
     return true;
   }
+  terrainBinding(r) {
+    return this.bind(
+      this.texture(
+        r.surfaceMode === 'ocean' ? 'terrain-sand' : surfaceStyle(r.surfaceMode).texture,
+      ),
+      null,
+      false,
+      true,
+    );
+  }
   renderTerrain(r) {
     if (!this.available) return false;
     this.updateTerrain(r);
@@ -432,14 +455,7 @@ export class WebGPUBackend {
       pass = this.surface.pass(encoder, true),
       data = this.frameUniform(r);
     data.set([r.camera.x, r.camera.y, r.camera.z], 24);
-    const bind = this.bind(
-      this.texture(
-        r.surfaceMode === 'ocean' ? 'terrain-sand' : surfaceStyle(r.surfaceMode).texture,
-      ),
-      null,
-      false,
-      true,
-    );
+    const bind = this.terrainBinding(r);
     pass.setPipeline(this.terrainPipeline);
     pass.setBindGroup(0, bind, [this.uniform(data)]);
     pass.setVertexBuffer(0, this.terrainFill);
@@ -520,10 +536,11 @@ export class WebGPUBackend {
     if (r.worldOcclusion && r.terrainSurface) {
       this.updateTerrain(r);
       const data = new Float32Array(base);
-      data.set([-r.camera.x, -r.camera.y, -r.camera.z], 24);
-      pass.setPipeline(this.depthPipeline);
-      pass.setBindGroup(0, this.bind(this.texture('concrete')), [this.uniform(data)]);
-      pass.setVertexBuffer(0, this.terrainMask);
+      data.set([r.camera.x, r.camera.y, r.camera.z], 24);
+      data[50] = -1;
+      pass.setPipeline(this.terrainDepthPipeline);
+      pass.setBindGroup(0, this.terrainBinding(r), [this.uniform(data)]);
+      pass.setVertexBuffer(0, this.terrainFill);
       pass.draw(this.terrainCount);
     }
     for (const entry of entries) {
@@ -539,7 +556,7 @@ export class WebGPUBackend {
       visible.push([entry, this.upload(entry.mesh)]);
     }
     const transformed = (e, item) => {
-      const data = new Float32Array(base);
+      const data = this.drawUniform(base);
       data.set(paddedMatrix(rotationMatrix(e.q)), 12);
       data.set(
         [e.position.x - r.camera.x, e.position.y - r.camera.y, e.position.z - r.camera.z],
@@ -579,7 +596,8 @@ export class WebGPUBackend {
       if (item.triangleCount - item.flapCount)
         pass.drawIndexed(item.triangleCount - item.flapCount);
       if (item.flapCount) {
-        const flap = new Float32Array(data);
+        const flap = this.flapUniform;
+        flap.set(data);
         flap.set(rgba('#40522b'), 36);
         pass.setBindGroup(0, bind, [this.uniform(flap)]);
         pass.drawIndexed(item.flapCount, 1, item.triangleCount - item.flapCount);
@@ -638,14 +656,7 @@ export class WebGPUBackend {
     for (const item of this.resources) item.buffers.forEach((b) => b.destroy());
     this.resources.clear();
     for (const t of this.textures.values()) t.destroy();
-    for (const key of [
-      'terrainFill',
-      'terrainLines',
-      'terrainMask',
-      'featureBuffer',
-      'featureMask',
-      'panorama',
-    ])
+    for (const key of ['terrainFill', 'terrainLines', 'featureBuffer', 'featureMask', 'panorama'])
       this[key]?.destroy();
   }
 }

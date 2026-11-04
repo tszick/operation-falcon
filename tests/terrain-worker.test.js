@@ -67,7 +67,11 @@ test('background terrain matches exact live geometry, including local vehicle de
     wire: false,
   });
   assert.deepEqual(actual.fills, expected.fills);
-  assert.deepEqual(actual.mask, expected.mask);
+  assert.equal(
+    'mask' in actual,
+    false,
+    'The depth pass reuses fill vertices instead of transferring another mesh',
+  );
   assert.equal(actual.lines.length, 0);
   assert.equal(actual.gpuLines.length, 0);
   assert.equal(actual.faceCount, expected.faceCount);

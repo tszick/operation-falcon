@@ -34,6 +34,19 @@ export function rgba(value) {
     ? [numbers[0] / 255, numbers[1] / 255, numbers[2] / 255, numbers[3] ?? 1]
     : [1, 1, 1, 1];
 }
+const paintColors = new Map();
+// Shared immutable values for the renderers; rgba() keeps its original mutable API.
+export function cachedRgba(value) {
+  if (Array.isArray(value)) return value;
+  const key = String(value).trim();
+  let color = paintColors.get(key);
+  if (!color) {
+    color = Object.freeze(rgba(key));
+    paintColors.set(key, color);
+    if (paintColors.size > 1024) paintColors.delete(paintColors.keys().next().value);
+  }
+  return color;
+}
 export function transformPoint(m, x, y) {
   return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
 }

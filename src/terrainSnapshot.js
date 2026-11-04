@@ -31,10 +31,17 @@ function path(value) {
   result.detours = list(input.detours, (d) => fields(d, 'along spread offset'));
   return result;
 }
+function seed(value) {
+  if (!Number.isInteger(value) || value < 0 || value > 4294967295)
+    throw new TypeError('Invalid scenery seed');
+  return value;
+}
 export function readTerrainSnapshot(value) {
   const input = record(value);
   return {
     revision: number(input.revision),
+    skySeed: input.skySeed === undefined ? 417 : seed(input.skySeed),
+    cityRoads: list(input.cityRoads, (p) => path(record(p))),
     noAirfield: input.noAirfield === true,
     ocean: input.ocean === true,
     river: path(input.river),

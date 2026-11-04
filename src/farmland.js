@@ -1,3 +1,4 @@
+import { forestAt, rasterForests } from './forests.js';
 import { terrainWorld, terrainHeight, pathCoordinates } from './terrain.js';
 
 // A world-fixed land-use atlas: built once per mission, never per frame or LOD.
@@ -76,6 +77,7 @@ export function buildFarmland(world = terrainWorld, heightAt = terrainHeight) {
         const px = x + ox * c - oz * s,
           pz = z + ox * s + oz * c;
         const radius = Math.hypot(width, length) * 0.5;
+        if (forestAt(px, pz, world).cover > 0.05) continue;
         if (
           city &&
           px > city.minX - radius &&
@@ -148,13 +150,14 @@ export function buildFarmland(world = terrainWorld, heightAt = terrainHeight) {
             const edge = Math.round(Math.max(0, Math.min(1, 0.5 + distance / 256)) * 255);
             const i = (v * farmlandSize + u) * 4;
             if (edge <= pixels[i + 3]) continue;
-            pixels[i] = Math.round(crop * 255);
+            pixels[i] = Math.round(crop * 223);
             pixels[i + 1] = Math.round((Math.cos(direction) * 0.5 + 0.5) * 255);
             pixels[i + 2] = Math.round((Math.sin(direction) * 0.5 + 0.5) * 255);
             pixels[i + 3] = edge;
           }
       }
     }
+  rasterForests(pixels, farmlandSize, farmlandExtent, world);
   return { parcels, pixels };
 }
 
