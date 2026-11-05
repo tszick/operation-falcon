@@ -40,6 +40,7 @@ import {
   applyDamage,
   recordImpact,
   actuatorFault,
+  structuralLoadLimits,
 } from './damage.js';
 import { fuelFlow, consumeFuel } from './fuel.js';
 import { createCountermeasures } from './countermeasures.js';
@@ -168,16 +169,26 @@ export function stepAircraft(s, input, dt = STEP) {
   pitchRate = rates.pitch;
   rollRate = rates.roll;
   const yawRate = rates.yaw;
-  // Never let stored pitch momentum defeat the commanded G/AOA safety limits.
-  if (s.assist && !s.onGround && pitchRate * alpha > 0) {
-    const limit = (spec.stallAlpha * 0.9 - Math.abs(alpha)) / dt;
-    pitchRate = Math.sign(pitchRate) * Math.min(Math.abs(pitchRate), Math.max(0, limit));
-    const gLimit = spec.maxG * (1 - s.damage * 0.003);
-    pitchRate = clamp(
-      pitchRate,
-      Math.min(0, ((-gLimit * 0.4 - u.y) * 9.81) / Math.max(v, 30)),
-      Math.max(0, ((gLimit - u.y) * 9.81) / Math.max(v, 30)),
-    );
+  // Limit actual aerodynamic load, not just the kinematic turn-rate estimate.
+  // A short AOA approach time softens a held digital key before reaching the limit.
+  if (s.assist && !s.onGround && !navalControlAuthority(s) && !stall) {
+    const limits = structuralLoadLimits(s),
+      liftPerCL = (q * spec.wingArea * response.lift) / (m * 9.81),
+      zeroCL = (spec.liftZero ?? 0.22) + s.flapPosition * 0.45,
+      alphaMax = Math.min(
+        spec.stallAlpha * 0.9,
+        ((limits.positive * 0.9) / Math.max(liftPerCL, 0.001) - zeroCL) / spec.clSlope,
+      ),
+      alphaMin = Math.max(
+        -spec.stallAlpha * 0.9,
+        ((limits.negative * 0.9) / Math.max(liftPerCL, 0.001) - zeroCL) / spec.clSlope,
+      ),
+      pathRate = ((liftPerCL * flow.cl - u.y) * 9.81) / Math.max(v, 30),
+      yawAlphaRate = coordinated * (f.z * u.x - f.x * u.z);
+    if (pitchRate > 0)
+      pitchRate = Math.min(pitchRate, pathRate - yawAlphaRate + (alphaMax - alpha) / 0.3);
+    else if (pitchRate < 0)
+      pitchRate = Math.max(pitchRate, pathRate - yawAlphaRate + (alphaMin - alpha) / 0.3);
     rates.pitch = pitchRate;
   }
   s.rollControl = spec.rollRate ? rollRate / (spec.rollRate * DEG) : 0;

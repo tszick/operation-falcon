@@ -8,7 +8,7 @@ export function flightModelProfile(spec) {
     old = spec.group === 'soviet' || spec.id === 'f4';
   const p = {
     engineTau: spec.engineResponseSeconds ?? (heavy ? 2.4 : transport ? 1.8 : old ? 1.35 : 0.9),
-    pitchTau: spec.pitchResponseSeconds ?? (heavy ? 0.22 : transport ? 0.16 : 0.07),
+    pitchTau: spec.pitchResponseSeconds ?? (heavy ? 0.35 : transport ? 0.3 : 0.22),
     rollTau: spec.rollResponseSeconds ?? (heavy ? 0.28 : transport ? 0.2 : 0.1),
     yawTau: spec.yawResponseSeconds ?? (heavy ? 0.25 : 0.12),
     wingSpan: spec.wingSpan ?? Math.sqrt(spec.wingArea * 3.5),
