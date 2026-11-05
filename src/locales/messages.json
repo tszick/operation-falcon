@@ -9870,5 +9870,525 @@
   "Tiszta gép · 50% belső üzemanyag · maximális tolóerő": {
     "hu": "Tiszta gép · 50% belső üzemanyag · maximális tolóerő",
     "en": "Clean aircraft · 50% internal fuel · maximum thrust"
+  },
+  "Multiplayer · közös gyakorlás": {
+    "hu": "Multiplayer · közös gyakorlás",
+    "en": "Multiplayer · shared training"
+  },
+  "Multiplayer · prototípus": {
+    "hu": "Multiplayer · prototípus",
+    "en": "Multiplayer · prototype"
+  },
+  "Közös gyakorlórepülés": {
+    "hu": "Közös gyakorlórepülés",
+    "en": "Shared training flight"
+  },
+  "Két pilóta, egy légtér. Hozz létre egy szobát, és add át a kódját a társadnak.": {
+    "hu": "Két pilóta, egy légtér. Hozz létre egy szobát, és add át a kódját a társadnak.",
+    "en": "Two pilots, one airspace. Create a room and share its code with your wingman."
+  },
+  "Új szoba létrehozása": {
+    "hu": "Új szoba létrehozása",
+    "en": "Create room"
+  },
+  "Szobakód": {
+    "hu": "Szobakód",
+    "en": "Room code"
+  },
+  "Csatlakozás": {
+    "hu": "Csatlakozás",
+    "en": "Join room"
+  },
+  "Kísérleti közös repülés: levegőből indul, fegyverek és AI nélkül. A világ nem állítható meg. A két játékosnak ugyanahhoz a szerverhez kell csatlakoznia.": {
+    "hu": "Kísérleti közös repülés: levegőből indul, fegyverek és AI nélkül. A világ nem állítható meg. A két játékosnak ugyanahhoz a szerverhez kell csatlakoznia.",
+    "en": "Experimental shared flight: airborne start, no weapons or AI. The world cannot be paused. Both players must connect to the same server."
+  },
+  "Vissza a küldetésekhez": {
+    "hu": "Vissza a küldetésekhez",
+    "en": "Back to missions"
+  },
+  "Szoba": {
+    "hu": "Szoba",
+    "en": "Room"
+  },
+  "Kilépés a szobából": {
+    "hu": "Kilépés a szobából",
+    "en": "Leave room"
+  },
+  "W / S: orr le / fel · A / D: döntés · Q / E: oldalkormány · R / F: gázkar · G: futómű · X: fékszárny · B: légfék · L: G-limit · Shift: utánégető · Ctrl: kerékfék": {
+    "hu": "W / S: orr le / fel · A / D: döntés · Q / E: oldalkormány · R / F: gázkar · G: futómű · X: fékszárny · B: légfék · L: G-limit · Shift: utánégető · Ctrl: kerékfék",
+    "en": "W / S: pitch down / up · A / D: roll · Q / E: rudder · R / F: throttle · G: gear · X: flaps · B: airbrake · L: G limiter · Shift: afterburner · Ctrl: wheel brake"
+  },
+  "Kattints a tájra az egérrel körbenézéshez. Esc: egér elengedése; a repülés folytatódik.": {
+    "hu": "Kattints a tájra az egérrel körbenézéshez. Esc: egér elengedése; a repülés folytatódik.",
+    "en": "Click the scenery for mouse head look. Esc releases the mouse; the flight continues."
+  },
+  "A szerver megtelt. Próbáld később.": {
+    "hu": "A szerver megtelt. Próbáld később.",
+    "en": "The server is full. Try again later."
+  },
+  "Nincs ilyen szoba. Ellenőrizd a kódot.": {
+    "hu": "Nincs ilyen szoba. Ellenőrizd a kódot.",
+    "en": "Room not found. Check the code."
+  },
+  "A szobában már két pilóta repül.": {
+    "hu": "A szobában már két pilóta repül.",
+    "en": "Two pilots are already flying in this room."
+  },
+  "Nem sikerült kapcsolódni a játékszerverhez.": {
+    "hu": "Nem sikerült kapcsolódni a játékszerverhez.",
+    "en": "Could not connect to the game server."
+  },
+  "Adj meg egy hatkarakteres szobakódot.": {
+    "hu": "Adj meg egy hatkarakteres szobakódot.",
+    "en": "Enter a six-character room code."
+  },
+  "Kapcsolódás…": {
+    "hu": "Kapcsolódás…",
+    "en": "Connecting…"
+  },
+  "Közös légtér · hang nélkül": {
+    "hu": "Közös légtér · hang nélkül",
+    "en": "Shared airspace · audio off"
+  },
+  "A kapcsolat lezárult. Újra csatlakozhatsz a szobakóddal.": {
+    "hu": "A kapcsolat lezárult. Újra csatlakozhatsz a szobakóddal.",
+    "en": "Connection closed. You can rejoin using the room code."
+  },
+  "A repülési nézet nem indítható. Ellenőrizd a böngésző grafikus támogatását.": {
+    "hu": "A repülési nézet nem indítható. Ellenőrizd a böngésző grafikus támogatását.",
+    "en": "Could not start the flight view. Check your browser graphics support."
+  },
+  "A kapcsolat késik — a szerver állapotára várunk.": {
+    "hu": "A kapcsolat késik — a szerver állapotára várunk.",
+    "en": "Connection delayed — waiting for the server state."
+  },
+  "A gép lezuhant. Új géphez lépj ki, majd csatlakozz újra.": {
+    "hu": "A gép lezuhant. Új géphez lépj ki, majd csatlakozz újra.",
+    "en": "Aircraft lost. Leave and rejoin for a new aircraft."
+  },
+  "A második pilótára várunk. Add át neki a szobakódot.": {
+    "hu": "A második pilótára várunk. Add át neki a szobakódot.",
+    "en": "Waiting for the second pilot. Share the room code."
+  },
+  "Két pilóta a közös légtérben.": {
+    "hu": "Két pilóta a közös légtérben.",
+    "en": "Two pilots in shared airspace."
+  },
+  "Multiplayer · közös gyakorlórepülés": {
+    "hu": "Multiplayer · közös gyakorlórepülés",
+    "en": "Multiplayer · shared training flight"
+  },
+  "Két pilóta ugyanabban a légtérben, fegyverek és gépi ellenfelek nélkül. Ez a közös repülés első prototípusa.": {
+    "hu": "Két pilóta ugyanabban a légtérben, fegyverek és gépi ellenfelek nélkül. Ez a közös repülés első prototípusa.",
+    "en": "Two pilots share an airspace without weapons or AI opponents. This is the first shared-flight prototype."
+  },
+  "SZOBA": {
+    "hu": "SZOBA",
+    "en": "ROOM"
+  },
+  "Nyisd meg a Multiplayer · közös gyakorlás oldalt. Hozz létre egy szobát, majd add át a hatkarakteres kódot a társadnak.": {
+    "hu": "Nyisd meg a Multiplayer · közös gyakorlás oldalt. Hozz létre egy szobát, majd add át a hatkarakteres kódot a társadnak.",
+    "en": "Open Multiplayer · shared training. Create a room, then share its six-character code with your wingman."
+  },
+  "CSATLAKOZÁS": {
+    "hu": "CSATLAKOZÁS",
+    "en": "JOIN"
+  },
+  "A másik pilóta ugyanazon a szerveren a kóddal csatlakozik. A már repülő társ közelében, levegőből indul.": {
+    "hu": "A másik pilóta ugyanazon a szerveren a kóddal csatlakozik. A már repülő társ közelében, levegőből indul.",
+    "en": "The second pilot joins the same server with the code and starts airborne near the pilot already flying."
+  },
+  "KÖZÖS REPÜLÉS": {
+    "hu": "KÖZÖS REPÜLÉS",
+    "en": "SHARED FLIGHT"
+  },
+  "A megszokott repülési gombok működnek. Kattints a tájra a nézelődéshez; Esc csak az egeret engedi el. A világ tovább fut.": {
+    "hu": "A megszokott repülési gombok működnek. Kattints a tájra a nézelődéshez; Esc csak az egeret engedi el. A világ tovább fut.",
+    "en": "Use the usual flight controls. Click the scenery to look around; Esc only releases the mouse. The world keeps running."
+  },
+  "KILÉPÉS": {
+    "hu": "KILÉPÉS",
+    "en": "LEAVE"
+  },
+  "Lezuhanás után lépj ki, és a még élő szobába csatlakozz újra. Ha mindenki kilép, a szoba és a kód megszűnik.": {
+    "hu": "Lezuhanás után lépj ki, és a még élő szobába csatlakozz újra. Ha mindenki kilép, a szoba és a kód megszűnik.",
+    "en": "After crashing, leave and rejoin the room while it still exists. Once everyone leaves, the room and its code are removed."
+  },
+  "A szobakód, a hívójel, a pilóták száma és a hálózati késleltetés a közös repülés paneljén látszik.": {
+    "hu": "A szobakód, a hívójel, a pilóták száma és a hálózati késleltetés a közös repülés paneljén látszik.",
+    "en": "The flight panel shows the room code, call sign, pilot count and network round-trip time."
+  },
+  "Egy szobába két pilóta fér. Nincs szünet, közös harc, AI, hangátvitel vagy automatikus újraéledés.": {
+    "hu": "Egy szobába két pilóta fér. Nincs szünet, közös harc, AI, hangátvitel vagy automatikus újraéledés.",
+    "en": "A room holds two pilots. There is no pause, shared combat, AI, voice transmission or automatic respawn."
+  },
+  "A két lapnak ugyanahhoz a szerverhez kell csatlakoznia. A localhostos próba nem teszi interneten elérhetővé a gépedet.": {
+    "hu": "A két lapnak ugyanahhoz a szerverhez kell csatlakoznia. A localhostos próba nem teszi interneten elérhetővé a gépedet.",
+    "en": "Both tabs must connect to the same server. A localhost test does not make your computer accessible over the internet."
+  },
+  "Repülőgép": {
+    "hu": "Repülőgép",
+    "en": "Aircraft"
+  },
+  "Kísérleti közös fegyverpróba: egy légi és egy földi gyakorlócél, közös találatokkal. Nincs harcoló AI, a baráti tűz valódi sérülést okoz. A két pilóta ugyanahhoz a szerverhez csatlakozzon.": {
+    "hu": "Kísérleti közös fegyverpróba: egy légi és egy földi gyakorlócél, közös találatokkal. Nincs harcoló AI, a baráti tűz valódi sérülést okoz. A két pilóta ugyanahhoz a szerverhez csatlakozzon.",
+    "en": "Experimental shared weapons range: one air and one ground target with synchronized hits. No combat AI; friendly fire causes real damage. Both pilots must connect to the same server."
+  },
+  "1–4: fegyver · T / Tab: célkijelölés · Space: tüzelés · C: elterelő. A célbefogást, a lőszert és a találatokat a szerver ellenőrzi.": {
+    "hu": "1–4: fegyver · T / Tab: célkijelölés · Space: tüzelés · C: elterelő. A célbefogást, a lőszert és a találatokat a szerver ellenőrzi.",
+    "en": "1–4: weapon · T / Tab: select target · Space: fire · C: countermeasures. The server validates locks, ammunition and hits."
+  },
+  "T · Célkijelölés": {
+    "hu": "T · Célkijelölés",
+    "en": "T · Select target"
+  },
+  "Tűz": {
+    "hu": "Tűz",
+    "en": "Fire"
+  },
+  "Nincs kijelölt cél": {
+    "hu": "Nincs kijelölt cél",
+    "en": "No target selected"
+  },
+  "Gyakorlócélok: {{v0}}/2": {
+    "hu": "Gyakorlócélok: {{v0}}/2",
+    "en": "Range targets: {{v0}}/2"
+  },
+  "BARÁTI TŰZ — SAJÁT GÉPET TALÁLTÁL EL!": {
+    "hu": "BARÁTI TŰZ — SAJÁT GÉPET TALÁLTÁL EL!",
+    "en": "FRIENDLY FIRE — YOU HIT A FRIENDLY AIRCRAFT!"
+  },
+  "BARÁTI TALÁLAT ÉRTE A GÉPED!": {
+    "hu": "BARÁTI TALÁLAT ÉRTE A GÉPED!",
+    "en": "YOUR AIRCRAFT WAS HIT BY FRIENDLY FIRE!"
+  },
+  "Két pilóta közös fegyverpróbája: egy fegyvertelen légi cél és egy földi céljármű, valódi baráti sebzéssel.": {
+    "hu": "Két pilóta közös fegyverpróbája: egy fegyvertelen légi cél és egy földi céljármű, valódi baráti sebzéssel.",
+    "en": "Two pilots share a weapons range: an unarmed air target and a ground vehicle, with real friendly-fire damage."
+  },
+  "FEGYVERPRÓBA": {
+    "hu": "FEGYVERPRÓBA",
+    "en": "WEAPONS RANGE"
+  },
+  "1–4: fegyverválasztás. T vagy Tab: célkijelölés; várd meg a szerver által jelzett befogást. Space: tüzelés; C: elterelő. Levegő–levegő rakétával a légi célt, levegő–föld rakétával vagy bombával a teherautót támadd.": {
+    "hu": "1–4: fegyverválasztás. T vagy Tab: célkijelölés; várd meg a szerver által jelzett befogást. Space: tüzelés; C: elterelő. Levegő–levegő rakétával a légi célt, levegő–föld rakétával vagy bombával a teherautót támadd.",
+    "en": "1–4 selects weapons. T or Tab selects a target; wait for the server-confirmed lock. Space fires; C releases countermeasures. Use air-to-air missiles against the air target, and air-to-ground missiles or bombs against the truck."
+  },
+  "BARÁTI TŰZ": {
+    "hu": "BARÁTI TŰZ",
+    "en": "FRIENDLY FIRE"
+  },
+  "A társadba csapódó lövedék, bomba vagy éles rakéta ugyanúgy sérülést okoz, mint egy ellenséges találat. A baráti jelölés nem jelent sérthetetlenséget. A saját indítógépét a lövedék nem üti el.": {
+    "hu": "A társadba csapódó lövedék, bomba vagy éles rakéta ugyanúgy sérülést okoz, mint egy ellenséges találat. A baráti jelölés nem jelent sérthetetlenséget. A saját indítógépét a lövedék nem üti el.",
+    "en": "Bullets, bombs and armed missiles hitting your wingman cause the same damage as hostile hits. Friendly identification does not confer invulnerability. Projectiles do not collide with their own launching aircraft."
+  },
+  "Egy szobába két pilóta fér. A fegyverhasználat és a találatok közösek; teljes küldetés, harcoló AI, szünet, hangátvitel és automatikus újraéledés még nincs.": {
+    "hu": "Egy szobába két pilóta fér. A fegyverhasználat és a találatok közösek; teljes küldetés, harcoló AI, szünet, hangátvitel és automatikus újraéledés még nincs.",
+    "en": "A room holds two pilots. Weapons and hits are shared; full missions, combat AI, pause, voice transmission and automatic respawn are not implemented yet."
+  },
+  "Repülés típusa": {
+    "hu": "Repülés típusa",
+    "en": "Flight type"
+  },
+  "Közös légiharc · gépi ellenfél": {
+    "hu": "Közös légiharc · gépi ellenfél",
+    "en": "Shared air combat · AI opponent"
+  },
+  "Közös fegyverpróba · AI nélkül": {
+    "hu": "Közös fegyverpróba · AI nélkül",
+    "en": "Shared weapons range · no AI"
+  },
+  "A fegyverpróba két közös gyakorlócélt ad. Légiharcban egy ellenséges vadász is érkezik, 20 másodperc felkészülési idővel. A baráti tűz valódi sérülést okoz. Csatlakozáskor a szoba repüléstípusa érvényes.": {
+    "hu": "A fegyverpróba két közös gyakorlócélt ad. Légiharcban egy ellenséges vadász is érkezik, 20 másodperc felkészülési idővel. A baráti tűz valódi sérülést okoz. Csatlakozáskor a szoba repüléstípusa érvényes.",
+    "en": "The weapons range provides two shared practice targets. Air combat adds a hostile fighter after 20 seconds of preparation. Friendly fire causes real damage. Joining pilots inherit the room’s flight type."
+  },
+  "Ellenséges vadász: harcban": {
+    "hu": "Ellenséges vadász: harcban",
+    "en": "Hostile fighter: engaging"
+  },
+  "Ellenséges vadász: kitér": {
+    "hu": "Ellenséges vadász: kitér",
+    "en": "Hostile fighter: evading"
+  },
+  "Ellenséges vadász: kivonul": {
+    "hu": "Ellenséges vadász: kivonul",
+    "en": "Hostile fighter: withdrawing"
+  },
+  "Ellenséges vadász: elhagyta a légteret": {
+    "hu": "Ellenséges vadász: elhagyta a légteret",
+    "en": "Hostile fighter: left the airspace"
+  },
+  "Ellenséges vadász: zuhan": {
+    "hu": "Ellenséges vadász: zuhan",
+    "en": "Hostile fighter: falling"
+  },
+  "Ellenséges vadász: megsemmisült": {
+    "hu": "Ellenséges vadász: megsemmisült",
+    "en": "Hostile fighter: destroyed"
+  },
+  "Felkészülés a légiharcra: {{v0}} s": {
+    "hu": "Felkészülés a légiharcra: {{v0}} s",
+    "en": "Air combat preparation: {{v0}} s"
+  },
+  "Két pilóta közös fegyverpróbája vagy légiharca egy szerveren vezérelt ellenséges vadász ellen, valódi baráti sebzéssel.": {
+    "hu": "Két pilóta közös fegyverpróbája vagy légiharca egy szerveren vezérelt ellenséges vadász ellen, valódi baráti sebzéssel.",
+    "en": "Two pilots share a weapons range or fight a server-controlled hostile fighter, with real friendly-fire damage."
+  },
+  "Válassz fegyverpróbát vagy légiharcot a szoba létrehozása előtt. A légiharc 20 másodperc felkészülés után élesedik. A csatlakozó pilóta a szoba beállítását kapja.": {
+    "hu": "Válassz fegyverpróbát vagy légiharcot a szoba létrehozása előtt. A légiharc 20 másodperc felkészülés után élesedik. A csatlakozó pilóta a szoba beállítását kapja.",
+    "en": "Choose weapons range or air combat before creating the room. Combat activates after 20 seconds of preparation. Joining pilots inherit the room setting."
+  },
+  "A gépi vadász mindkét pilótát támadhatja, a saját radarja és fegyverei hatótávján belül. Elterelőket és kitérőket használ; súlyos sérülés vagy elfogyott légi fegyverzet miatt kivonul. Nincs saját reptere, ezért ebben a próbában nem tér vissza feltöltve.": {
+    "hu": "A gépi vadász mindkét pilótát támadhatja, a saját radarja és fegyverei hatótávján belül. Elterelőket és kitérőket használ; súlyos sérülés vagy elfogyott légi fegyverzet miatt kivonul. Nincs saját reptere, ezért ebben a próbában nem tér vissza feltöltve.",
+    "en": "The AI fighter can attack either pilot within its own radar and weapon limits. It uses countermeasures and evasive manoeuvres, withdrawing after serious damage or exhausted air-combat stores. It has no airbase and therefore does not return rearmed in this prototype."
+  },
+  "Egy szobába két pilóta fér. A fegyverhasználat, a találatok és a gépi ellenfél közösek; teljes küldetés, szünet, hangátvitel és automatikus újraéledés még nincs.": {
+    "hu": "Egy szobába két pilóta fér. A fegyverhasználat, a találatok és a gépi ellenfél közösek; teljes küldetés, szünet, hangátvitel és automatikus újraéledés még nincs.",
+    "en": "A room holds two pilots. Weapons, hits and the AI opponent are shared; full missions, pause, voice transmission and automatic respawn are not implemented yet."
+  },
+  "REPÜLÉSTÍPUS": {
+    "hu": "REPÜLÉSTÍPUS",
+    "en": "FLIGHT TYPE"
+  },
+  "GÉPI ELLENFÉL": {
+    "hu": "GÉPI ELLENFÉL",
+    "en": "AI OPPONENT"
+  },
+  "Gép állapota": {
+    "hu": "Gép állapota",
+    "en": "Aircraft condition"
+  },
+  "Fegyverválasztás": {
+    "hu": "Fegyverválasztás",
+    "en": "Weapon selection"
+  },
+  "Közös küldetés · csapásmérés": {
+    "hu": "Közös küldetés · csapásmérés",
+    "en": "Cooperative mission · strike"
+  },
+  "A közös küldetés két pilótával indul. Cél: a vadász leküzdése és a földi céljármű megsemmisítése. Nincs leszállási szakasz.": {
+    "hu": "A közös küldetés két pilótával indul. Cél: a vadász leküzdése és a földi céljármű megsemmisítése. Nincs leszállási szakasz.",
+    "en": "The cooperative mission starts with two pilots. Defeat the fighter and destroy the ground target vehicle. There is no landing phase."
+  },
+  "Közös küldetés": {
+    "hu": "Közös küldetés",
+    "en": "Cooperative mission"
+  },
+  "Közös csapásmérés": {
+    "hu": "Közös csapásmérés",
+    "en": "Cooperative strike"
+  },
+  "Ellenséges vadász leküzdése": {
+    "hu": "Ellenséges vadász leküzdése",
+    "en": "Defeat the hostile fighter"
+  },
+  "Földi céljármű megsemmisítése": {
+    "hu": "Földi céljármű megsemmisítése",
+    "en": "Destroy the ground target vehicle"
+  },
+  "Mindkét pilóta túlélte (opcionális)": {
+    "hu": "Mindkét pilóta túlélte (opcionális)",
+    "en": "Both pilots survive (optional)"
+  },
+  "Várakozás a második pilótára · a repülés még nem indult el.": {
+    "hu": "Várakozás a második pilótára · a repülés még nem indult el.",
+    "en": "Waiting for the second pilot · flight has not started."
+  },
+  "SIKERES KÜLDETÉS": {
+    "hu": "SIKERES KÜLDETÉS",
+    "en": "MISSION SUCCESS"
+  },
+  "SIKERTELEN KÜLDETÉS": {
+    "hu": "SIKERTELEN KÜLDETÉS",
+    "en": "MISSION FAILED"
+  },
+  "Semmisítsétek meg a földi céljárművet, és küzdjétek le a vadászt.": {
+    "hu": "Semmisítsétek meg a földi céljárművet, és küzdjétek le a vadászt.",
+    "en": "Destroy the ground target vehicle and defeat the fighter."
+  },
+  "Kiesett": {
+    "hu": "Kiesett",
+    "en": "Lost"
+  },
+  "Túlélte": {
+    "hu": "Túlélte",
+    "en": "Survived"
+  },
+  "Találatok": {
+    "hu": "Találatok",
+    "en": "Hits"
+  },
+  "Baráti találatok": {
+    "hu": "Baráti találatok",
+    "en": "Friendly hits"
+  },
+  "Új bevetéshez lépjetek ki, és hozzatok létre új szobát.": {
+    "hu": "Új bevetéshez lépjetek ki, és hozzatok létre új szobát.",
+    "en": "Leave and create a new room for another sortie."
+  },
+  "Ez a közös küldetés már elindult. Új bevetéshez hozzatok létre új szobát.": {
+    "hu": "Ez a közös küldetés már elindult. Új bevetéshez hozzatok létre új szobát.",
+    "en": "This cooperative mission has already started. Create a new room for another sortie."
+  },
+  "KÖZÖS BEVETÉS": {
+    "hu": "KÖZÖS BEVETÉS",
+    "en": "COOPERATIVE SORTIE"
+  },
+  "A Közös küldetés · csapásmérés két pilótával indul. A második pilóta belépéséig a világ és az üzemanyag-fogyasztás áll; utána 20 másodperc felkészülés jár. Küzdjétek le a vadászt és semmisítsétek meg a földi céljárművet. A vadász kivonulása is megtisztítja a légteret. Mindkét pilóta túlélése opcionális.": {
+    "hu": "A Közös küldetés · csapásmérés két pilótával indul. A második pilóta belépéséig a világ és az üzemanyag-fogyasztás áll; utána 20 másodperc felkészülés jár. Küzdjétek le a vadászt és semmisítsétek meg a földi céljárművet. A vadász kivonulása is megtisztítja a légteret. Mindkét pilóta túlélése opcionális.",
+    "en": "Cooperative mission · strike starts with two pilots. The world and fuel consumption remain paused until the second pilot joins, followed by 20 seconds of preparation. Defeat the fighter and destroy the ground target vehicle. A withdrawing fighter also clears the airspace. Both pilots surviving is optional."
+  },
+  "A kieső vagy kilépő társ nélkül folytatható a közös bevetés, de indulás után új pilóta nem csatlakozhat, és kilépéssel nem kérhető pótrepülő. Ha mindketten lezuhantok, a küldetés sikertelen. Az eredmény megállítja a világot; új bevetéshez új szobát nyissatok. Nincs leszállási szakasz.": {
+    "hu": "A kieső vagy kilépő társ nélkül folytatható a közös bevetés, de indulás után új pilóta nem csatlakozhat, és kilépéssel nem kérhető pótrepülő. Ha mindketten lezuhantok, a küldetés sikertelen. Az eredmény megállítja a világot; új bevetéshez új szobát nyissatok. Nincs leszállási szakasz.",
+    "en": "The cooperative sortie can continue after a wingman is lost or disconnects, but new pilots cannot join after launch and leaving does not grant a replacement aircraft. If both pilots crash, the mission fails. The final result freezes the world; create a new room for another sortie. There is no landing phase."
+  },
+  "Egy szobába két pilóta fér. A fegyverhasználat, a találatok és a gépi ellenfél közösek. A közös csapásmérés saját célokat és eredményt kap; a teljes egyjátékos küldetéskatalógus, hangátvitel és automatikus újraéledés még nincs bekötve.": {
+    "hu": "Egy szobába két pilóta fér. A fegyverhasználat, a találatok és a gépi ellenfél közösek. A közös csapásmérés saját célokat és eredményt kap; a teljes egyjátékos küldetéskatalógus, hangátvitel és automatikus újraéledés még nincs bekötve.",
+    "en": "A room holds two pilots. Weapons, hits and the AI opponent are shared. Cooperative strike has its own objectives and result; the full single-player mission catalogue, voice transmission and automatic respawn are not yet connected."
+  },
+  "KÖZÖS EREDMÉNY": {
+    "hu": "KÖZÖS EREDMÉNY",
+    "en": "SHARED RESULT"
+  },
+  "Válassz fegyverpróbát, szabad légiharcot vagy közös csapásmérést. A csatlakozó pilóta a szoba beállítását kapja.": {
+    "hu": "Válassz fegyverpróbát, szabad légiharcot vagy közös csapásmérést. A csatlakozó pilóta a szoba beállítását kapja.",
+    "en": "Choose weapons range, free air combat or cooperative strike. Joining pilots inherit the room setting."
+  },
+  "Fegyverpróbán és szabad légiharcban lezuhanás után újra csatlakozhatsz. Közös bevetésen nincs pótrepülő. Ha mindenki kilép, a szoba és a kód megszűnik.": {
+    "hu": "Fegyverpróbán és szabad légiharcban lezuhanás után újra csatlakozhatsz. Közös bevetésen nincs pótrepülő. Ha mindenki kilép, a szoba és a kód megszűnik.",
+    "en": "In weapons range and free air combat, you can rejoin after a crash. Cooperative sorties do not grant replacement aircraft. Once everyone leaves, the room and code are removed."
+  },
+  "A bevetés véget ért. Új bevetéshez hozzatok létre új szobát.": {
+    "hu": "A bevetés véget ért. Új bevetéshez hozzatok létre új szobát.",
+    "en": "The sortie has ended. Create a new room for another sortie."
+  },
+  "A géped kiesett. Várd meg a közös eredményt; ezen a bevetésen nincs pótrepülő.": {
+    "hu": "A géped kiesett. Várd meg a közös eredményt; ezen a bevetésen nincs pótrepülő.",
+    "en": "Your aircraft is lost. Wait for the shared result; this sortie has no replacement aircraft."
+  },
+  "Közös előszoba": {
+    "hu": "Közös előszoba",
+    "en": "Cooperative briefing room"
+  },
+  "Saját repülőgép": {
+    "hu": "Saját repülőgép",
+    "en": "Your aircraft"
+  },
+  "Induló üzemanyag (%)": {
+    "hu": "Induló üzemanyag (%)",
+    "en": "Departure fuel (%)"
+  },
+  "Gépágyú lőszerrel": {
+    "hu": "Gépágyú lőszerrel",
+    "en": "Cannon with ammunition"
+  },
+  "Felszerelés mentése": {
+    "hu": "Felszerelés mentése",
+    "en": "Save loadout"
+  },
+  "Kész vagyok": {
+    "hu": "Kész vagyok",
+    "en": "Ready"
+  },
+  "Mégsem vagyok kész": {
+    "hu": "Mégsem vagyok kész",
+    "en": "Not ready"
+  },
+  "Te vagy a szobagazda.": {
+    "hu": "Te vagy a szobagazda.",
+    "en": "You are the room host."
+  },
+  "A küldetést a szobagazda választja.": {
+    "hu": "A küldetést a szobagazda választja.",
+    "en": "The host selects the mission."
+  },
+  "A küldetést csak a szobagazda változtathatja.": {
+    "hu": "A küldetést csak a szobagazda változtathatja.",
+    "en": "Only the host can change the mission."
+  },
+  "Felkészülés": {
+    "hu": "Felkészülés",
+    "en": "Preparing"
+  },
+  "Kész": {
+    "hu": "Kész",
+    "en": "Ready"
+  },
+  "Függesztési pont": {
+    "hu": "Függesztési pont",
+    "en": "Weapon station"
+  },
+  "Össztömeg": {
+    "hu": "Össztömeg",
+    "en": "Gross mass"
+  },
+  "Hibás vagy túl nehéz felszerelés.": {
+    "hu": "Hibás vagy túl nehéz felszerelés.",
+    "en": "Invalid or overweight loadout."
+  },
+  "A módosításokat előbb mentsd el.": {
+    "hu": "A módosításokat előbb mentsd el.",
+    "en": "Save your changes first."
+  },
+  "Indulásra kész. A másik pilótára várunk.": {
+    "hu": "Indulásra kész. A másik pilótára várunk.",
+    "en": "Ready for departure. Waiting for the other pilot."
+  },
+  "Válassz felszerelést, majd jelezd, ha készen állsz.": {
+    "hu": "Válassz felszerelést, majd jelezd, ha készen állsz.",
+    "en": "Choose your loadout, then confirm when you are ready."
+  },
+  "Az előszoba módosult. Ellenőrizd az új beállításokat, és próbáld újra.": {
+    "hu": "Az előszoba módosult. Ellenőrizd az új beállításokat, és próbáld újra.",
+    "en": "The briefing room changed. Check the new settings and try again."
+  },
+  "A bevetés már elindult, a felszerelés nem módosítható.": {
+    "hu": "A bevetés már elindult, a felszerelés nem módosítható.",
+    "en": "The sortie has started; the loadout cannot be changed."
+  },
+  "Csapásmérés: a vadász és a földi cél kötelező. Légtérellenőrzés: a földi cél opcionális. Mindkét feladatnál cél a két pilóta túlélése.": {
+    "hu": "Csapásmérés: a vadász és a földi cél kötelező. Légtérellenőrzés: a földi cél opcionális. Mindkét feladatnál cél a két pilóta túlélése.",
+    "en": "Strike requires both the fighter and ground target. In air patrol, the ground target is optional. Both missions include an optional objective for both pilots to survive."
+  },
+  "Felszerelés- vagy küldetésváltás után mindketten újra jelezzétek a készültséget.": {
+    "hu": "Felszerelés- vagy küldetésváltás után mindketten újra jelezzétek a készültséget.",
+    "en": "After any loadout or mission change, both pilots must confirm readiness again."
+  },
+  "Közös légtérellenőrzés": {
+    "hu": "Közös légtérellenőrzés",
+    "en": "Cooperative air patrol"
+  },
+  "Földi céljármű megsemmisítése (opcionális)": {
+    "hu": "Földi céljármű megsemmisítése (opcionális)",
+    "en": "Destroy the ground target vehicle (optional)"
+  },
+  "Várakozás mindkét pilóta készültségére.": {
+    "hu": "Várakozás mindkét pilóta készültségére.",
+    "en": "Waiting for both pilots to confirm readiness."
+  },
+  "Küzdjétek le a vadászt. A földi cél megsemmisítése opcionális.": {
+    "hu": "Küzdjétek le a vadászt. A földi cél megsemmisítése opcionális.",
+    "en": "Defeat the fighter. Destroying the ground target is optional."
+  },
+  "ELŐSZOBA ÉS KÉSZÜLTSÉG": {
+    "hu": "ELŐSZOBA ÉS KÉSZÜLTSÉG",
+    "en": "BRIEFING ROOM AND READINESS"
+  },
+  "A közös bevetés előszobájában a szobagazda csapásmérést vagy légtérellenőrzést választ. Mindketten külön gépet, függesztményeket, gépágyút és 10–100% üzemanyagot állíthattok be. A mentés után nyomjátok meg a Kész vagyok gombot. A két kész jelzés indítja a repülést; addig a világ áll.": {
+    "hu": "A közös bevetés előszobájában a szobagazda csapásmérést vagy légtérellenőrzést választ. Mindketten külön gépet, függesztményeket, gépágyút és 10–100% üzemanyagot állíthattok be. A mentés után nyomjátok meg a Kész vagyok gombot. A két kész jelzés indítja a repülést; addig a világ áll.",
+    "en": "In the cooperative briefing room, the host chooses strike or air patrol. Each pilot selects an aircraft, stores, cannon and 10–100% fuel. Save your loadout, then press Ready. Flight begins when both pilots are ready; the world remains paused until then."
+  },
+  "Bármely felszerelés- vagy feladatváltás mindkét kész jelzést törli. Kész állapotban a Mégsem vagyok kész gombbal nyisd újra a saját választódat. A szobagazda távozásakor a megmaradt pilóta veszi át a szerepét. Indulás után a felszerelés már nem változtatható.": {
+    "hu": "Bármely felszerelés- vagy feladatváltás mindkét kész jelzést törli. Kész állapotban a Mégsem vagyok kész gombbal nyisd újra a saját választódat. A szobagazda távozásakor a megmaradt pilóta veszi át a szerepét. Indulás után a felszerelés már nem változtatható.",
+    "en": "Any loadout or assignment change clears both ready statuses. If ready, press Not ready to reopen your choices. If the host leaves, the remaining pilot takes over. Loadouts cannot change after departure."
+  },
+  "A közös bevetés az előszobából, két Kész jelzés után indul. Addig a világ és az üzemanyag-fogyasztás áll; utána 20 másodperc felkészülés jár. Csapásmérésnél a vadász és a földi cél is kötelező, légtérellenőrzésnél a földi cél opcionális. A vadász kivonulása is megtisztítja a légteret. Mindkét pilóta túlélése opcionális.": {
+    "hu": "A közös bevetés az előszobából, két Kész jelzés után indul. Addig a világ és az üzemanyag-fogyasztás áll; utána 20 másodperc felkészülés jár. Csapásmérésnél a vadász és a földi cél is kötelező, légtérellenőrzésnél a földi cél opcionális. A vadász kivonulása is megtisztítja a légteret. Mindkét pilóta túlélése opcionális.",
+    "en": "The cooperative sortie starts from the briefing room after two Ready confirmations. The world and fuel consumption remain paused until then, followed by 20 seconds of preparation. Strike requires both fighter and ground target; air patrol makes the ground target optional. A withdrawing fighter also clears the airspace. Both pilots surviving is optional."
+  },
+  "Küldetés": {
+    "hu": "Küldetés",
+    "en": "Mission"
   }
 }

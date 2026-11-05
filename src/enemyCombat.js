@@ -57,7 +57,9 @@ export function interceptTime(position, velocity, source, speed) {
   return future.length ? Math.min(...future) : null;
 }
 export class EnemyCombat {
-  constructor() {
+  constructor({ warmup = 4, projectileLimit = Infinity } = {}) {
+    this.warmup = warmup;
+    this.projectileLimit = projectileLimit;
     this.units = new Map();
     this.activeTime = 0;
   }
@@ -255,7 +257,7 @@ export class EnemyCombat {
   }
   defensiveFire(t, player, targets, w, u, dt) {
     u.gun -= dt;
-    if (u.gun > 0 || u.rounds <= 0) return;
+    if (u.gun > 0 || u.rounds <= 0 || w.projectiles.length >= this.projectileLimit) return;
     if (
       w.projectiles.filter((p) => p.owner === (t.team === 'ally' ? 'ally' : 'enemy')).length >= 220
     )
@@ -372,7 +374,7 @@ export class EnemyCombat {
     )
       return;
     this.activeTime += dt;
-    if (this.activeTime < 4) return;
+    if (this.activeTime < this.warmup) return;
     const commitments = missileCommitments(w.projectiles),
       formations = formationContext(player, targets);
     const projectileCounts = new Map(),
@@ -502,6 +504,7 @@ export class EnemyCombat {
               1.5,
           ) &&
         u.bombs > 0 &&
+        w.projectiles.length < this.projectileLimit &&
         u.bomb <= 0 &&
         (this.bombCommitments.get(s.id) || 0) * 100 < (s.health ?? 100)
       ) {
@@ -633,7 +636,7 @@ export class EnemyCombat {
         const finalStatus = guidedLaunchStatus(source, s, missileProfile),
           decision = aiMissileDecision(missileStores, finalStatus, defensePriority);
         u.missileDecision = decision;
-        if (decision.allow) {
+        if (decision.allow && w.projectiles.length < this.projectileLimit) {
           u.launchRange = finalStatus.maxRange;
           this.launch('missile', t, s, w, u);
           commitments.set(commitmentKey, (commitments.get(commitmentKey) || 0) + 1);
@@ -680,6 +683,7 @@ export class EnemyCombat {
       if (
         t.type !== 'bomber' &&
         types.includes('gun') &&
+        w.projectiles.length < this.projectileLimit &&
         u.rounds > 0 &&
         gunEligible &&
         u.gun <= 0

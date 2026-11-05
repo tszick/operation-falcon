@@ -14,6 +14,74 @@ const guide = (id, name, description, steps, watch, pitfalls, related = [], sect
 });
 export const pilotEntries = [
   guide(
+    'multiplayer',
+    'Multiplayer · közös gyakorlórepülés',
+    'Két pilóta közös fegyverpróbája vagy légiharca egy szerveren vezérelt ellenséges vadász ellen, valódi baráti sebzéssel.',
+    [
+      [
+        'SZOBA',
+        'Nyisd meg a Multiplayer · közös gyakorlás oldalt. Hozz létre egy szobát, majd add át a hatkarakteres kódot a társadnak.',
+      ],
+      [
+        'REPÜLÉSTÍPUS',
+        'Válassz fegyverpróbát, szabad légiharcot vagy közös csapásmérést. A csatlakozó pilóta a szoba beállítását kapja.',
+      ],
+      [
+        'CSATLAKOZÁS',
+        'A másik pilóta ugyanazon a szerveren a kóddal csatlakozik. A már repülő társ közelében, levegőből indul.',
+      ],
+      [
+        'KÖZÖS REPÜLÉS',
+        'A megszokott repülési gombok működnek. Kattints a tájra a nézelődéshez; Esc csak az egeret engedi el. A világ tovább fut.',
+      ],
+      [
+        'FEGYVERPRÓBA',
+        '1–4: fegyverválasztás. T vagy Tab: célkijelölés; várd meg a szerver által jelzett befogást. Space: tüzelés; C: elterelő. Levegő–levegő rakétával a légi célt, levegő–föld rakétával vagy bombával a teherautót támadd.',
+      ],
+      [
+        'GÉPI ELLENFÉL',
+        'A gépi vadász mindkét pilótát támadhatja, a saját radarja és fegyverei hatótávján belül. Elterelőket és kitérőket használ; súlyos sérülés vagy elfogyott légi fegyverzet miatt kivonul. Nincs saját reptere, ezért ebben a próbában nem tér vissza feltöltve.',
+      ],
+      [
+        'KÖZÖS BEVETÉS',
+        'A közös bevetés az előszobából, két Kész jelzés után indul. Addig a világ és az üzemanyag-fogyasztás áll; utána 20 másodperc felkészülés jár. Csapásmérésnél a vadász és a földi cél is kötelező, légtérellenőrzésnél a földi cél opcionális. A vadász kivonulása is megtisztítja a légteret. Mindkét pilóta túlélése opcionális.',
+      ],
+      [
+        'ELŐSZOBA ÉS KÉSZÜLTSÉG',
+        'A közös bevetés előszobájában a szobagazda csapásmérést vagy légtérellenőrzést választ. Mindketten külön gépet, függesztményeket, gépágyút és 10–100% üzemanyagot állíthattok be. A mentés után nyomjátok meg a Kész vagyok gombot. A két kész jelzés indítja a repülést; addig a világ áll.',
+      ],
+      [
+        'KÖZÖS EREDMÉNY',
+        'A kieső vagy kilépő társ nélkül folytatható a közös bevetés, de indulás után új pilóta nem csatlakozhat, és kilépéssel nem kérhető pótrepülő. Ha mindketten lezuhantok, a küldetés sikertelen. Az eredmény megállítja a világot; új bevetéshez új szobát nyissatok. Nincs leszállási szakasz.',
+      ],
+      [
+        'BARÁTI TŰZ',
+        'A társadba csapódó lövedék, bomba vagy éles rakéta ugyanúgy sérülést okoz, mint egy ellenséges találat. A baráti jelölés nem jelent sérthetetlenséget. A saját indítógépét a lövedék nem üti el.',
+      ],
+      [
+        'KILÉPÉS',
+        'Fegyverpróbán és szabad légiharcban lezuhanás után újra csatlakozhatsz. Közös bevetésen nincs pótrepülő. Ha mindenki kilép, a szoba és a kód megszűnik.',
+      ],
+    ],
+    [
+      'A szobakód, a hívójel, a pilóták száma és a hálózati késleltetés a közös repülés paneljén látszik.',
+    ],
+    [
+      'Egy szobába két pilóta fér. A fegyverhasználat, a találatok és a gépi ellenfél közösek. A közös csapásmérés saját célokat és eredményt kap; a teljes egyjátékos küldetéskatalógus, hangátvitel és automatikus újraéledés még nincs bekötve.',
+      'A két lapnak ugyanahhoz a szerverhez kell csatlakoznia. A localhostos próba nem teszi interneten elérhetővé a gépedet.',
+    ],
+    ['guide-formation', 'guide-air-combat', 'guide-ground-unit'],
+    [
+      {
+        title: 'ELŐSZOBA ÉS KÉSZÜLTSÉG',
+        paragraphs: [
+          'Bármely felszerelés- vagy feladatváltás mindkét kész jelzést törli. Kész állapotban a Mégsem vagyok kész gombbal nyisd újra a saját választódat. A szobagazda távozásakor a megmaradt pilóta veszi át a szerepét. Indulás után a felszerelés már nem változtatható.',
+        ],
+      },
+    ],
+  ),
+
+  guide(
     'mobile-threats',
     'Mobil légvédelem és drónok',
     'A konvojt mozgó légvédelem és jelzavaró védi, miközben egy külön drónindító a repteret fenyegeti.',

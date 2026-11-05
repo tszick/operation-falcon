@@ -3,7 +3,7 @@
   "version": "1.0.1",
   "private": true,
   "type": "module",
-  "description": "B\u00c3\u00b6ng\u00c3\u00a9sz\u00c5\u2018s vad\u00c3\u00a1szrep\u00c3\u00bcl\u00c5\u2018-szimul\u00c3\u00a1tor",
+  "description": "Böngészős vadászrepülő-szimulátor",
   "scripts": {
     "start": "node server.mjs",
     "test": "node --test",
@@ -27,7 +27,8 @@
     "prettier": "3.9.10"
   },
   "dependencies": {
-    "i18next": "26.7.1"
+    "i18next": "26.7.1",
+    "ws": "8.22.1"
   },
   "overrides": {
     "minimatch": "11.0.1"

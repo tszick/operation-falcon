@@ -36,7 +36,14 @@ export const weaponNames = {
   bomb: 'BOMBA / CCIP',
 };
 export class Weapons {
-  constructor({ enemyFire = false, random = Math.random } = {}) {
+  constructor({
+    enemyFire = false,
+    random = Math.random,
+    actorUpdates = true,
+    friendlyFire = false,
+  } = {}) {
+    this.actorUpdates = actorUpdates;
+    this.friendlyFire = friendlyFire;
     this.selected = 'aam';
     this.projectiles = [];
     this.cooldown = 0;
@@ -204,12 +211,14 @@ export class Weapons {
     this.emit({ type: 'explosion', weapon, ground, position: position.clone(), heavy });
   }
   update(s, targets, dt) {
-    syncPlayerTransport(s, targets);
-    updateCountermeasures(s, dt);
-    if (this.enemyCombat) updateAIResupply(s, targets, this, this.enemyCombat, dt);
-    updateAIDefense(s, targets, this, dt);
-    this.enemyCombat?.update(s, targets, this, dt);
-    updateAircraftCollisions(s, targets, this);
+    if (this.actorUpdates) {
+      syncPlayerTransport(s, targets);
+      updateCountermeasures(s, dt);
+      if (this.enemyCombat) updateAIResupply(s, targets, this, this.enemyCombat, dt);
+      updateAIDefense(s, targets, this, dt);
+      this.enemyCombat?.update(s, targets, this, dt);
+      updateAircraftCollisions(s, targets, this);
+    }
     if (s.impactPending) {
       s.impactPending = false;
       this.explode(s.position, 'bomb', { ground: true });
@@ -415,7 +424,9 @@ export class Weapons {
       const canHit = (t) =>
         !t.exited &&
         !t.playerControlled &&
-        (!ai || (teamOf(t, s) !== p.owner && teamOf(t, s) !== 'neutral'));
+        (!ai ||
+          (t.id !== p.sourceId &&
+            (this.friendlyFire || (teamOf(t, s) !== p.owner && teamOf(t, s) !== 'neutral'))));
       const recordHit = (t, p, info = null) => {
         const amount =
             p.type === 'gun'
@@ -438,6 +449,7 @@ export class Weapons {
           engineIndex: info?.engineIndex,
           amount,
           destroyed,
+          friendlyFire: teamOf(t, s) === (p.owner || 'ally'),
           position: t.position.clone(),
         });
         if (!ai) {

@@ -332,8 +332,8 @@ export class GpuModels {
     g.enable(g.POLYGON_OFFSET_FILL);
     g.polygonOffset(1, 1);
     for (const [e, data] of visible) {
-      if (e.material === 'asphalt' || e.material === 'paint') g.disable(g.POLYGON_OFFSET_FILL);
-      else g.enable(g.POLYGON_OFFSET_FILL);
+      const bias = e.material === 'paint' ? -8 : e.material === 'asphalt' ? -4 : 1;
+      g.polygonOffset(bias, bias);
       this.bind(data);
       this.transform(r, e);
       g.bindBuffer(g.ELEMENT_ARRAY_BUFFER, data.triangles);

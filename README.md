@@ -88,3 +88,88 @@ A megjelenő típusnevek formája: `EREDET-SZEREP-SOROZAT (Fantázianév)`, pél
 A névkatalógus a megjelenítési réteghez tartozik. A szimuláció azonosítói, a fegyverprofilok és a régi naplók kompatibilisek maradnak. A régi megnevezések belső megfeleltetésként megmaradnak; a játékosnak megjelenő szövegek mindkét nyelven az új neveket használják. Az új naplók a katalógus verzióját és a megjelenítési nevet is rögzítik. Új típus felvételekor a katalógus és a fizikai profil külön-külön bővítendő.
 
 A saját elnevezések nem jelentenek gyártói jóváhagyást vagy jogi névellenőrzést. A műszaki modellek egyszerűsített játékbeli közelítések. A névkatalógus bevezetése nem módosítja a modellek formáját vagy a képi eszközök felhasználási feltételeit.
+
+## Multiplayer · közös repülés, fegyverpróba és légiharc
+
+A főmenü **Multiplayer · közös gyakorlás** linkje a `/multiplayer.html` oldalt nyitja meg.
+Két böngészőlapon vagy böngészőben nyisd meg **ugyanazt a címet és portot**. Az elsőn hozz létre szobát,
+a másodikon add meg a hatkarakteres szobakódot. A később érkező pilóta a társa közelében indul.
+Két felfegyverzett vadásztípus választható; levegőből indultok, a meglévő repülésfizikával és egérrel nézelődéssel.
+A próba mindig hang nélkül fut. A központi repülési HUD megmarad; a teljes cockpit és a meglévő egyjátékos küldetéskatalógus bekötése későbbi lépés.
+
+A szerver számolja a fizikát 120 Hz-en; a böngésző csak sorszámozott vezérlési parancsokat küld, pozíciót,
+sérülést vagy üzemanyagkészletet nem írhat felül. Állapotküldés 20 Hz, helyi mozgás-előrejelzés,
+visszaigazolt parancsok utáni korrekció és 100 ms-os távoli interpoláció egészíti ki.
+Háttérbe tett lap vagy kapcsolatkimaradás esetén nem marad lenyomva a kormány: a szerver semleges bevitellel folytatja a repülést.
+
+**Ez még harci prototípus, saját közös bevetéssel:** nincs kölcsönös repülőgép-ütközés, automatikus újraéledés vagy fiók. Esc csak az egeret engedi el, nem állítja meg a világot.
+A fegyverpróba és légiharc módban lezuhanás után kilépéssel és újbóli csatlakozással kérhető új gép. A közös bevetésben indulás után nincs pótrepülő vagy új belépő. Kilépéskor megszűnik a pilóta helye;
+az üres szoba azonnal törlődik. A szobakódot érdemes kimásolni, mielőtt az utolsó pilóta kilép.
+
+Alapértelmezésben a szerver továbbra is csak `127.0.0.1` címen figyel. A prototípust elsőként localhoston teszteld.
+A `HOST` és a vesszővel elválasztott `ALLOWED_HOSTS` csak kifejezetten beállított címekre bővíti a kiszolgálást;
+a WebGPU másik gépről HTTPS-t igényel, ezért a publikus/LAN HTTPS-kiszolgálás és a reverse proxy origin-kezelése külön következő feladat.
+Nincs automatikus portnyitás, külső matchmaking, felhős AI vagy hangátvitel.
+
+A kapcsolatok azonos eredetű WebSocketet használnak. A szerver ellenőrzi az Origin és Host fejléceket,
+a protokollverziót, a vezérlési értékeket és sorszámokat; korlátozza a csomagméretet, a parancssort,
+a küldési sebességet, a szobák és a kapcsolatok számát. Két pilóta lehet egy szobában, legfeljebb 16 szoba és 32 kapcsolat.
+Üres szervernél nem fut a multiplayer időzítő. A játékosállapot csak memóriában él, a szerver újraindítása törli.
+
+Célzott ellenőrzés: `node --test tests/multiplayer.test.js tests/static-server.test.js`.
+
+### Közös fegyverhasználat
+
+A második prototípusban a két gép alapértelmezett, típushoz illő fegyverzetet kap. Egy fegyvertelen,
+egyenesen repülő légi cél és egy nem tüzelő teherautó közös lőtéri célként jelenik meg. **1–4** fegyverválasztás,
+**T / Tab** célkijelölés és befogás, **Space** tüzelés, **C** elterelő. A panel gombjaival is választható fegyver,
+kijelölhető cél és leadható egy lövés. Közös bevetésben a felszerelés és az induló üzemanyag az előszobában állítható.
+
+A szerver birtokolja a pilótánkénti lőszert, fegyvervárakozást és befogást, valamint egyetlen közös
+lövedék- és találatszimulációt futtat a meglévő `Weapons` ballisztikájával. A kliens nem küldhet befogott
+célt, találatot, sebzést, lőszermennyiséget vagy időlépést. Csak fegyverválasztási, célváltási, tüzelési és
+elterelési szándék érkezhet a sorszámozott vezérléssel együtt. Új csomag nélkül nincs folytatódó tüzelés.
+
+**A baráti tűz valódi:** másik pilóta gépébe csapódó lövedékek és bombák, valamint éles rakéták ugyanazt a
+részegységenkénti sebzést okozzák, mint az ellenséges találatok. A baráti cél továbbra sem választható ki
+ellenséges radarcélként, de a lövedékek útjában nincs csapat szerinti sérthetetlenség. A kilövő saját
+repülőgépe kizárt az önütközésből. A baráti találat külön `friendlyFire` esemény és `friendlyHits` számláló;
+nem növeli az ellenséges találat- vagy győzelmi számlálót. Mindkét érintett pilóta figyelmeztetést kap.
+
+A csomagok közös, egyedi azonosítókkal küldik a lövedékeket és az utolsó 128 harci eseményt.
+A kliensek ebből építik a nyomvonalakat és a determinisztikus robbanási részecskéket; a megismételt
+esemény nem játszódik le kétszer. Később csatlakozva az aktív lövedékek és még tartó robbanások is helyreállnak.
+Legfeljebb 192 aktív lövedék lehet egy szobában. A sérült gépek fizikai állapota, korlátozott füsttörténete,
+lőszere és elterelői a repülési állapottal együtt szinkronizálódnak. Az 5-ös protokollverzió régebbi nyitott lap helyett frissítést igényel.
+
+Célzott harci teszt: `node --test tests/multiplayer-combat.test.js tests/multiplayer.test.js`.
+
+### Közös gépi ellenfél
+
+Szobanyitáskor választható a passzív **fegyverpróba** vagy a **légiharc**. Utóbbiban a két gyakorlócél mellett egy felfegyverzett keleti vadász is repül. A szoba létrehozásától számított 20 másodperc felkészülés után kezd támadni; a később érkező pilóta az aktuális közös állapotba lép be.
+
+Az AI kizárólag a szerveren fut, a meglévő repülésfizikával és harci szabályokkal. Mindkét pilóta egyenrangú célpont; nincs különleges host-célzás. A radar- és fegyverhatótáv, a véges lőszer, az elterelők, a kitérő manőverek és a részegységenkénti sérülések érvényesek. A játékos elterelőjét csak a saját C-parancsa indítja; a közeledő rakéták figyelmeztetése a tényleges szerveroldali rakétákból készül.
+
+Súlyos sérülés vagy elfogyott légi fegyverzet esetén az AI fizikailag kivonul. Ebben a prototípusban nincs saját reptere, így nem tér vissza feltöltve. A közös csapásmérés saját célokat és lezárást kap; a teljes egyjátékos küldetéskatalógus még nincs bekötve. A baráti tűz továbbra is valódi sérülést okoz.
+
+AI-ellenőrzés: `node --test tests/multiplayer-ai.test.js tests/multiplayer.test.js`.
+
+### Közös csapásmérés
+
+A `cooperative` szoba mindkét pilóta Kész jelzése után indul. Addig a fizika, a fegyverek és az üzemanyag-fogyasztás áll; a 20 másodperces AI-felkészülés csak az indulástól számít. Két kötelező cél van: az ellenséges vadász leküzdése és a földi céljármű megsemmisítése. A vadász megsemmisítése vagy tényleges kivonulása tisztítja meg a légteret. Mindkét pilóta túlélése opcionális. Nincs leszállási szakasz.
+
+A célokat, a bevetés idejét, a túlélést, az egyéni találatokat és a baráti találatokat a szerver rögzíti. Egy pilóta kiesése vagy kapcsolatbontása után a másik folytathatja. Indulás után a szoba új pilótának zárt, ezért kilépéssel nem lehet új gépet kérni. Mindkét pilóta lezuhanása vereség; a zuhanást a földetérésig tovább számolja.
+
+A közös eredmény rögzül és megállítja a szimulációt. A kiszolgáló továbbra is fogadja és visszaigazolja a sorban maradt vezérlést, de ebből nem lesz további lövés vagy mozgás. A kliens ilyenkor a helyi mozgás-előrejelzést is leállítja. Új bevetéshez kilépés és új szoba szükséges; a fegyverpróba és a szabad légiharc korábbi működése megmaradt.
+
+Küldetésellenőrzés: `node --test tests/multiplayer-mission.test.js tests/multiplayer.test.js`.
+
+### Közös előszoba
+
+A közös bevetéshez szobanyitás és csatlakozás után külön előszoba jelenik meg. A szobagazda **csapásmérés** (vadász és földi cél kötelező) vagy **légtérellenőrzés** (a földi cél opcionális) feladatot választ. A korábbi szabad légiharc és fegyverpróba továbbra is közvetlenül indítható. A teljes egyjátékos küldetéskatalógus bekötése külön következő lépés.
+
+Mindkét pilóta a saját gépét, függesztési pontonkénti fegyvereit, gépágyúját és 10–100% induló üzemanyagát állítja be. A meglévő kompatibilitási és tömegkorlátokat a szerver ellenőrzi; a konfigurált fegyverzet és az ebből számolt repülési állapot a kliens előrejelzésében is megmarad. A mentett választás megjelenik a társ előszobájában.
+
+A **Felszerelés mentése**, majd a **Kész vagyok** gomb használható. Mindkét Kész jelzés szükséges az induláshoz. Bármely mentett módosítás, feladatváltás, csatlakozás vagy előszobai kilépés törli az összes korábbi jóváhagyást. A verziózott beállítások megakadályozzák, hogy egy késve érkező Kész üzenet azóta megváltoztatott felszereléssel indítson bevetést. Szobagazda távozásakor a szerep átkerül a megmaradt pilótához. Indulás után a felszerelés és a feladat rögzített.
+
+Előszoba ellenőrzése: `node --test tests/multiplayer-lobby.test.js tests/multiplayer.test.js`.

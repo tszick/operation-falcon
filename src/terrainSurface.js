@@ -1,3 +1,4 @@
+import { createRunwayTerrainClipper } from './runwayTerrain.js';
 import { forestCanopyFaces } from './forests.js';
 import { TerrainBuildQueue } from './terrainBuildQueue.js';
 import { packedTerrainBuffers } from './rendering/shared/terrainData.js';
@@ -43,6 +44,13 @@ export function buildTerrainSurface(
     return oceanSurface(terrainWorld.islands || [], cx, cz);
   const xs = terrainAxis(cx),
     zs = terrainAxis(cz);
+  const fields =
+    heightAt === terrainHeight
+      ? [
+          ...(terrainWorld.noAirfield ? [] : [{ x: 0, z: 0, heading: 0, elevation: 0 }]),
+          ...(terrainWorld.airfields || []),
+        ]
+      : [];
   // Explicit peak anchors keep narrow prominent summits from jumping between LOD samples.
   if (heightAt === terrainHeight) {
     for (const [axis, center, values] of [
@@ -57,23 +65,26 @@ export function buildTerrainSurface(
         }
     // Preserve narrow flat landing corridors between the coarse terrain samples.
     // Use world-space anchors so camera grid shifts cannot bury a remote runway.
-    for (const field of terrainWorld.airfields || []) {
+    for (const field of fields) {
       const c = Math.cos(field.heading || 0),
         s = Math.sin(field.heading || 0);
+      const anchors = [];
       for (const lateral of [-500, -100, 100, 500])
-        for (const longitudinal of [-10500, -8500, 8500, 10500]) {
-          const x = field.x + lateral * c + longitudinal * s,
-            z = field.z - lateral * s + longitudinal * c;
-          for (const [values, value, center] of [
-            [xs, x, cx],
-            [zs, z, cz],
-          ])
-            if (
-              Math.abs(value - center) < 48000 &&
-              !values.some((v) => Math.abs(v - value) < 0.001)
-            )
-              values.push(value);
-        }
+        for (const longitudinal of [-10500, -8500, 8500, 10500])
+          anchors.push([lateral, longitudinal]);
+      // Keep the runway itself inside a sampled flat patch at every camera LOD.
+      for (const lateral of [-70, 70])
+        for (const longitudinal of [-1800, 1800]) anchors.push([lateral, longitudinal]);
+      for (const [lateral, longitudinal] of anchors) {
+        const x = field.x + lateral * c + longitudinal * s,
+          z = field.z - lateral * s + longitudinal * c;
+        for (const [values, value, center] of [
+          [xs, x, cx],
+          [zs, z, cz],
+        ])
+          if (Math.abs(value - center) < 48000 && !values.some((v) => Math.abs(v - value) < 0.001))
+            values.push(value);
+      }
     }
     xs.sort((a, b) => a - b);
     zs.sort((a, b) => a - b);
@@ -121,7 +132,7 @@ export function buildTerrainSurface(
   };
   const points = zs.map((z) => xs.map((x) => point(x, z))),
     faces = [];
-  const add = (pts) => {
+  const addFace = (pts) => {
     const normal = pts[1].clone().sub(pts[0]).cross(pts[2].clone().sub(pts[0])).normalize();
     if (normal.y < 0) normal.scale(-1);
     const light = clamp(normal.dot(new Vec3(-0.36, 0.86, -0.36)), 0, 1);
@@ -131,6 +142,10 @@ export function buildTerrainSurface(
       center: pts.reduce((p, v) => p.add(v), new Vec3()).scale(1 / 3),
       color: `rgb(${Math.round(12 + light * 8)},${Math.round(27 + light * 18)},${Math.round(20 + light * 10)})`,
     });
+  };
+  const clipRunways = createRunwayTerrainClipper(fields);
+  const add = (pts) => {
+    for (const triangle of clipRunways(pts)) addFace(triangle);
   };
   if (vehiclePatches.length) {
     for (const triangle of refinedTerrainTriangles(xs, zs, point, vehiclePatches)) add(triangle);

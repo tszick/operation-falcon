@@ -118,11 +118,13 @@ export function renderWeapons(renderer, s, weapons) {
   for (const e of weapons.effects) {
     const age = e.age || 0;
     if (e.kind === 'muzzle') {
-      const position = s.position
-          .clone()
-          .add(forward(s.orientation).scale(12))
-          .add(right(s.orientation).scale(-1))
-          .add(up(s.orientation).scale(-0.6)),
+      const position =
+          e.fixedPosition ||
+          s.position
+            .clone()
+            .add(forward(s.orientation).scale(12))
+            .add(right(s.orientation).scale(-1))
+            .add(up(s.orientation).scale(-0.6)),
         p = project(r, position);
       if (p) {
         const fade = e.life / e.maxLife;

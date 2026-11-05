@@ -1,0 +1,350 @@
+.multiplayer {
+  margin: 0;
+  overflow: hidden;
+  background: #071211;
+  color: #d5edc8;
+}
+#network-world {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.multiplayer header {
+  position: relative;
+  height: 66px;
+  padding: 0 20px;
+  font-size: 14px;
+  box-sizing: border-box;
+  z-index: 5;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+#network-lobby {
+  position: relative;
+  z-index: 2;
+  margin: 12vh auto 24px;
+  width: min(640px, calc(100% - 40px));
+  max-height: 78vh;
+  overflow: auto;
+  padding: 28px;
+  box-sizing: border-box;
+  border: 1px solid #638953;
+  background: #081a16f5;
+  box-shadow: 0 20px 90px #0009;
+}
+#network-lobby h1 {
+  font-size: clamp(24px, 4vw, 36px);
+  color: #baf37d;
+}
+#network-lobby p {
+  line-height: 1.6;
+}
+#network-lobby label {
+  display: block;
+  margin: 18px 0 6px;
+}
+.multiplayer button,
+.multiplayer select,
+.multiplayer input {
+  font: inherit;
+  padding: 11px 14px;
+  border: 1px solid #71955d;
+  color: #c8f6a7;
+  background: #112b21;
+}
+#network-aircraft,
+#network-scenario {
+  width: 100%;
+  margin-bottom: 16px;
+}
+.multiplayer button {
+  cursor: pointer;
+}
+.multiplayer button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.multiplayer a {
+  color: #baf37d;
+}
+#network-code {
+  width: 9ch;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.network-note {
+  font-size: 14px;
+  color: #a1bba7;
+}
+#network-flight {
+  position: fixed;
+  z-index: 2;
+  bottom: 20px;
+  left: 20px;
+  padding: 12px 16px;
+  width: min(820px, calc(100% - 40px));
+  box-sizing: border-box;
+  border-top: 2px solid #baf37d;
+  background: #071a15ed;
+  font-size: 14px;
+}
+#network-flight[hidden],
+#network-lobby[hidden] {
+  display: none;
+}
+.network-room strong {
+  font-size: 24px;
+  letter-spacing: 3px;
+  color: #ffe397;
+  margin: 0 12px;
+}
+#network-roster {
+  color: #64d7ff;
+}
+#network-flight details {
+  max-height: 140px;
+  overflow: auto;
+  margin: 12px 0;
+}
+#network-flight summary {
+  cursor: pointer;
+}
+#network-warning {
+  color: #ffbc83;
+  margin: 5px 0;
+}
+#network-status {
+  position: fixed;
+  right: 20px;
+  top: 85px;
+  z-index: 6;
+  max-width: 340px;
+  color: #ffe397;
+  text-shadow: 0 1px 3px #000;
+}
+
+.multiplayer .brand {
+  font: 600 16px var(--mono, monospace);
+  letter-spacing: 0;
+  gap: 10px;
+}
+@media (max-width: 600px) {
+  .multiplayer header > span {
+    display: none;
+  }
+  .multiplayer .brand {
+    font-size: 12px;
+  }
+  #network-lobby {
+    margin-top: 4vh;
+    max-height: 78vh;
+    padding: 20px;
+  }
+}
+
+#network-weapons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+#network-weapons button {
+  font-size: 12px;
+  padding: 7px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#network-weapons .selected {
+  color: #ffe397;
+  border-color: #ffe397;
+  background: #373b1d;
+}
+.network-combat-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 0;
+}
+.network-combat-actions button {
+  padding: 7px;
+}
+#network-lock,
+#network-fire-status,
+#network-range {
+  font-size: 13px;
+}
+#network-fire-status {
+  color: #ffe397;
+  margin: 6px 0;
+}
+#network-range {
+  margin: 6px 0;
+  color: #64d7ff;
+}
+
+#network-combat-notice {
+  color: #ff8b7d;
+  font-weight: bold;
+  font-size: 13px;
+  margin: 5px 0;
+}
+#network-combat-notice:empty {
+  display: none;
+}
+
+#network-instruments {
+  margin: 7px 0;
+  font-size: 13px;
+}
+.network-combat-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.network-flight-footer {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+}
+#network-flight .network-flight-footer details {
+  margin: 4px 0;
+}
+#network-leave {
+  padding: 6px 9px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+#network-lock {
+  font-size: 12px;
+}
+@media (max-width: 600px) {
+  .network-combat-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  #network-flight {
+    padding: 10px;
+  }
+}
+
+#network-ai-status {
+  margin: 4px 0;
+  color: #ffbc83;
+  font-size: 12px;
+}
+
+#network-mission {
+  margin: 8px 0;
+  padding: 8px 0;
+  border-block: 1px solid #32563d;
+  font-size: 12px;
+}
+#network-mission p {
+  margin: 4px 0;
+}
+.network-mission-title {
+  font-weight: bold;
+  color: #e2f5d7;
+}
+#network-mission ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  list-style: none;
+  margin: 5px 0;
+  padding: 0;
+}
+.network-objective-complete,
+.network-mission-success {
+  color: #abff7a;
+}
+.network-objective-failed,
+.network-mission-failed {
+  color: #ff8b7d;
+}
+.network-objective-pending {
+  color: #d2dcd6;
+}
+.network-mission-waiting {
+  color: #ffe397;
+}
+.network-mission-result {
+  color: #75d4f4;
+}
+
+#network-preflight {
+  position: relative;
+  z-index: 3;
+  width: min(1050px, calc(100% - 32px));
+  max-height: calc(100vh - 105px);
+  overflow: auto;
+  margin: 15px auto;
+  padding: 24px;
+  box-sizing: border-box;
+  border: 1px solid #638953;
+  background: #081a16f5;
+}
+#network-preflight[hidden] {
+  display: none;
+}
+#network-preflight h1 {
+  font-size: 32px;
+  line-height: 1.15;
+  margin: 0 0 12px;
+  color: #baf37d;
+}
+.preflight-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+#network-preflight label {
+  display: block;
+  margin: 8px 0;
+}
+#network-preflight select {
+  width: 100%;
+}
+#network-preflight p {
+  margin: 7px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.preflight-stations {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 10px;
+}
+.preflight-stations label {
+  font-size: 12px;
+}
+.preflight-stations select {
+  font-size: 12px;
+  padding: 7px;
+}
+.preflight-ready {
+  color: #abff7a;
+}
+.preflight-waiting,
+[data-preflight='unsaved'] {
+  color: #ffe397;
+}
+[data-preflight='notice'] {
+  color: #ff8b7d;
+}
+@media (max-width: 700px) {
+  .preflight-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+}
+
+#network-preflight button {
+  padding: 8px 10px;
+}

@@ -162,7 +162,10 @@ export class WebGPUBackend {
         ],
       };
     this.modelPipeline = this.pipeline(shaders.models, [modelLayout], { bias: true });
-    this.asphaltPipeline = this.pipeline(shaders.models, [modelLayout]);
+    // Surface decals need a small pull toward the camera, not extra world height.
+    // At kilometre distances 8 cm of paint can share a 24-bit depth value with asphalt.
+    this.asphaltPipeline = this.pipeline(shaders.models, [modelLayout], { bias: -4 });
+    this.paintPipeline = this.pipeline(shaders.models, [modelLayout], { bias: -8 });
     this.edgePipeline = this.pipeline(shaders.models, [modelLayout], { lines: true });
     this.terrainDepthPipeline = this.pipeline(shaders.terrain, [terrainLayout], {
       mask: true,
@@ -225,8 +228,8 @@ export class WebGPUBackend {
         format: 'depth24plus',
         depthWriteEnabled: !lines,
         depthCompare: 'less-equal',
-        depthBias: bias ? 1 : 0,
-        depthBiasSlopeScale: bias ? 1 : 0,
+        depthBias: Number(bias),
+        depthBiasSlopeScale: Number(bias),
       };
     return d.createRenderPipeline(descriptor);
   }
@@ -585,9 +588,11 @@ export class WebGPUBackend {
       data[35] = material ? materialIds[material] || 3 : 0;
       data.set(rgba(e.material === 'paint' || e.material === 'lamp' ? e.color : '#101c16'), 36);
       pass.setPipeline(
-        e.material === 'asphalt' || e.material === 'paint'
-          ? this.asphaltPipeline
-          : this.modelPipeline,
+        e.material === 'paint'
+          ? this.paintPipeline
+          : e.material === 'asphalt'
+            ? this.asphaltPipeline
+            : this.modelPipeline,
       );
       const bind = this.bind(this.texture(material || 'concrete'));
       pass.setVertexBuffer(0, item.vertices);
