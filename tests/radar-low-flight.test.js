@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Vec3, Quat } from '../src/math.js';
 import { radarVisibility, radarContact, radarHorizon } from '../src/sensors.js';
-import { configureTerrain, terrainWorld } from '../src/terrain.js';
+import { configureTerrain, terrainWorld, withTerrainSnapshot } from '../src/terrain.js';
 import { unitTypes } from '../src/unitTypes.js';
 import { guidedLaunchStatus, weaponProfiles, stepMissile } from '../src/weaponDynamics.js';
 import { combatSource } from '../src/unitCombat.js';
@@ -98,4 +98,69 @@ test('a supported radar missile loses launch-radar support when target ducks bel
   stepMissile(p, t, s, 1 / 120);
   assert.equal(p.seekerLost, true);
   assert.match(p.lossReason, /TÁMOGATÁS/);
+});
+
+test('fresh network render objects reuse the same sight ray by ID without bypassing movement, terrain, cone or range checks', () => {
+  const descriptor = Object.getOwnPropertyDescriptor(terrainWorld, 'peaks'),
+    revision = terrainWorld.revision;
+  let reads = 0;
+  Object.defineProperty(terrainWorld, 'peaks', {
+    configurable: true,
+    get() {
+      reads++;
+      return descriptor.value;
+    },
+  });
+  try {
+    const s = {
+      id: 'network-radar-cache-test',
+      position: new Vec3(0, 3000, 0),
+      orientation: Quat.euler(0, 0, 0),
+      spec: { radarRange: 10000, radarCone: 60 },
+    };
+    const target = (z) => ({ id: 'network-contact', kind: 'air', position: new Vec3(0, 3000, z) });
+    assert.equal(radarContact(s, target(1000)), true);
+    assert.ok(reads > 0);
+    reads = 0;
+    assert.equal(radarContact(s, target(1000)), true);
+    assert.equal(reads, 0);
+    reads = 0;
+    assert.equal(radarContact(s, target(1010)), true);
+    assert.ok(reads > 0);
+    reads = 0;
+    terrainWorld.revision++;
+    assert.equal(radarContact(s, target(1010)), true);
+    assert.ok(reads > 0);
+    s.orientation = Quat.euler(Math.PI, 0, 0);
+    assert.equal(radarVisibility(s, target(1010)).reason, 'cone');
+    s.orientation = Quat.euler(0, 0, 0);
+    s.spec.radarRange = 900;
+    assert.equal(radarVisibility(s, target(1010)).reason, 'range');
+  } finally {
+    Object.defineProperty(terrainWorld, 'peaks', descriptor);
+    terrainWorld.revision = revision;
+  }
+});
+
+test('rooms with identical revisions and entity IDs never share terrain visibility results', () => {
+  const plain = { revision: 1, river: null, road: null, canyon: null, peaks: [] };
+  const ridge = { ...plain, peaks: [{ x: 6000, z: 1000, height: 2500, radius: 500, platform: 0 }] };
+  const s = {
+    id: 'shared-room-sensor',
+    position: new Vec3(6000, 800, 0),
+    spec: { radarRange: 10000 },
+  };
+  const t = { id: 'HOSTILE-ONE', kind: 'air', position: new Vec3(6000, 800, 2000) };
+  assert.equal(
+    withTerrainSnapshot(plain, () => radarContact(s, t)),
+    true,
+  );
+  assert.equal(
+    withTerrainSnapshot(ridge, () => radarContact(s, { ...t })),
+    false,
+  );
+  assert.equal(
+    withTerrainSnapshot(plain, () => radarContact(s, { ...t })),
+    true,
+  );
 });

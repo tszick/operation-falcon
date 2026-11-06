@@ -15,6 +15,8 @@ function setup() {
     two = rooms.join(room, 'fa18');
   for (const p of [one, two])
     rooms.preflight(room, p, { type: 'ready', revision: room.lobby.revision, ready: true });
+  if (room.players.size >= 2 && [...room.players.values()].every((p) => p.ready))
+    rooms.preflight(room, one, { type: 'start', revision: room.lobby.revision });
   return { rooms, room, one, two };
 }
 function run(rooms, seconds) {
@@ -52,6 +54,8 @@ test('cooperative lobby freezes fuel, physics, weapons and mission time until bo
   assert.ok(two);
   for (const p of [one, two])
     rooms.preflight(room, p, { type: 'ready', revision: room.lobby.revision, ready: true });
+  if (room.players.size >= 2 && [...room.players.values()].every((p) => p.ready))
+    rooms.preflight(room, one, { type: 'start', revision: room.lobby.revision });
   rooms.step();
   assert.equal(room.mission.phase, 'active');
   assert.equal(room.mission.elapsedTicks, 1);
@@ -133,13 +137,17 @@ test('disconnects preserve participant identity and cannot grant a replacement a
   rooms.leave(room, one);
   assert.equal(room.mission.phase, 'active');
   assert.equal(rooms.join(room, 'f16'), null);
-  assert.equal(room.mission.participants.find((p) => p.id === one.id).lost, true);
-  assert.equal(room.mission.objectives[2].status, 'failed');
+  rooms.step();
+  assert.equal(one.connected, false);
+  assert.equal(room.mission.participants.find((p) => p.id === one.id).lost, false);
+  assert.equal(room.mission.objectives[2].status, 'pending');
   clearTargets(room);
   rooms.step();
   assert.equal(room.mission.phase, 'success');
   rooms.leave(room, two);
-  assert.equal(rooms.rooms.size, 0);
+  rooms.leave(room, one);
+  assert.equal(rooms.rooms.size, 1);
+  assert.ok([...room.players.values()].every((p) => !p.connected));
 });
 test('an AI that physically withdraws also clears the airspace objective without giving a fictitious kill', () => {
   const { rooms, room, one } = setup(),
@@ -200,6 +208,8 @@ test('queued lobby actions cannot turn into a launch-time shot or leave an ackno
   const two = rooms.join(room, 'fa18');
   for (const p of [one, two])
     rooms.preflight(room, p, { type: 'ready', revision: room.lobby.revision, ready: true });
+  if (room.players.size >= 2 && [...room.players.values()].every((p) => p.ready))
+    rooms.preflight(room, one, { type: 'start', revision: room.lobby.revision });
   rooms.step();
   assert.equal(one.ack, 1);
   assert.equal(one.state.ammo.agm, 2);
@@ -213,6 +223,40 @@ test('cooperative loss messages never offer a forbidden rejoin or replacement ai
   assert.equal(missionFlightNotice(null, true), null);
   assert.equal(missionFlightNotice({ phase: 'active' }, false), null);
   assert.match(missionFlightNotice({ phase: 'active' }, true), /nincs pótrepülő/);
-  assert.match(missionFlightNotice({ phase: 'failed' }, true), /Új bevetéshez/);
-  assert.match(missionFlightNotice({ phase: 'success' }, false), /Új bevetéshez/);
+  assert.match(missionFlightNotice({ phase: 'failed' }, true), /előszobába/);
+  assert.match(missionFlightNotice({ phase: 'success' }, false), /előszobába/);
 });
+
+for (const ending of ['success', 'failed'])
+  test(`a fatal aircraft reaches impact after cooperative ${ending} without changing the final result`, () => {
+    const { rooms, room, one, two } = setup();
+    one.state.position = new Vec3(350, 400, 0);
+    one.state.velocity = new Vec3(0, -30, 90);
+    applyDamage(one.state, 100, 'fuselage');
+    if (ending === 'success') clearTargets(room);
+    else {
+      room.mission.phase = 'failed';
+      room.mission.reason = 'test-final-result';
+    }
+    rooms.step();
+    assert.equal(room.mission.phase, ending);
+    assert.equal(one.state.crashed, false);
+    const result = roomMissionSnapshot(room),
+      healthy = packFlight(two.state),
+      startY = one.state.position.y;
+    for (let i = 0; i < 120 * 30 && !one.state.crashed; i++) rooms.step();
+    assert.equal(one.state.crashed, true);
+    assert.ok(one.state.position.y < startY);
+    assert.deepEqual(roomMissionSnapshot(room), result);
+    assert.deepEqual(packFlight(two.state), healthy);
+    assert.equal(
+      room.combat.events.filter(
+        (e) =>
+          e.type === 'explosion' && e.ground && Math.abs(e.position.x - one.state.position.x) < 1,
+      ).length,
+      1,
+    );
+    const events = room.combat.eventSequence;
+    run(rooms, 1);
+    assert.equal(room.combat.eventSequence, events);
+  });

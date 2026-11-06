@@ -34,7 +34,7 @@ test('range rooms remain passive and combat rooms own exactly one independent ho
     range = rooms.create('range'),
     a = rooms.create('combat'),
     b = rooms.create('combat');
-  assert.equal(range.combat.ai, null);
+  assert.equal(range.combat.ai.units.length, 0);
   assert.equal(range.combat.targets.length, 2);
   assert.equal(a.combat.ai.units.length, 1);
   assert.equal(a.combat.targets.length, 3);

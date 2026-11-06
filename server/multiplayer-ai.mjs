@@ -10,7 +10,7 @@ import { Vec3, Quat } from '../src/math.js';
 import { spawnAircraft } from '../src/multiplayer/flightState.js';
 import { PROJECTILE_LIMIT } from '../src/multiplayer/protocol.js';
 export const AI_ACTIVATION_SECONDS = 20;
-export function createRoomAI(world) {
+export function createRoomAI(world, actors = null) {
   const flight = spawnAircraft('mig29', 0, world.skySeed ^ 19231, { armed: true });
   const heading = Math.atan2(-5000, -26000),
     trim = Math.asin(flight.orientation.rotate(new Vec3(0, 0, 1)).y);
@@ -56,7 +56,7 @@ export function createRoomAI(world) {
   };
   return {
     controller: new EnemyCombat({ warmup: 0, projectileLimit: PROJECTILE_LIMIT }),
-    units: [unit],
+    units: actors ? actors.filter((t) => t.kind === 'air' && t.aiControlled) : [unit],
     observer,
     active: false,
     remaining: AI_ACTIVATION_SECONDS,
@@ -65,6 +65,22 @@ export function createRoomAI(world) {
 export function planRoomAI(room, pilots, dt) {
   const ai = room.combat.ai;
   if (!ai) return;
+  const disconnected = pilots.filter((p) => p.aiControlled);
+  ai.units = [
+    ...room.combat.targets.filter((t) => t.kind === 'air' && t.aiControlled),
+    ...disconnected,
+  ];
+  for (const t of disconnected) {
+    if (t.takeoverSeeded) continue;
+    const u = ai.controller.unit(t);
+    Object.assign(u, {
+      rounds: t.flight.ammo.gun,
+      missiles: t.flight.ammo.aam,
+      agm: t.flight.ammo.agm,
+      bombs: t.flight.ammo.bomb,
+    });
+    t.takeoverSeeded = true;
+  }
   const activePilots = pilots.filter((p) => p.alive && !p.flight.onGround);
   ai.observer.position = activePilots
     .reduce((p, t) => p.add(t.position), new Vec3())
@@ -76,15 +92,25 @@ export function planRoomAI(room, pilots, dt) {
   ai.active = ai.remaining === 0;
   // AI defenses never run on manually controlled pilots; their C input is authoritative.
   updateAIDefense(ai.observer, ai.units, room.combat.weapons, dt);
+  // Arena has no withdrawal victory: AI substitutes remain in the fight.
+  if (room.scenario === 'arena') for (const t of disconnected) delete t.retreat;
   if (ai.active)
     ai.controller.update(ai.observer, [...room.combat.targets, ...pilots], room.combat.weapons, dt);
   for (const t of ai.units) {
     const unit = ai.controller.units.get(t.id);
-    if (unit && !t.retreat && t.alive && !t.flight.dying && unit.missiles <= 0 && unit.rounds <= 0)
+    if (
+      unit &&
+      room.scenario !== 'arena' &&
+      !t.retreat &&
+      t.alive &&
+      !t.flight.dying &&
+      (t.type === 'bomber' ? unit.bombs <= 0 : unit.missiles <= 0 && unit.rounds <= 0)
+    )
       beginRetreat(t, ai.units, ai.observer, room.combat.weapons, 'weapons-empty');
     if (unit)
       Object.assign(t.flight.ammo, {
-        gun: unit.rounds,
+        gun: t.type === 'bomber' ? 0 : unit.rounds,
+        ...(t.type === 'bomber' ? { tailGun: unit.rounds } : {}),
         aam: unit.missiles,
         agm: unit.agm,
         bomb: unit.bombs,

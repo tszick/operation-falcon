@@ -4,7 +4,7 @@ import { stationOptions, plannedDeparture } from '../loadoutPlanner.js';
 import { aircraftChoices } from './protocol.js';
 import { catalogLabel } from '../equipmentCatalog.js';
 import { weaponLabel } from '../armament.js';
-import { tr } from '../i18n.js';
+import { tr, i18n } from '../i18n.js';
 export class PreflightView {
   constructor(root, send) {
     this.root = root;
@@ -56,7 +56,21 @@ export class PreflightView {
         missionId: this.el('mission').value,
       }),
     );
+    this.el('start').addEventListener('click', () =>
+      this.send({ type: 'start', revision: this.snapshot.lobby.revision }),
+    );
     this.el('leave').addEventListener('click', () => this.onLeave?.());
+  }
+  reset() {
+    this.id = null;
+    this.rosterKey = null;
+    this.draft = null;
+    this.dirty = false;
+    this.saving = false;
+    this.awaitReady = null;
+    this.awaitReadyRevision = null;
+    this.notice = '';
+    this.selectionKey = null;
   }
   option(value, text) {
     const e = this.root.ownerDocument.createElement('option');
@@ -96,6 +110,9 @@ export class PreflightView {
     const visible = snapshot.mission?.phase === 'waiting';
     this.root.hidden = !visible;
     if (!visible) return;
+    const rosterKey = JSON.stringify(snapshot.lobby) + i18n.language + id;
+    if (this.rosterKey === rosterKey) return;
+    this.rosterKey = rosterKey;
     this.own = snapshot.lobby.players.find((p) => p.id === id);
     const selection = JSON.stringify(this.own.selection);
     if (
@@ -113,6 +130,14 @@ export class PreflightView {
       this.awaitReady = null;
     this.el('code').textContent = snapshot.code || this.code;
     this.el('mission').value = snapshot.lobby.missionId;
+    const arena = snapshot.scenario === 'arena';
+    this.el('mission').hidden = arena;
+    this.el('mission-label').hidden = arena;
+    this.el('briefing').textContent = tr(
+      arena
+        ? 'Aréna: minden pilóta ellenfél. Az utolsó túlélő nyer. Nincs pótrepülő.'
+        : 'Három közös feladat: csapásmérés, légtérellenőrzés és reptérvédelem. A szobagazda választja ki a bevetést.',
+    );
     this.el('role').textContent = tr(
       snapshot.lobby.hostId === id
         ? 'Te vagy a szobagazda.'
@@ -183,6 +208,12 @@ export class PreflightView {
     this.el('save').disabled = locked || !this.dirty || !validateSelection(this.draft);
     this.el('ready').disabled = this.dirty || this.saving || this.awaitReady !== null;
     this.el('ready').textContent = tr(this.own.ready ? 'Mégsem vagyok kész' : 'Kész vagyok');
+    const start = this.el('start');
+    start.hidden = this.snapshot.lobby.hostId !== this.id;
+    start.disabled =
+      this.dirty ||
+      this.snapshot.lobby.players.length < 2 ||
+      !this.snapshot.lobby.players.every((p) => p.ready);
     const valid = validateSelection(this.draft);
     if (valid) {
       const spec = aircraft.find((a) => a.id === this.draft.aircraftId),
@@ -203,7 +234,7 @@ export class PreflightView {
       this.dirty
         ? 'A módosításokat előbb mentsd el.'
         : this.own.ready
-          ? 'Indulásra kész. A másik pilótára várunk.'
+          ? 'Indulásra kész. A szobagazda indít.'
           : 'Válassz felszerelést, majd jelezd, ha készen állsz.',
     );
   }

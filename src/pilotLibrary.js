@@ -15,72 +15,66 @@ const guide = (id, name, description, steps, watch, pitfalls, related = [], sect
 export const pilotEntries = [
   guide(
     'multiplayer',
-    'Multiplayer · közös gyakorlórepülés',
-    'Két pilóta közös fegyverpróbája vagy légiharca egy szerveren vezérelt ellenséges vadász ellen, valódi baráti sebzéssel.',
+    'Multiplayer · co-op és aréna',
+    'Legfeljebb öt pilóta, a megszokott cockpit, közös bevetések és mindenki mindenki elleni aréna.',
     [
       [
         'SZOBA',
-        'Nyisd meg a Multiplayer · közös gyakorlás oldalt. Hozz létre egy szobát, majd add át a hatkarakteres kódot a társadnak.',
+        'Nyisd meg a Multiplayer oldalt ugyanazon a szerveren és porton. Hozz létre szobát, a többiek a hatkarakteres kóddal csatlakozzanak. Legfeljebb öt pilóta fér el.',
       ],
       [
-        'REPÜLÉSTÍPUS',
-        'Válassz fegyverpróbát, szabad légiharcot vagy közös csapásmérést. A csatlakozó pilóta a szoba beállítását kapja.',
+        'ELŐSZOBA',
+        'Co-opban a meglévő csapásmérés, légtérellenőrzés vagy reptérvédelem választható. Mindenki saját gépet, kompatibilis fegyvereket, gépágyút és 10–100% üzemanyagot állít be. Mentés után mindenki jelezzen készültséget. Legalább két kész pilóta szükséges, majd a szobagazda indít.',
       ],
       [
-        'CSATLAKOZÁS',
-        'A másik pilóta ugyanazon a szerveren a kóddal csatlakozik. A már repülő társ közelében, levegőből indul.',
+        'ARÉNA',
+        'Minden pilóta ellenfél. Külön, azonos magasságú indulópontokról kezdtek a levegőben. Az utolsó túlélő nyer; nincs újraéledés. A szerver kivárja a zuhanásokat, teljes veszteség döntetlen.',
       ],
       [
-        'KÖZÖS REPÜLÉS',
-        'A megszokott repülési gombok működnek. Kattints a tájra a nézelődéshez; Esc csak az egeret engedi el. A világ tovább fut.',
+        'MŰSZERFAL',
+        'Ugyanaz a cockpit és HUD látható, mint egyedül. 1–4: fegyver; T / Tab: célkijelölés és befogás; Space: tűz; C: elterelő. 0: radarzoom; O vagy radarkattintás: nagy taktikai térkép, amely online nem állítja meg a világot. H: segítség.',
       ],
       [
-        'FEGYVERPRÓBA',
-        '1–4: fegyverválasztás. T vagy Tab: célkijelölés; várd meg a szerver által jelzett befogást. Space: tüzelés; C: elterelő. Levegő–levegő rakétával a légi célt, levegő–föld rakétával vagy bombával a teherautót támadd.',
-      ],
-      [
-        'GÉPI ELLENFÉL',
-        'A gépi vadász mindkét pilótát támadhatja, a saját radarja és fegyverei hatótávján belül. Elterelőket és kitérőket használ; súlyos sérülés vagy elfogyott légi fegyverzet miatt kivonul. Nincs saját reptere, ezért ebben a próbában nem tér vissza feltöltve.',
-      ],
-      [
-        'KÖZÖS BEVETÉS',
-        'A közös bevetés az előszobából, két Kész jelzés után indul. Addig a világ és az üzemanyag-fogyasztás áll; utána 20 másodperc felkészülés jár. Csapásmérésnél a vadász és a földi cél is kötelező, légtérellenőrzésnél a földi cél opcionális. A vadász kivonulása is megtisztítja a légteret. Mindkét pilóta túlélése opcionális.',
-      ],
-      [
-        'ELŐSZOBA ÉS KÉSZÜLTSÉG',
-        'A közös bevetés előszobájában a szobagazda csapásmérést vagy légtérellenőrzést választ. Mindketten külön gépet, függesztményeket, gépágyút és 10–100% üzemanyagot állíthattok be. A mentés után nyomjátok meg a Kész vagyok gombot. A két kész jelzés indítja a repülést; addig a világ áll.',
-      ],
-      [
-        'KÖZÖS EREDMÉNY',
-        'A kieső vagy kilépő társ nélkül folytatható a közös bevetés, de indulás után új pilóta nem csatlakozhat, és kilépéssel nem kérhető pótrepülő. Ha mindketten lezuhantok, a küldetés sikertelen. Az eredmény megállítja a világot; új bevetéshez új szobát nyissatok. Nincs leszállási szakasz.',
+        'REPTÉRVÉDELEM',
+        'A kifutóról indultok. A bunker, két SAM és Guardian One segít a bombázó és két vadász ellen. A bázis megvédése után minden túlélő pilóta szálljon le és álljon meg. N: leszállási mód; I: lila segédív. A bombázó lelövése után a kioldott bombák még veszélyesek.',
       ],
       [
         'BARÁTI TŰZ',
-        'A társadba csapódó lövedék, bomba vagy éles rakéta ugyanúgy sérülést okoz, mint egy ellenséges találat. A baráti jelölés nem jelent sérthetetlenséget. A saját indítógépét a lövedék nem üti el.',
+        'Co-opban a baráti lövedék, rakéta és bomba is valódi sérülést okoz. Arénában minden másik játékos ellenséges cél. Minden fegyver lőtávját, befogását, lőszerét és találatát a szerver ellenőrzi.',
       ],
       [
-        'KILÉPÉS',
-        'Fegyverpróbán és szabad légiharcban lezuhanás után újra csatlakozhatsz. Közös bevetésen nincs pótrepülő. Ha mindenki kilép, a szoba és a kód megszűnik.',
+        'LESZAKADÁS',
+        'Aktív repülésben az AI átveszi a kilépő vagy leszakadt gép irányítását. Megmarad a sérülés, üzemanyag, lőszer és elterelőkészlet; az AI rendes harci szabályokkal folytatja a repülést. Előszobai távozás felszabadítja a helyet.',
+      ],
+      [
+        'AUTOMATIKUS VISSZATÉRÉS',
+        'Rövid kapcsolatvesztéskor három automatikus visszacsatlakozási próba indul, 1, 2 és 4 másodperc várakozással. Közben az AI vezeti a gépedet. A Kilépés megszakítja a próbálkozásokat. A helyreállítás csak a meglévő gépet veszi vissza; nem tölti fel vagy javítja meg.',
+      ],
+      [
+        'VISSZATÉRÉS',
+        'Ugyanazon böngészőlapon, a szobakóddal újra csatlakozva visszakapod az eredeti gépedet az aktuális állapotában. A privát munkamenetet a böngésző tárolja; másik eszközre vagy új böngészőmunkamenetre nem kerül át. A kilépés nem ad új gépet.',
+      ],
+      [
+        'MEGFIGYELÉS',
+        'A saját zuhanásod földetérésig látható. Ezután az életben maradt pilótákat követheted külső kamerából; a nyilakkal vagy a [ és ] gombbal válthatsz közöttük. Megfigyelőként nem irányíthatod a gépüket.',
+      ],
+      [
+        'JÁTÉKOSLISTA',
+        'A Játékosok gomb mutatja a hívójeleket, a szobagazdát, a kapcsolódott és AI által átvett gépeket, valamint a kieséseket. A kör végén a táblázatban a találatok, lelövések, baráti találatok és a gép állapota látszik.',
+      ],
+      [
+        'LEZÁRÁS',
+        'Ha mindenki leszakad, két percig még visszatérhettek. A szerver újraindítása törli a szobákat. A kör végén a szobagazda az Új menet gombbal ugyanabba az előszobába léptet mindenkit. A hívójel és a felszerelési választás megmarad; mindenki újra jelezzen készültséget.',
       ],
     ],
     [
-      'A szobakód, a hívójel, a pilóták száma és a hálózati késleltetés a közös repülés paneljén látszik.',
+      'A radar, a sérülések, a fegyverkészlet és a célok a saját műszerfaladon látszanak. A világ más játékosokra várva sem áll meg repülés közben.',
     ],
     [
-      'Egy szobába két pilóta fér. A fegyverhasználat, a találatok és a gépi ellenfél közösek. A közös csapásmérés saját célokat és eredményt kap; a teljes egyjátékos küldetéskatalógus, hangátvitel és automatikus újraéledés még nincs bekötve.',
-      'A két lapnak ugyanahhoz a szerverhez kell csatlakoznia. A localhostos próba nem teszi interneten elérhetővé a gépedet.',
+      'A próba hang nélkül fut. Nincs felhős AI vagy külső matchmaking. A teljes egyjátékos küldetéskatalógus nincs átemelve a multi módba.',
     ],
     ['guide-formation', 'guide-air-combat', 'guide-ground-unit'],
-    [
-      {
-        title: 'ELŐSZOBA ÉS KÉSZÜLTSÉG',
-        paragraphs: [
-          'Bármely felszerelés- vagy feladatváltás mindkét kész jelzést törli. Kész állapotban a Mégsem vagyok kész gombbal nyisd újra a saját választódat. A szobagazda távozásakor a megmaradt pilóta veszi át a szerepét. Indulás után a felszerelés már nem változtatható.',
-        ],
-      },
-    ],
   ),
-
   guide(
     'mobile-threats',
     'Mobil légvédelem és drónok',

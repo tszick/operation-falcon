@@ -33,6 +33,11 @@ test('two joins do not launch the sortie, and both explicit ready acknowledgemen
   assert.equal(one.ready, false);
   ready(rooms, room, one);
   ready(rooms, room, two);
+  assert.equal(room.mission.phase, 'waiting');
+  rooms.preflight(room, room.players.get(room.lobby.hostId), {
+    type: 'start',
+    revision: room.lobby.revision,
+  });
   assert.equal(room.mission.phase, 'active');
   assert.equal(ready(rooms, room, two, false), 'lobby-locked');
 });
@@ -116,6 +121,7 @@ test('the host alone chooses the assignment and mission changes clear readiness 
   assert.equal(room.mission.objectives.find((o) => o.id === 'ground').optional, true);
   ready(rooms, room, one);
   ready(rooms, room, two);
+  rooms.preflight(room, one, { type: 'start', revision: room.lobby.revision });
   applyDamage(room.combat.targets.find((t) => t.aiControlled).flight, 100, 'fuselage');
   rooms.step();
   assert.equal(room.mission.phase, 'success');
@@ -134,12 +140,18 @@ test('host departure promotes the remaining pilot and clears all previous approv
   ready(rooms, room, replacement);
   assert.equal(room.mission.phase, 'waiting');
   ready(rooms, room, two);
+  assert.equal(room.mission.phase, 'waiting');
+  rooms.preflight(room, room.players.get(room.lobby.hostId), {
+    type: 'start',
+    revision: room.lobby.revision,
+  });
   assert.equal(room.mission.phase, 'active');
 });
 test('active flights reject loadout changes atomically, and unrelated practice rooms retain their current behaviour', () => {
   const { rooms, room, one, two } = setup();
   ready(rooms, room, one);
   ready(rooms, room, two);
+  rooms.preflight(room, one, { type: 'start', revision: room.lobby.revision });
   const state = one.state;
   assert.equal(configure(rooms, room, one, defaultSelection('fa18')), 'lobby-locked');
   assert.equal(one.state, state);

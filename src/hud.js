@@ -30,11 +30,10 @@ const html = (element, value) => {
   }
 };
 
-export function updateHUD(s, targets, weapons, aim, mission, muted) {
+export function updateHUD(s, targets, weapons, aim, mission, muted, presentation = {}) {
   mountCockpit();
   const jammed = navigationJammed(s, targets);
   document.body.classList.toggle('navigation-jammed', jammed);
-  updateCockpit(s);
   updateStores(s, weapons, { compact: true });
   const flap = flapStatus(s),
     cm = s.countermeasures;
@@ -124,11 +123,12 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
   damagePanel.hidden = !damaged || s.dying || s.crashed;
   if (damaged) {
     damagePanel.dataset.stage = stage.id;
-    $('damage-title').textContent = tr(stage.label);
-    $('damage-integrity').textContent = tr(`SZERKEZET ${Math.max(0, Math.round(100 - s.damage))}%`);
+    text($('damage-title'), stage.label);
+    text($('damage-integrity'), `SZERKEZET ${Math.max(0, Math.round(100 - s.damage))}%`);
     $('damage-bar').style.width = `${Math.max(0, 100 - s.damage)}%`;
     const faults = damageWarnings(s);
-    $('damage-faults').textContent = tr(
+    text(
+      $('damage-faults'),
       faults.slice(0, 2).join(' · ') || 'SÉRÜLT SZERKEZET · FINOM MANŐVEREK',
     );
     damagePanel.title = tr(faults.join('\n'));
@@ -142,26 +142,26 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
       }
     : targetingStatus(s, targets, aim, weapons);
   $('targeting-panel').dataset.state = lock.state;
-  $('lock-label').textContent = tr(lock.label);
-  $('lock-hint').textContent = tr(lock.hint);
+  text($('lock-label'), lock.label);
+  text($('lock-hint'), lock.hint);
   weapons.solution = lock.solution || null;
-  $('weapon-solution').textContent = tr(lock.solution?.detail || '');
+  text($('weapon-solution'), lock.solution?.detail || '');
   $('weapon-solution').hidden = !lock.solution;
   $('targeting-panel').dataset.solution = lock.solution?.status || '';
   $('lock-fill').style.width = `${lock.progress}%`;
   $('lock-progress').setAttribute('aria-valuenow', String(lock.progress));
-  $('flight-name').textContent = tr(s.spec.name.toUpperCase());
-  $('mission-phase').textContent = tr(mission.phase);
-  $('phase-hint').textContent = tr(mission.phaseHint);
-  $('guide-title').textContent = tr(mission.phase);
-  const card = missionCardState(s, mission, targets);
+  text($('flight-name'), s.spec.name.toUpperCase());
+  text($('mission-phase'), mission.phase);
+  text($('phase-hint'), mission.phaseHint);
+  text($('guide-title'), mission.phase);
+  const card = presentation.card || missionCardState(s, mission, targets);
   $('mission-card').dataset.operation = mission.spec.objective;
-  $('mission-card-name').textContent = tr(card.name);
-  $('mission-time').textContent = tr(card.elapsed);
+  text($('mission-card-name'), card.name);
+  text($('mission-time'), card.elapsed);
   $('mission-time').title = tr('Eltelt küldetésidő');
-  $('mission-card-phase').textContent = tr(card.phase);
+  text($('mission-card-phase'), card.phase);
   $('mission-priority').hidden = true;
-  $('mission-priority').textContent = tr(card.priority);
+  text($('mission-priority'), card.priority);
   html(
     $('mission-objectives'),
     missionGoalsMarkup({
@@ -173,14 +173,14 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
     }),
   );
   $('mission-card').title = tr(card.name + ' · ' + card.phase);
-  const guideSteps = phaseGuide(s, mission, aim, weapons, targets);
+  const guideSteps = presentation.guideSteps || phaseGuide(s, mission, aim, weapons, targets);
   fitPhaseGuide(guideSteps);
   const engine = engineInstruments(s),
     gauge = $('g-load');
-  $('throttle-value').textContent = tr(`${engine.throttle}%`);
+  text($('throttle-value'), `${engine.throttle}%`);
   $('throttle-fill').style.height = `${engine.throttle}%`;
   $('throttle-status').setAttribute('aria-valuenow', String(engine.throttle));
-  $('g-value').textContent = tr(`${engine.g >= 0 ? '+' : ''}${engine.g.toFixed(1)}`);
+  text($('g-value'), `${engine.g >= 0 ? '+' : ''}${engine.g.toFixed(1)}`);
   gauge.dataset.level = engine.level;
   gauge.setAttribute('aria-valuemin', String(engine.limits.negative));
   gauge.setAttribute('aria-valuemax', String(engine.limits.positive));
@@ -197,7 +197,8 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
   $('fuel-status').title = tr(
     `Fogyasztás: ${Math.round(fuelInfo.flowKgMin)} kg/perc${fuelInfo.minutesRemaining !== null ? ` · ezen a gázálláson kb. ${fuelInfo.minutesRemaining.toFixed(1)} perc marad` : ''}`,
   );
-  $('fuel-label').textContent = tr(
+  text(
+    $('fuel-label'),
     {
       normal: 'FUEL TOT',
       low: 'BINGO',
@@ -205,15 +206,13 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
       empty: 'FUEL OUT',
     }[fuelInfo.level],
   );
-  $('fuel-quantity').textContent = tr(`${fuelInfo.kg.toLocaleString('hu-HU')} KG`);
+  text($('fuel-quantity'), `${fuelInfo.kg.toLocaleString('hu-HU')} KG`);
   $('fuel-quantity').title = tr(`${fuelInfo.kg} kg üzemanyag`);
-  $('fuel-range').textContent = tr(
-    fuelInfo.rangeKm === null ? '— KM' : `~${Math.round(fuelInfo.rangeKm)} KM`,
-  );
+  text($('fuel-range'), fuelInfo.rangeKm === null ? '— KM' : `~${Math.round(fuelInfo.rangeKm)} KM`);
   $('fuel-range').title = tr(
     'Becslés a pillanatnyi vízszintes sebességgel és fogyasztással, tartalék nélkül. Nem optimális elméleti hatótáv; a szél és a siklás nincs benne.',
   );
-  $('fuel-value').textContent = tr(`${fuelInfo.percent}%`);
+  text($('fuel-value'), `${fuelInfo.percent}%`);
   $('fuel-fill').style.width = String(fuelInfo.percent) + '%';
   $('fuel-gauge').setAttribute(
     'aria-label',
@@ -226,8 +225,9 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
     'aria-valuetext',
     `${fuelInfo.percent} százalék, ${fuelInfo.kg} kilogramm. ${fuelInfo.label}`,
   );
-  $('warning').textContent = tr(s.dying || s.crashed ? s.warning : s.threatWarning || s.warning);
-  $('flight-status').textContent = tr(
+  text($('warning'), s.dying || s.crashed ? s.warning : s.threatWarning || s.warning);
+  text(
+    $('flight-status'),
     `${s.assist ? 'G-LIMITER BE' : 'G-LIMITER KI'} · ${s.onGround ? 'FÖLDÖN' : 'REPÜLÉS'} · ${Math.floor(
       s.elapsed / 60,
     )
@@ -238,21 +238,19 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
   );
   const contacts = radarContacts(s, targets),
     selected = contacts.find((x) => x.target.id === aim.id);
-  $('target-data').textContent = tr(
-    jammed
-      ? 'JELZAVARÁS · NAVIGÁCIÓ NEM ELÉRHETŐ'
-      : mission.spec.objective === 'landing'
-        ? 'LESZÁLLÁSI GYAKORLAT · BASE'
-        : selected?.visible
-          ? `${equipmentLabel(selected.target, { compact: true }).toUpperCase()} · ${(selected.distance / 1000).toFixed(1)} KM · ${aim.locked ? 'BEFOGVA' : lock.state === 'acquiring' ? 'BEFOGÁS' : 'KIJELÖLVE'}`
-          : mission.spec.objective === 'escort' && mission.objectiveComplete
-            ? 'CIVIL TÁVOZOTT · RTB'
-            : mission.civilIntercepted
-              ? 'CIVIL VISSZAFORDUL · TŰZTILALOM'
-              : mission.destroyed
-                ? 'CÉL MEGSEMMISÍTVE · RTB'
-                : `${contacts.filter((c) => c.visible && c.selectable).length} CÉL · ${contacts.filter((c) => c.visible && c.target.team === 'ally' && !c.target.home && !c.target.city).length} SZÖVETSÉGES · TAB: VÁLTÁS`,
-  );
+  const targetDescription = jammed
+    ? 'JELZAVARÁS · NAVIGÁCIÓ NEM ELÉRHETŐ'
+    : mission.spec.objective === 'landing'
+      ? 'LESZÁLLÁSI GYAKORLAT · BASE'
+      : selected?.visible
+        ? `${equipmentLabel(selected.target, { compact: true }).toUpperCase()} · ${(selected.distance / 1000).toFixed(1)} KM · ${aim.locked ? 'BEFOGVA' : lock.state === 'acquiring' ? 'BEFOGÁS' : 'KIJELÖLVE'}`
+        : mission.spec.objective === 'escort' && mission.objectiveComplete
+          ? 'CIVIL TÁVOZOTT · RTB'
+          : mission.civilIntercepted
+            ? 'CIVIL VISSZAFORDUL · TŰZTILALOM'
+            : mission.destroyed
+              ? 'CÉL MEGSEMMISÍTVE · RTB'
+              : `${contacts.filter((c) => c.visible && c.selectable).length} CÉL · ${contacts.filter((c) => c.visible && c.target.team === 'ally' && !c.target.home && !c.target.city).length} SZÖVETSÉGES · TAB: VÁLTÁS`;
   $('target-data').dataset.lock =
     jammed || !selected?.visible
       ? 'idle'
@@ -261,17 +259,22 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
         : lock.state === 'acquiring'
           ? 'acquiring'
           : 'idle';
-  $('target-data').title = tr($('target-data').textContent);
-  if (!selected?.visible)
-    $('target-data').textContent = tr(
-      jammed
+  $('target-data').title = tr(targetDescription);
+  text(
+    $('target-data'),
+    selected?.visible
+      ? targetDescription
+      : jammed
         ? 'JELZAVARÁS'
         : mission.spec.objective === 'landing'
           ? 'BASE / N'
           : `${contacts.filter((c) => c.visible && c.selectable).length} CÉL · ${contacts.filter((c) => c.visible && c.target.team === 'ally' && !c.target.home && !c.target.city).length} BARÁT`,
-    );
+  );
+  // Size the cockpit once after text updates, before drawing the radar.
+  updateCockpit(s);
   const map = renderTacticalMap($('radar'), s, targets, aim);
-  $('map-range').textContent = tr(
+  text(
+    $('map-range'),
     jammed ? 'NINCS JEL' : `${(map.halfExtent * 2) / 1000} KM · ${map.zoomFactor}×`,
   );
   const approach = s.approach,
@@ -292,12 +295,10 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
       refuelling ? 'I: tankolási segédív ki/be' : 'I: leszállási segédív ki/be',
     );
     routeButton.setAttribute('aria-pressed', String(enabled));
-    routeButton.textContent = tr(`I SEGÉDÍV ${enabled ? 'BE' : 'KI'}`);
+    text(routeButton, `I SEGÉDÍV ${enabled ? 'BE' : 'KI'}`);
   }
   if (landing) {
-    $('approach-stage').textContent = tr(
-      `${approach.stage} · ${(approach.distance / 1000).toFixed(1)} KM`,
-    );
+    text($('approach-stage'), `${approach.stage} · ${(approach.distance / 1000).toFixed(1)} KM`);
     html(
       $('approach-checks'),
       approach.items
@@ -313,11 +314,11 @@ export function updateHUD(s, targets, weapons, aim, mission, muted) {
         )
         .join(''),
     );
-    $('approach-instruction').textContent = tr(
+    text(
+      $('approach-instruction'),
       approach.instruction + (map.landingRoute?.advisory ? ' ' + map.landingRoute.advisory : ''),
     );
   }
-  updateCockpit(s);
   fitMissionObjectives();
   updateFlightMessages(s, lock, aim, weapons);
 }

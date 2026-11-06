@@ -16,10 +16,9 @@ const partNames = {
 };
 export const integrityColor = (health) => `hsl(${Math.round(clamp(health, 0, 1) * 50)} 95% 53%)`;
 const categories = { gun: 'GÉPÁGYÚ', aam: 'LÉGI RAKÉTA', agm: 'FÖLDI RAKÉTA', bomb: 'BOMBA' };
-export function storesMarkup(s, selected, { compact = false } = {}) {
-  const p = armament(s.spec),
-    mesh = aircraftMesh(s.spec.id, 0),
-    publicVariant = catalogLabel('aircraft', s.spec.id, { compact }) || p.variant;
+const projections = new WeakMap();
+function airframeProjection(mesh) {
+  if (projections.has(mesh)) return projections.get(mesh);
   const zMin = Math.min(...mesh.points.map((p) => p.z)),
     zMax = Math.max(...mesh.points.map((p) => p.z));
   const scale = Math.min(
@@ -29,22 +28,40 @@ export function storesMarkup(s, selected, { compact = false } = {}) {
     cy = 66 + ((zMax + zMin) * scale) / 2;
   const xy = (point) =>
     `${(108 + point.x * scale).toFixed(1)},${(cy - point.z * scale).toFixed(1)}`;
-  const silhouette = mesh.faces
-    .map((face) => `M${face.map((i) => xy(mesh.points[i])).join('L')}Z`)
-    .join('');
+  const paths = mesh.faces.map((face) => `M${face.map((i) => xy(mesh.points[i])).join('L')}Z`);
+  const projection = {
+    zMin,
+    zMax,
+    scale,
+    cy,
+    paths,
+    parts: mesh.faces.map((_, i) => faceDamagePart(mesh, i)),
+    silhouette: paths.join(''),
+    lines: mesh.edges.map(([a, b]) => `M${xy(mesh.points[a])}L${xy(mesh.points[b])}`).join(''),
+    minX: Math.min(...mesh.points.map((p) => 108 + p.x * scale)),
+    maxX: Math.max(...mesh.points.map((p) => 108 + p.x * scale)),
+  };
+  projections.set(mesh, projection);
+  return projection;
+}
+export function storesMarkup(s, selected, { compact = false } = {}) {
+  const p = armament(s.spec),
+    mesh = aircraftMesh(s.spec.id, 0),
+    publicVariant = catalogLabel('aircraft', s.spec.id, { compact }) || p.variant;
+  const projection = airframeProjection(mesh),
+    { zMax, zMin, scale, cy, silhouette, lines, minX, maxX } = projection;
   const damage = mesh.faces
-    .map((face, index) => {
-      const part = faceDamagePart(mesh, index),
+    .map((_, index) => {
+      const part = projection.parts[index],
         engineIndex = mesh.faceEngines?.[index],
         integrity =
           engineIndex != null
             ? (s.condition?.engines?.[engineIndex] ?? 1)
             : (s.condition?.parts[part] ?? 1);
       if (integrity >= 0.995) return '';
-      return `<path class="part-damage" data-part="${part}" d="M${face.map((i) => xy(mesh.points[i])).join('L')}Z" fill="${integrityColor(integrity)}" stroke="${integrityColor(integrity)}"><title>${engineIndex != null ? `${engineIndex + 1}. hajtómű` : partNames[part]} · állapot ${Math.round(integrity * 100)}%</title></path>`;
+      return `<path class="part-damage" data-part="${part}" d="${projection.paths[index]}" fill="${integrityColor(integrity)}" stroke="${integrityColor(integrity)}"><title>${engineIndex != null ? `${engineIndex + 1}. hajtómű` : partNames[part]} · állapot ${Math.round(integrity * 100)}%</title></path>`;
     })
     .join('');
-  const lines = mesh.edges.map(([a, b]) => `M${xy(mesh.points[a])}L${xy(mesh.points[b])}`).join('');
   const stations = loadedStations(s)
     .map(
       (station) =>
@@ -62,31 +79,34 @@ export function storesMarkup(s, selected, { compact = false } = {}) {
     .join('');
   if (p.tailGun)
     rows += `<div class="store-option ${s.rearView ? 'selected' : ''}" title="Külön farokgépágyú-lőszer"><kbd>V</kbd><span>Farokgépágyú</span><b>${s.ammo.tailGun || 0}</b></div>`;
-  const minX = Math.min(...mesh.points.map((p) => 108 + p.x * scale)),
-    maxX = Math.max(...mesh.points.map((p) => 108 + p.x * scale)),
-    box = compact
-      ? `${minX - 8} ${cy - zMax * scale - 8} ${maxX - minX + 16} ${(zMax - zMin) * scale + 16}`
-      : '0 0 216 136';
+  const box = compact
+    ? `${minX - 8} ${cy - zMax * scale - 8} ${maxX - minX + 16} ${(zMax - zMin) * scale + 16}`
+    : '0 0 216 136';
   const health = Math.max(0, Math.round(100 - s.damage));
   return `<div class="stores-heading"><span>FEGYVERZET / ÁLLAPOT</span><small>${publicVariant}</small></div><svg viewBox="${box}" role="img" aria-label="${publicVariant} sematikus felülnézet; sérült részek sárgától pirosig"><path class="stores-silhouette" d="${silhouette}"/>${damage}<path class="stores-airframe" d="${lines}"/>${s.training ? '' : stations}${s.training ? '' : gun}</svg><div class="stores-health"><span>GÉP ÁLLAPOTA</span><b style="color:${s.damage ? integrityColor(health / 100) : '#c4ef96'}">${health}%</b></div><div class="store-options">${s.training ? '<small>FEGYVERZET NÉLKÜL</small>' : rows}</div>`;
 }
-let signature = '';
+const displays = new WeakMap();
 export function updateStores(s, weapons, options = {}) {
-  const next = JSON.stringify([
+  const root = document.getElementById('stores-display');
+  if (!root) return;
+  const details = [
     s.spec.id,
     !!options.compact,
     !!s.training,
     weapons.selected,
     !!s.rearView,
-    s.ammo,
+    s.loadoutChoice || null,
     Math.round(s.damage),
     [...Object.values(s.condition?.parts || {}), ...(s.condition?.engines || [])].map((v) =>
       Math.round(v * 100),
     ),
-  ]);
-  if (next === signature) return;
-  signature = next;
-  document.getElementById('stores-display').innerHTML = trHtml(
-    storesMarkup(s, weapons.selected, options),
-  );
+  ];
+  const next = JSON.stringify([...details, s.ammo]),
+    visual = JSON.stringify([...details, { ...s.ammo, gun: s.ammo.gun > 0 }]),
+    previous = displays.get(root);
+  if (previous?.signature === next) return;
+  const count = previous?.visual === visual && root.querySelector('[data-weapon="gun"] b');
+  if (count) count.textContent = String(s.ammo.gun);
+  else root.innerHTML = trHtml(storesMarkup(s, weapons.selected, options));
+  displays.set(root, { signature: next, visual });
 }

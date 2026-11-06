@@ -18,11 +18,16 @@ import { PROJECTILE_LIMIT, EVENT_LIMIT } from '../src/multiplayer/protocol.js';
 import { packProjectile, packTarget } from '../src/multiplayer/combatState.js';
 export function playerEntity(p) {
   const s = p.state;
-  return {
+  p.actor ||= {};
+  return Object.assign(p.actor, {
+    aiControlled: !p.connected,
+    faction: s.spec.faction,
+    heading: Math.atan2(forward(s.orientation).x, forward(s.orientation).z),
+    cruiseSpeed: 200,
     id: p.id,
     type: 'fighter',
     kind: 'air',
-    team: 'ally',
+    team: s.team || 'ally',
     aircraftId: s.spec.id,
     displayCallSign: p.callSign,
     position: s.position,
@@ -32,14 +37,16 @@ export function playerEntity(p) {
     alive: !s.dying && !s.crashed,
     falling: s.dying && !s.crashed,
     radius: 28,
-    threats: [],
-  };
+    threats: p.connected ? [] : ['missile', 'gun'],
+  });
 }
 export function createRoomCombat(world, scenario = 'range') {
   return withTerrainSnapshot(world, () => {
     const flight = spawnAircraft('mig29', 0, world.skySeed ^ 771);
     flight.position = new Vec3(0, 3000, -4000);
-    const ai = scenario !== 'range' ? createRoomAI(world) : null;
+    const ai = ['combat', 'cooperative'].includes(scenario)
+      ? createRoomAI(world)
+      : createRoomAI(world, []);
     return {
       ai,
       weapons: new Weapons({ actorUpdates: false, friendlyFire: true }),
@@ -79,7 +86,7 @@ export function createRoomCombat(world, scenario = 'range') {
           threats: [],
         },
         ...(ai?.units || []),
-      ].filter((t) => scenario !== 'cooperative' || t.id !== 'RANGE-AIR'),
+      ].filter((t) => scenario !== 'arena' && (scenario !== 'cooperative' || t.id !== 'RANGE-AIR')),
     };
   });
 }
@@ -126,7 +133,7 @@ function transferFire(room, player, time) {
     ids.set(p.id, id);
     p.id = id;
     p.sourceId = player.id;
-    p.owner = 'ally';
+    p.owner = player.state.team || 'ally';
     p.targetEntityId = p.targetId;
     shared.projectiles.push(p);
   }
@@ -172,7 +179,7 @@ export function stepRoomCombat(room, commands, dt) {
   for (const player of players) {
     const { state: s, combat } = player,
       controls = commands.get(player.id)?.combat;
-    updateCountermeasures(s, dt);
+    if (player.connected) updateCountermeasures(s, dt);
     combat.weapons.cooldown = Math.max(0, combat.weapons.cooldown - dt);
     combat.weapons.gunHeat = Math.max(0, combat.weapons.gunHeat - dt * 0.5);
     if (controls && armament(s.spec).weapons[controls.weapon])
@@ -215,6 +222,23 @@ export function stepRoomCombat(room, commands, dt) {
     if (e.kind === 'impact' && e.age === 0)
       recordEvent(room, { type: 'impact', position: e.position }, time);
 }
+// The mission result is final, but an already fatal aircraft must still reach
+// the ground. No AI, weapons or scoring run in this aftermath phase.
+export function stepRoomAftermath(room, dt) {
+  for (const player of room.players.values()) {
+    const s = player.state;
+    if (!s.dying || s.crashed) continue;
+    stepAircraft(s, {}, dt);
+    if (s.impactPending) {
+      s.impactPending = false;
+      recordEvent(
+        room,
+        { type: 'explosion', position: s.position, ground: true, heavy: true },
+        (room.tick + 1) * dt,
+      );
+    }
+  }
+}
 export function playerCombatSnapshot(player) {
   const { weapons, aim, feedback, hits, kills, friendlyHits } = player.combat;
   return {
@@ -228,12 +252,15 @@ export function playerCombatSnapshot(player) {
     friendlyHits,
   };
 }
-export function roomCombatSnapshot(room) {
+export function roomCombatSnapshot(room, afterEventId = null) {
   return {
     ai: roomAIStatus(room),
     targets: room.combat.targets.map(packTarget),
     projectiles: room.combat.weapons.projectiles.map(packProjectile),
-    events: room.combat.events.slice(),
+    events:
+      afterEventId === null
+        ? room.combat.events.slice()
+        : room.combat.events.filter((e) => e.id > afterEventId),
     eventSequence: room.combat.eventSequence,
   };
 }

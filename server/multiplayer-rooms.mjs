@@ -15,10 +15,14 @@ import {
   createRoomCombat,
   createPlayerCombat,
   stepRoomCombat,
+  stepRoomAftermath,
   playerCombatSnapshot,
   roomCombatSnapshot,
 } from './multiplayer-combat.mjs';
-import { randomBytes, randomInt } from 'node:crypto';
+import { randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
+import { Targeting } from '../src/targeting.js';
+import { playerEntity } from './multiplayer-combat.mjs';
+import { stepTakenOverAircraft } from './multiplayer-takeover.mjs';
 import { Vec3 } from '../src/math.js';
 import { withTerrainSnapshot } from '../src/terrain.js';
 import { spawnAircraft, applyFlightCommand, packFlight } from '../src/multiplayer/flightState.js';
@@ -34,9 +38,11 @@ function roomCode() {
   return Array.from({ length: 6 }, () => alphabet[randomInt(alphabet.length)]).join('');
 }
 export class MultiplayerRooms {
-  constructor({ maxRooms = 16 } = {}) {
+  constructor({ maxRooms = 16, now = () => Date.now(), orphanTimeout = 120000 } = {}) {
     this.rooms = new Map();
     this.maxRooms = maxRooms;
+    this.now = now;
+    this.orphanTimeout = orphanTimeout;
   }
   create(scenario = 'range') {
     if (!roomScenarios.includes(scenario)) return null;
@@ -54,6 +60,7 @@ export class MultiplayerRooms {
     };
     const room = {
       code,
+      round: 1,
       world,
       scenario,
       players: new Map(),
@@ -72,13 +79,18 @@ export class MultiplayerRooms {
       (room.mission && room.mission.phase !== 'waiting')
     )
       return null;
-    const slot = [0, 1].find((slot) => ![...room.players.values()].some((p) => p.slot === slot));
+    const slot = Array.from({ length: ROOM_CAPACITY }, (_, i) => i).find(
+      (slot) => ![...room.players.values()].some((p) => p.slot === slot),
+    );
     const spawnSeed = randomBytes(4).readUInt32LE();
     const player = {
+      round: room.round,
+      connected: true,
+      sessionToken: randomBytes(32).toString('hex'),
       spawnSeed,
       id: randomBytes(12).toString('hex'),
       slot,
-      callSign: slot ? 'Falcon Two' : 'Falcon One',
+      callSign: 'Falcon ' + ['One', 'Two', 'Three', 'Four', 'Five'][slot],
       state: spawnAircraft(aircraftId, slot, spawnSeed, { armed: true }),
       combat: createPlayerCombat(),
       queue: [],
@@ -93,14 +105,46 @@ export class MultiplayerRooms {
       player.state.velocity = leader.state.velocity.clone();
       player.state.orientation = leader.state.orientation.clone();
     }
+    player.state.team = room.scenario === 'arena' ? player.id : 'ally';
+    room.orphanedAt = null;
     room.players.set(player.id, player);
     joinRoomLobby(room, player);
     return player;
   }
+  resume(room, token) {
+    if (!room || typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) return null;
+    if (room.orphanedAt != null && this.now() - room.orphanedAt >= this.orphanTimeout) {
+      this.rooms.delete(room.code);
+      return null;
+    }
+    const secret = Buffer.from(token, 'hex');
+    const p = [...room.players.values()].find((p) =>
+      timingSafeEqual(Buffer.from(p.sessionToken, 'hex'), secret),
+    );
+    if (!p) return null;
+    p.connected = true;
+    if (p.actor) {
+      p.actor.takeoverSeeded = false;
+      delete p.actor.service;
+      delete p.actor.retreat;
+      delete p.actor.evasion;
+      delete p.actor.exited;
+      delete p.actor.retired;
+    }
+    p.queue.length = 0;
+    p.ack = p.received = 0;
+    room.orphanedAt = null;
+    room.lobby && (room.lobby.hostId ||= p.id);
+    if (room.combat.ai) room.combat.ai.units = room.combat.ai.units.filter((t) => t.id !== p.id);
+    playerEntity(p);
+    return p;
+  }
   preflight(room, player, message) {
     return updateRoomLobby(room, player, message);
   }
-  inputs(player, commands) {
+  inputs(player, commands, round = player.round) {
+    if (round !== player.round) return false;
+    if (!player.connected) return false;
     if (player.queue.length + commands.length > INPUT_QUEUE_LIMIT) return false;
     let next = player.received + 1;
     if (!commands.every((c) => validCommand(c) && c.seq === next++)) return false;
@@ -110,6 +154,10 @@ export class MultiplayerRooms {
   }
   step() {
     for (const room of this.rooms.values()) {
+      if (room.orphanedAt != null && this.now() - room.orphanedAt >= this.orphanTimeout) {
+        this.rooms.delete(room.code);
+        continue;
+      }
       withTerrainSnapshot(room.world, () => {
         const commands = new Map(),
           simulating = roomSimulating(room);
@@ -117,25 +165,33 @@ export class MultiplayerRooms {
         for (const player of room.players.values()) {
           const command = player.queue.shift();
           commands.set(player.id, command);
-          if (simulating) applyFlightCommand(player.state, command, NETWORK_STEP);
+          if (simulating) {
+            if (player.connected) applyFlightCommand(player.state, command, NETWORK_STEP);
+            else stepTakenOverAircraft(room, player, NETWORK_STEP);
+          }
           if (command) player.ack = command.seq;
         }
         if (simulating) stepRoomCombat(room, commands, NETWORK_STEP);
+        else if (['success', 'failed'].includes(room.mission?.phase))
+          stepRoomAftermath(room, NETWORK_STEP);
         updateRoomMission(room);
       });
       room.tick++;
     }
   }
-  snapshot(room) {
+  snapshot(room, afterEventId = null) {
     return {
       type: 'snapshot',
+      round: room.round,
+      world: structuredClone(room.world),
       scenario: room.scenario,
       mission: roomMissionSnapshot(room),
       lobby: roomLobbySnapshot(room),
       tick: room.tick,
       time: room.tick * NETWORK_STEP,
-      combat: roomCombatSnapshot(room),
+      combat: roomCombatSnapshot(room, afterEventId),
       players: [...room.players.values()].map((p) => ({
+        connected: p.connected,
         id: p.id,
         callSign: p.callSign,
         ack: p.ack,
@@ -145,9 +201,21 @@ export class MultiplayerRooms {
     };
   }
   leave(room, player) {
+    if (!room.players.has(player.id)) return;
+    if (!room.mission || room.mission.phase !== 'waiting') {
+      player.connected = false;
+      if (player.actor) player.actor.takeoverSeeded = false;
+      player.queue.length = 0;
+      player.combat.aim = new Targeting();
+      playerEntity(player);
+      leaveRoomLobby(room);
+      if (![...room.players.values()].some((p) => p.connected)) room.orphanedAt = this.now();
+      return;
+    }
     room.players.delete(player.id);
     leaveRoomLobby(room);
     updateRoomMission(room);
     if (!room.players.size) this.rooms.delete(room.code);
+    else if (![...room.players.values()].some((p) => p.connected)) room.orphanedAt = this.now();
   }
 }

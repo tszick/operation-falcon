@@ -3,6 +3,7 @@ import { MultiplayerRooms } from './multiplayer-rooms.mjs';
 import { sameOriginRequest } from './request-policy.mjs';
 import {
   PROTOCOL_VERSION,
+  SNAPSHOT_BYTES_LIMIT,
   MULTIPLAYER_PATH,
   SNAPSHOT_INTERVAL,
   NETWORK_STEP,
@@ -13,7 +14,7 @@ import {
 } from '../src/multiplayer/protocol.js';
 export function attachMultiplayer(
   server,
-  { allowedHosts = [], maxConnections = 32, rooms = new MultiplayerRooms() } = {},
+  { allowedHosts = [], maxConnections = 80, rooms = new MultiplayerRooms() } = {},
 ) {
   const wss = new WebSocketServer({ noServer: true, maxPayload: 4096, perMessageDeflate: false });
   let closed = false;
@@ -23,14 +24,14 @@ export function attachMultiplayer(
     frame = 0;
   function send(ws, message) {
     if (ws.readyState !== WebSocket.OPEN) return;
-    if (ws.bufferedAmount > 128 * 1024) {
+    if (ws.bufferedAmount > SNAPSHOT_BYTES_LIMIT) {
       ws.terminate();
       return;
     }
-    ws.send(JSON.stringify(message));
+    ws.send(typeof message === 'string' ? message : JSON.stringify(message));
   }
   function stopIdleTimer() {
-    if (!wss.clients.size && timer) {
+    if (!wss.clients.size && !rooms.rooms.size && timer) {
       clearInterval(timer);
       timer = null;
     }
@@ -49,11 +50,13 @@ export function attachMultiplayer(
         accumulator -= NETWORK_STEP;
         if (frame % SNAPSHOT_INTERVAL === 0) {
           for (const room of rooms.rooms.values()) {
-            const snapshot = rooms.snapshot(room);
+            const snapshot = JSON.stringify(rooms.snapshot(room, room.broadcastEventId || 0));
+            room.broadcastEventId = room.combat.eventSequence;
             for (const ws of wss.clients) if (ws.session?.room === room) send(ws, snapshot);
           }
         }
       }
+      stopIdleTimer();
       for (const ws of wss.clients) {
         if (ws.readyState !== WebSocket.OPEN) continue;
         if (now - ws.lastPong > 30000 || (!ws.session && now - ws.connectedAt > 10000))
@@ -116,7 +119,8 @@ export function attachMultiplayer(
           !aircraftChoices.includes(msg.aircraftId) ||
           (msg.scenario !== undefined && !roomScenarios.includes(msg.scenario)) ||
           !['create', 'join'].includes(msg.mode) ||
-          (msg.mode === 'join' && !validRoomCode(msg.code))
+          (msg.mode === 'join' && !validRoomCode(msg.code)) ||
+          (msg.mode === 'create' && msg.resumeToken !== undefined)
         ) {
           ws.close(1008, 'Invalid handshake');
           return;
@@ -127,16 +131,34 @@ export function attachMultiplayer(
           send(ws, { type: 'error', code: msg.mode === 'create' ? 'server-full' : 'room-missing' });
           return;
         }
-        const player = rooms.join(room, msg.aircraftId);
+        const player =
+          msg.resumeToken !== undefined
+            ? rooms.resume(room, msg.resumeToken)
+            : rooms.join(room, msg.aircraftId);
         if (!player) {
           send(ws, {
             type: 'error',
-            code: room.mission && room.mission.phase !== 'waiting' ? 'room-started' : 'room-full',
+            code:
+              msg.resumeToken !== undefined
+                ? 'session-invalid'
+                : room.mission && room.mission.phase !== 'waiting'
+                  ? 'room-started'
+                  : 'room-full',
           });
           return;
         }
+        // A valid private session replaces a stale socket atomically. Its close
+        // handler must never detach the new owner of the same aircraft.
+        for (const peer of wss.clients) {
+          if (peer !== ws && peer.session?.player === player) {
+            peer.session = null;
+            peer.close(1000, 'Session resumed');
+          }
+        }
         ws.session = { room, player };
         send(ws, {
+          sessionToken: player.sessionToken,
+          resumed: msg.resumeToken !== undefined,
           version: PROTOCOL_VERSION,
           id: player.id,
           code: room.code,
@@ -144,12 +166,17 @@ export function attachMultiplayer(
           ...rooms.snapshot(room),
           type: 'welcome',
         });
-      } else if (['ready', 'configure', 'mission'].includes(msg.type) && ws.session) {
+      } else if (
+        ['ready', 'configure', 'mission', 'start', 'rematch'].includes(msg.type) &&
+        ws.session
+      ) {
         const error = rooms.preflight(ws.session.room, ws.session.player, msg);
         if (error) send(ws, { type: 'error', code: error });
-        else
+        else {
+          const snapshot = JSON.stringify(rooms.snapshot(ws.session.room));
           for (const peer of wss.clients)
-            if (peer.session?.room === ws.session.room) send(peer, rooms.snapshot(ws.session.room));
+            if (peer.session?.room === ws.session.room) send(peer, snapshot);
+        }
       } else if (
         msg.type === 'input' &&
         ws.session &&
@@ -157,7 +184,17 @@ export function attachMultiplayer(
         msg.commands.length > 0 &&
         msg.commands.length <= INPUT_BATCH_LIMIT
       ) {
-        if (!rooms.inputs(ws.session.player, msg.commands)) ws.close(1008, 'Invalid controls');
+        if (
+          !Number.isSafeInteger(msg.round) ||
+          msg.round < 1 ||
+          msg.round > ws.session.room.round
+        ) {
+          ws.close(1008, 'Invalid round');
+          return;
+        }
+        if (msg.round < ws.session.room.round) return;
+        if (!rooms.inputs(ws.session.player, msg.commands, msg.round))
+          ws.close(1008, 'Invalid controls');
       } else if (msg.type === 'ping' && Number.isFinite(msg.sent))
         send(ws, { type: 'pong', sent: msg.sent });
       else ws.close(1008, 'Unexpected message');

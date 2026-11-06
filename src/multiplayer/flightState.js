@@ -1,11 +1,13 @@
+import { aircraftFlightSpec } from '../aiAircraftSpec.js';
 import { configureAircraft } from '../loadoutPlanner.js';
-import { aircraft, loadout } from '../aircraftSpec.js';
+import { loadout } from '../aircraftSpec.js';
 import { createAircraft, stepAircraft, mass } from '../physics.js';
 import { atmosphere } from '../atmosphere.js';
 import { Vec3, Quat, clamp } from '../math.js';
 import { createDamage, toggleActuator } from '../damage.js';
 import { neutralAxes } from './protocol.js';
 const fields = [
+  'team',
   'ammo',
   'countermeasures',
   'lastHit',
@@ -39,6 +41,8 @@ const fields = [
   'trueAirspeed',
   'landing',
   'landingMode',
+  'landingRouteEnabled',
+  'weather',
   'bodyRates',
   'spin',
 ];
@@ -48,7 +52,7 @@ export function spawnAircraft(
   seed,
   { armed = false, choice = null, fuelFraction = 0.7 } = {},
 ) {
-  const base = aircraft.find((a) => a.id === aircraftId);
+  const base = aircraftFlightSpec(aircraftId);
   const spec = choice ? configureAircraft(base, choice) : base;
   if (!spec) throw new Error('Unknown aircraft');
   const s = createAircraft(spec, {
@@ -77,7 +81,9 @@ export function spawnAircraft(
 }
 export function applyFlightCommand(s, command, dt) {
   for (const key of command?.toggles || []) {
-    if (key === 'assist') s.assist = !s.assist;
+    if (key === 'landing') s.landingMode = s.landingMode === 'on' ? 'off' : 'on';
+    else if (key === 'landingGuide') s.landingRouteEnabled = !s.landingRouteEnabled;
+    else if (key === 'assist') s.assist = !s.assist;
     else if (key === 'afterburner') s.afterburner = s.spec.hasAB && !s.afterburner;
     else toggleActuator(s, key);
   }
@@ -97,7 +103,7 @@ export function packFlight(s) {
   return structuredClone(out);
 }
 export function unpackFlight(data) {
-  const base = aircraft.find((a) => a.id === data.aircraftId);
+  const base = aircraftFlightSpec(data.aircraftId);
   const spec = data.loadoutChoice ? configureAircraft(base, data.loadoutChoice) : base;
   const s = createAircraft(spec, { ammo: { gun: 0, aam: 0, agm: 0, bomb: 0 } });
   const copy = structuredClone(data);

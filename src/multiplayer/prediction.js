@@ -1,17 +1,19 @@
-import { applyFlightCommand, unpackFlight, interpolateFlight } from './flightState.js';
+import { applyFlightCommand, unpackFlight, interpolateOrientation } from './flightState.js';
+import { Vec3 } from '../math.js';
 import { NETWORK_STEP } from './protocol.js';
 export class FlightPrediction {
   constructor() {
     this.pending = [];
     this.outgoing = [];
     this.sequence = 0;
+    this.acknowledged = 0;
     this.state = null;
     this.simulating = true;
   }
   reset(player) {
     this.pending = [];
     this.outgoing = [];
-    this.sequence = player.ack;
+    this.sequence = this.acknowledged = player.ack;
     this.state = unpackFlight(player.state);
   }
   step(axes, toggles = [], combat) {
@@ -24,6 +26,7 @@ export class FlightPrediction {
     return true;
   }
   reconcile(player) {
+    this.acknowledged = player.ack;
     this.pending = this.pending.filter((c) => c.seq > player.ack);
     this.state = unpackFlight(player.state);
     if (this.simulating)
@@ -33,9 +36,12 @@ export class FlightPrediction {
 export class SnapshotBuffer {
   constructor() {
     this.frames = [];
+    this.decoded = new WeakMap();
   }
   add(snapshot) {
-    if (this.frames.length && snapshot.tick <= this.frames.at(-1).tick) return false;
+    if (this.frames.length && snapshot.tick < this.frames.at(-1).tick) return false;
+    if (this.frames.at(-1)?.tick === snapshot.tick) this.frames.pop();
+    this.decoded.set(snapshot, new Map(snapshot.players.map((p) => [p.id, unpackFlight(p.state)])));
     this.frames.push(snapshot);
     if (this.frames.length > 32) this.frames.shift();
     return true;
@@ -49,14 +55,17 @@ export class SnapshotBuffer {
       if (frame.time >= time) break;
       a = frame;
     }
-    const pa = a.players.find((p) => p.id === id),
-      pb = b.players.find((p) => p.id === id);
+    const pa = this.decoded.get(a).get(id),
+      pb = this.decoded.get(b).get(id);
     if (!pb) return null;
-    if (!pa) return unpackFlight(pb.state);
-    return interpolateFlight(
-      { time: a.time, state: pa.state },
-      { time: b.time, state: pb.state },
-      time,
-    );
+    if (!pa) return { ...pb };
+    const t = Math.max(0, Math.min(1, (time - a.time) / Math.max(0.0001, b.time - a.time)));
+    return {
+      ...pb,
+      position: new Vec3(pa.position.x, pa.position.y, pa.position.z)
+        .scale(1 - t)
+        .add(pb.position.clone().scale(t)),
+      orientation: interpolateOrientation(pa.orientation, pb.orientation, t),
+    };
   }
 }

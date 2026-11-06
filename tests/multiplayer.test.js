@@ -41,7 +41,7 @@ test('control protocol rejects malformed, unbounded and state-injection commands
   for (const c of ['abc234', 'AAAAAA1', '<script>', null]) assert.equal(validRoomCode(c), false);
 });
 test('rooms enforce capacity, stable call signs, isolation and removal of empty worlds', () => {
-  const rooms = new MultiplayerRooms({ maxRooms: 2 }),
+  const rooms = new MultiplayerRooms({ maxRooms: 2, orphanTimeout: 0 }),
     a = rooms.create(),
     b = rooms.create();
   assert.equal(rooms.create(), null);
@@ -49,6 +49,7 @@ test('rooms enforce capacity, stable call signs, isolation and removal of empty 
     two = rooms.join(a, 'fa18');
   assert.equal(one.callSign, 'Falcon One');
   assert.equal(two.callSign, 'Falcon Two');
+  for (let i = 0; i < 3; i++) assert.ok(rooms.join(a, 'f16'));
   assert.equal(rooms.join(a, 'f16'), null);
   assert.notEqual(a.world.skySeed, b.world.skySeed);
   const solo = rooms.join(b, 'f16'),
@@ -60,8 +61,11 @@ test('rooms enforce capacity, stable call signs, isolation and removal of empty 
   assert.ok(solo.state.position.distance(before) > 0);
   assert.notEqual(one.state.orientation.x, solo.state.orientation.x);
   rooms.leave(a, one);
-  assert.equal(rooms.join(a, 'f16').callSign, 'Falcon One');
+  assert.equal(one.connected, false);
+  assert.equal(rooms.join(a, 'f16'), null);
+  assert.equal(rooms.resume(a, one.sessionToken).callSign, 'Falcon One');
   rooms.leave(b, solo);
+  rooms.step();
   assert.equal(rooms.rooms.has(b.code), false);
 });
 test('server consumes at most one command per physics tick, rejecting replay, gaps and queue flooding atomically', () => {
@@ -134,7 +138,7 @@ test('remote interpolation handles quaternion sign, duplicate packets, missing f
   b.time = 0.1;
   const buffer = new SnapshotBuffer();
   assert.equal(buffer.add(a), true);
-  assert.equal(buffer.add(a), false);
+  assert.equal(buffer.add(a), true);
   buffer.add(b);
   assert.equal(buffer.sample(p.id, 0.05).position.x, 50);
   assert.equal(buffer.sample(p.id, 5).position.x, 100);
@@ -224,17 +228,27 @@ test(
     const joined = await two.next((m) => m.type === 'welcome');
     assert.equal(joined.players.length, 2);
     assert.deepEqual(joined.world, welcome.world);
-    one.ws.send(JSON.stringify({ type: 'input', commands: [command(1, 1), command(2, 1)] }));
+    one.ws.send(
+      JSON.stringify({ type: 'input', round: 1, commands: [command(1, 1), command(2, 1)] }),
+    );
     const shared = await two.next(
       (m) => m.type === 'snapshot' && m.players.find((p) => p.id === welcome.id)?.ack === 2,
     );
     assert.ok(shared.players.find((p) => p.id === welcome.id).state.orientation.x < 0);
-    const three = await connect(t, f, { mode: 'join', code: welcome.code });
-    assert.equal((await three.next((m) => m.type === 'error')).code, 'room-full');
+    for (let i = 0; i < 3; i++) {
+      const peer = await connect(t, f, { mode: 'join', code: welcome.code });
+      await peer.next((m) => m.type === 'welcome');
+    }
+    const sixth = await connect(t, f, { mode: 'join', code: welcome.code });
+    assert.equal((await sixth.next((m) => m.type === 'error')).code, 'room-full');
     two.ws.close();
     await once(two.ws, 'close');
     assert.equal(
-      (await one.next((m) => m.type === 'snapshot' && m.players.length === 1)).players[0].id,
+      (
+        await one.next(
+          (m) => m.type === 'snapshot' && m.players.some((p) => p.id === joined.id && !p.connected),
+        )
+      ).players[0].id,
       welcome.id,
     );
     one.ws.send(JSON.stringify({ type: 'ping', sent: 123 }));
@@ -252,7 +266,11 @@ test(
     const one = await connect(t, f, { mode: 'create' });
     await one.next((m) => m.type === 'welcome');
     one.ws.send(
-      JSON.stringify({ type: 'input', commands: [{ ...command(1), position: { x: 9999 } }] }),
+      JSON.stringify({
+        type: 'input',
+        round: 1,
+        commands: [{ ...command(1), position: { x: 9999 } }],
+      }),
     );
     const [code] = await once(one.ws, 'close');
     assert.equal(code, 1008);
@@ -286,7 +304,7 @@ test(
           ...command(++seq, 0.15),
           axes: { ...neutralAxes(), pitch: 0.15, roll: 0.1 },
         }));
-        one.ws.send(JSON.stringify({ type: 'input', commands }));
+        one.ws.send(JSON.stringify({ type: 'input', round: 1, commands }));
         if (seq >= 120) {
           clearInterval(timer);
           resolve();
@@ -323,11 +341,15 @@ test(
       ...command(seq),
       combat: { weapon: 'aam', fire, cycle, countermeasures: false },
     });
-    one.ws.send(JSON.stringify({ type: 'input', commands: [combatCommand(1, false, true)] }));
+    one.ws.send(
+      JSON.stringify({ type: 'input', round: 1, commands: [combatCommand(1, false, true)] }),
+    );
     await one.next(
       (m) => m.type === 'snapshot' && m.players.find((p) => p.id === welcome.id)?.combat.aim.locked,
     );
-    one.ws.send(JSON.stringify({ type: 'input', commands: [combatCommand(2, true, false)] }));
+    one.ws.send(
+      JSON.stringify({ type: 'input', round: 1, commands: [combatCommand(2, true, false)] }),
+    );
     const isLaunch = (m) =>
       m.type === 'snapshot' && m.combat.events.some((e) => e.type === 'missile-launch');
     const a = await one.next(isLaunch),
@@ -414,6 +436,8 @@ test(
     assert.equal(joined.mission.phase, 'waiting');
     for (const peer of [one, two])
       peer.ws.send(JSON.stringify({ type: 'ready', revision: joined.lobby.revision, ready: true }));
+    await one.next((m) => m.type === 'snapshot' && m.lobby.players.every((p) => p.ready));
+    one.ws.send(JSON.stringify({ type: 'start', revision: joined.lobby.revision }));
     await two.next((m) => m.type === 'snapshot' && m.mission.phase === 'active');
     const room = f.multiplayer.rooms.rooms.get(welcome.code);
     applyDamage(room.combat.targets.find((t) => t.aiControlled).flight, 100, 'fuselage');
@@ -476,11 +500,205 @@ test(
       peer.ws.send(
         JSON.stringify({ type: 'ready', revision: changed.lobby.revision, ready: true }),
       );
+    await a.next((m) => m.type === 'snapshot' && m.lobby.players.every((p) => p.ready));
+    a.ws.send(JSON.stringify({ type: 'start', revision: changed.lobby.revision }));
     const active = (m) => m.type === 'snapshot' && m.mission.phase === 'active';
     const sa = await a.next(active),
       sb = await b.next(active);
     assert.deepEqual(sa.mission, sb.mission);
     assert.ok(sa.lobby.players.every((p) => p.ready));
     assert.equal(sa.players.find((p) => p.id === second.id).state.aircraftId, 'f16');
+  },
+);
+
+test(
+  'two real clients share the defense terrain, runway start, return phase and landing result',
+  { timeout: 15000 },
+  async (t) => {
+    const f = await fixture(t),
+      a = await connect(t, f, { mode: 'create', scenario: 'cooperative' });
+    const welcome = await a.next((m) => m.type === 'welcome');
+    const b = await connect(t, f, { mode: 'join', code: welcome.code });
+    const joined = await b.next((m) => m.type === 'welcome');
+    a.ws.send(
+      JSON.stringify({
+        type: 'mission',
+        revision: joined.lobby.revision,
+        missionId: 'defend-base',
+      }),
+    );
+    const defense = (m) => m.type === 'snapshot' && m.mission.assignment === 'defend-base';
+    const sa = await a.next(defense),
+      sb = await b.next(defense);
+    assert.deepEqual(sa.world, sb.world);
+    assert.equal(sa.world.surface, 'winter');
+    assert.ok(sa.players.every((p) => p.state.onGround));
+    assert.equal(sa.combat.targets.filter((t) => t.team === 'enemy' && t.kind === 'air').length, 3);
+    for (const peer of [a, b])
+      peer.ws.send(JSON.stringify({ type: 'ready', revision: sa.lobby.revision, ready: true }));
+    await a.next((m) => defense(m) && m.lobby.players.every((p) => p.ready));
+    a.ws.send(JSON.stringify({ type: 'start', revision: sa.lobby.revision }));
+    await a.next((m) => defense(m) && m.mission.phase === 'active');
+    const room = f.multiplayer.rooms.rooms.get(welcome.code);
+    for (const target of room.combat.targets.filter((t) => t.team === 'enemy' && t.kind === 'air'))
+      applyDamage(target.flight, 100, 'fuselage');
+    await b.next((m) => defense(m) && m.mission.stage === 'return');
+    for (const player of room.players.values())
+      Object.assign(player.state, {
+        position: new Vec3(0, 2.001, -1000),
+        previousPosition: new Vec3(0, 3, -1000),
+        velocity: new Vec3(0, -1, 65),
+        orientation: Quat.euler(0, (3 * Math.PI) / 180, 0),
+        onGround: false,
+        airborne: true,
+        gear: true,
+        flaps: true,
+        flapPosition: 1,
+        throttle: 0,
+        engineSpool: 0,
+        landingMode: 'on',
+      });
+    await a.next((m) => defense(m) && m.players.every((p) => p.state.landing?.success));
+    for (const p of room.players.values()) {
+      p.state.velocity = new Vec3();
+      p.state.speed = 0;
+    }
+    const success = (m) => defense(m) && m.mission.phase === 'success';
+    const ra = await a.next(success),
+      rb = await b.next(success);
+    assert.deepEqual(ra.mission, rb.mission);
+    assert.equal(ra.mission.reason, 'base-defended-and-landed');
+  },
+);
+
+test(
+  'five real clients start an arena, keep private sessions and recover the same AI-controlled aircraft',
+  { timeout: 15000 },
+  async (t) => {
+    const f = await fixture(t),
+      clients = [],
+      welcomes = [];
+    clients.push(await connect(t, f, { mode: 'create', scenario: 'arena' }));
+    welcomes.push(await clients[0].next((m) => m.type === 'welcome'));
+    for (let i = 1; i < 5; i++) {
+      clients.push(await connect(t, f, { mode: 'join', code: welcomes[0].code }));
+      welcomes.push(await clients[i].next((m) => m.type === 'welcome'));
+    }
+    const last = welcomes.at(-1),
+      revision = last.lobby.revision;
+    assert.equal(last.players.length, 5);
+    assert.equal(new Set(welcomes.map((m) => m.sessionToken)).size, 5);
+    assert.ok(last.players.every((p) => p.sessionToken === undefined));
+    for (const c of clients) c.ws.send(JSON.stringify({ type: 'ready', revision, ready: true }));
+    await clients[0].next((m) => m.type === 'snapshot' && m.lobby.players.every((p) => p.ready));
+    clients[0].ws.send(JSON.stringify({ type: 'start', revision }));
+    const started = await Promise.all(
+      clients.map((c) => c.next((m) => m.type === 'snapshot' && m.mission.phase === 'active')),
+    );
+    assert.ok(started.every((m) => m.players.length === 5));
+    const room = f.multiplayer.rooms.rooms.get(last.code),
+      pilot = room.players.get(welcomes[1].id);
+    pilot.state.ammo.aam = 1;
+    applyDamage(pilot.state, 9, 'leftWing');
+    clients[1].ws.close();
+    await once(clients[1].ws, 'close');
+    const detached = await clients[0].next(
+      (m) => m.type === 'snapshot' && m.players.some((p) => p.id === pilot.id && !p.connected),
+    );
+    assert.equal(detached.players.length, 5);
+    assert.ok(!JSON.stringify(detached).includes(welcomes[1].sessionToken));
+    const bad = await connect(t, f, { mode: 'join', code: last.code, resumeToken: 'e'.repeat(64) });
+    assert.equal((await bad.next((m) => m.type === 'error')).code, 'session-invalid');
+    const returning = await connect(t, f, {
+      mode: 'join',
+      code: last.code,
+      resumeToken: welcomes[1].sessionToken,
+    });
+    const restored = await returning.next((m) => m.type === 'welcome');
+    assert.equal(restored.id, pilot.id);
+    assert.equal(restored.resumed, true);
+    assert.equal(restored.players.find((p) => p.id === pilot.id).state.ammo.aam, 1);
+    assert.ok(restored.players.find((p) => p.id === pilot.id).state.damage >= 9);
+    const stale = await connect(t, f, {
+      mode: 'join',
+      code: last.code,
+      resumeToken: welcomes[1].sessionToken,
+    });
+    await stale.next((m) => m.type === 'welcome');
+    await once(returning.ws, 'close');
+    const retained = await clients[0].next(
+      (m) => m.type === 'snapshot' && m.players.some((p) => p.id === pilot.id && p.connected),
+    );
+    assert.equal(retained.players.length, 5);
+    for (const p of room.players.values()) if (p.id !== welcomes[0].id) p.state.crashed = true;
+    const ended = await clients[0].next(
+      (m) => m.type === 'snapshot' && m.mission.phase === 'success',
+    );
+    assert.equal(ended.mission.winnerId, welcomes[0].id);
+  },
+);
+
+test(
+  'a resume token cannot create empty rooms or consume the room budget',
+  { timeout: 10000 },
+  async (t) => {
+    const f = await fixture(t),
+      bad = await connect(t, f, { mode: 'create', resumeToken: 'a'.repeat(64) });
+    const [code] = await once(bad.ws, 'close');
+    assert.equal(code, 1008);
+    assert.equal(f.multiplayer.rooms.rooms.size, 0);
+  },
+);
+
+test(
+  'three localhost clients transfer the host, review a shared result and start another round without reconnecting',
+  { timeout: 15000 },
+  async (t) => {
+    const f = await fixture(t),
+      one = await connect(t, f, { mode: 'create', scenario: 'arena' }),
+      first = await one.next((m) => m.type === 'welcome');
+    const two = await connect(t, f, { mode: 'join', code: first.code }),
+      second = await two.next((m) => m.type === 'welcome');
+    const three = await connect(t, f, { mode: 'join', code: first.code }),
+      third = await three.next((m) => m.type === 'welcome');
+    for (const p of [one, two, three])
+      p.ws.send(JSON.stringify({ type: 'ready', revision: third.lobby.revision, ready: true }));
+    await one.next((m) => m.type === 'snapshot' && m.lobby.players.every((p) => p.ready));
+    one.ws.send(JSON.stringify({ type: 'start', revision: third.lobby.revision }));
+    await two.next((m) => m.type === 'snapshot' && m.mission.phase === 'active');
+    const closed = once(one.ws, 'close');
+    one.ws.close();
+    await closed;
+    await two.next((m) => m.type === 'snapshot' && m.lobby.hostId === second.id);
+    const room = f.multiplayer.rooms.rooms.get(first.code);
+    room.players.get(first.id).state.crashed = true;
+    room.players.get(third.id).state.crashed = true;
+    const result = await two.next((m) => m.type === 'snapshot' && m.mission.phase === 'success');
+    assert.equal(result.mission.winnerId, second.id);
+    two.ws.send(JSON.stringify({ type: 'rematch', revision: result.lobby.revision }));
+    const lobby = await three.next(
+      (m) => m.type === 'snapshot' && m.round === 2 && m.mission.phase === 'waiting',
+    );
+    assert.equal(lobby.players.length, 2);
+    assert.equal(lobby.lobby.hostId, second.id);
+    assert.ok(lobby.players.every((p) => !p.state.crashed));
+    two.ws.send(JSON.stringify({ type: 'input', round: 1, commands: [command(999, 1)] }));
+    for (const p of [two, three])
+      p.ws.send(JSON.stringify({ type: 'ready', revision: lobby.lobby.revision, ready: true }));
+    await two.next(
+      (m) => m.type === 'snapshot' && m.round === 2 && m.lobby.players.every((p) => p.ready),
+    );
+    two.ws.send(JSON.stringify({ type: 'start', revision: lobby.lobby.revision }));
+    await three.next((m) => m.type === 'snapshot' && m.round === 2 && m.mission.phase === 'active');
+    two.ws.send(JSON.stringify({ type: 'input', round: 2, commands: [command(1, 0.1)] }));
+    const moved = await three.next(
+      (m) =>
+        m.type === 'snapshot' &&
+        m.round === 2 &&
+        m.players.find((p) => p.id === second.id)?.ack === 1,
+    );
+    assert.equal(two.ws.readyState, WebSocket.OPEN);
+    assert.equal(moved.combat.events.length, 0);
+    assert.equal(f.multiplayer.rooms.rooms.size, 1);
   },
 );

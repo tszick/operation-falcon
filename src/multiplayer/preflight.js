@@ -1,7 +1,7 @@
 import { aircraft } from '../aircraftSpec.js';
 import { defaultLoadout, validateLoadout, plannedDeparture } from '../loadoutPlanner.js';
 import { aircraftChoices } from './protocol.js';
-export const missionChoices = ['strike', 'intercept'];
+export const missionChoices = ['strike', 'intercept', 'defend-base'];
 export function defaultSelection(id) {
   const spec = aircraft.find((a) => a.id === id);
   return { aircraftId: id, loadout: defaultLoadout(spec), fuelFraction: 0.7 };
@@ -34,14 +34,18 @@ export function validateSelection(selection) {
 export function validLobbyMessage(m) {
   if (!m || !Number.isSafeInteger(m.revision) || m.revision < 1) return false;
   const keys = {
+    rematch: ['type', 'revision'],
+    start: ['type', 'revision'],
     ready: ['type', 'revision', 'ready'],
     configure: ['type', 'revision', 'selection'],
     mission: ['type', 'revision', 'missionId'],
   }[m.type];
   if (!keys || Object.keys(m).some((k) => !keys.includes(k))) return false;
-  return m.type === 'ready'
-    ? typeof m.ready === 'boolean'
-    : m.type === 'mission'
-      ? missionChoices.includes(m.missionId)
-      : validateSelection(m.selection);
+  return ['start', 'rematch'].includes(m.type)
+    ? true
+    : m.type === 'ready'
+      ? typeof m.ready === 'boolean'
+      : m.type === 'mission'
+        ? missionChoices.includes(m.missionId)
+        : validateSelection(m.selection);
 }

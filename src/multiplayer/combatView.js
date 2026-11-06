@@ -10,15 +10,20 @@ const lerp = (a, b, t) =>
 export class NetworkCombatView {
   constructor() {
     this.frames = [];
+    this.decoded = new WeakMap();
     this.cursor = 0;
     this.effects = [];
     this.trails = [];
   }
   accept(snapshot, initial = false) {
-    if (!snapshot.combat || (this.frames.length && snapshot.tick <= this.frames.at(-1).tick))
-      return;
+    if (!snapshot.combat || (this.frames.length && snapshot.tick < this.frames.at(-1).tick)) return;
     const old = this.frames.at(-1),
       previous = new Map((old?.combat.projectiles || []).map((p) => [p.id, p]));
+    if (old?.tick === snapshot.tick) this.frames.pop();
+    this.decoded.set(
+      snapshot,
+      new Map(snapshot.combat.targets.map((t) => [t.id, unpackTarget(t)])),
+    );
     this.frames.push(snapshot);
     if (this.frames.length > 8) this.frames.shift();
     if (initial) {
@@ -88,9 +93,15 @@ export class NetworkCombatView {
       next.delete(p.id);
     }
     if (t >= 1) for (const p of next.values()) projectiles.push(unpackProjectile(p));
-    const targets = b.combat.targets.map((q) => {
-      const p = a.combat.targets.find((p) => p.id === q.id) || q;
-      const out = unpackTarget(t < 1 ? p : q);
+    const previousTargets = this.decoded.get(a),
+      currentTargets = this.decoded.get(b);
+    const targets = [...currentTargets.values()].map((q) => {
+      const p = previousTargets.get(q.id) || q;
+      const out = { ...(t < 1 ? p : q) };
+      if (out.flight) {
+        out.flight = { ...out.flight };
+        out.defense = out.flight;
+      }
       out.position = lerp(p.position, q.position, t);
       if (p.flight && q.flight) {
         out.flight.position = out.position;

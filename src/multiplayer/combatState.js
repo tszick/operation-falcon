@@ -45,6 +45,9 @@ export function packTarget(t) {
     'retired',
     'aiControlled',
     'rangeTarget',
+    'home',
+    'displayCallSign',
+    'remoteHome',
   ])
     if (t[key] !== undefined) out[key] = t[key];
   if (t.aiControlled)

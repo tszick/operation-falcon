@@ -221,6 +221,7 @@ export class FlightInstrumentLayer {
       this.records = new Map();
       this.messageRecords = new Map();
       this.canvasRevisions = new WeakMap();
+      this.canvasTextures = new WeakMap();
       this.dirty = new Set();
       this.observer = new MutationObserver((changes) => {
         for (const change of changes) {
@@ -296,12 +297,19 @@ export class FlightInstrumentLayer {
       this.imageRevision = imageRevision;
       for (const region of regions) this.dirty.add(region);
     }
+    // Resizing destroys the old source texture. Any retained panel referencing
+    // it must be rebuilt before submission, even if the normal redraw budget expires.
+    const urgent = new Set();
     // Canvas pixels can change without a DOM mutation (for example moving radar contacts).
     for (const canvas of this.root.querySelectorAll('canvas')) {
       const source = drawingContext(canvas);
       source.surface.textureOnly = true;
       source.flush();
-      if (this.canvasRevisions.get(canvas) !== source.surface.revision) {
+      const textureChanged = this.canvasTextures.get(canvas) !== source.surface.target;
+      this.canvasTextures.set(canvas, source.surface.target);
+      if (textureChanged)
+        for (const region of regions) if (region.contains(canvas)) urgent.add(region);
+      if (textureChanged || this.canvasRevisions.get(canvas) !== source.surface.revision) {
         this.canvasRevisions.set(canvas, source.surface.revision);
         for (const region of regions) if (region.contains(canvas)) this.dirty.add(region);
       }
@@ -314,7 +322,7 @@ export class FlightInstrumentLayer {
       initial = [...this.records.values()].every((record) => !record);
     const costs = [];
     // Spread DOM reads and tessellation over frames rather than making one 10 Hz spike.
-    for (const region of this.dirty) {
+    for (const region of new Set([...urgent, ...this.dirty])) {
       this.dirty.delete(region);
       if (!this.records.has(region)) continue;
       const regionStart = performance.now();
@@ -323,7 +331,8 @@ export class FlightInstrumentLayer {
       changed = true;
       painted++;
       costs.push([region.id || region.className, performance.now() - regionStart]);
-      if (!initial && performance.now() - start >= 3) break;
+      urgent.delete(region);
+      if (!initial && !urgent.size && performance.now() - start >= 3) break;
     }
     if (changed) {
       context.clearRect(0, 0, pixelWidth, pixelHeight);

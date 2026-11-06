@@ -134,6 +134,7 @@ export class EnemyCombat {
     t.pitch = Math.atan2(t.velocity.y, speed);
   }
   launch(kind, t, s, w, u, solution = null) {
+    if (w.projectiles.length >= this.projectileLimit) return false;
     const ground = t.kind === 'ground',
       airToGround = !ground && s.kind === 'ground',
       origin =
@@ -203,7 +204,7 @@ export class EnemyCombat {
     }
     w.projectiles.push({
       id: ++w.sequence,
-      owner: t.team === 'ally' ? 'ally' : 'enemy',
+      owner: t.team || 'enemy',
       type: kind === 'missile' ? (airToGround ? 'agm' : 'aam') : kind,
       profile,
       targetPlayer: !s.id || !!s.playerControlled,
@@ -223,7 +224,7 @@ export class EnemyCombat {
       type: kind === 'missile' ? 'missile-launch' : 'gun',
       position: origin.clone(),
       weapon: kind === 'missile' && airToGround ? 'agm' : kind,
-      owner: t.team === 'ally' ? 'ally' : 'enemy',
+      owner: t.team || 'enemy',
       projectileId: w.sequence,
       sourceId: t.id,
       targetId: s.id || 'PLAYER',
@@ -258,10 +259,7 @@ export class EnemyCombat {
   defensiveFire(t, player, targets, w, u, dt) {
     u.gun -= dt;
     if (u.gun > 0 || u.rounds <= 0 || w.projectiles.length >= this.projectileLimit) return;
-    if (
-      w.projectiles.filter((p) => p.owner === (t.team === 'ally' ? 'ally' : 'enemy')).length >= 220
-    )
-      return;
+    if (w.projectiles.filter((p) => p.owner === (t.team || 'enemy')).length >= 220) return;
     const solution = defensiveFireSolution(t, player, targets);
     u.defensiveTargetId = solution ? solution.target.id || 'PLAYER' : null;
     if (!solution) {
@@ -522,7 +520,7 @@ export class EnemyCombat {
             position = t.position.clone().add(new Vec3(0, -2, 0));
           w.projectiles.push({
             id: ++w.sequence,
-            owner: t.team === 'ally' ? 'ally' : 'enemy',
+            owner: t.team || 'enemy',
             type: 'bomb',
             profile,
             position,
@@ -540,7 +538,7 @@ export class EnemyCombat {
           w.emit({
             type: 'bomb-release',
             position,
-            owner: t.team === 'ally' ? 'ally' : 'enemy',
+            owner: t.team || 'enemy',
             projectileId: w.sequence,
             sourceId: t.id,
             targetId: s.id,
@@ -631,7 +629,7 @@ export class EnemyCombat {
         missileStores.missiles > 0 &&
         u.lock >= (source.spec.lockTime ?? 2) &&
         u.missile <= 0 &&
-        countProjectiles(t.team === 'ally' ? 'ally' : 'enemy', true) < 6
+        countProjectiles(t.team || 'enemy', true) < 6
       ) {
         const finalStatus = guidedLaunchStatus(source, s, missileProfile),
           decision = aiMissileDecision(missileStores, finalStatus, defensePriority);
@@ -646,7 +644,7 @@ export class EnemyCombat {
           u.missile = 12 + this.random(u) * 5;
         }
       }
-      if (countProjectiles(t.team === 'ally' ? 'ally' : 'enemy') >= 220) continue;
+      if (countProjectiles(t.team || 'enemy') >= 220) continue;
       if (
         types.includes('flak') &&
         u.shells > 0 &&

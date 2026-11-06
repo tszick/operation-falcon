@@ -45,9 +45,18 @@
   display: block;
   margin: 18px 0 6px;
 }
-.multiplayer button,
-.multiplayer select,
-.multiplayer input {
+.multiplayer
+  :is(
+    #network-lobby,
+    #network-preflight,
+    #network-flight,
+    #network-players,
+    #network-spectator,
+    .network-tactical
+  )
+  button,
+.multiplayer :is(#network-lobby, #network-preflight) select,
+.multiplayer :is(#network-lobby, #network-preflight) input {
   font: inherit;
   padding: 11px 14px;
   border: 1px solid #71955d;
@@ -59,10 +68,28 @@
   width: 100%;
   margin-bottom: 16px;
 }
-.multiplayer button {
+.multiplayer
+  :is(
+    #network-lobby,
+    #network-preflight,
+    #network-flight,
+    #network-players,
+    #network-spectator,
+    .network-tactical
+  )
+  button {
   cursor: pointer;
 }
-.multiplayer button:disabled {
+.multiplayer
+  :is(
+    #network-lobby,
+    #network-preflight,
+    #network-flight,
+    #network-players,
+    #network-spectator,
+    .network-tactical
+  )
+  button:disabled {
   opacity: 0.5;
   cursor: wait;
 }
@@ -80,40 +107,28 @@
 }
 #network-flight {
   position: fixed;
-  z-index: 2;
-  bottom: 20px;
-  left: 20px;
-  padding: 12px 16px;
-  width: min(820px, calc(100% - 40px));
-  box-sizing: border-box;
-  border-top: 2px solid #baf37d;
-  background: #071a15ed;
-  font-size: 14px;
+  inset: 7px 20px auto auto;
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
 }
 #network-flight[hidden],
 #network-lobby[hidden] {
   display: none;
 }
 .network-room strong {
-  font-size: 24px;
-  letter-spacing: 3px;
   color: #ffe397;
-  margin: 0 12px;
+  letter-spacing: 2px;
+  margin: 0 8px;
 }
 #network-roster {
-  color: #64d7ff;
+  color: #75d4f4;
 }
-#network-flight details {
-  max-height: 140px;
-  overflow: auto;
-  margin: 12px 0;
-}
-#network-flight summary {
-  cursor: pointer;
-}
-#network-warning {
-  color: #ffbc83;
-  margin: 5px 0;
+#network-leave {
+  padding: 3px 8px;
+  font-size: 12px;
 }
 #network-status {
   position: fixed;
@@ -142,101 +157,6 @@
     max-height: 78vh;
     padding: 20px;
   }
-}
-
-#network-weapons {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 5px;
-}
-#network-weapons button {
-  font-size: 12px;
-  padding: 7px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-#network-weapons .selected {
-  color: #ffe397;
-  border-color: #ffe397;
-  background: #373b1d;
-}
-.network-combat-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 0;
-}
-.network-combat-actions button {
-  padding: 7px;
-}
-#network-lock,
-#network-fire-status,
-#network-range {
-  font-size: 13px;
-}
-#network-fire-status {
-  color: #ffe397;
-  margin: 6px 0;
-}
-#network-range {
-  margin: 6px 0;
-  color: #64d7ff;
-}
-
-#network-combat-notice {
-  color: #ff8b7d;
-  font-weight: bold;
-  font-size: 13px;
-  margin: 5px 0;
-}
-#network-combat-notice:empty {
-  display: none;
-}
-
-#network-instruments {
-  margin: 7px 0;
-  font-size: 13px;
-}
-.network-combat-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
-}
-.network-flight-footer {
-  display: flex;
-  align-items: start;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 8px;
-}
-#network-flight .network-flight-footer details {
-  margin: 4px 0;
-}
-#network-leave {
-  padding: 6px 9px;
-  font-size: 12px;
-  flex-shrink: 0;
-}
-#network-lock {
-  font-size: 12px;
-}
-@media (max-width: 600px) {
-  .network-combat-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-  #network-flight {
-    padding: 10px;
-  }
-}
-
-#network-ai-status {
-  margin: 4px 0;
-  color: #ffbc83;
-  font-size: 12px;
 }
 
 #network-mission {
@@ -347,4 +267,125 @@
 
 #network-preflight button {
   padding: 8px 10px;
+}
+
+body.multiplayer.flying #network-status {
+  display: none;
+}
+body.multiplayer #network-mission:not([hidden]) {
+  position: fixed;
+  top: 14vh;
+  left: 25vw;
+  width: 50vw;
+  max-height: 52vh;
+  overflow: auto;
+  background: #071a15f5;
+  padding: 20px;
+  border: 1px solid #9cce77;
+}
+.network-tactical {
+  color: #c4ef96;
+  background: #071a15f5;
+  border: 1px solid #749a65;
+  width: min(900px, 90vw);
+  max-height: 85vh;
+  overflow: auto;
+}
+.network-tactical::backdrop {
+  background: #0009;
+}
+.network-tactical canvas {
+  width: 100%;
+  max-height: 55vh;
+  object-fit: contain;
+}
+.network-tactical button {
+  float: right;
+}
+
+#network-players {
+  position: fixed;
+  top: 60px;
+  right: 18px;
+  z-index: 8;
+  width: min(440px, 90vw);
+  padding: 14px;
+  background: #071a15f5;
+  border: 1px solid #71955d;
+}
+#network-players[hidden],
+#network-spectator[hidden],
+#network-rematch[hidden] {
+  display: none;
+}
+#network-players h2 {
+  font-size: 16px;
+  margin: 0 0 10px;
+}
+#network-players ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+#network-players li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid #32563d;
+  font-size: 13px;
+}
+#network-players li[data-state='lost'] {
+  color: #ff8b7d;
+}
+#network-players li[data-state='ai'] {
+  color: #ffe397;
+}
+#network-spectator {
+  position: fixed;
+  z-index: 7;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #071a15ef;
+  border: 1px solid #71955d;
+  padding: 10px;
+  text-align: center;
+}
+#network-spectator small {
+  display: block;
+  margin-top: 6px;
+}
+body.spectating #cockpit,
+body.spectating #warning,
+body.spectating #combat-messages,
+body.spectating #flight-message-feed {
+  display: none;
+}
+body.multiplayer #network-mission table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+#network-mission th,
+#network-mission td {
+  padding: 8px;
+  border-bottom: 1px solid #32563d;
+  text-align: left;
+}
+#network-mission caption {
+  text-align: left;
+  margin: 12px 0;
+  font-weight: bold;
+}
+#network-mission .network-winner {
+  color: #ffe397;
+}
+#network-rematch {
+  color: #ffe397;
+}
+
+body.multiplayer.flying #network-status[data-error='true'] {
+  display: block;
 }

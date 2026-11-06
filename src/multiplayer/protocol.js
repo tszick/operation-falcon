@@ -1,7 +1,8 @@
-export const PROTOCOL_VERSION = 5;
+export const PROTOCOL_VERSION = 8;
 export const MULTIPLAYER_PATH = '/multiplayer';
-export const roomScenarios = ['range', 'combat', 'cooperative'];
-export const ROOM_CAPACITY = 2;
+export const roomScenarios = ['range', 'combat', 'cooperative', 'arena'];
+export const ROOM_CAPACITY = 5;
+export const SNAPSHOT_BYTES_LIMIT = 256 * 1024;
 export const NETWORK_STEP = 1 / 120;
 export const SNAPSHOT_INTERVAL = 6;
 export const INPUT_BATCH_LIMIT = 12;
@@ -10,7 +11,15 @@ export const weaponChoices = ['gun', 'aam', 'agm', 'bomb'];
 export const PROJECTILE_LIMIT = 192;
 export const EVENT_LIMIT = 128;
 export const aircraftChoices = ['f16', 'fa18'];
-export const toggleKeys = ['gear', 'flaps', 'airbrake', 'afterburner', 'assist'];
+export const toggleKeys = [
+  'gear',
+  'flaps',
+  'airbrake',
+  'afterburner',
+  'assist',
+  'landing',
+  'landingGuide',
+];
 export function validRoomCode(code) {
   return typeof code === 'string' && /^[A-HJ-NP-Z2-9]{6}$/.test(code);
 }

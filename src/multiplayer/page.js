@@ -1,9 +1,13 @@
+import { Spectator } from './spectator.js';
+import { PlayersView } from './playersView.js';
+import { MultiplayerDiagnostics } from './diagnostics.js';
 import { PreflightView } from './preflightView.js';
-import { renderRoomMission, missionFlightNotice } from './missionView.js';
+import { renderRoomMission } from './missionView.js';
 import { MultiplayerClient } from './client.js';
 import { aircraftChoices, NETWORK_STEP, neutralAxes, validRoomCode } from './protocol.js';
 import { Renderer } from '../renderer.js';
-import { weaponLabel } from '../armament.js';
+import { FlightInstrumentLayer } from '../rendering/flightInstrumentLayer.js';
+import { MultiplayerHUD } from './hudView.js';
 import { weaponChoices } from './protocol.js';
 import { Targeting } from '../targeting.js';
 import { catalogLabel } from '../equipmentCatalog.js';
@@ -13,9 +17,11 @@ import { HeadLook } from '../headLook.js';
 import { HeadLookInput } from '../headLookInput.js';
 import { tr } from '../i18n.js';
 const $ = (id) => document.getElementById(id);
+const diagnostics = MultiplayerDiagnostics.open();
 const keys = new Set(),
   toggles = new Set();
 let renderer,
+  flightInstruments,
   headInput,
   client,
   active = false,
@@ -23,17 +29,53 @@ let renderer,
 let last = performance.now(),
   accumulator = 0,
   uiTime = 0;
+let pilotConnections = new Map();
 let seenCombatEvent = 0,
   combatNotice = null;
 let requestedWeapon = 'gun',
   cycleTarget = false,
-  firePulse = false,
   dispense = false;
 let correction = new Vec3(),
   rotationCorrection = new Quat();
 const head = new HeadLook(),
   weapons = { selected: 'gun', projectiles: [], trails: [], effects: [], solution: null },
   aim = new Targeting();
+const spectator = new Spectator();
+const canControl = () =>
+  active &&
+  client?.prediction.simulating &&
+  !client.prediction.state?.dying &&
+  !client.prediction.state?.crashed;
+const playersView = new PlayersView($('network-players'), (id) => {
+  if (
+    spectator.choose(
+      id,
+      client.latest,
+      client.id,
+      client.latest.players.find((p) => p.id === client.id)?.state,
+    )
+  )
+    releaseControls();
+});
+const hud = new MultiplayerHUD({
+  toggle: (key) => {
+    if (canControl()) toggles.add(key);
+  },
+  countermeasures: () => {
+    if (canControl()) dispense = true;
+  },
+  cycle: () => {
+    if (canControl()) cycleTarget = true;
+  },
+  weapon: (type) => {
+    if (canControl()) requestedWeapon = type;
+  },
+  release: () => releaseControls(),
+  brake: (down) => {
+    if (down && canControl()) keys.add('ControlLeft');
+    else keys.delete('ControlLeft');
+  },
+});
 const preflight = new PreflightView($('network-preflight'), (message) => client.send(message));
 preflight.onLeave = () => client?.disconnect();
 addEventListener('falcon:languagechange', () => preflight.refreshLanguage());
@@ -44,8 +86,12 @@ const statusText = {
   'not-host': 'A küldetést csak a szobagazda változtathatja.',
   'server-full': 'A szerver megtelt. Próbáld később.',
   'room-missing': 'Nincs ilyen szoba. Ellenőrizd a kódot.',
-  'room-full': 'A szobában már két pilóta repül.',
+  'room-full': 'A szobában már öt pilóta repül.',
+  'session-invalid': 'A mentett munkamenet már nem érvényes. Hozz létre új szobát.',
+  'round-active': 'Az új menet csak a befejezett kör után indítható.',
+  'not-ready': 'Legalább két pilóta és mindenki készültsége szükséges az induláshoz.',
   'room-started': 'Ez a közös küldetés már elindult. Új bevetéshez hozzatok létre új szobát.',
+  'connection-timeout': 'A szerver nem válaszolt időben. Próbálj újra kapcsolódni.',
   'connection-error': 'Nem sikerült kapcsolódni a játékszerverhez.',
 };
 for (const id of aircraftChoices) {
@@ -54,7 +100,8 @@ for (const id of aircraftChoices) {
   option.textContent = catalogLabel('aircraft', id);
   $('network-aircraft').append(option);
 }
-function status(text) {
+function status(text, error = false) {
+  $('network-status').dataset.error = String(error);
   $('network-status').textContent = tr(text);
 }
 function busy(value) {
@@ -70,10 +117,12 @@ function busy(value) {
 }
 async function setupRenderer() {
   if (renderer) return renderer.ready;
+  await hud.mount();
   renderer = new Renderer($('network-world'));
   renderer.surfaceMode = 'grass';
   renderer.surfaceLines = false;
   renderer.headLook = head;
+  diagnostics?.bindRenderer(renderer);
   headInput = new HeadLookInput($('network-world'), head, document, {
     canLook: () => active && !client?.prediction.state?.crashed,
   });
@@ -83,10 +132,22 @@ async function setupRenderer() {
   addEventListener('mousemove', (e) => headInput.move(e, performance.now() / 1000));
   addEventListener('resize', () => renderer.resize());
   await renderer.ready;
+  flightInstruments = new FlightInstrumentLayer(renderer);
 }
 function snapshotReceived(msg) {
   const own = msg.players.find((p) => p.id === client.id);
-  $('network-roster').textContent = `${own.callSign} · ${msg.players.length}/2`;
+  if (renderer) renderer.surfaceMode = msg.world?.surface || 'grass';
+  const bots = msg.players.filter((p) => !p.connected).length;
+  $('network-roster').textContent =
+    `${own.callSign} · ${msg.players.length}/5${bots ? ' · AI ' + bots : ''}`;
+  for (const p of msg.players) {
+    if (pilotConnections.get(p.id) === true && !p.connected)
+      combatNotice = {
+        text: p.callSign + ' · ' + tr('AI átvette az irányítást.'),
+        until: performance.now() + 6000,
+      };
+  }
+  pilotConnections = new Map(msg.players.map((p) => [p.id, p.connected]));
   Object.assign(aim, own.combat.aim);
   weapons.selected = own.combat.selected;
   if (active)
@@ -104,6 +165,17 @@ function snapshotReceived(msg) {
   seenCombatEvent = msg.combat.eventSequence;
   preflight.update({ ...msg, code: client.code }, client.id);
   $('network-flight').hidden = msg.mission?.phase === 'waiting';
+  hud.show(msg.mission?.phase !== 'waiting');
+  playersView.update(msg, client.id, spectator, own.state);
+  const ended = ['success', 'failed'].includes(msg.mission?.phase);
+  $('network-rematch').hidden = !ended;
+  $('network-rematch').disabled = msg.lobby?.hostId !== client.id;
+  $('network-rematch').title = tr(
+    msg.lobby?.hostId === client.id
+      ? 'Vissza az előszobába'
+      : 'A szobagazda indítja az új menetet.',
+  );
+  if (!ended || (own.state.dying && !own.state.crashed)) $('network-mission').hidden = true;
 }
 async function connect(mode) {
   if (connecting || active) return;
@@ -117,13 +189,39 @@ async function connect(mode) {
   status('Kapcsolódás…');
   try {
     await setupRenderer();
+    releaseControls();
+    preflight.reset();
+    renderer.wreckOffset = null;
+    document.body.classList.remove('spectating', 'wreck-view');
     client = new MultiplayerClient({
+      reconnectDelays: [1000, 2000, 4000],
+      onReconnecting: ({ attempt, total }) => {
+        active = false;
+        releaseControls();
+        busy(true);
+        hud.show(false);
+        preflight.reset();
+        $('network-preflight').hidden = true;
+        $('network-flight').hidden = false;
+        $('network-mission').hidden = true;
+        $('network-rematch').hidden = true;
+        $('network-players').hidden = true;
+        $('network-spectator').hidden = true;
+        status(`Kapcsolat helyreállítása · ${attempt}/${total} · A gépedet az AI vezeti.`);
+      },
       onWelcome: (msg) => {
+        failure = '';
+        renderer.wreckOffset = null;
+        document.body.classList.remove('spectating', 'wreck-view');
         $('network-scenario').value = msg.scenario;
         requestedWeapon = msg.players.find((p) => p.id === msg.id).combat.selected;
-        cycleTarget = firePulse = dispense = false;
+        cycleTarget = dispense = false;
         seenCombatEvent = msg.combat.eventSequence;
         combatNotice = null;
+        hud.reset();
+        spectator.reset();
+        pilotConnections = new Map();
+        $('network-code').value = msg.code;
         active = true;
         busy(false);
         accumulator = 0;
@@ -135,9 +233,30 @@ async function connect(mode) {
         $('network-flight').hidden = msg.mission?.phase === 'waiting';
         $('network-room-code').textContent = msg.code;
         snapshotReceived(msg);
-        status('Közös légtér · hang nélkül');
+        status(msg.resumed ? 'Visszavetted a géped irányítását.' : 'Közös légtér · hang nélkül');
+        if (msg.resumed)
+          combatNotice = {
+            text: 'Visszavetted a géped irányítását.',
+            until: performance.now() + 6000,
+          };
       },
       onSnapshot: snapshotReceived,
+      onRound: (msg) => {
+        releaseControls();
+        spectator.reset();
+        preflight.reset();
+        hud.reset();
+        correction = new Vec3();
+        rotationCorrection = new Quat();
+        renderer.thirdPerson = renderer.cinematic = false;
+        renderer.wreckOffset = null;
+        requestedWeapon = msg.players.find((p) => p.id === client.id).combat.selected;
+        seenCombatEvent = msg.combat.eventSequence;
+        combatNotice = null;
+        accumulator = 0;
+        document.body.classList.remove('spectating', 'wreck-view');
+        $('network-spectator').hidden = true;
+      },
       onReconcile: (before, after) => {
         correction = before.position.clone().add(correction).sub(after.position);
         if (correction.length() > 100) correction = new Vec3();
@@ -155,7 +274,7 @@ async function connect(mode) {
       },
       onStatus: (code) => {
         failure = statusText[code] || 'Nem sikerült kapcsolódni a játékszerverhez.';
-        status(failure);
+        status(failure, true);
         if (active && client.latest?.mission?.phase === 'waiting') preflight.reject(failure);
         if (!active) {
           client.disconnect();
@@ -169,7 +288,12 @@ async function connect(mode) {
         busy(false);
         $('network-lobby').hidden = false;
         $('network-flight').hidden = true;
+        hud.show(false);
         $('network-preflight').hidden = true;
+        $('network-players').hidden = true;
+        $('network-players-toggle').setAttribute('aria-expanded', 'false');
+        $('network-spectator').hidden = true;
+        document.body.classList.remove('spectating');
         status(failure || 'A kapcsolat lezárult. Újra csatlakozhatsz a szobakóddal.');
       },
     });
@@ -185,37 +309,63 @@ async function connect(mode) {
     console.error(error);
   }
 }
+try {
+  $('network-code').value = sessionStorage.getItem('falcon-last-room') || '';
+} catch {
+  /* Storage is optional. */
+}
 $('network-create').addEventListener('click', () => connect('create'));
 $('network-join').addEventListener('click', () => connect('join'));
 $('network-code').addEventListener('keydown', (e) => {
+  if (
+    active &&
+    ['BracketLeft', 'BracketRight'].includes(e.code) &&
+    !e.target.closest?.('input,select')
+  ) {
+    e.preventDefault();
+    if (!e.repeat) cycleSpectator(e.code === 'BracketLeft' ? -1 : 1);
+    return;
+  }
   if (e.key === 'Enter') connect('join');
 });
-$('network-leave').addEventListener('click', () => client?.disconnect());
-for (const [index, type] of weaponChoices.entries()) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.dataset.weapon = type;
-  button.textContent = String(index + 1);
-  button.addEventListener('click', () => {
-    requestedWeapon = type;
-  });
-  $('network-weapons').append(button);
+$('network-rematch').addEventListener('click', () => {
+  if (!client?.latest?.lobby) return;
+  releaseControls();
+  $('network-rematch').disabled = true;
+  client.send({ type: 'rematch', revision: client.latest.lobby.revision });
+});
+$('network-players-toggle').addEventListener('click', () => {
+  const panel = $('network-players');
+  panel.hidden = !panel.hidden;
+  $('network-players-toggle').setAttribute('aria-expanded', String(!panel.hidden));
+});
+function cycleSpectator(direction) {
+  if (!client?.latest) return;
+  spectator.cycle(
+    direction,
+    client.latest,
+    client.id,
+    client.latest.players.find((p) => p.id === client.id)?.state,
+  );
+  releaseControls();
 }
-$('network-target').addEventListener('click', () => {
-  cycleTarget = true;
-});
-$('network-fire').addEventListener('click', () => {
-  firePulse = true;
-});
+$('spectator-prev').addEventListener('click', () => cycleSpectator(-1));
+$('spectator-next').addEventListener('click', () => cycleSpectator(1));
+$('network-leave').addEventListener('click', () => client?.disconnect());
 const toggleMap = {
   KeyG: 'gear',
   KeyX: 'flaps',
   KeyB: 'airbrake',
   KeyL: 'assist',
+  KeyN: 'landing',
+  KeyI: 'landingGuide',
   ShiftLeft: 'afterburner',
   ShiftRight: 'afterburner',
 };
 const flightKeys = new Set([
+  'Digit0',
+  'KeyO',
+  'KeyH',
   'Space',
   'Tab',
   'KeyT',
@@ -242,6 +392,15 @@ const flightKeys = new Set([
 ]);
 addEventListener('keydown', (e) => {
   if (
+    active &&
+    ['BracketLeft', 'BracketRight'].includes(e.code) &&
+    !e.target.closest?.('input,select')
+  ) {
+    e.preventDefault();
+    if (!e.repeat) cycleSpectator(e.code === 'BracketLeft' ? -1 : 1);
+    return;
+  }
+  if (
     !active ||
     !client?.prediction.simulating ||
     !flightKeys.has(e.code) ||
@@ -249,6 +408,13 @@ addEventListener('keydown', (e) => {
   )
     return;
   e.preventDefault();
+  if (!e.repeat && e.code === 'Digit0') hud.zoomIn();
+  if (!e.repeat && e.code === 'KeyO') {
+    releaseControls();
+    hud.toggleMap();
+  }
+  if (!e.repeat && e.code === 'KeyH') hud.guide(document.getElementById('phase-guide').hidden);
+  if (!canControl()) return;
   keys.add(e.code);
   if (!e.repeat && toggleMap[e.code]) toggles.add(toggleMap[e.code]);
   if (!e.repeat && ['Tab', 'KeyT'].includes(e.code)) cycleTarget = true;
@@ -259,7 +425,7 @@ addEventListener('keyup', (e) => keys.delete(e.code));
 function releaseControls() {
   keys.clear();
   toggles.clear();
-  cycleTarget = firePulse = dispense = false;
+  cycleTarget = dispense = false;
   headInput?.release();
 }
 addEventListener('blur', releaseControls);
@@ -277,10 +443,10 @@ function input() {
     brake: !!pressed('ControlLeft', 'ControlRight'),
   };
 }
-function targetsAt(now) {
+function targetsAt(now, excludedId = client.id) {
   const time = client.latest.time + (now - client.receivedAt) / 1000 - 0.1;
   return client.latest.players
-    .filter((p) => p.id !== client.id)
+    .filter((p) => p.id !== excludedId)
     .flatMap((p) => {
       const s = client.history.sample(p.id, time);
       if (!s) return [];
@@ -289,37 +455,44 @@ function targetsAt(now) {
           id: p.id,
           type: 'fighter',
           kind: 'air',
-          team: 'ally',
+          team: client.latest.scenario === 'arena' ? 'enemy' : 'ally',
           aircraftId: s.spec.id,
           displayCallSign: p.callSign,
           position: s.position,
           velocity: s.velocity,
           flight: s,
           defense: s,
-          alive: !s.crashed,
-          falling: s.dying,
+          alive: !s.crashed && !s.dying,
+          falling: s.dying && !s.crashed,
           radius: 28,
         },
       ];
     });
 }
 function frame(now) {
-  const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
+  const frameStart = performance.now(),
+    frameMs = Math.max(0, now - last);
+  const dt = Math.min(0.1, frameMs / 1000);
   last = now;
   if (active && client.latest && renderer) {
     accumulator += dt;
     while (accumulator >= NETWORK_STEP) {
       if (!client.stale)
-        client.prediction.step(document.hidden ? neutralAxes() : input(), [...toggles], {
-          weapon: requestedWeapon,
-          fire: !document.hidden && (keys.has('Space') || firePulse),
-          cycle: !document.hidden && cycleTarget,
-          countermeasures: !document.hidden && dispense,
-        });
-      cycleTarget = firePulse = dispense = false;
+        client.prediction.step(
+          document.hidden || !canControl() ? neutralAxes() : input(),
+          canControl() ? [...toggles] : [],
+          {
+            weapon: requestedWeapon,
+            fire: canControl() && !document.hidden && keys.has('Space'),
+            cycle: canControl() && !document.hidden && cycleTarget,
+            countermeasures: canControl() && !document.hidden && dispense,
+          },
+        );
+      cycleTarget = dispense = false;
       toggles.clear();
       accumulator -= NETWORK_STEP;
     }
+    const simulationEnd = performance.now();
     head.update(dt, now / 1000);
     const s = client.prediction.state;
     correction.scale(Math.exp(-dt / 0.12));
@@ -333,6 +506,7 @@ function frame(now) {
       position: s.position.clone().add(correction),
       orientation: rotationCorrection.clone().multiply(s.orientation),
     };
+    let targets = [];
     try {
       const renderTime = client.latest.time + (now - client.receivedAt) / 1000 - 0.1;
       const combat = client.combat.sample(renderTime);
@@ -341,76 +515,68 @@ function frame(now) {
         effects: combat.effects,
         trails: combat.trails,
       });
-      renderer.render(view, [...targetsAt(now), ...combat.targets], weapons, aim);
+      const own = client.latest.players.find((p) => p.id === client.id);
+      const available = spectator.update(client.latest, client.id, own.state);
+      const observed = spectator.id && client.history.sample(spectator.id, renderTime);
+      const observing = !!observed;
+      renderer.thirdPerson = renderer.cinematic = observing;
+      document.body.classList.toggle('spectating', observing);
+      $('network-spectator').hidden =
+        !own.state.crashed || client.latest.mission?.phase === 'waiting';
+      const spectatorLabel =
+        tr(observing ? 'MEGFIGYELÉS' : 'Nincs megfigyelhető pilóta') +
+        (observing
+          ? ' · ' + client.latest.players.find((p) => p.id === spectator.id).callSign
+          : '');
+      if ($('spectator-label').textContent !== spectatorLabel)
+        $('spectator-label').textContent = spectatorLabel;
+      $('spectator-prev').disabled = $('spectator-next').disabled = available.length < 2;
+      targets = [...targetsAt(now, observing ? spectator.id : client.id), ...combat.targets];
+      renderer.render(observed || view, targets, weapons, aim);
     } catch (error) {
       active = false;
       client.disconnect();
       status('A repülési nézet nem indítható. Ellenőrizd a böngésző grafikus támogatását.');
       console.error(error);
     }
+    const renderEnd = performance.now();
     uiTime += dt;
+    let hudMs = 0;
     if (uiTime > 0.15) {
+      const hudStarted = performance.now();
       uiTime = 0;
-      $('network-instruments').textContent =
-        `${Math.round(s.ias * 3.6)} km/h · ${Math.round(s.position.y)} m · ${tr('Üzemanyag')} ${Math.round((s.fuel / s.spec.fuelCapacity) * 100)}% · ${s.g.toFixed(1)} G · ${tr('Gép állapota')} ${Math.round(100 - s.damage)}% · ${client.rtt === null ? '—' : Math.round(client.rtt)} ms`;
       const own = client.latest.players.find((p) => p.id === client.id);
-      for (const button of $('network-weapons').querySelectorAll('button')) {
-        const type = button.dataset.weapon;
-        button.textContent = `${weaponChoices.indexOf(type) + 1} · ${tr(weaponLabel(s, type))} · ${s.ammo[type] ?? 0}`;
-        button.classList.toggle('selected', type === own.combat.selected);
-        button.setAttribute('aria-pressed', String(type === own.combat.selected));
-      }
-      const lock = own.combat.aim;
-      $('network-lock').textContent = lock.id
-        ? `${tr(lock.locked ? 'CÉL BEFOGVA' : 'CÉLBEFOGÁS')} · ${Math.round(Math.min(1, lock.progress / s.spec.lockTime) * 100)}%`
-        : tr('Nincs kijelölt cél');
-      $('network-fire-status').textContent = tr(own.combat.feedback);
-      $('network-combat-notice').textContent =
-        combatNotice && now < combatNotice.until ? tr(combatNotice.text) : '';
-      renderRoomMission($('network-mission'), client.latest.mission);
-      for (const id of ['network-target', 'network-fire'])
-        $(id).disabled = !client.prediction.simulating || s.crashed || s.dying;
-      const completed = client.latest.combat.targets.filter(
-        (t) => t.rangeTarget && !t.alive,
-      ).length;
-      $('network-range').hidden = !!client.latest.mission;
-      $('network-range').textContent =
-        tr(`Gyakorlócélok: ${completed}/2`) +
-        ` · IR ${s.countermeasures.flare} / R ${s.countermeasures.chaff}`;
-      const ai = client.latest.combat.ai;
-      const fighter = client.latest.combat.targets.find((t) => t.aiControlled);
-      const states = {
-        engaging: 'Ellenséges vadász: harcban',
-        evading: 'Ellenséges vadász: kitér',
-        returning: 'Ellenséges vadász: kivonul',
-        withdrawn: 'Ellenséges vadász: elhagyta a légteret',
-        falling: 'Ellenséges vadász: zuhan',
-        destroyed: 'Ellenséges vadász: megsemmisült',
-      };
-      $('network-ai-status').hidden =
-        !ai || (client.latest.mission && client.latest.mission.phase !== 'active');
-      $('network-ai-status').textContent = ai
-        ? tr(
-            ai.remaining > 0
-              ? `Felkészülés a légiharcra: ${Math.ceil(ai.remaining)} s`
-              : states[fighter?.aiState] || 'Ellenséges vadász: harcban',
-          )
-        : '';
-
-      $('network-warning').textContent = tr(
-        client.stale
-          ? 'A kapcsolat késik — a szerver állapotára várunk.'
-          : missionFlightNotice(client.latest.mission, s.crashed) ||
-              (s.crashed
-                ? 'A gép lezuhant. Új géphez lépj ki, majd csatlakozz újra.'
-                : (s.incomingMissiles > 0
-                    ? `RAKÉTA KÖZELEDIK · ${s.incomingMissiles} · C: ELTERELŐ`
-                    : s.warning) ||
-                  (client.latest.players.length < 2
-                    ? 'A második pilótára várunk. Add át neki a szobakódot.'
-                    : 'Két pilóta a közös légtérben.')),
-      );
+      weapons.cooldown = own.combat.cooldown;
+      weapons.gunHeat = own.combat.gunHeat;
+      const notice = client.stale
+        ? 'A kapcsolat késik — a szerver állapotára várunk.'
+        : combatNotice && now < combatNotice.until
+          ? combatNotice.text
+          : '';
+      hud.update(view, targets, weapons, aim, client.latest, client.id, notice);
+      const ended = ['success', 'failed'].includes(client.latest.mission?.phase);
+      const showResult = ended && !(own.state.dying && !own.state.crashed);
+      $('network-mission').hidden = !showResult;
+      if (showResult) renderRoomMission($('network-mission'), client.latest.mission);
+      hudMs = performance.now() - hudStarted;
     }
+    const instrumentStarted = performance.now();
+    flightInstruments?.render();
+    const instrumentMs = performance.now() - instrumentStarted;
+    const frameEnd = performance.now();
+    diagnostics?.frame(
+      {
+        frameMs,
+        hudMs,
+        instrumentMs,
+        cpuMs: frameEnd - frameStart,
+        simulationMs: simulationEnd - frameStart,
+        renderMs: renderEnd - simulationEnd,
+        uiMs: frameEnd - renderEnd,
+      },
+      client,
+      flightInstruments?.metrics,
+    );
   }
   requestAnimationFrame(frame);
 }

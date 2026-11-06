@@ -6141,7 +6141,7 @@
   },
   "VISSZATÉRÉS": {
     "hu": "VISSZATÉRÉS",
-    "en": "RETURN"
+    "en": "RECONNECTING"
   },
   "A harcban használt rakéta- vagy bombakészlet elfogyása, repülőképes súlyos sérülés vagy a ténylegesen számolt üzemanyag 12% alá csökkenése kiszolgálást kérhet. A hordozói támogatást igénylő, már indított rakétát normál lőszerhiánynál előbb kiszolgálja.": {
     "hu": "A harcban használt rakéta- vagy bombakészlet elfogyása, repülőképes súlyos sérülés vagy a ténylegesen számolt üzemanyag 12% alá csökkenése kiszolgálást kérhet. A hordozói támogatást igénylő, már indított rakétát normál lőszerhiánynál előbb kiszolgálja.",
@@ -10390,5 +10390,389 @@
   "Küldetés": {
     "hu": "Küldetés",
     "en": "Mission"
+  },
+  "Saját repülőtér megvédése": {
+    "hu": "Saját repülőtér megvédése",
+    "en": "Protect the friendly airbase"
+  },
+  "Bombázó és két vadász leküzdése": {
+    "hu": "Bombázó és két vadász leküzdése",
+    "en": "Defeat the bomber and two fighters"
+  },
+  "Túlélő pilóták leszállása és megállása": {
+    "hu": "Túlélő pilóták leszállása és megállása",
+    "en": "Surviving pilots land and stop"
+  },
+  "Térjetek vissza a bázisra, szálljatok le és álljatok meg. N: leszállási mód · I: segédív.": {
+    "hu": "Térjetek vissza a bázisra, szálljatok le és álljatok meg. N: leszállási mód · I: segédív.",
+    "en": "Return to base, land and stop. N: landing mode · I: approach guide."
+  },
+  "Védjétek meg a bázist a bombázótól és a két vadásztól.": {
+    "hu": "Védjétek meg a bázist a bombázótól és a két vadásztól.",
+    "en": "Defend the airbase against the bomber and two fighters."
+  },
+  "Saját reptér": {
+    "hu": "Saját reptér",
+    "en": "Friendly airbase"
+  },
+  "Támadók leküzdve": {
+    "hu": "Támadók leküzdve",
+    "en": "Attackers neutralized"
+  },
+  "A közös küldetés két pilótával indul. Cél: a vadász leküzdése és a földi céljármű megsemmisítése. A reptérvédő feladatnál felszállás és sikeres visszatérés is szükséges.": {
+    "hu": "A közös küldetés két pilótával indul. Cél: a vadász leküzdése és a földi céljármű megsemmisítése. A reptérvédő feladatnál felszállás és sikeres visszatérés is szükséges.",
+    "en": "Cooperative missions start with two pilots. Strike requires defeating the fighter and ground target. Airbase defense also requires takeoff and a successful return."
+  },
+  "Csapásmérés: a vadász és a földi cél kötelező. Légtérellenőrzés: a földi cél opcionális. A reptérvédő küldetés felszállással indul; a bázis megvédése után a túlélőknek le is kell szállniuk.": {
+    "hu": "Csapásmérés: a vadász és a földi cél kötelező. Légtérellenőrzés: a földi cél opcionális. A reptérvédő küldetés felszállással indul; a bázis megvédése után a túlélőknek le is kell szállniuk.",
+    "en": "Strike requires the fighter and ground target. Air patrol makes the ground target optional. Airbase defense starts on the runway; surviving pilots must land after defending the base."
+  },
+  "W / S: orr le / fel · A / D: döntés · Q / E: oldalkormány · R / F: gázkar · G: futómű · X: fékszárny · B: légfék · L: G-limit · N: leszállási mód · I: leszállási segédív · Shift: utánégető · Ctrl: kerékfék": {
+    "hu": "W / S: orr le / fel · A / D: döntés · Q / E: oldalkormány · R / F: gázkar · G: futómű · X: fékszárny · B: légfék · L: G-limit · N: leszállási mód · I: leszállási segédív · Shift: utánégető · Ctrl: kerékfék",
+    "en": "W / S: pitch down / up · A / D: roll · Q / E: rudder · R / F: throttle · G: gear · X: flaps · B: airbrake · L: G limiter · N: landing mode · I: approach guide · Shift: afterburner · Ctrl: wheel brakes"
+  },
+  "KÖZÖS REPTÉRVÉDELEM": {
+    "hu": "KÖZÖS REPTÉRVÉDELEM",
+    "en": "COOPERATIVE AIRBASE DEFENSE"
+  },
+  "A Védd meg a repteret közös bevetésen a két pilóta a kifutóról indul. Egy bombázó és két vadász támad; a saját bunker, két rakétarendszer és a Falcon Three segít védekezni. A bázis állapota mindkét pilótánál közös.": {
+    "hu": "A Védd meg a repteret közös bevetésen a két pilóta a kifutóról indul. Egy bombázó és két vadász támad; a saját bunker, két rakétarendszer és a Falcon Three segít védekezni. A bázis állapota mindkét pilótánál közös.",
+    "en": "In cooperative airbase defense, both pilots start on the runway. A bomber and two fighters attack; a friendly bunker, two SAM systems and Falcon Three support the defense. Both pilots share the same airbase health."
+  },
+  "A támadók leküzdése után minden még játékban lévő túlélő pilóta szálljon le és álljon meg. N kapcsolja a leszállási módot, I a lila segédívet. A kiesett társ nem akadályozza a túlélő befejezését; a reptér pusztulása viszont vereség. A már kioldott ellenséges bombák a bombázó lelövése után is veszélyesek.": {
+    "hu": "A támadók leküzdése után minden még játékban lévő túlélő pilóta szálljon le és álljon meg. N kapcsolja a leszállási módot, I a lila segédívet. A kiesett társ nem akadályozza a túlélő befejezését; a reptér pusztulása viszont vereség. A már kioldott ellenséges bombák a bombázó lelövése után is veszélyesek.",
+    "en": "After defeating the attackers, every surviving pilot still in the sortie must land and stop. N toggles landing mode; I toggles the purple approach guide. A lost wingman does not prevent the survivor finishing, but airbase destruction causes defeat. Enemy bombs already released remain dangerous after the bomber is shot down."
+  },
+  "Reptérvédelmi harc folyamatban": {
+    "hu": "Reptérvédelmi harc folyamatban",
+    "en": "Airbase defense in progress"
+  },
+  "Legfeljebb öt pilóta, egy légtér. Hozz létre egy szobát, és add át a kódját a társadnak.": {
+    "hu": "Legfeljebb öt pilóta, egy légtér. Hozz létre egy szobát, és add át a kódját a társadnak.",
+    "en": "Up to five pilots, one airspace. Create a room and share its code."
+  },
+  "Aréna · mindenki mindenki ellen": {
+    "hu": "Aréna · mindenki mindenki ellen",
+    "en": "Arena · free for all"
+  },
+  "Aréna · utolsó túlélő": {
+    "hu": "Aréna · utolsó túlélő",
+    "en": "Arena · last survivor"
+  },
+  "Bevetés indítása": {
+    "hu": "Bevetés indítása",
+    "en": "Launch sortie"
+  },
+  "Aréna: minden pilóta ellenfél. Az utolsó túlélő nyer. Nincs pótrepülő.": {
+    "hu": "Aréna: minden pilóta ellenfél. Az utolsó túlélő nyer. Nincs pótrepülő.",
+    "en": "Arena: every other pilot is hostile. The last survivor wins. No respawns."
+  },
+  "Három közös feladat: csapásmérés, légtérellenőrzés és reptérvédelem. A szobagazda választja ki a bevetést.": {
+    "hu": "Három közös feladat: csapásmérés, légtérellenőrzés és reptérvédelem. A szobagazda választja ki a bevetést.",
+    "en": "Three cooperative assignments: strike, interception and airbase defense. The host selects the sortie."
+  },
+  "Még versenyben": {
+    "hu": "Még versenyben",
+    "en": "Still in contention"
+  },
+  "Győztes": {
+    "hu": "Győztes",
+    "en": "Winner"
+  },
+  "Döntetlen": {
+    "hu": "Döntetlen",
+    "en": "Draw"
+  },
+  "Close": {
+    "hu": "Close",
+    "en": "Close"
+  },
+  "AI átvette az irányítást.": {
+    "hu": "AI átvette az irányítást.",
+    "en": "AI has taken control."
+  },
+  "Visszavetted a géped irányítását.": {
+    "hu": "Visszavetted a géped irányítását.",
+    "en": "You have regained control of your aircraft."
+  },
+  "Online repülés: a térkép megnyitása nem állítja meg a játékot.": {
+    "hu": "Online repülés: a térkép megnyitása nem állítja meg a játékot.",
+    "en": "Online flight: opening the map does not pause the game."
+  },
+  "A szobában már öt pilóta repül.": {
+    "hu": "A szobában már öt pilóta repül.",
+    "en": "The room already has five pilots."
+  },
+  "A mentett munkamenet már nem érvényes. Hozz létre új szobát.": {
+    "hu": "A mentett munkamenet már nem érvényes. Hozz létre új szobát.",
+    "en": "Your saved session is no longer valid. Create a new room."
+  },
+  "Legalább két pilóta és mindenki készültsége szükséges az induláshoz.": {
+    "hu": "Legalább két pilóta és mindenki készültsége szükséges az induláshoz.",
+    "en": "At least two pilots and everyone ready are required to launch."
+  },
+  "Minden pilóta túlélte (opcionális)": {
+    "hu": "Minden pilóta túlélte (opcionális)",
+    "en": "All pilots survived (optional)"
+  },
+  "Tartsd a jelzett megközelítési sebességet": {
+    "hu": "Tartsd a jelzett megközelítési sebességet",
+    "en": "Maintain the indicated approach speed"
+  },
+  "Fékezés földet érés után": {
+    "hu": "Fékezés földet érés után",
+    "en": "Brake after touchdown"
+  },
+  "Gázadás a felszálláshoz": {
+    "hu": "Gázadás a felszálláshoz",
+    "en": "Increase thrust for takeoff"
+  },
+  "Emeld fel az orrot a felszállósebességnél": {
+    "hu": "Emeld fel az orrot a felszállósebességnél",
+    "en": "Rotate at takeoff speed"
+  },
+  "Futómű és fékszárny behúzása": {
+    "hu": "Futómű és fékszárny behúzása",
+    "en": "Retract gear and flaps"
+  },
+  "Célkijelölés és befogás": {
+    "hu": "Célkijelölés és befogás",
+    "en": "Select and lock a target"
+  },
+  "Tüzelés lőtávon belül": {
+    "hu": "Tüzelés lőtávon belül",
+    "en": "Fire within weapon range"
+  },
+  "Elterelők közeledő rakéta ellen": {
+    "hu": "Elterelők közeledő rakéta ellen",
+    "en": "Countermeasures against incoming missiles"
+  },
+  "A közös küldetés 2–5 pilótával indul, a szobagazda indítja. Cél: a vadász leküzdése és a földi céljármű megsemmisítése. A reptérvédő feladatnál felszállás és sikeres visszatérés is szükséges.": {
+    "hu": "A közös küldetés 2–5 pilótával indul, a szobagazda indítja. Cél: a vadász leküzdése és a földi céljármű megsemmisítése. A reptérvédő feladatnál felszállás és sikeres visszatérés is szükséges.",
+    "en": "The host launches a cooperative sortie with 2–5 pilots. Destroy the fighter and ground target. Airbase defense also requires takeoff and a successful return."
+  },
+  "Felszerelés- vagy küldetésváltás után mindannyian újra jelezzétek a készültséget.": {
+    "hu": "Felszerelés- vagy küldetésváltás után mindannyian újra jelezzétek a készültséget.",
+    "en": "After changing equipment or assignments, everyone must confirm readiness again."
+  },
+  "Multiplayer · co-op és aréna": {
+    "hu": "Multiplayer · co-op és aréna",
+    "en": "Multiplayer · co-op and arena"
+  },
+  "Legfeljebb öt pilóta, a megszokott cockpit, közös bevetések és mindenki mindenki elleni aréna.": {
+    "hu": "Legfeljebb öt pilóta, a megszokott cockpit, közös bevetések és mindenki mindenki elleni aréna.",
+    "en": "Up to five pilots, the familiar cockpit, cooperative sorties and a free-for-all arena."
+  },
+  "ARÉNA": {
+    "hu": "ARÉNA",
+    "en": "ARENA"
+  },
+  "LESZAKADÁS": {
+    "hu": "LESZAKADÁS",
+    "en": "DISCONNECTION"
+  },
+  "LEZÁRÁS": {
+    "hu": "LEZÁRÁS",
+    "en": "ENDING THE SORTIE"
+  },
+  "Nyisd meg a Multiplayer oldalt ugyanazon a szerveren és porton. Hozz létre szobát, a többiek a hatkarakteres kóddal csatlakozzanak. Legfeljebb öt pilóta fér el.": {
+    "hu": "Nyisd meg a Multiplayer oldalt ugyanazon a szerveren és porton. Hozz létre szobát, a többiek a hatkarakteres kóddal csatlakozzanak. Legfeljebb öt pilóta fér el.",
+    "en": "Open Multiplayer on the same server and port. Create a room and have the others join with its six-character code. Up to five pilots can join."
+  },
+  "Co-opban a meglévő csapásmérés, légtérellenőrzés vagy reptérvédelem választható. Mindenki saját gépet, kompatibilis fegyvereket, gépágyút és 10–100% üzemanyagot állít be. Mentés után mindenki jelezzen készültséget. Legalább két kész pilóta szükséges, majd a szobagazda indít.": {
+    "hu": "Co-opban a meglévő csapásmérés, légtérellenőrzés vagy reptérvédelem választható. Mindenki saját gépet, kompatibilis fegyvereket, gépágyút és 10–100% üzemanyagot állít be. Mentés után mindenki jelezzen készültséget. Legalább két kész pilóta szükséges, majd a szobagazda indít.",
+    "en": "Co-op offers the existing strike, interception and airbase defense assignments. Each pilot chooses an aircraft, compatible weapons, cannon and 10–100% fuel. Save and confirm readiness. At least two ready pilots are required; the host then launches."
+  },
+  "Minden pilóta ellenfél. Külön, azonos magasságú indulópontokról kezdtek a levegőben. Az utolsó túlélő nyer; nincs újraéledés. A szerver kivárja a zuhanásokat, teljes veszteség döntetlen.": {
+    "hu": "Minden pilóta ellenfél. Külön, azonos magasságú indulópontokról kezdtek a levegőben. Az utolsó túlélő nyer; nincs újraéledés. A szerver kivárja a zuhanásokat, teljes veszteség döntetlen.",
+    "en": "Every other pilot is hostile. You start airborne from separate positions at the same altitude. The last survivor wins; there are no respawns. The server waits for falling aircraft to impact. Total losses are a draw."
+  },
+  "Ugyanaz a cockpit és HUD látható, mint egyedül. 1–4: fegyver; T / Tab: célkijelölés és befogás; Space: tűz; C: elterelő. 0: radarzoom; O vagy radarkattintás: nagy taktikai térkép, amely online nem állítja meg a világot. H: segítség.": {
+    "hu": "Ugyanaz a cockpit és HUD látható, mint egyedül. 1–4: fegyver; T / Tab: célkijelölés és befogás; Space: tűz; C: elterelő. 0: radarzoom; O vagy radarkattintás: nagy taktikai térkép, amely online nem állítja meg a világot. H: segítség.",
+    "en": "The cockpit and HUD are the same as in single player. 1–4: weapons; T / Tab: select and lock; Space: fire; C: countermeasures. 0: radar zoom; O or click radar: large tactical map, which does not pause online play. H: help."
+  },
+  "A kifutóról indultok. A bunker, két SAM és Guardian One segít a bombázó és két vadász ellen. A bázis megvédése után minden túlélő pilóta szálljon le és álljon meg. N: leszállási mód; I: lila segédív. A bombázó lelövése után a kioldott bombák még veszélyesek.": {
+    "hu": "A kifutóról indultok. A bunker, két SAM és Guardian One segít a bombázó és két vadász ellen. A bázis megvédése után minden túlélő pilóta szálljon le és álljon meg. N: leszállási mód; I: lila segédív. A bombázó lelövése után a kioldott bombák még veszélyesek.",
+    "en": "Start on the runway. A bunker, two SAMs and Guardian One help defend against a bomber and two fighters. Once the base is safe, every surviving pilot must land and stop. N: landing mode; I: purple guidance path. Released bombs remain dangerous after the bomber is destroyed."
+  },
+  "Co-opban a baráti lövedék, rakéta és bomba is valódi sérülést okoz. Arénában minden másik játékos ellenséges cél. Minden fegyver lőtávját, befogását, lőszerét és találatát a szerver ellenőrzi.": {
+    "hu": "Co-opban a baráti lövedék, rakéta és bomba is valódi sérülést okoz. Arénában minden másik játékos ellenséges cél. Minden fegyver lőtávját, befogását, lőszerét és találatát a szerver ellenőrzi.",
+    "en": "Friendly bullets, missiles and bombs inflict real damage in co-op. In arena, every other player is hostile. The server validates weapon range, locks, ammunition and hits."
+  },
+  "Aktív repülésben az AI átveszi a kilépő vagy leszakadt gép irányítását. Megmarad a sérülés, üzemanyag, lőszer és elterelőkészlet; az AI rendes harci szabályokkal folytatja a repülést. Előszobai távozás felszabadítja a helyet.": {
+    "hu": "Aktív repülésben az AI átveszi a kilépő vagy leszakadt gép irányítását. Megmarad a sérülés, üzemanyag, lőszer és elterelőkészlet; az AI rendes harci szabályokkal folytatja a repülést. Előszobai távozás felszabadítja a helyet.",
+    "en": "During active flight AI takes over an aircraft when its pilot leaves or disconnects. Damage, fuel, ammunition and countermeasures are preserved. AI continues under normal combat rules. Leaving the preflight lobby frees the slot."
+  },
+  "Ugyanazon böngészőlapon, a szobakóddal újra csatlakozva visszakapod az eredeti gépedet az aktuális állapotában. A privát munkamenetet a böngésző tárolja; másik eszközre vagy új böngészőmunkamenetre nem kerül át. A kilépés nem ad új gépet.": {
+    "hu": "Ugyanazon böngészőlapon, a szobakóddal újra csatlakozva visszakapod az eredeti gépedet az aktuális állapotában. A privát munkamenetet a böngésző tárolja; másik eszközre vagy új böngészőmunkamenetre nem kerül át. A kilépés nem ad új gépet.",
+    "en": "Rejoin with the room code in the same browser tab to regain your original aircraft in its current condition. The browser stores the private session; it does not transfer to another device or a new browser session. Leaving does not grant a new aircraft."
+  },
+  "Ha mindenki leszakad, két percig még visszatérhettek. A szerver újraindítása törli a szobákat. A bevetés végén a közös eredmény rögzül; új játékhoz új szoba kell.": {
+    "hu": "Ha mindenki leszakad, két percig még visszatérhettek. A szerver újraindítása törli a szobákat. A bevetés végén a közös eredmény rögzül; új játékhoz új szoba kell.",
+    "en": "If everyone disconnects, you have two minutes to return. Restarting the server clears rooms. Final sortie results are fixed; create a new room for another game."
+  },
+  "A radar, a sérülések, a fegyverkészlet és a célok a saját műszerfaladon látszanak. A világ más játékosokra várva sem áll meg repülés közben.": {
+    "hu": "A radar, a sérülések, a fegyverkészlet és a célok a saját műszerfaladon látszanak. A világ más játékosokra várva sem áll meg repülés közben.",
+    "en": "Your radar, damage, weapons and objectives appear on your own cockpit displays. During flight the world does not pause to wait for other players."
+  },
+  "A próba hang nélkül fut. Nincs felhős AI vagy külső matchmaking. A teljes egyjátékos küldetéskatalógus nincs átemelve a multi módba.": {
+    "hu": "A próba hang nélkül fut. Nincs felhős AI vagy külső matchmaking. A teljes egyjátékos küldetéskatalógus nincs átemelve a multi módba.",
+    "en": "The prototype runs silently. There is no cloud AI or external matchmaking. The complete single-player mission catalogue is not available in multiplayer."
+  },
+  "Indulásra kész. A szobagazda indít.": {
+    "hu": "Indulásra kész. A szobagazda indít.",
+    "en": "Ready for departure. The host launches the sortie."
+  },
+  "Várakozás a pilóták készültségére.": {
+    "hu": "Várakozás a pilóták készültségére.",
+    "en": "Waiting for pilots to confirm readiness."
+  },
+  "Minden másik pilóta ellenfél. Maradj utolsóként a levegőben.": {
+    "hu": "Minden másik pilóta ellenfél. Maradj utolsóként a levegőben.",
+    "en": "Every other pilot is hostile. Be the last survivor."
+  },
+  "ELŐSZOBA": {
+    "hu": "ELŐSZOBA",
+    "en": "PREFLIGHT LOBBY"
+  },
+  "MŰSZERFAL": {
+    "hu": "MŰSZERFAL",
+    "en": "COCKPIT"
+  },
+  "REPTÉRVÉDELEM": {
+    "hu": "REPTÉRVÉDELEM",
+    "en": "AIRBASE DEFENSE"
+  },
+  "Az új menet csak a befejezett kör után indítható.": {
+    "hu": "Az új menet csak a befejezett kör után indítható.",
+    "en": "A new round is available only after the current round has ended."
+  },
+  "Játékosok": {
+    "hu": "Játékosok",
+    "en": "Players"
+  },
+  "Játékoslista": {
+    "hu": "Játékoslista",
+    "en": "Player list"
+  },
+  "Te": {
+    "hu": "Te",
+    "en": "You"
+  },
+  "Szobagazda": {
+    "hu": "Szobagazda",
+    "en": "Host"
+  },
+  "Kapcsolódva": {
+    "hu": "Kapcsolódva",
+    "en": "Connected"
+  },
+  "Zuhan": {
+    "hu": "Zuhan",
+    "en": "Falling"
+  },
+  "AI irányítja": {
+    "hu": "AI irányítja",
+    "en": "AI controlled"
+  },
+  "Megfigyelés": {
+    "hu": "Megfigyelés",
+    "en": "Observe"
+  },
+  "Megfigyelve": {
+    "hu": "Megfigyelve",
+    "en": "Watching"
+  },
+  "Megfigyelőnézet": {
+    "hu": "Megfigyelőnézet",
+    "en": "Spectator view"
+  },
+  "MEGFIGYELÉS": {
+    "hu": "MEGFIGYELÉS",
+    "en": "SPECTATING"
+  },
+  "Nincs megfigyelhető pilóta": {
+    "hu": "Nincs megfigyelhető pilóta",
+    "en": "No pilot available to observe"
+  },
+  "Előző pilóta": {
+    "hu": "Előző pilóta",
+    "en": "Previous pilot"
+  },
+  "Következő pilóta": {
+    "hu": "Következő pilóta",
+    "en": "Next pilot"
+  },
+  "[ / ] · Nézetváltás": {
+    "hu": "[ / ] · Nézetváltás",
+    "en": "[ / ] · Switch view"
+  },
+  "Új menet": {
+    "hu": "Új menet",
+    "en": "New round"
+  },
+  "Vissza az előszobába": {
+    "hu": "Vissza az előszobába",
+    "en": "Return to lobby"
+  },
+  "A szobagazda indítja az új menetet.": {
+    "hu": "A szobagazda indítja az új menetet.",
+    "en": "The host starts the next round."
+  },
+  "Pilóták eredményei": {
+    "hu": "Pilóták eredményei",
+    "en": "Pilot results"
+  },
+  "Pilóta": {
+    "hu": "Pilóta",
+    "en": "Pilot"
+  },
+  "Lelövések": {
+    "hu": "Lelövések",
+    "en": "Kills"
+  },
+  "Leszállt": {
+    "hu": "Leszállt",
+    "en": "Landed"
+  },
+  "A szobagazda visszaléphet az előszobába, és ugyanitt indíthat új menetet.": {
+    "hu": "A szobagazda visszaléphet az előszobába, és ugyanitt indíthat új menetet.",
+    "en": "The host can return everyone to the lobby and start another round in this room."
+  },
+  "A bevetés véget ért. A szobagazda visszaléphet az előszobába.": {
+    "hu": "A bevetés véget ért. A szobagazda visszaléphet az előszobába.",
+    "en": "The sortie has ended. The host can return to the lobby."
+  },
+  "Ha mindenki leszakad, két percig még visszatérhettek. A szerver újraindítása törli a szobákat. A kör végén a szobagazda az Új menet gombbal ugyanabba az előszobába léptet mindenkit. A hívójel és a felszerelési választás megmarad; mindenki újra jelezzen készültséget.": {
+    "hu": "Ha mindenki leszakad, két percig még visszatérhettek. A szerver újraindítása törli a szobákat. A kör végén a szobagazda az Új menet gombbal ugyanabba az előszobába léptet mindenkit. A hívójel és a felszerelési választás megmarad; mindenki újra jelezzen készültséget.",
+    "en": "If everyone disconnects, you have two minutes to return. Restarting the server clears rooms. At the end of a round the host can select New round to return everyone to the same lobby. Callsigns and equipment choices are retained; everyone must confirm readiness again."
+  },
+  "JÁTÉKOSLISTA": {
+    "hu": "JÁTÉKOSLISTA",
+    "en": "PLAYER LIST"
+  },
+  "A saját zuhanásod földetérésig látható. Ezután az életben maradt pilótákat követheted külső kamerából; a nyilakkal vagy a [ és ] gombbal válthatsz közöttük. Megfigyelőként nem irányíthatod a gépüket.": {
+    "hu": "A saját zuhanásod földetérésig látható. Ezután az életben maradt pilótákat követheted külső kamerából; a nyilakkal vagy a [ és ] gombbal válthatsz közöttük. Megfigyelőként nem irányíthatod a gépüket.",
+    "en": "Your own aircraft remains visible until it impacts. You can then follow surviving pilots with an external camera; use the arrows or [ and ] to switch. Spectators cannot control their aircraft."
+  },
+  "A Játékosok gomb mutatja a hívójeleket, a szobagazdát, a kapcsolódott és AI által átvett gépeket, valamint a kieséseket. A kör végén a táblázatban a találatok, lelövések, baráti találatok és a gép állapota látszik.": {
+    "hu": "A Játékosok gomb mutatja a hívójeleket, a szobagazdát, a kapcsolódott és AI által átvett gépeket, valamint a kieséseket. A kör végén a táblázatban a találatok, lelövések, baráti találatok és a gép állapota látszik.",
+    "en": "Players lists callsigns, the host, connected and AI-controlled aircraft, and eliminations. The final table shows hits, kills, friendly hits and aircraft condition."
+  },
+  "A szerver nem válaszolt időben. Próbálj újra kapcsolódni.": {
+    "hu": "A szerver nem válaszolt időben. Próbálj újra kapcsolódni.",
+    "en": "The server did not respond in time. Try connecting again."
+  },
+  "Kapcsolat helyreállítása · {{v0}}/{{v1}} · A gépedet az AI vezeti.": {
+    "hu": "Kapcsolat helyreállítása · {{v0}}/{{v1}} · A gépedet az AI vezeti.",
+    "en": "Reconnecting · {{v0}}/{{v1}} · AI is flying your aircraft."
+  },
+  "AUTOMATIKUS VISSZATÉRÉS": {
+    "hu": "AUTOMATIKUS VISSZATÉRÉS",
+    "en": "AUTOMATIC RECONNECTION"
+  },
+  "Rövid kapcsolatvesztéskor három automatikus visszacsatlakozási próba indul, 1, 2 és 4 másodperc várakozással. Közben az AI vezeti a gépedet. A Kilépés megszakítja a próbálkozásokat. A helyreállítás csak a meglévő gépet veszi vissza; nem tölti fel vagy javítja meg.": {
+    "hu": "Rövid kapcsolatvesztéskor három automatikus visszacsatlakozási próba indul, 1, 2 és 4 másodperc várakozással. Közben az AI vezeti a gépedet. A Kilépés megszakítja a próbálkozásokat. A helyreállítás csak a meglévő gépet veszi vissza; nem tölti fel vagy javítja meg.",
+    "en": "A brief connection loss starts three automatic reconnection attempts, after waits of 1, 2 and 4 seconds. AI flies your aircraft meanwhile. Leave cancels the attempts. Recovery only restores control of the existing aircraft; it does not refill or repair it."
   }
 }

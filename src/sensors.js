@@ -6,19 +6,27 @@ import { terrainSightCeiling } from './terrainSight.js';
 const earthRadius = (6371000 * 4) / 3;
 export const radarHorizon = (a, b) =>
   Math.sqrt(2 * earthRadius * Math.max(0, a)) + Math.sqrt(2 * earthRadius * Math.max(0, b));
-const sightCache = new Map();
+const worldSightCaches = new WeakMap();
 // Reuse only nearly identical sight rays (<=8 m horizontally, <=1 m vertically).
 // Angular floor, range and horizon are still checked on every call.
 function clearRadarLine(source, target, a, b) {
+  let sightCache = worldSightCaches.get(terrainWorld);
+  if (!sightCache) {
+    sightCache = new Map();
+    worldSightCaches.set(terrainWorld, sightCache);
+  }
   const key = source.id ?? source.spec?.id ?? source.position;
   let cache = sightCache.get(key);
   if (!cache) {
     if (sightCache.size >= 128) sightCache.clear();
-    cache = new WeakMap();
+    cache = { objects: new WeakMap(), ids: new Map() };
     sightCache.set(key, cache);
   }
-  const old = cache.get(target),
-    coords = [a.x, a.y, a.z, b.x, b.y, b.z];
+  // Interpolated network entities are fresh objects each frame, but their
+  // public IDs remain stable. Anonymous local objects still use weak keys.
+  const identified = typeof target.id === 'string' || typeof target.id === 'number';
+  const old = identified ? cache.ids.get(target.id) : cache.objects.get(target);
+  const coords = [a.x, a.y, a.z, b.x, b.y, b.z];
   if (
     old?.revision === terrainWorld.revision &&
     coords.every((v, i) => Math.abs(v - old.coords[i]) <= (i % 3 === 1 ? 1 : 8))
@@ -41,7 +49,12 @@ function clearRadarLine(source, target, a, b) {
       }
     }
   }
-  cache.set(target, { revision: terrainWorld.revision, coords, clear });
+  const entry = { revision: terrainWorld.revision, coords, clear };
+  if (identified) {
+    if (!cache.ids.has(target.id) && cache.ids.size >= 256)
+      cache.ids.delete(cache.ids.keys().next().value);
+    cache.ids.set(target.id, entry);
+  } else cache.objects.set(target, entry);
   return clear;
 }
 export function radarVisibility(source, target) {
