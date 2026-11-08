@@ -122,3 +122,22 @@ test('stall diagnostics remain bounded, preserve callback timing and reset on a 
   d.reset();
   assert.deepEqual(d.stalls, []);
 });
+
+test('co-op load pilots attack hostile mission targets instead of allied player aircraft', () => {
+  const { snapshot, id, state } = fixture();
+  snapshot.scenario = 'cooperative';
+  snapshot.combat.targets = [
+    { id: 'HOSTILE', kind: 'air', team: 'enemy', alive: true, position: { x: 0, y: 3200, z: 0 } },
+  ];
+  const own = snapshot.players.find((p) => p.id === id);
+  own.state.team = 'ally';
+  own.combat.aim = { id: 'HOSTILE', locked: true };
+  const pilot = new CombatLoadPilot();
+  assert.equal(pilot.command(state, snapshot, id).combat.cycle, false);
+  snapshot.combat.targets = [];
+  assert.equal(
+    pilot.command(state, snapshot, id),
+    null,
+    'allied human aircraft are not fallback combat targets',
+  );
+});

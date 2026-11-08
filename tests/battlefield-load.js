@@ -1,3 +1,4 @@
+import { mountCockpit } from '../src/cockpit.js';
 import { configureBattlefieldObserver } from './helpers/battlefield-observer.js';
 import { Vec3, Quat } from '../src/math.js';
 // Real scenario, physics, weapons and renderer. No audio module or remote connection.
@@ -24,6 +25,8 @@ for (const selector of ['#world', 'header', '#flight-ui'])
   document.body.append(doc.querySelector(selector));
 document.body.classList.add('flying');
 document.getElementById('flight-ui').hidden = false;
+// Match the normal client: build physical panel wells before preparing assets.
+mountCockpit();
 const spec = missionForSide(
     missions.find((m) => m.id === 'taiwan-invasion'),
     side,
@@ -48,7 +51,8 @@ const telemetry = new FrameTelemetry(),
   windows = [],
   peaks = {},
   hudPeaks = {},
-  hudSpikes = [];
+  hudSpikes = [],
+  hudState = {};
 for (const name of ['terrain', 'runway', 'flushMeshes', 'hud']) {
   const draw = renderer[name].bind(renderer);
   renderer[name] = (...args) => {
@@ -125,7 +129,8 @@ function frame(now) {
   let hudMs = 0;
   if (ui >= 0.15) {
     const begin = performance.now();
-    updateHUD(view, targets, w, aim, m, true, {
+    Object.assign(hudState, view);
+    updateHUD(hudState, targets, w, aim, m, true, {
       profile(name, ms) {
         hudPeaks[name] = Math.max(hudPeaks[name] || 0, ms);
         if (ms > 8) {

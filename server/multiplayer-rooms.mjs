@@ -99,9 +99,14 @@ export class MultiplayerRooms {
     };
     const leader = [...room.players.values()].find((p) => !p.state.crashed && !p.state.dying);
     if (leader) {
+      const offset = slot - leader.slot;
       player.state.position = leader.state.position
         .clone()
-        .add(leader.state.orientation.rotate(new Vec3(40, 20, 220)));
+        .add(
+          leader.state.orientation.rotate(
+            new Vec3(40 * offset, 20 * Math.abs(offset), 220 * offset),
+          ),
+        );
       player.state.velocity = leader.state.velocity.clone();
       player.state.orientation = leader.state.orientation.clone();
     }

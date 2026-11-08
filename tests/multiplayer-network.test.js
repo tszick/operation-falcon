@@ -1,3 +1,5 @@
+import { Spectator } from '../src/multiplayer/spectator.js';
+import { MultiplayerNotices } from '../src/multiplayer/notices.js';
 import { Vec3, Quat } from '../src/math.js';
 import { NetworkCombatView } from '../src/multiplayer/combatView.js';
 import { readFileSync } from 'node:fs';
@@ -609,5 +611,173 @@ test(
     assert.equal(resumed.client.id, pilot.id);
     await until(() => (counts.get(room.code) || 0) > 0);
     assert.deepEqual(resumed.errors, []);
+  },
+);
+
+test(
+  'localhost clients receive the same authoritative aircraft collision and fatal fall',
+  { timeout: 10000 },
+  async (t) => {
+    const f = await fixture(t);
+    const a = await connect(t, f, { mode: 'create', scenario: 'range' });
+    const b = await connect(t, f, { mode: 'join', code: a.client.code });
+    const room = f.multiplayer.rooms.rooms.get(a.client.code);
+    room.combat.targets = [];
+    const pilots = [...room.players.values()];
+    for (const p of pilots)
+      Object.assign(p.state, {
+        position: new Vec3(0, 3000, 0),
+        previousPosition: new Vec3(0, 3000, 0),
+        velocity: new Vec3(0, 0, 200),
+        orientation: new Quat(),
+        previousOrientation: new Quat(),
+        onGround: false,
+        airborne: true,
+      });
+    const deadline = performance.now() + 2500;
+    while (
+      performance.now() < deadline &&
+      ![a, b].every(
+        ({ client }) =>
+          client.latest?.players.every((p) => p.state.dying) &&
+          client.latest?.combat.events.some((e) => e.type === 'collision'),
+      )
+    )
+      await sleep(20);
+    for (const { client, errors } of [a, b]) {
+      assert.equal(
+        client.latest.players.every((p) => p.state.dying),
+        true,
+      );
+      const collisions = client.latest.combat.events.filter((e) => e.type === 'collision');
+      assert.equal(collisions.length, 1);
+      assert.deepEqual(
+        new Set([collisions[0].sourceId, collisions[0].targetId]),
+        new Set(pilots.map((p) => p.id)),
+      );
+      assert.deepEqual(errors, []);
+    }
+  },
+);
+
+test(
+  'localhost notification stream retains AI takeover, recovery and one collision across repeated snapshots',
+  { timeout: 10000 },
+  async (t) => {
+    const f = await fixture(t),
+      notices = new MultiplayerNotices();
+    let ownId = null;
+    const a = await connect(t, f, { mode: 'create', scenario: 'range' }, {}, memorySession(), {
+      onSnapshot: (s) => notices.receive(s, ownId),
+    });
+    ownId = a.client.id;
+    const b = await connect(t, f, { mode: 'join', code: a.client.code });
+    await until(() => a.client.latest.players.length === 2);
+    notices.reset(a.client.latest);
+    const closed = once(b.client.socket.raw, 'close');
+    b.client.socket.terminate();
+    await closed;
+    await until(() => notices.pending.some((n) => n.text === 'AI átvette az irányítást.'));
+    const resumed = new Promise((resolve) => {
+      b.client.onWelcome = resolve;
+    });
+    b.client.connect({ mode: 'join', code: a.client.code, aircraftId: 'f16' });
+    await resumed;
+    await until(() => notices.pending.some((n) => n.text === 'Pilóta visszavette az irányítást.'));
+    const room = f.multiplayer.rooms.rooms.get(a.client.code);
+    room.combat.targets = [];
+    for (const p of room.players.values())
+      Object.assign(p.state, {
+        position: new Vec3(0, 3000, 0),
+        previousPosition: new Vec3(0, 3000, 0),
+        velocity: new Vec3(0, 0, 200),
+        orientation: new Quat(),
+        previousOrientation: new Quat(),
+        onGround: false,
+        airborne: true,
+      });
+    await until(() => notices.pending.some((n) => n.text === 'ÜTKÖZÉS'));
+    await sleep(160);
+    const rows = notices.drain(64);
+    assert.deepEqual(
+      rows.map((n) => n.text),
+      ['AI átvette az irányítást.', 'Pilóta visszavette az irányítást.', 'ÜTKÖZÉS'],
+    );
+    assert.ok(rows[0].detail.includes('Falcon Two'));
+    assert.deepEqual(a.errors, []);
+  },
+);
+
+test(
+  'five localhost co-op clients agree through three loss-and-rematch rounds with spectator ownership and host recovery',
+  { timeout: 20000 },
+  async (t) => {
+    const f = await fixture(t);
+    const entries = [await connect(t, f, { mode: 'create', scenario: 'cooperative' })];
+    for (let i = 1; i < 5; i++)
+      entries.push(await connect(t, f, { mode: 'join', code: entries[0].client.code }));
+    const room = f.multiplayer.rooms.rooms.get(entries[0].client.code);
+    const identities = entries.map((e) => e.client.id);
+    for (let round = 1; round <= 3; round++) {
+      await until(() =>
+        entries.every(
+          (e) =>
+            e.client.latest.round === round &&
+            e.client.latest.lobby.revision === room.lobby.revision,
+        ),
+      );
+      for (const { client } of entries)
+        client.send({ type: 'ready', ready: true, revision: room.lobby.revision });
+      await until(() => [...room.players.values()].every((p) => p.ready));
+      let host = entries.find((e) => e.client.id === room.lobby.hostId);
+      host.client.send({ type: 'start', revision: room.lobby.revision });
+      await until(() => entries.every((e) => e.client.latest.mission.phase === 'active'));
+      const oldHost = host.client.id,
+        closed = once(host.client.socket.raw, 'close');
+      host.client.socket.terminate();
+      await closed;
+      await until(() => room.lobby.hostId !== oldHost);
+      const resumed = new Promise((resolve) => {
+        host.client.onWelcome = resolve;
+      });
+      host.client.connect({ mode: 'join', code: room.code, aircraftId: 'f16' });
+      await resumed;
+      assert.equal(host.client.id, oldHost);
+      assert.notEqual(room.lobby.hostId, oldHost);
+      // Deliberate losses exercise result/spectator transitions; they are not combat wins.
+      const observer = entries[0].client;
+      room.players.get(observer.id).state.crashed = true;
+      await until(() => observer.latest.players.find((p) => p.id === observer.id).state.crashed);
+      const state = observer.prediction.state,
+        spectator = new Spectator();
+      const own = observer.latest.players.find((p) => p.id === observer.id);
+      const candidates = spectator.update(observer.latest, observer.id, own.state);
+      assert.ok(candidates.length);
+      assert.equal(
+        spectator.choose(candidates[0].id, observer.latest, observer.id, own.state),
+        true,
+      );
+      assert.equal(
+        observer.prediction.state,
+        state,
+        'observation does not replace the controlled aircraft',
+      );
+      for (const p of room.players.values()) p.state.crashed = true;
+      await until(() => entries.every((e) => e.client.latest.mission.phase === 'failed'));
+      for (const { client } of entries) {
+        assert.deepEqual(client.latest.mission, entries[0].client.latest.mission);
+        assert.equal(client.latest.mission.reason, 'pilots-lost');
+      }
+      host = entries.find((e) => e.client.id === room.lobby.hostId);
+      host.client.send({ type: 'rematch', revision: room.lobby.revision });
+      await until(() => entries.every((e) => e.client.latest.round === round + 1));
+      assert.ok(
+        [...room.players.values()].every(
+          (p) => !p.state.crashed && p.state.damage === 0 && !p.ready && p.combat.gunRounds === 0,
+        ),
+      );
+      assert.deepEqual([...room.players.keys()], identities);
+      assert.ok(entries.every((e) => e.errors.length === 0));
+    }
   },
 );

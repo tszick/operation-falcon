@@ -160,3 +160,50 @@ test('cockpit preparation tolerates failed decorative assets and is a no-op for 
     active: false,
   }).prepareAssets();
 });
+
+test('a pending guide retains its completed panel while other instruments redraw, then commits next frame', () => {
+  let pending = true;
+  const guide = { id: 'guide', querySelector: () => (pending ? {} : null) },
+    engine = { id: 'engine' },
+    old = { vertices: [1], batches: [] },
+    painted = [],
+    ctx = { drawImage() {}, save() {}, resetTransform() {}, restore() {} };
+  const layer = Object.assign(Object.create(FlightInstrumentLayer.prototype), {
+    active: true,
+    root: { children: [guide, engine], querySelectorAll: () => [] },
+    renderer: { w: 100, h: 100, canvas: { width: 100, height: 100 }, ctx },
+    canvas: { width: 100, height: 100 },
+    cssWidth: 100,
+    cssHeight: 100,
+    imageRevision: 0,
+    records: new Map([
+      [guide, old],
+      [engine, old],
+    ]),
+    messageRecords: new Map(),
+    dirty: new Set([guide, engine]),
+    svgRecords: { clear() {} },
+    canvasRevisions: new WeakMap(),
+    canvasTextures: new WeakMap(),
+    painter: {
+      atlas: {},
+      capture(draw) {
+        draw();
+        return { vertices: [2], batches: [] };
+      },
+      clearRect() {},
+      renderRecords() {},
+    },
+    paint(c, r) {
+      painted.push(r.id);
+    },
+  });
+  layer.render();
+  assert.deepEqual(painted, ['engine']);
+  assert.equal(layer.records.get(guide), old);
+  assert.equal(layer.dirty.has(guide), true);
+  pending = false;
+  layer.render();
+  assert.deepEqual(painted, ['engine', 'guide']);
+  assert.notEqual(layer.records.get(guide), old);
+});

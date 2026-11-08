@@ -13,3 +13,14 @@ export function ellipsizeText(text, width, measure) {
   }
   return chars.slice(0, low).join('') + suffix;
 }
+
+// Physical cockpit controls have an explicit pixel width and no border. Reuse
+// that layout result instead of forcing a fresh DOM layout after HUD writes.
+export function controlTextWidth(element) {
+  const declared = element.style.width;
+  if (typeof declared === 'string' && declared.endsWith('px')) {
+    const width = Number.parseFloat(declared);
+    if (Number.isFinite(width) && width > 0) return Math.round(width);
+  }
+  return element.clientWidth;
+}

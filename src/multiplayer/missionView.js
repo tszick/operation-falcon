@@ -57,15 +57,51 @@ export function missionPresentation(mission) {
           health: Math.round(p.health),
           hits: p.hits,
           friendlyHits: p.friendlyHits,
+          gunRounds: p.gunRounds ?? 0,
+          missiles: p.missiles ?? 0,
+          bombs: p.bombs ?? 0,
           lost: p.lost,
         }))
       : [],
+    reason:
+      {
+        'targets-neutralized': 'A kötelező célokat teljesítettétek.',
+        'base-defended-and-landed': 'A bázis megmaradt, és a túlélő pilóták leszálltak.',
+        'base-destroyed': 'A saját repülőtér megsemmisült.',
+        'pilots-lost': 'Minden pilóta kiesett.',
+        'last-survivor': 'Az utolsó életben maradt pilóta győzött.',
+        draw: 'Egyetlen pilóta sem maradt életben.',
+      }[mission.reason] || '',
+    summary: ended ? summarizeParticipants(mission.participants) : null,
     ended,
   };
 }
+export function summarizeParticipants(participants) {
+  return participants.reduce(
+    (total, p) => {
+      total.pilots++;
+      total.lost += Number(p.lost);
+      total.returned += Number(p.returned);
+      for (const key of ['hits', 'kills', 'friendlyHits', 'gunRounds', 'missiles', 'bombs'])
+        total[key] += p[key] ?? 0;
+      return total;
+    },
+    {
+      pilots: 0,
+      lost: 0,
+      returned: 0,
+      hits: 0,
+      kills: 0,
+      friendlyHits: 0,
+      gunRounds: 0,
+      missiles: 0,
+      bombs: 0,
+    },
+  );
+}
 const renderedResults = new WeakMap();
-export function renderRoomMission(root, mission) {
-  const signature = JSON.stringify(mission) + i18n.language;
+export function renderRoomMission(root, mission, ownId = null) {
+  const signature = JSON.stringify(mission) + i18n.language + ownId;
   if (renderedResults.get(root) === signature) return;
   renderedResults.set(root, signature);
   const view = missionPresentation(mission);
@@ -115,6 +151,23 @@ export function renderRoomMission(root, mission) {
       ),
     );
   if (view.ended) {
+    root.append(line('p', tr(view.reason), 'network-result-reason'));
+    const summary = doc.createElement('dl');
+    summary.className = 'network-result-summary';
+    for (const [label, value] of [
+      ['Pilóták', view.summary.pilots],
+      ['Veszteségek', view.summary.lost],
+      ['Leszállt', view.summary.returned],
+      ['Találatok', view.summary.hits],
+      ['Lelövések', view.summary.kills],
+      ['Baráti találatok', view.summary.friendlyHits],
+    ]) {
+      const item = doc.createElement('div');
+      item.append(line('dt', tr(label)), line('dd', String(value)));
+      if (label === 'Baráti találatok' && value > 0) item.className = 'network-result-warning';
+      summary.append(item);
+    }
+    root.append(summary);
     const table = doc.createElement('table'),
       caption = doc.createElement('caption');
     caption.textContent = tr('Pilóták eredményei');
@@ -127,6 +180,7 @@ export function renderRoomMission(root, mission) {
       'Lelövések',
       'Baráti találatok',
       'Gép állapota',
+      'Lőszer / rakéta / bomba',
     ]) {
       const th = doc.createElement('th');
       th.scope = 'col';
@@ -140,7 +194,8 @@ export function renderRoomMission(root, mission) {
     const results = [...view.results].sort(
       (a, b) =>
         Number(b.id === mission.winnerId) - Number(a.id === mission.winnerId) ||
-        (b.eliminatedAt ?? Infinity) - (a.eliminatedAt ?? Infinity) ||
+        Number(a.lost) - Number(b.lost) ||
+        (b.eliminatedAt ?? 0) - (a.eliminatedAt ?? 0) ||
         b.kills - a.kills ||
         b.hits - a.hits ||
         a.callSign.localeCompare(b.callSign),
@@ -148,13 +203,15 @@ export function renderRoomMission(root, mission) {
     for (const p of results) {
       const row = doc.createElement('tr');
       if (p.id === mission.winnerId) row.className = 'network-winner';
+      if (p.id === ownId) row.classList.add('network-result-self');
       for (const value of [
-        p.callSign + (p.present ? '' : ' · AI'),
+        p.callSign + (p.id === ownId ? ' · ' + tr('Te') : '') + (p.present ? '' : ' · AI'),
         tr(p.lost ? 'Kiesett' : p.returned ? 'Leszállt' : 'Túlélte'),
         p.hits,
         p.kills,
         p.friendlyHits,
         p.health + '%',
+        p.gunRounds + ' / ' + p.missiles + ' / ' + p.bombs,
       ]) {
         const td = doc.createElement('td');
         td.textContent = String(value);
@@ -163,7 +220,10 @@ export function renderRoomMission(root, mission) {
       body.append(row);
     }
     table.append(body);
-    root.append(table);
+    const scroll = doc.createElement('div');
+    scroll.className = 'network-result-table';
+    scroll.append(table);
+    root.append(scroll);
     root.append(
       line('p', tr('A szobagazda visszaléphet az előszobába, és ugyanitt indíthat új menetet.')),
     );

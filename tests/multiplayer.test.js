@@ -545,8 +545,8 @@ test(
     await b.next((m) => defense(m) && m.mission.stage === 'return');
     for (const player of room.players.values())
       Object.assign(player.state, {
-        position: new Vec3(0, 2.001, -1000),
-        previousPosition: new Vec3(0, 3, -1000),
+        position: new Vec3(0, 2.001, -1000 - player.slot * 150),
+        previousPosition: new Vec3(0, 3, -1000 - player.slot * 150),
         velocity: new Vec3(0, -1, 65),
         orientation: Quat.euler(0, (3 * Math.PI) / 180, 0),
         onGround: false,
@@ -704,7 +704,8 @@ test(
 );
 
 test('default server limits admit ten rooms of five pilots, reject overflow and reuse released capacity', () => {
-  const rooms = new MultiplayerRooms();
+  let now = 0;
+  const rooms = new MultiplayerRooms({ now: () => now });
   const created = Array.from({ length: 10 }, () => rooms.create());
   assert.ok(created.every(Boolean));
   assert.equal(rooms.create(), null);
@@ -720,6 +721,10 @@ test('default server limits admit ten rooms of five pilots, reject overflow and 
     pilot = room.players.values().next().value;
   assert.equal(rooms.resume(room, pilot.sessionToken), pilot);
   for (const p of [...room.players.values()]) rooms.leave(room, p);
+  assert.equal(rooms.rooms.size, 10);
+  assert.equal(rooms.create(), null);
+  now = 120000;
+  rooms.step();
   assert.equal(rooms.rooms.size, 9);
   assert.ok(rooms.create());
   assert.equal(rooms.rooms.size, 10);

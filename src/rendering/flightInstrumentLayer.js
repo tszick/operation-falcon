@@ -356,6 +356,9 @@ export class FlightInstrumentLayer {
       matrixCache = new Map();
     // Apply the redraw budget to startup too; resized texture references stay urgent.
     for (const region of new Set([...urgent, ...this.dirty])) {
+      // A coalesced DOM fit commits next frame. Reuse the last complete panel
+      // meanwhile; resized canvas references still require an urgent rebuild.
+      if (!urgent.has(region) && region.querySelector?.('[data-layout-pending]')) continue;
       this.dirty.delete(region);
       if (!this.records.has(region)) continue;
       const regionStart = performance.now();

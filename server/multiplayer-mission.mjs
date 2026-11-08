@@ -57,6 +57,9 @@ export function startRoomMission(room) {
     hits: 0,
     kills: 0,
     friendlyHits: 0,
+    gunRounds: 0,
+    missiles: 0,
+    bombs: 0,
     returned: false,
     eliminatedAt: null,
   }));
@@ -96,6 +99,9 @@ export function updateRoomMission(room) {
     participant.hits = p.combat.hits;
     participant.kills = p.combat.kills;
     participant.friendlyHits = p.combat.friendlyHits;
+    participant.gunRounds = p.combat.gunRounds;
+    participant.missiles = p.combat.missiles;
+    participant.bombs = p.combat.bombs;
   }
   if (mission.assignment === 'arena') {
     const survivors = [...room.players.values()].filter((p) => !p.state.crashed);

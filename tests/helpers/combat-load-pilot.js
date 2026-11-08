@@ -8,28 +8,36 @@ export class CombatLoadPilot {
   lastDecoy = -Infinity;
   command(s, snapshot, id) {
     if (snapshot?.mission?.phase !== 'active' || s.dying || s.crashed) return null;
-    const candidates = snapshot.players.filter(
-      (p) => p.id !== id && !p.state.dying && !p.state.crashed,
-    );
     const own = snapshot.players.find((p) => p.id === id);
     if (!own) return null;
+    const candidates =
+      snapshot.scenario === 'arena'
+        ? snapshot.players
+            .filter((p) => p.id !== id && !p.state.dying && !p.state.crashed)
+            .map((p) => ({ ...p, kind: 'air', position: p.state.position }))
+        : snapshot.combat.targets.filter(
+            (t) =>
+              t.alive &&
+              !t.exited &&
+              !t.pending &&
+              t.team !== own.state.team &&
+              t.team !== 'neutral',
+          );
     const aim = own.combat.aim;
     const target =
       candidates.find((p) => p.id === aim.id) ||
       candidates.sort(
-        (a, b) => s.position.distance(a.state.position) - s.position.distance(b.state.position),
+        (a, b) =>
+          Number(b.kind === 'air') - Number(a.kind === 'air') ||
+          s.position.distance(a.position) - s.position.distance(b.position),
       )[0];
     if (!target) return null;
-    const goal = new Vec3(
-      target.state.position.x,
-      target.state.position.y,
-      target.state.position.z,
-    );
+    const goal = new Vec3(target.position.x, target.position.y, target.position.z);
     const distance = s.position.distance(goal);
     const controls = combatFlightInput({
       flight: { ...s, condition: structuredClone(s.condition) },
       cruiseSpeed: 200,
-      navigationGoal: { kind: 'air', position: goal },
+      navigationGoal: { kind: target.kind, position: goal },
     });
     const axes = { ...neutralAxes(), ...controls };
     for (const key of ['pitch', 'roll', 'yaw', 'throttle'])
@@ -40,13 +48,18 @@ export class CombatLoadPilot {
     if (cycle) this.lastCycle = s.elapsed;
     const countermeasures = s.incomingMissiles > 0 && s.elapsed - this.lastDecoy > 2;
     if (countermeasures) this.lastDecoy = s.elapsed;
-    const weapon = s.ammo.aam > 0 && distance > 600 ? 'aam' : 'gun';
+    const weapon =
+      target.kind === 'ground' && s.ammo.agm > 0
+        ? 'agm'
+        : target.kind === 'air' && s.ammo.aam > 0 && distance > 600
+          ? 'aam'
+          : 'gun';
     return {
       axes,
       toggles: [],
       combat: {
         weapon,
-        fire: weapon === 'aam' ? aim.locked : s.ammo.gun > 0 && distance < 2500,
+        fire: ['aam', 'agm'].includes(weapon) ? aim.locked : s.ammo.gun > 0 && distance < 2500,
         cycle,
         countermeasures,
       },

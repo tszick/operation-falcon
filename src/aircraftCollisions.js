@@ -132,8 +132,18 @@ function hitEvent(weapons, source, target, point, amount, destroyed) {
   });
 }
 export function updateAircraftCollisions(player, targets, weapons) {
+  updateAircraftGroupCollisions([{ id: 'PLAYER', state: player }], targets, weapons);
+}
+// Every human/taken-over aircraft participates once, with its stable network ID.
+// Damage is resolved by the authority, never by a client collision report.
+export function updateAircraftGroupCollisions(players, targets, weapons) {
+  const playerActors = players.map(({ id, state }) => {
+    const a = actor(state, true);
+    if (a) a.id = id;
+    return a;
+  });
   const actors = [
-    actor(player, true),
+    ...playerActors,
     ...targets
       .filter(
         (t) =>

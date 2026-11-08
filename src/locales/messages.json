@@ -2113,7 +2113,7 @@
   },
   "A saját repülőtér megsemmisült.": {
     "hu": "A saját repülőtér megsemmisült.",
-    "en": "Your airfield was destroyed."
+    "en": "The friendly airbase was destroyed."
   },
   "Saját reptér: {{v0}}%": {
     "hu": "Saját reptér: {{v0}}%",
@@ -10775,5 +10775,68 @@
     "hu": "Rövid kapcsolatvesztéskor három automatikus visszacsatlakozási próba indul, 1, 2 és 4 másodperc várakozással. Közben az AI vezeti a gépedet. A Kilépés megszakítja a próbálkozásokat. A helyreállítás csak a meglévő gépet veszi vissza; nem tölti fel vagy javítja meg.",
     "en": "A brief connection loss starts three automatic reconnection attempts, after waits of 1, 2 and 4 seconds. AI flies your aircraft meanwhile. Leave cancels the attempts. Recovery only restores control of the existing aircraft; it does not refill or repair it."
   },
-  "Terep előkészítése…": { "hu": "Terep előkészítése…", "en": "Preparing terrain…" }
+  "Terep előkészítése…": {
+    "hu": "Terep előkészítése…",
+    "en": "Preparing terrain…"
+  },
+  "A kötelező célokat teljesítettétek.": {
+    "hu": "A kötelező célokat teljesítettétek.",
+    "en": "All mandatory objectives were completed."
+  },
+  "A bázis megmaradt, és a túlélő pilóták leszálltak.": {
+    "hu": "A bázis megmaradt, és a túlélő pilóták leszálltak.",
+    "en": "The base survived and the surviving pilots landed."
+  },
+  "Minden pilóta kiesett.": {
+    "hu": "Minden pilóta kiesett.",
+    "en": "All pilots were lost."
+  },
+  "Az utolsó életben maradt pilóta győzött.": {
+    "hu": "Az utolsó életben maradt pilóta győzött.",
+    "en": "The last surviving pilot won."
+  },
+  "Egyetlen pilóta sem maradt életben.": {
+    "hu": "Egyetlen pilóta sem maradt életben.",
+    "en": "No pilot survived."
+  },
+  "Pilóták": {
+    "hu": "Pilóták",
+    "en": "Pilots"
+  },
+  "Veszteségek": {
+    "hu": "Veszteségek",
+    "en": "Losses"
+  },
+  "Lőszer / rakéta / bomba": {
+    "hu": "Lőszer / rakéta / bomba",
+    "en": "Rounds / missiles / bombs"
+  },
+  "ÜTKÖZÉS": {
+    "hu": "ÜTKÖZÉS",
+    "en": "COLLISION"
+  },
+  "BARÁTI TŰZ — EGYSÉG ELVESZETT": {
+    "hu": "BARÁTI TŰZ — EGYSÉG ELVESZETT",
+    "en": "FRIENDLY FIRE — UNIT LOST"
+  },
+  "LELÖVÉS": {
+    "hu": "LELÖVÉS",
+    "en": "AIRCRAFT SHOT DOWN"
+  },
+  "BARÁTI TALÁLAT": {
+    "hu": "BARÁTI TALÁLAT",
+    "en": "FRIENDLY HIT"
+  },
+  "GÉP ELVESZETT": {
+    "hu": "GÉP ELVESZETT",
+    "en": "AIRCRAFT LOST"
+  },
+  "Kapcsolat megszakadt.": {
+    "hu": "Kapcsolat megszakadt.",
+    "en": "Connection lost."
+  },
+  "Pilóta visszavette az irányítást.": {
+    "hu": "Pilóta visszavette az irányítást.",
+    "en": "Pilot resumed control."
+  }
 }

@@ -113,10 +113,27 @@ visszavonja a korábbi kész jelzéseket. Indulás után nincs új pilóta vagy 
 
 Minden pilóta az **egyszemélyes játék közös cockpitját és HUD-ját** látja, saját műszerekkel,
 sérülésrajzzal, fegyverekkel, radarral és szerveroldali küldetéscélokkal.
+A levegőből induló közös kötelékben mind az öt pilóta külön, egymástól elválasztott helyet kap.
 A markupot ugyanabból az `index.html` HUD-részletből tölti be; ugyanazok a HUD- és cockpit-modulok rajzolják.
 A kezelőszervek billentyűvel és a panelen is működnek. **0** radarzoom, **O / radarkattintás** nagy taktikai térkép,
 **N** leszállási mód, **I** segédív, **H** Mission Control segítség. Online a térkép **nem állítja meg** a világot.
 Esc csak az egeret engedi el. A próba nem inicializál zenét vagy rádióhangot.
+
+A körvégi kiértékelés a szerver végleges eredményéből mutatja a lezárás okát, a pilóták,
+veszteségek és leszállások összesítését, a találatokat és a baráti találatokat. A saját sor
+kiemelt; pilótánként látszik a felhasznált gépágyúlőszer, rakéták és bombák száma is.
+A számlálók a tényleges szerveroldali fegyverindításokat számolják, az üres elsütési
+kísérletet nem. A korlátozott eseménynapló ürülése nem törli őket, a végleges eredmény
+nem változik a zuhanás utóanimációja alatt, új menetben pedig nullázódnak.
+A helyi, néma eredményképernyő-minta: `/tests/multiplayer-result.html` (ötpilótás
+mintaadatokkal; a nyelv és a co-op/aréna megjelenítés kapcsolható).
+
+A multiplayer harci eseményei a közös HUD jobb oldali, keret nélküli üzenetfolyamán
+jelennek meg. A lelövés/célpusztítás kiírja a támadót és a célpontot; a baráti találat
+figyelmeztető színű. Külön jelzés érkezik az ütközésről, gép elvesztéséről, AI-átvételről
+és pilóta visszatéréséről. A gyors események sorba kerülnek, és láthatóvá válásuktól
+kapják meg az olvasási időt. Az ismételt hálózati események nem ismétlik meg a jelzést;
+az új menet és a visszacsatlakozás nem játssza vissza a korábbi eseménytörténetet.
 
 ### Kapcsolatvesztés és visszatérés
 
@@ -144,7 +161,7 @@ visszatérés nem őrizhető meg. A szobakód önmagában nem jogosít másik pi
 A privát azonosítót csak az adott pilóta üdvözlőcsomagja kapja meg, a közös állapotcsomagok soha.
 
 Ha mindenki leszakad, a szoba és az AI legfeljebb **két percig** életben marad a visszatéréshez.
-A szerver újraindítása törli a memóriában tárolt szobákat és munkameneteket. A befejezett bevetés után a szobagazda ugyanabban a szobában új menetet készíthet elő. Kölcsönös repülőgép-ütközés és hangátvitel még nincs.
+A szerver újraindítása törli a memóriában tárolt szobákat és munkameneteket. A befejezett bevetés után a szobagazda ugyanabban a szobában új menetet készíthet elő. A gépek kölcsönös ütközését és tereptárgynak ütközését a szerver az egyjátékos mód közös geometriai vizsgálatával kezeli, emberi és AI-pilótáknál egyaránt. Az ütközés nem ad fegyveres találati pontot. Hangátvitel még nincs.
 
 ### Közös szimuláció és védelem
 
@@ -158,7 +175,7 @@ Az állapotot szobánként egyszer állítja elő és kódolja JSON-ná a szerve
 A távoli repülőgép-állapotok dekódolása hálózati frissítéskor történik, nem minden képkockánál;
 a célinterpoláció azonosító szerinti gyors keresést használ. A HUD ritkított gyakorisággal frissül.
 Szobánként legfeljebb 192 lövedék és 128 harci esemény marad. A kapcsolatonkénti küldési sor,
-csomagméret (állapotnál 256 KiB), üzenetsebesség és vezérlési sor is korlátozott. Legfeljebb 16 szoba / 80 kapcsolat.
+csomagméret (állapotnál 256 KiB), üzenetsebesség és vezérlési sor is korlátozott. Legfeljebb 10 szoba / 50 pilótahely.
 A 8-as protokollverzió régebbi nyitott lap frissítését igényli.
 
 Az egyjátékos repülés fizikája, AI-ja, harca, grafikája és helyi IndexedDB-naplója a
@@ -243,6 +260,19 @@ elkészülését, valamint előre dekódolja és feltölti a CSS-ben használt h
 HUD méreteit nem méri és nem teszi láthatóvá; a hiányzó díszítőképek nem blokkolják a
 kapcsolódást hibával. A tényleges panelgeometria továbbra is az aktuális, látható
 elrendezésből, képkockánként korlátozott munkával épül.
+
+A fizikai, keret nélküli kapcsolófeliratok az elrendezés által már kiszámolt pixelméretet
+használják; érvényes explicit méret nélkül megmarad a böngészős mérés. A rádió- és
+figyelmeztető üzeneteket előbb mind frissíti a HUD, aztán közösen olvassa a méreteiket,
+és csak utána írja a mozgási/halványulási stílusokat. Így több egyidejű üzenet nem
+kényszerít egymás után külön elrendezést minden bejegyzéshez.
+
+A Mission Control új sorait a HUD-frissítés után, a következő képkocka elején illeszti
+méretre a rendszer. A közben érkező változások összevonódnak, és a nyelv is része a
+frissítési kulcsnak. A WebGPU addig a legutolsó kész panelt tartja meg; az új szöveg nem
+kerül illesztetlenül a kijelzőre. Rejtett panelnél az illesztés később újrapróbálható.
+A helyi profil a szinkron munka mellett külön rögzíti a `guide-async-*` részidőket és a
+`guide-async-total` költséget is, ezért az átütemezés nem rejti el a tényleges munkát.
 
 A műszerfal perspektivikus vetítése a mátrix együtthatóiból közvetlenül számol, csúcsonkénti
 DOMPoint-foglalás nélkül. A színeket és az UV-koordinátákat is átmeneti tömbök nélkül másolja.
@@ -330,3 +360,21 @@ A saját gép zuhanását végig lehet nézni. **Földetérés után** a megfigy
 játékosokra válthat a nyilakkal, **[ / ]** gombokkal vagy a **Játékosok** listából.
 Az AI által átvett gép is követhető. A megfigyelés nem ad irányítási vagy tüzelési jogot.
 A lista külön jelzi a szobagazdát, a kapcsolatot, az AI-átvételt, a zuhanást és a kiesést.
+
+### Hosszabb, néma localhost próba
+
+`node --expose-gc scripts/soak-multiplayer.mjs 90 [eredmeny.json]` két külön,
+90 másodperces ötpilótás co-op/aréna próbát futtat. A szerver külön folyamatban,
+kizárólag `127.0.0.1` címen figyel; a tesztkliensek normál vezérléssel, véges
+fegyverzettel harcolnak. Kapcsolatvesztést és visszatérést is próbál, ellenőrzi
+az állapot- és üzenetsorok korlátait, valamint méri a szerver időzítéseit és a
+memóriát. A mérés nem renderel és nem használ hangot, ezért nem böngészős FPS-teszt.
+Az időkorlátnál még aktív bevetést nem számolja befejezett menetnek. A külön
+hálózati életciklustesztek célzott veszteségekkel vizsgálják az eredményképernyőt,
+a megfigyelőnézetet, a szobagazdaváltást és az új menetet.
+
+A Légifölény induló kötelékei és követési pontjai közös geometriai elrendezést
+használnak, a tényleges rajvezérhez és annak repülési irányához képest. A keleti
+rajoknál az oldalak is a saját irányuk szerint tükröződnek. A követők külön
+magassági helyet kapnak; nem kell a szomszéd gépen keresztül átsorolniuk a raj
+másik oldalára. Az ütközések továbbra is valódi sérülést okoznak.

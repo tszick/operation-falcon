@@ -1,3 +1,4 @@
+import { updateAircraftGroupCollisions } from '../src/aircraftCollisions.js';
 import {
   createRoomAI,
   planRoomAI,
@@ -93,9 +94,25 @@ export function createRoomCombat(world, scenario = 'range') {
 export function createPlayerCombat() {
   const weapons = new Weapons({ actorUpdates: false, visualEffects: false });
   weapons.selected = 'gun';
-  return { weapons, aim: new Targeting(), feedback: '', hits: 0, kills: 0, friendlyHits: 0 };
+  return {
+    weapons,
+    aim: new Targeting(),
+    feedback: '',
+    hits: 0,
+    kills: 0,
+    friendlyHits: 0,
+    gunRounds: 0,
+    missiles: 0,
+    bombs: 0,
+  };
 }
 function recordEvent(room, event, time) {
+  const combat = room.players.get(event.sourceId)?.combat;
+  if (combat && (!room.mission || room.mission.phase === 'active')) {
+    if (event.type === 'gun') combat.gunRounds++;
+    else if (event.type === 'missile-launch') combat.missiles++;
+    else if (event.type === 'bomb-release') combat.bombs++;
+  }
   const allowed = [
     'type',
     'weapon',
@@ -117,6 +134,8 @@ function recordEvent(room, event, time) {
     'radarRangeM',
     'launchRangeM',
     'nominalRangeM',
+    'relativeSpeedMps',
+    'energyJ',
   ];
   const data = { id: ++room.combat.eventSequence, time };
   for (const key of allowed) if (event[key] !== undefined) data[key] = event[key];
@@ -176,6 +195,7 @@ export function stepRoomCombat(room, commands, dt) {
         t.flight.impactPending = false;
       }
     }
+  updateAircraftGroupCollisions(players, room.combat.targets, shared);
   const targets = [...room.combat.targets, ...players.map(playerEntity)];
   for (const player of players) {
     const { state: s, combat } = player,
@@ -207,7 +227,7 @@ export function stepRoomCombat(room, commands, dt) {
   }
   for (const event of shared.drainEvents()) {
     const player = room.players.get(event.sourceId);
-    if (event.type === 'target-hit' && player) {
+    if (event.type === 'target-hit' && event.weapon !== 'collision' && player) {
       if (event.friendlyFire) player.combat.friendlyHits++;
       else {
         player.combat.hits++;

@@ -1,3 +1,4 @@
+import { MultiplayerNotices } from './notices.js';
 import { FrameClock } from '../frameClock.js';
 import { Spectator } from './spectator.js';
 import { PlayersView } from './playersView.js';
@@ -31,9 +32,7 @@ let renderer,
 let last = performance.now(),
   accumulator = 0,
   uiTime = 0;
-let pilotConnections = new Map();
-let seenCombatEvent = 0,
-  combatNotice = null;
+const notices = new MultiplayerNotices();
 let requestedWeapon = 'gun',
   cycleTarget = false,
   dispense = false;
@@ -143,29 +142,9 @@ function snapshotReceived(msg) {
   const bots = msg.players.filter((p) => !p.connected).length;
   $('network-roster').textContent =
     `${own.callSign} · ${msg.players.length}/5${bots ? ' · AI ' + bots : ''}`;
-  for (const p of msg.players) {
-    if (pilotConnections.get(p.id) === true && !p.connected)
-      combatNotice = {
-        text: p.callSign + ' · ' + tr('AI átvette az irányítást.'),
-        until: performance.now() + 6000,
-      };
-  }
-  pilotConnections = new Map(msg.players.map((p) => [p.id, p.connected]));
+  notices.receive(msg, client.id);
   Object.assign(aim, own.combat.aim);
   weapons.selected = own.combat.selected;
-  if (active)
-    for (const event of msg.combat.events) {
-      if (event.id > seenCombatEvent && event.friendlyFire && msg.time - event.time < 0.5) {
-        const text =
-          event.sourceId === client.id
-            ? 'BARÁTI TŰZ — SAJÁT GÉPET TALÁLTÁL EL!'
-            : event.targetId === client.id
-              ? 'BARÁTI TALÁLAT ÉRTE A GÉPED!'
-              : null;
-        if (text) combatNotice = { text, until: performance.now() + 6000 };
-      }
-    }
-  seenCombatEvent = msg.combat.eventSequence;
   preflight.update({ ...msg, code: client.code }, client.id);
   $('network-flight').hidden = msg.mission?.phase === 'waiting';
   hud.show(msg.mission?.phase !== 'waiting');
@@ -223,11 +202,9 @@ async function connect(mode) {
         $('network-scenario').value = msg.scenario;
         requestedWeapon = msg.players.find((p) => p.id === msg.id).combat.selected;
         cycleTarget = dispense = false;
-        seenCombatEvent = msg.combat.eventSequence;
-        combatNotice = null;
+        notices.reset(msg);
         hud.reset();
         spectator.reset();
-        pilotConnections = new Map();
         $('network-code').value = msg.code;
         active = true;
         busy(false);
@@ -242,11 +219,7 @@ async function connect(mode) {
         $('network-room-code').textContent = msg.code;
         snapshotReceived(msg);
         status(msg.resumed ? 'Visszavetted a géped irányítását.' : 'Közös légtér · hang nélkül');
-        if (msg.resumed)
-          combatNotice = {
-            text: 'Visszavetted a géped irányítását.',
-            until: performance.now() + 6000,
-          };
+        if (msg.resumed) notices.push('Visszavetted a géped irányítását.');
       },
       onSnapshot: snapshotReceived,
       onRound: (msg) => {
@@ -260,8 +233,7 @@ async function connect(mode) {
         renderer.thirdPerson = renderer.cinematic = false;
         renderer.wreckOffset = null;
         requestedWeapon = msg.players.find((p) => p.id === client.id).combat.selected;
-        seenCombatEvent = msg.combat.eventSequence;
-        combatNotice = null;
+        notices.reset(msg);
         accumulator = 0;
         document.body.classList.remove('spectating', 'wreck-view');
         $('network-spectator').hidden = true;
@@ -558,16 +530,13 @@ function frame(now) {
       const own = client.latest.players.find((p) => p.id === client.id);
       weapons.cooldown = own.combat.cooldown;
       weapons.gunHeat = own.combat.gunHeat;
-      const notice = client.stale
-        ? 'A kapcsolat késik — a szerver állapotára várunk.'
-        : combatNotice && now < combatNotice.until
-          ? combatNotice.text
-          : '';
+      const notice = client.stale ? 'A kapcsolat késik — a szerver állapotára várunk.' : '';
+      hud.postNotices(notices.drain());
       hud.update(view, targets, weapons, aim, client.latest, client.id, notice);
       const ended = ['success', 'failed'].includes(client.latest.mission?.phase);
       const showResult = ended && !(own.state.dying && !own.state.crashed);
       $('network-mission').hidden = !showResult;
-      if (showResult) renderRoomMission($('network-mission'), client.latest.mission);
+      if (showResult) renderRoomMission($('network-mission'), client.latest.mission, client.id);
       hudMs = performance.now() - hudStarted;
     }
     const instrumentStarted = performance.now();

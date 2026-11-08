@@ -38,8 +38,8 @@ function clearAir(room) {
 function touchdown(p) {
   const s = p.state;
   Object.assign(s, {
-    position: new Vec3(0, 2.001, -1000),
-    previousPosition: new Vec3(0, 3, -1000),
+    position: new Vec3(0, 2.001, -1000 - p.slot * 150),
+    previousPosition: new Vec3(0, 3, -1000 - p.slot * 150),
     velocity: new Vec3(0, -1, 65),
     orientation: Quat.euler(0, (3 * Math.PI) / 180, 0),
     onGround: false,

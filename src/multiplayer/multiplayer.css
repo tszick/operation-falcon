@@ -274,10 +274,12 @@ body.multiplayer.flying #network-status {
 }
 body.multiplayer #network-mission:not([hidden]) {
   position: fixed;
-  top: 14vh;
-  left: 25vw;
-  width: 50vw;
-  max-height: 52vh;
+  top: 12vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1100px, calc(100vw - 32px));
+  box-sizing: border-box;
+  max-height: 74vh;
   overflow: auto;
   background: #071a15f5;
   padding: 20px;
@@ -388,4 +390,31 @@ body.multiplayer #network-mission table {
 
 body.multiplayer.flying #network-status[data-error='true'] {
   display: block;
+}
+
+.network-result-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin: 18px 0;
+}
+.network-result-summary dt {
+  font-size: 13px;
+  color: #9cbaa3;
+}
+.network-result-summary dd {
+  margin: 4px 0 0;
+  font-size: 22px;
+}
+.network-result-warning {
+  color: #ffb58c;
+}
+.network-result-table {
+  overflow-x: auto;
+}
+#network-mission .network-result-self {
+  background: #a8dd7712;
+}
+#network-mission .network-result-self td:first-child {
+  border-left: 2px solid #a8dd77;
 }

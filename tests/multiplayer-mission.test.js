@@ -89,6 +89,8 @@ test('a real server-earned AGM hit completes the ground objective and shared suc
   rooms.step();
   assert.equal(room.mission.phase, 'success');
   assert.equal(one.state.ammo.agm, 1);
+  assert.equal(one.combat.missiles, 1);
+  assert.equal(room.mission.participants.find((p) => p.id === one.id).missiles, 1);
   assert.ok(room.mission.participants.find((p) => p.id === one.id).hits > 0);
   assert.ok(room.mission.objectives.every((o) => o.status === 'complete'));
 });

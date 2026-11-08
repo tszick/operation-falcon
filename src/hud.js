@@ -1,3 +1,5 @@
+import { PhaseGuideLayout } from './rendering/phaseGuideLayout.js';
+import { controlTextWidth } from './rendering/instrumentText.js';
 import { ObjectiveLayout } from './rendering/objectiveLayout.js';
 import { equipmentLabel } from './equipmentCatalog.js';
 import { tr, trHtml } from './i18n.js';
@@ -46,6 +48,14 @@ export function updateHUD(s, targets, weapons, aim, mission, muted, presentation
   document.body.classList.toggle('navigation-jammed', jammed);
   updateStores(s, weapons, { compact: true, profile: presentation.profile });
   mark?.('stores');
+  let configMeasuredAt = presentation.profile ? performance.now() : 0;
+  const configMark = presentation.profile
+    ? (name) => {
+        const now = performance.now();
+        presentation.profile('configuration-' + name, now - configMeasuredAt);
+        configMeasuredAt = now;
+      }
+    : null;
   const flap = flapStatus(s),
     cm = s.countermeasures;
   const indicators = configurationIndicators(s),
@@ -89,8 +99,9 @@ export function updateHUD(s, targets, weapons, aim, mission, muted, presentation
       label = shortLabels[key] || labels[key],
       fitKey = `${innerWidth}:${innerHeight}:${label}`,
       fit = element.tagName === 'BUTTON' && controlFit.get(element) !== fitKey;
-    return { key, indicator, element, label, fitKey, width: fit ? element.clientWidth : 0 };
+    return { key, indicator, element, label, fitKey, width: fit ? controlTextWidth(element) : 0 };
   });
+  configMark?.('widths');
   for (const { key, indicator, element, label, fitKey, width } of controls) {
     text(element, label);
     if (width > 0) {
@@ -128,6 +139,7 @@ export function updateHUD(s, targets, weapons, aim, mission, muted, presentation
   $('config-flaps').dataset.moving = String(flap.moving);
   $('config-flaps').title = tr(flap.label);
   text($('config-countermeasures'), `C · IR ${cm?.flare || 0} / R ${cm?.chaff || 0}`);
+  configMark?.('switch-labels');
   const damaged = s.damage >= 15 || s.condition?.engines?.some((v) => v < 0.5),
     damagePanel = $('damage-status'),
     stage = damageStage(s);
@@ -144,6 +156,7 @@ export function updateHUD(s, targets, weapons, aim, mission, muted, presentation
     );
     damagePanel.title = tr(faults.join('\n'));
   }
+  configMark?.('damage');
   const lock = s.rearView
     ? {
         state: 'rear',
@@ -165,6 +178,7 @@ export function updateHUD(s, targets, weapons, aim, mission, muted, presentation
   text($('mission-phase'), mission.phase);
   text($('phase-hint'), mission.phaseHint);
   text($('guide-title'), mission.phase);
+  configMark?.('target-status');
   const card = presentation.card || missionCardState(s, mission, targets);
   $('mission-card').dataset.operation = mission.spec.objective;
   text($('mission-card-name'), card.name);
@@ -184,8 +198,10 @@ export function updateHUD(s, targets, weapons, aim, mission, muted, presentation
     }),
   );
   $('mission-card').title = tr(card.name + ' · ' + card.phase);
+  configMark?.('mission-card');
   const guideSteps = presentation.guideSteps || phaseGuide(s, mission, aim, weapons, targets);
-  fitPhaseGuide(guideSteps);
+  fitPhaseGuide(guideSteps, presentation.profile);
+  configMark?.('guide-fit');
   mark?.('configuration-and-guide');
   const engine = engineInstruments(s),
     gauge = $('g-load');
@@ -341,8 +357,16 @@ export function updateHUD(s, targets, weapons, aim, mission, muted, presentation
 }
 
 // Measure the untransformed screen: completed steps no longer consume glass space.
-const guideLayout = new WeakMap();
-function fitPhaseGuide(steps) {
+const guideLayout = new PhaseGuideLayout();
+function fitPhaseGuide(steps, profile) {
+  let started = profile ? performance.now() : 0;
+  const mark = profile
+    ? (name) => {
+        const now = performance.now();
+        profile('guide-' + name, now - started);
+        started = now;
+      }
+    : null;
   const list = $('guide-steps'),
     pending = steps.filter((item) => !item.done);
   const html = pending
@@ -351,17 +375,21 @@ function fitPhaseGuide(steps) {
         `<li class="${item.active ? 'current' : ''}"><kbd>${item.key}</kbd><span>${item.text}</span></li>`,
     )
     .join('');
-  const key = html + ':' + innerWidth + ':' + innerHeight + ':' + document.body.className;
-  if (guideLayout.get(list) === key) return;
-  const height = list.clientHeight;
-  guideLayout.set(list, key);
-  list.innerHTML = trHtml(html);
-  list.style.setProperty('--guide-lines', height >= 24 ? 2 : 1);
-  let full = false;
-  for (const row of list.children) {
-    full = full || row.offsetTop + row.offsetHeight > height;
-    row.hidden = full;
-  }
+  const key =
+    html +
+    ':' +
+    innerWidth +
+    ':' +
+    innerHeight +
+    ':' +
+    document.body.className +
+    ':' +
+    document.documentElement.lang;
+  mark?.('prepare');
+  const translated = trHtml(html);
+  mark?.('translation');
+  guideLayout.update(list, key, translated, profile);
+  mark?.('schedule');
 }
 
 let missionLayout;

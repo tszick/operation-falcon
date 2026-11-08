@@ -83,6 +83,10 @@ export class MultiplayerHUD {
     this.state = {};
     this.notice = null;
   }
+  postNotices(notices) {
+    for (const item of notices)
+      postFlightMessage(item.text, this.state.elapsed || 0, item.duration, item);
+  }
   update(state, targets, weapons, aim, snapshot, ownId, notice) {
     Object.assign(this.state, state, { team: 'ally', mapZoom: this.zoom });
     const s = this.state,
