@@ -11,7 +11,13 @@ const allowedHosts = (process.env.ALLOWED_HOSTS || '')
   .map((s) => s.trim())
   .filter(Boolean);
 const server = createStaticServer({ root, allowedHosts });
-attachMultiplayer(server, { allowedHosts });
+attachMultiplayer(server, {
+  allowedHosts,
+  onPerformance:
+    process.env.MULTIPLAYER_DIAGNOSTICS === '1'
+      ? (sample) => console.log(JSON.stringify({ multiplayerPerformance: sample }))
+      : undefined,
+});
 server.listen(port, host, () =>
   console.log(`Operation Falcon: Redline: http://${host}:${server.address().port}`),
 );

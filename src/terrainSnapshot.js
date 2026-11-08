@@ -1,3 +1,4 @@
+import { preparedMaterialKinds } from './rendering/shared/materialMipmaps.js';
 // Worker messages carry geometry only. Build fresh records from finite numbers and
 // booleans; never install arbitrary message objects into shared mission state.
 function record(value) {
@@ -80,6 +81,20 @@ export function readTerrainJob(value) {
     cx: number(value.cx),
     cz: number(value.cz),
     wire: value.wire !== false,
+    atlas: value.atlas === true,
+    materials: [
+      ...new Set(
+        list(
+          value.materials,
+          (kind) => {
+            if (!preparedMaterialKinds.includes(kind))
+              throw new TypeError('Invalid prepared material');
+            return kind;
+          },
+          8,
+        ),
+      ),
+    ],
     patches: list(value.patches, (p) => fields(p, 'x z radius'), 4096),
   };
 }

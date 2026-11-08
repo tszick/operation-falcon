@@ -5,7 +5,7 @@ import { packedTerrainBuffers } from './rendering/shared/terrainData.js';
 import { groundVehiclePatches } from './vehicleGrounding.js';
 import { refinedTerrainTriangles } from './terrainRefinement.js';
 import { oceanSurface } from './oceanEnvironment.js';
-import { terrainTint } from './surfaceStyle.js';
+import { terrainTint, surfaceStyle } from './surfaceStyle.js';
 import { Vec3, clamp } from './math.js';
 import { terrainHeight, terrainWorld } from './terrain.js';
 import { projectFeaturePolygon } from './terrainFeatures.js';
@@ -32,6 +32,7 @@ export function terrainAxis(center) {
   }
   return [...coordinates].sort((a, b) => a - b);
 }
+const terrainLight = new Vec3(-0.36, 0.86, -0.36);
 let sampleRevision = -1,
   sampleCache = new Map();
 export function buildTerrainSurface(
@@ -133,13 +134,28 @@ export function buildTerrainSurface(
   const points = zs.map((z) => xs.map((x) => point(x, z))),
     faces = [];
   const addFace = (pts) => {
-    const normal = pts[1].clone().sub(pts[0]).cross(pts[2].clone().sub(pts[0])).normalize();
+    const [a, b, c] = pts,
+      abx = b.x - a.x,
+      aby = b.y - a.y,
+      abz = b.z - a.z,
+      acx = c.x - a.x,
+      acy = c.y - a.y,
+      acz = c.z - a.z;
+    const normal = new Vec3(
+      aby * acz - abz * acy,
+      abz * acx - abx * acz,
+      abx * acy - aby * acx,
+    ).normalize();
     if (normal.y < 0) normal.scale(-1);
-    const light = clamp(normal.dot(new Vec3(-0.36, 0.86, -0.36)), 0, 1);
+    const light = clamp(normal.dot(terrainLight), 0, 1);
     faces.push({
       points: pts,
       normal,
-      center: pts.reduce((p, v) => p.add(v), new Vec3()).scale(1 / 3),
+      center: new Vec3()
+        .add(a)
+        .add(b)
+        .add(c)
+        .scale(1 / 3),
       color: `rgb(${Math.round(12 + light * 8)},${Math.round(27 + light * 18)},${Math.round(20 + light * 10)})`,
     });
   };
@@ -229,13 +245,69 @@ export function terrainSnapshot() {
     if (terrainWorld[key] !== undefined) world[key] = terrainWorld[key];
   return world;
 }
-export function renderTerrainSurface(r, targets = []) {
-  const center = (r.terrainGridCenter = terrainGridCenter(r.camera, r.terrainGridCenter)),
+function terrainJob(r, position, targets) {
+  const center = (r.terrainGridCenter = terrainGridCenter(position, r.terrainGridCenter)),
     cx = center.x,
     cz = center.z,
     patches = terrainWorld.ocean ? [] : groundVehiclePatches(targets, cx, cz),
     patchKey = patches.map((p) => `${p.x},${p.z},${p.radius}`).join(';'),
     key = `${terrainWorld.revision}:${cx}:${cz}:${patchKey}:${r.surfaceLines !== false}`;
+  return {
+    key,
+    revision: terrainWorld.revision,
+    cx,
+    cz,
+    patches,
+    wire: r.surfaceLines !== false,
+    world: terrainSnapshot(),
+  };
+}
+function installPreparedTerrain(r, ready) {
+  r.terrainBuffers = ready;
+  r.terrainSurface = [];
+  r.terrainSurfaceKey = ready.key;
+  r.terrainRevision = ready.revision;
+  r.terrainDeferred = true;
+  r.terrainWorkerMs = ready.buildMs;
+  r.terrainRebuilt = true;
+  if (ready.farmlandPixels && r.terrainFarmlandRevision !== ready.revision) {
+    r.terrainFarmland = ready.farmlandPixels;
+    r.terrainFarmlandRevision = ready.revision;
+  }
+  if (ready.materials && r.terrainMaterialRevision !== ready.revision) {
+    r.terrainMaterials = ready.materials;
+    r.terrainMaterialRevision = ready.revision;
+  }
+  delete ready.materials;
+  // Keep the geometry buffer record small after the atlas has a separate owner.
+  delete ready.farmlandPixels;
+}
+// GPU entry points wait for the first mesh and atlas without blocking the UI.
+// A failed/unavailable worker leaves the existing synchronous renderer available.
+export function prepareInitialTerrain(r, position, targets = []) {
+  if (r.terrainSurface && r.terrainRevision === terrainWorld.revision) return true;
+  const queue = r.gpuModels ? terrainQueue(r) : null;
+  if (!queue || queue.failed) return true;
+  const job = terrainJob(r, position, targets);
+  job.atlas = r.terrainFarmlandRevision !== terrainWorld.revision;
+  if (r.gpuModels.name === 'WebGPU' && r.terrainMaterialRevision !== terrainWorld.revision)
+    job.materials = [
+      r.surfaceMode === 'ocean' ? 'terrain-sand' : surfaceStyle(r.surfaceMode).texture,
+      'concrete',
+      'asphalt',
+      'hangar',
+      'aircraft',
+      'camo',
+    ].filter((kind) => !r.gpuModels.textures?.has(kind));
+  queue.request(job);
+  if (queue.failed) return true;
+  const ready = queue.take(terrainWorld.revision);
+  if (ready) installPreparedTerrain(r, ready);
+  return r.terrainRevision === terrainWorld.revision && !!r.terrainSurface;
+}
+export function renderTerrainSurface(r, targets = []) {
+  const job = terrainJob(r, r.camera, targets),
+    { key, cx, cz, patches } = job;
   const start = performance.now(),
     queue = r.gpuModels ? terrainQueue(r) : null;
   r.terrainRebuilt = false;
@@ -249,28 +321,13 @@ export function renderTerrainSurface(r, targets = []) {
     r.terrainDeferred = false;
     r.terrainRebuilt = true;
   };
-  // The first frame of a mission is synchronous; never display another mission's terrain.
+  // CPU/worker-error fallback; normal GPU entry points prepare the first mesh asynchronously.
   if (!r.terrainSurface || r.terrainRevision !== terrainWorld.revision) buildSync();
   else if (r.terrainSurfaceKey !== key) {
     if (queue && !queue.failed) {
-      queue.request({
-        key,
-        revision: terrainWorld.revision,
-        cx,
-        cz,
-        patches,
-        wire: r.surfaceLines !== false,
-        world: terrainSnapshot(),
-      });
+      queue.request(job);
       const ready = queue.take(terrainWorld.revision);
-      if (ready) {
-        r.terrainBuffers = ready;
-        r.terrainSurface = [];
-        r.terrainSurfaceKey = ready.key;
-        r.terrainDeferred = true;
-        r.terrainWorkerMs = ready.buildMs;
-        r.terrainRebuilt = true;
-      }
+      if (ready) installPreparedTerrain(r, ready);
     } else buildSync();
   }
   if (r.gpuModels?.renderTerrain(r)) {

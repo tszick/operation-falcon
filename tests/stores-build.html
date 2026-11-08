@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="hu">
+  <meta charset="utf-8" /><title>Local silent stores panel build</title>
+  <link rel="stylesheet" href="/style.css" /><link rel="stylesheet" href="/flight.css" />
+  <body style="padding: 24px">
+    <h1>LOCALHOST / SILENT / STORES BUILD</h1>
+    <pre id="result">Preparing…</pre>
+    <section id="stores-display" style="width: 380px; min-height: 250px"></section>
+    <script type="module">
+      import { aircraftFlightSpec } from '/src/aiAircraftSpec.js';
+      import { createAircraft } from '/src/physics.js';
+      import { updateStores } from '/src/storesDisplay.js';
+      if (!['localhost', '127.0.0.1', '[::1]'].includes(location.hostname))
+        throw new Error('Local test only');
+      const plane = new URLSearchParams(location.search).get('plane') || 'b52';
+      const s = createAircraft(aircraftFlightSpec(plane)),
+        timings = {};
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const begin = performance.now();
+      updateStores(
+        s,
+        { selected: 'bomb' },
+        { compact: true, profile: (name, ms) => (timings[name] = ms) },
+      );
+      const buildMs = performance.now() - begin;
+      const root = document.getElementById('stores-display');
+      const layoutBegin = performance.now(),
+        bounds = root.getBoundingClientRect();
+      document.getElementById('result').textContent = JSON.stringify(
+        {
+          plane,
+          buildMs,
+          timings,
+          layoutMs: performance.now() - layoutBegin,
+          svgPaths: root.querySelectorAll('svg path').length,
+          markupBytes: root.innerHTML.length,
+          width: bounds.width,
+        },
+        null,
+        2,
+      );
+    </script>
+  </body>
+</html>

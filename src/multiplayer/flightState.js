@@ -89,7 +89,7 @@ export function applyFlightCommand(s, command, dt) {
   }
   stepAircraft(s, command?.axes || neutralAxes(), dt);
 }
-export function packFlight(s) {
+export function packFlight(s, { copy = true } = {}) {
   const out = {
     aircraftId: s.spec.id,
     ...(s.loadoutChoice ? { loadoutChoice: s.loadoutChoice } : {}),
@@ -100,7 +100,7 @@ export function packFlight(s) {
   for (const key of fields) if (s[key] !== undefined) out[key] = s[key];
   // Bound visual history while retaining damage smoke on other pilots.
   out.condition = { ...s.condition, smoke: s.condition.smoke.slice(-16) };
-  return structuredClone(out);
+  return copy ? structuredClone(out) : out;
 }
 export function unpackFlight(data) {
   const base = aircraftFlightSpec(data.aircraftId);

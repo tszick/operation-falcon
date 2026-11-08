@@ -1,3 +1,4 @@
+import { RetainedSvg } from './retainedSvg.js';
 import { drawingContext } from './createBackend.js';
 import { ellipsizeText } from './instrumentText.js';
 // DOM remains the semantic/input/layout model. Only WebGPU paints the flight instruments.
@@ -14,10 +15,10 @@ function imageFor(url) {
   return image.complete && image.naturalWidth ? image : null;
 }
 const number = (value) => Number.parseFloat(value) || 0;
-function matrixFor(element, cache) {
+function matrixFor(element, cache, knownStyle) {
   if (cache.has(element)) return cache.get(element);
   const parent = element.offsetParent,
-    style = getComputedStyle(element),
+    style = knownStyle || getComputedStyle(element),
     origin = style.transformOrigin.split(' ').map(number);
   let matrix = parent ? matrixFor(parent, cache) : new DOMMatrix();
   matrix = matrix.translate(
@@ -81,9 +82,7 @@ function pathData(context, data) {
     y = ny;
   }
 }
-function paintSvg(context, svg, parentMatrix) {
-  const bounds = svg.getBoundingClientRect(),
-    svgStyle = getComputedStyle(svg);
+function paintSvg(context, svg, parentMatrix, bounds, svgStyle) {
   const width = number(svgStyle.width),
     height = number(svgStyle.height),
     box = svg.viewBox.baseVal;
@@ -153,10 +152,9 @@ function paintSvg(context, svg, parentMatrix) {
     context.restore();
   }
 }
-function paintText(context, element, node, matrix, style) {
+function paintText(context, element, node, matrix, style, rect) {
   const text = node.textContent.replace(/\s+/g, ' ');
   if (!text.trim()) return;
-  const rect = element.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
   const size = number(style.fontSize),
     lineHeight = style.lineHeight === 'normal' ? size * 1.2 : number(style.lineHeight),
@@ -218,8 +216,10 @@ export class FlightInstrumentLayer {
       this.canvas = document.createElement('canvas');
       this.painter = drawingContext(this.canvas);
       this.painter.surface.textureOnly = true;
+      this.painter.surface.profile = !!renderer.ctx.surface.profile;
       this.records = new Map();
       this.messageRecords = new Map();
+      this.svgRecords = new RetainedSvg();
       this.canvasRevisions = new WeakMap();
       this.canvasTextures = new WeakMap();
       this.dirty = new Set();
@@ -230,16 +230,24 @@ export class FlightInstrumentLayer {
             change.target.getAttribute(change.attributeName) === change.oldValue
           )
             continue;
-          if (
-            change.type === 'attributes' &&
-            !['style', 'class', 'hidden', 'width', 'height'].includes(change.attributeName) &&
-            !change.attributeName.startsWith('data-')
-          )
-            continue;
           const target =
             change.target.nodeType === Node.ELEMENT_NODE
               ? change.target
               : change.target.parentElement;
+          const svg = target?.closest?.('svg');
+          if (svg) this.svgRecords.invalidate(svg);
+          else if (
+            change.type === 'attributes' &&
+            ['style', 'class', 'hidden'].includes(change.attributeName)
+          )
+            this.svgRecords.invalidateTree(target);
+          if (
+            change.type === 'attributes' &&
+            !svg &&
+            !['style', 'class', 'hidden', 'width', 'height'].includes(change.attributeName) &&
+            !change.attributeName.startsWith('data-')
+          )
+            continue;
           if (target?.closest('.flight-message')) continue;
           for (const region of this.records.keys())
             if (region.contains(target) || target?.contains(region)) this.dirty.add(region);
@@ -257,6 +265,30 @@ export class FlightInstrumentLayer {
         attributeOldValue: true,
         attributeFilter: ['class', 'style'],
       });
+    }
+  }
+  // Called before joining a live room: image decode and the first GPU upload
+  // must not compete with the first control/flight frames. This does not expose
+  // hidden HUD controls or retain geometry measured from a hidden layout.
+  async prepareAssets() {
+    if (!this.active || !this.root) return;
+    await this.painter.surface.ready;
+    await this.painter.atlasReady;
+    await document.fonts?.ready;
+    const urls = new Set();
+    for (const element of [this.root, ...this.root.querySelectorAll('[id]')]) {
+      const url = getComputedStyle(element).backgroundImage.match(/url\(["']?(.*?)["']?\)/)?.[1];
+      if (url) urls.add(url);
+    }
+    for (const url of urls) {
+      imageFor(url);
+      const image = imageCache.get(url);
+      try {
+        await image.decode();
+        if (image.naturalWidth) this.painter.externalTexture(image);
+      } catch {
+        // A missing decorative image keeps the existing untextured fallback.
+      }
     }
   }
   render() {
@@ -282,6 +314,7 @@ export class FlightInstrumentLayer {
       for (const record of this.records.values()) record?.buffer?.destroy();
       this.records.clear();
       this.messageRecords.clear();
+      this.svgRecords.clear();
     }
     for (const region of this.records.keys())
       if (!regions.includes(region)) {
@@ -318,27 +351,36 @@ export class FlightInstrumentLayer {
     context.coordinateScale = pixelWidth / width;
     let changed = resized,
       painted = 0;
-    const start = performance.now(),
-      initial = [...this.records.values()].every((record) => !record);
-    const costs = [];
-    // Spread DOM reads and tessellation over frames rather than making one 10 Hz spike.
+    const start = performance.now();
+    const costs = [],
+      matrixCache = new Map();
+    // Apply the redraw budget to startup too; resized texture references stay urgent.
     for (const region of new Set([...urgent, ...this.dirty])) {
       this.dirty.delete(region);
       if (!this.records.has(region)) continue;
       const regionStart = performance.now();
       const buffer = this.records.get(region)?.buffer;
-      this.records.set(region, { ...context.capture(() => this.paint(context, region)), buffer });
+      this.records.set(region, {
+        ...context.capture(() => this.paint(context, region, matrixCache)),
+        buffer,
+      });
       changed = true;
       painted++;
       costs.push([region.id || region.className, performance.now() - regionStart]);
       urgent.delete(region);
-      if (!initial && !urgent.size && performance.now() - start >= 3) break;
+      if (!urgent.size && performance.now() - start >= 3) break;
     }
     if (changed) {
       context.clearRect(0, 0, pixelWidth, pixelHeight);
       context.renderRecords(regions.map((region) => this.records.get(region)));
     }
-    this.metrics = { painted, pending: this.dirty.size, ms: performance.now() - start, costs };
+    this.metrics = {
+      painted,
+      pending: this.dirty.size,
+      ms: performance.now() - start,
+      costs,
+      surfaceTasks: this.painter.surface?.profileMetrics,
+    };
     this.renderer.ctx.drawImage(this.canvas, 0, 0, width, height);
     // Browser CSS transitions remain smooth while the unchanged text stays on the GPU.
     const output = this.renderer.ctx;
@@ -390,11 +432,23 @@ export class FlightInstrumentLayer {
       const rect = element.getBoundingClientRect();
       if ((rect.width <= 0 || rect.height <= 0) && !element.children.length) return;
       if (element instanceof SVGElement) {
-        if (element.tagName === 'svg')
-          paintSvg(context, element, matrixFor(element.parentElement, cache));
+        if (element.tagName === 'svg') {
+          const matrix = matrixFor(element.parentElement, cache);
+          const key = [
+            rect.x,
+            rect.y,
+            rect.width,
+            rect.height,
+            matrix.toString(),
+            context.globalAlpha,
+          ].join(':');
+          this.svgRecords.paint(context, element, key, () =>
+            paintSvg(context, element, matrix, rect, style),
+          );
+        }
         return;
       }
-      const matrix = matrixFor(element, cache),
+      const matrix = matrixFor(element, cache, style),
         w = element.offsetWidth,
         h = element.offsetHeight;
       context.save();
@@ -431,7 +485,8 @@ export class FlightInstrumentLayer {
         }
       } else
         for (const node of element.childNodes)
-          if (node.nodeType === Node.TEXT_NODE) paintText(context, element, node, matrix, style);
+          if (node.nodeType === Node.TEXT_NODE)
+            paintText(context, element, node, matrix, style, rect);
           else if (node.nodeType === Node.ELEMENT_NODE) visit(node);
       context.restore();
     };

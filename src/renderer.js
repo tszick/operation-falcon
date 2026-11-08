@@ -22,7 +22,7 @@ import { renderCanyonCourse } from './canyonTraining.js';
 import { silhouetteIndices } from './modelDetail.js';
 import { visibleMeshEdges } from './hiddenLines.js';
 import { cockpitHudFooterY } from './cockpitGeometry.js';
-import { renderTerrainSurface } from './terrainSurface.js';
+import { renderTerrainSurface, prepareInitialTerrain } from './terrainSurface.js';
 import { getLandingRoute, renderLandingRoute } from './landingRoute.js';
 import { enemyAircraft } from './enemies.js';
 import {
@@ -51,7 +51,8 @@ export function baseMarkerPosition(targets, ocean = false) {
     : new Vec3(0, 10, -1000);
 }
 export class Renderer {
-  constructor(canvas) {
+  constructor(canvas, { backgroundTerrain = false } = {}) {
+    this.backgroundTerrain = backgroundTerrain;
     this.canvas = canvas;
     this.ctx = drawingContext(canvas);
     this.gpuModels = createBackend(this.ctx);
@@ -595,6 +596,8 @@ export class Renderer {
     c.stroke();
   }
   render(s, targets, weapons, aim) {
+    this.terrainFrameMs = 0;
+    this.terrainRebuilt = false;
     const c = this.ctx,
       { w, h } = this,
       wreck = s.dying || s.crashed,
@@ -658,6 +661,22 @@ export class Renderer {
       cameraQ = cameraQ.multiply(Quat.euler(vibration.yaw, vibration.pitch, vibration.roll));
     }
     this.setup(camera, cameraQ);
+    this.terrainPreparing = false;
+    if (this.backgroundTerrain) {
+      const terrainReady = prepareInitialTerrain(this, camera, targets);
+      this.terrainPreparing = !terrainReady || this.gpuModels?.prepareEnvironment?.(this) === false;
+    }
+    if (this.terrainPreparing) {
+      // Cover the previous world while a fresh mission is prepared off-thread.
+      c.fillStyle = '#071c17';
+      c.fillRect(0, 0, w, h);
+      c.fillStyle = '#b8ef91';
+      c.font = '18px Consolas,monospace';
+      c.textAlign = 'center';
+      c.fillText(tr('Terep előkészítése…'), w * 0.5, h * 0.4);
+      c.textAlign = 'start';
+      return;
+    }
     const skyStart = this.debugMetrics ? performance.now() : 0;
     renderEnvironmentSky(this);
     if (this.debugMetrics) this.skyMs = performance.now() - skyStart;

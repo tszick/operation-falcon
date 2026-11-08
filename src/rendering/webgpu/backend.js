@@ -1,9 +1,16 @@
+import { GpuQueueProbe } from './queueProbe.js';
+import { TextureUpload } from './textureUpload.js';
 import { buildFarmland, farmlandSize, farmlandExtent, farmlandPalette } from '../../farmland.js';
 import { terrainWorld } from '../../terrain.js';
 import { meshBuffers, rotationMatrix, meshBounds } from '../shared/meshData.js';
 import { packedTerrainBuffers } from '../shared/terrainData.js';
-import { featureWindow, buildFeatureBuffers, featurePatchInView } from '../shared/featureData.js';
-import { materialPixels } from '../shared/materialPixels.js';
+import {
+  featureWindow,
+  buildFeatureBuffers,
+  featurePatchInView,
+  updateFeatureVisibility,
+} from '../shared/featureData.js';
+import { materialMipmaps } from '../shared/materialMipmaps.js';
 import { cachedRgba as rgba } from '../shared/shapes.js';
 import { surfaceStyle, materialIds } from '../../surfaceStyle.js';
 import { FeatureVisibility } from '../featureVisibility.js';
@@ -233,40 +240,32 @@ export class WebGPUBackend {
       };
     return d.createRenderPipeline(descriptor);
   }
+  recordTiming(name, start) {
+    if (!this.profile) return;
+    this.timingPeaks ??= {};
+    this.timingPeaks[name] = Math.max(this.timingPeaks[name] || 0, performance.now() - start);
+  }
   texture(kind) {
     if (this.textures.has(kind)) return this.textures.get(kind);
+    const started = this.profile ? performance.now() : 0;
     const d = this.device,
-      size = kind === 'hangar' ? 512 : 256,
-      mips = Math.log2(size) + 1,
+      levels = this.preparedTextures?.get(kind) || materialMipmaps(kind),
+      size = levels[0].width,
       t = d.createTexture({
         size: [size, size],
-        mipLevelCount: mips,
+        mipLevelCount: levels.length,
         format: 'rgba8unorm',
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
       });
-    let pixels = materialPixels(kind, size),
-      width = size;
-    for (let level = 0; level < mips; level++) {
+    levels.forEach(({ width, pixels }, level) => {
       d.queue.writeTexture({ texture: t, mipLevel: level }, pixels, { bytesPerRow: width * 4 }, [
         width,
         width,
       ]);
-      if (width === 1) break;
-      const next = new Uint8Array(width * width),
-        n = width / 2;
-      for (let y = 0; y < n; y++)
-        for (let x = 0; x < n; x++)
-          for (let c = 0; c < 4; c++)
-            next[(y * n + x) * 4 + c] =
-              (pixels[(y * 2 * width + x * 2) * 4 + c] +
-                pixels[(y * 2 * width + x * 2 + 1) * 4 + c] +
-                pixels[((y * 2 + 1) * width + x * 2) * 4 + c] +
-                pixels[((y * 2 + 1) * width + x * 2 + 1) * 4 + c]) /
-              4;
-      pixels = next;
-      width = n;
-    }
+    });
+    this.preparedTextures?.delete(kind);
     this.textures.set(kind, t);
+    this.recordTiming('textureBuildUploadMs', started);
     return t;
   }
   bind(texture, mask = null, horizon = false, farmland = false) {
@@ -342,11 +341,17 @@ export class WebGPUBackend {
     return index * this.uniformStride;
   }
   submit(encoder) {
+    const started = this.profile ? performance.now() : 0;
     const bytes = this.uniformCount * this.uniformStride;
     if (bytes)
       this.device.queue.writeBuffer(this.uniformBuffer, 0, this.uniformStaging.buffer, 0, bytes);
     this.device.queue.submit([encoder.finish()]);
     this.surface.schedule();
+    if (this.profile) {
+      this.queueProbe ??= new GpuQueueProbe();
+      this.queueProbe.request(this.device.queue);
+    }
+    this.recordTiming('submitMs', started);
   }
   upload(mesh) {
     let item = this.cache.get(mesh);
@@ -354,8 +359,11 @@ export class WebGPUBackend {
       item.used = this.frame;
       return item;
     }
-    const values = meshBuffers(mesh),
-      d = this.device,
+    const started = this.profile ? performance.now() : 0;
+    const values = meshBuffers(mesh);
+    this.recordTiming('meshPackMs', started);
+    const uploadStarted = this.profile ? performance.now() : 0;
+    const d = this.device,
       buffers = [];
     const upload = (v, usage) => {
       const b = uploadBuffer(d, v, usage);
@@ -379,6 +387,7 @@ export class WebGPUBackend {
     };
     this.cache.set(mesh, item);
     this.resources.add(item);
+    this.recordTiming('meshUploadMs', uploadStarted);
     return item;
   }
   updateTerrain(r) {
@@ -435,17 +444,48 @@ export class WebGPUBackend {
       true,
     );
   }
+  prepareEnvironment(r) {
+    if (!this.available) return true;
+    if (r.terrainMaterialRevision === terrainWorld.revision && r.terrainMaterials) {
+      this.preparedTextures ??= new Map();
+      for (const { kind, levels } of r.terrainMaterials)
+        if (!this.textures.has(kind)) this.preparedTextures.set(kind, levels);
+      r.terrainMaterials = null;
+    }
+    // Upload at most one prepared material per loading frame, alongside the atlas strip.
+    const nextMaterial = this.preparedTextures?.keys().next().value;
+    if (nextMaterial) this.texture(nextMaterial);
+    if (this.farmlandWorld === terrainWorld) return true;
+    if (r.terrainFarmlandRevision !== terrainWorld.revision || !r.terrainFarmland) return true;
+    if (this.farmlandUploadWorld !== terrainWorld) {
+      this.farmlandUploadWorld = terrainWorld;
+      this.farmlandUpload = new TextureUpload(
+        this.farmlandTexture,
+        r.terrainFarmland,
+        farmlandSize,
+        farmlandSize,
+      );
+    }
+    if (!this.farmlandUpload.step(this.device.queue)) return false;
+    this.farmlandWorld = terrainWorld;
+    this.farmlandUpload = null;
+    r.terrainFarmland = null;
+    return true;
+  }
   renderTerrain(r) {
     if (!this.available) return false;
     this.updateTerrain(r);
     if (this.farmlandWorld !== terrainWorld) {
       this.device.queue.writeTexture(
         { texture: this.farmlandTexture },
-        buildFarmland().pixels,
+        r.terrainFarmlandRevision === terrainWorld.revision && r.terrainFarmland
+          ? r.terrainFarmland
+          : buildFarmland().pixels,
         { bytesPerRow: farmlandSize * 4 },
         [farmlandSize, farmlandSize],
       );
       this.farmlandWorld = terrainWorld;
+      r.terrainFarmland = null;
     }
     if (this.farmlandMode !== r.surfaceMode) {
       const colors = new Float32Array(24);
@@ -493,6 +533,7 @@ export class WebGPUBackend {
       this.patches = data.patches;
       this.featureCount = data.vertices.length / 9;
       this.visibility = new Uint32Array(Math.max(1, this.patches.length));
+      this.featureCandidates = new Uint8Array(this.patches.length);
       this.featureMask = uploadBuffer(this.device, this.visibility, GPUBufferUsage.STORAGE);
       this.featureKey = data.key;
       this.featureUploads = (this.featureUploads || 0) + 1;
@@ -503,12 +544,18 @@ export class WebGPUBackend {
       return true;
     }
     this.featureVisibility ??= new FeatureVisibility();
-    const candidates = Uint8Array.from(this.patches, (p) => (featurePatchInView(r, p) ? 1 : 0)),
-      mask = this.featureVisibility.update(r.camera, this.patches, candidates, this.featureKey);
+    const candidates = this.featureCandidates;
     for (let i = 0; i < this.patches.length; i++)
-      this.visibility[i] = candidates[i] && mask[i] ? 1 : 0;
+      candidates[i] = featurePatchInView(r, this.patches[i]) ? 1 : 0;
+    const mask = this.featureVisibility.update(r.camera, this.patches, candidates, this.featureKey);
+    const changed = updateFeatureVisibility(this.visibility, candidates, mask);
     r.featureWorkerMs = this.featureVisibility.workerMs || 0;
-    this.device.queue.writeBuffer(this.featureMask, 0, this.visibility);
+    if (changed) this.device.queue.writeBuffer(this.featureMask, 0, this.visibility);
+    if (this.profile) {
+      this.featureMaskStats ??= { frames: 0, writes: 0 };
+      this.featureMaskStats.frames++;
+      if (changed) this.featureMaskStats.writes++;
+    }
     const encoder = this.begin(),
       pass = this.surface.pass(encoder),
       data = this.frameUniform(r);
@@ -654,6 +701,8 @@ export class WebGPUBackend {
     return true;
   }
   destroy() {
+    this.preparedTextures?.clear();
+    this.farmlandUpload = null;
     this.featureVisibility?.destroy();
     this.uniformBuffer?.destroy();
     this.farmlandTexture?.destroy();

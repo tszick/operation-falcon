@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><title>Instrument projection conformance</title>
+  <body style="background: #071c17; color: #b8ef91; font: 16px monospace">
+    <h1>LOCAL / SILENT / INSTRUMENT PROJECTION</h1>
+    <pre id="result">Checking…</pre>
+    <script type="module">
+      import { VectorContext } from '/src/rendering/webgpu/vectorContext.js';
+      import { homography, matrix3d } from '/src/cockpitGeometry.js';
+      if (!['localhost', '127.0.0.1', '[::1]'].includes(location.hostname))
+        throw new Error('Local test only');
+      const matrices = [
+        new DOMMatrix(),
+        new DOMMatrix([1.2, 0.1, -0.15, 0.9, 30, 50]),
+        new DOMMatrix(
+          matrix3d(
+            homography(300, 150, [
+              [20, 30],
+              [310, 60],
+              [290, 160],
+              [0, 145],
+            ]),
+          ),
+        ),
+        new DOMMatrix(
+          matrix3d(
+            homography(300, 150, [
+              [70, 20],
+              [350, 0],
+              [300, 170],
+              [5, 150],
+            ]),
+          ),
+        ),
+      ];
+      let seed = 417,
+        maxError = 0,
+        samples = 0;
+      const random = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296;
+      for (const matrix of matrices) {
+        const points = Array.from({ length: 1000 }, () => [
+          random() * 450 - 75,
+          random() * 240 - 45,
+        ]);
+        const ctx = Object.assign(Object.create(VectorContext.prototype), {
+          canvas: { width: 1000, height: 600 },
+          coordinateScale: 1.25,
+          globalAlpha: 0.7,
+          matrix: [1, 0, 0, 1, 0, 0],
+          projective: matrix,
+          vertices: [],
+          batches: [],
+          clipRect: null,
+          surface: { schedule() {} },
+        });
+        ctx.triangles(points, 'rgba(100,150,200,.8)');
+        points.forEach(([x, y], i) => {
+          const p = matrix.transformPoint(new DOMPoint(x, y));
+          const expectedX = (((p.x / p.w) * 1.25) / 1000) * 2 - 1,
+            expectedY = 1 - (((p.y / p.w) * 1.25) / 600) * 2;
+          maxError = Math.max(
+            maxError,
+            Math.abs(ctx.vertices[i * 9] - expectedX),
+            Math.abs(ctx.vertices[i * 9 + 1] - expectedY),
+          );
+          samples++;
+        });
+      }
+      const result = { passed: maxError < 1e-12, samples, maxError };
+      document.getElementById('result').textContent = JSON.stringify(result, null, 2);
+      if (!result.passed) throw new Error('Projection mismatch');
+    </script>
+  </body>
+</html>

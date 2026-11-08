@@ -1,3 +1,4 @@
+import { Weapons } from '../src/weapons.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MultiplayerRooms } from '../server/multiplayer-rooms.mjs';
@@ -313,4 +314,99 @@ test('friendly fire retains its attribution when the launching pilot has disconn
   const hit = room.combat.events.find((e) => e.type === 'target-hit');
   assert.equal(hit.friendlyFire, true);
   assert.equal(hit.sourceId, two.id);
+});
+
+test('wire serialization matches isolated snapshots without copying every flight again', (t) => {
+  const { rooms, room, one } = fixture();
+  control(rooms, one, { countermeasures: true });
+  rooms.step();
+  const clone = globalThis.structuredClone;
+  let calls = 0;
+  t.mock.method(globalThis, 'structuredClone', (...args) => {
+    calls++;
+    return clone(...args);
+  });
+  const expected = JSON.stringify(rooms.snapshot(room)),
+    snapshotCopies = calls;
+  calls = 0;
+  const actual = rooms.serialize(room);
+  assert.equal(actual, expected);
+  assert.ok(calls < snapshotCopies);
+  const parsed = JSON.parse(actual);
+  parsed.players[0].state.ammo.gun = 0;
+  assert.notEqual(one.state.ammo.gun, 0);
+});
+test('the server emits gameplay events without allocating cosmetic weapon effects, and clients still draw explosions', () => {
+  const { rooms, room, one } = fixture();
+  assert.equal(room.combat.weapons.visualEffects, false);
+  assert.equal(one.combat.weapons.visualEffects, false);
+  control(rooms, one, { fire: true });
+  rooms.step();
+  room.combat.weapons.explode(new Vec3(0, 100, 0), 'bomb');
+  rooms.step();
+  assert.equal(room.combat.weapons.effects.length, 0);
+  assert.equal(room.combat.weapons.trails.length, 0);
+  assert.equal(one.combat.weapons.effects.length, 0);
+  const view = new NetworkCombatView();
+  view.accept(JSON.parse(rooms.serialize(room)), true);
+  assert.ok(view.effects.some((e) => e.kind === 'explosion' && e.particles.length > 0));
+});
+test('interpolated projectile vectors remain isolated from packets and earlier render frames', () => {
+  const view = new NetworkCombatView();
+  const projectile = {
+    id: 1,
+    type: 'gun',
+    profile: 'm61',
+    position: { x: 0, y: 0, z: 0 },
+    velocity: { x: 10, y: 0, z: 0 },
+    age: 0,
+  };
+  const a = {
+      tick: 0,
+      time: 0,
+      combat: { targets: [], projectiles: [projectile], events: [], eventSequence: 0 },
+    },
+    b = structuredClone(a);
+  b.tick = 120;
+  b.time = 1;
+  b.combat.projectiles[0].position = { x: 10, y: 20, z: 30 };
+  b.combat.projectiles[0].age = 1;
+  view.accept(a);
+  view.accept(b);
+  const first = view.sample(0.5).projectiles[0];
+  assert.deepEqual(first.position, new Vec3(5, 10, 15));
+  assert.equal(first.age, 0.5);
+  first.position.x = 999;
+  first.velocity.x = 999;
+  const next = view.sample(0.75).projectiles[0];
+  assert.deepEqual(next.position, new Vec3(7.5, 15, 22.5));
+  assert.equal(next.velocity.x, 10);
+  assert.equal(a.combat.projectiles[0].position.x, 0);
+  assert.equal(b.combat.projectiles[0].position.x, 10);
+});
+
+test('headless cosmetic impacts cannot evict authoritative hit events from the bounded scoring log', () => {
+  const w = new Weapons({ visualEffects: false });
+  for (let i = 0; i < 128; i++) w.emit({ type: 'target-hit', projectileId: i });
+  for (let i = 0; i < 192; i++) w.impact(new Vec3(i, 0, 0));
+  assert.equal(w.drainEvents().filter((e) => e.type === 'target-hit').length, 128);
+  assert.equal(w.drainImpacts().length, 128);
+  assert.equal(w.drainImpacts().length, 0);
+  assert.equal(w.effects.length, 0);
+});
+
+test('live projectile history reuses its private vector while published packets stay isolated', () => {
+  const { rooms, room, one } = fixture();
+  control(rooms, one, { weapon: 'gun', fire: true });
+  rooms.step();
+  const p = room.combat.weapons.projectiles[0],
+    previous = p.previous,
+    position = p.position.clone(),
+    packet = rooms.snapshot(room);
+  rooms.step();
+  assert.equal(p.previous, previous);
+  assert.deepEqual(p.previous, position);
+  assert.notEqual(p.previous, p.position);
+  assert.deepEqual(packet.combat.projectiles[0].position, { ...position });
+  assert.notDeepEqual(p.position, position);
 });

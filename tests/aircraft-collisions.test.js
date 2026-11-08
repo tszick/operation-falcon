@@ -6,7 +6,7 @@ import { createAircraft, stepAircraft } from '../src/physics.js';
 import { Weapons } from '../src/weapons.js';
 import { configureTerrain, terrainHeight } from '../src/terrain.js';
 import { updateTargets } from '../src/targeting.js';
-import { updateAircraftCollisions } from '../src/aircraftCollisions.js';
+import { updateAircraftCollisions, aircraftBroadphaseOverlap } from '../src/aircraftCollisions.js';
 import { groundAircraftHit } from '../src/groundModels.js';
 import { launchBallistic } from '../src/ballisticFlight.js';
 const spec = aircraft.find((a) => a.id === 'f16');
@@ -228,4 +228,52 @@ test('ordinary aircraft without a full flight state still receive fatal collisio
   assert.equal(target.alive, false);
   assert.equal(target.falling, true);
   assert.ok(target.flight.condition.source.includes('repülőgéppel'));
+});
+
+test('allocation-free broadphase preserves swept collision rejection for crossings, near misses and stationary pairs', () => {
+  let seed = 314159;
+  const random = () => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    return seed / 0x100000000;
+  };
+  const actor = () => ({
+    state: {
+      position: new Vec3((random() - 0.5) * 10000, random() * 1000, (random() - 0.5) * 10000),
+      previousPosition: new Vec3(
+        (random() - 0.5) * 10000,
+        random() * 1000,
+        (random() - 0.5) * 10000,
+      ),
+    },
+    mesh: { radius: 5 + random() * 50 },
+  });
+  let overlaps = 0;
+  for (let i = 0; i < 20000; i++) {
+    const a = actor(),
+      b = actor();
+    if (i % 4 === 0) {
+      a.state.previousPosition = a.state.position;
+      b.state.previousPosition = b.state.position;
+    }
+    if (i % 5 === 0) b.state.position = a.state.position.clone().add(new Vec3(1, 2, 3));
+    if (i % 7 === 0) {
+      delete a.state.previousPosition;
+      delete b.state.previousPosition;
+    }
+    const from = (a.state.previousPosition || a.state.position)
+        .clone()
+        .sub(b.state.previousPosition || b.state.position),
+      to = a.state.position.clone().sub(b.state.position),
+      delta = to.clone().sub(from),
+      t = Math.max(0, Math.min(1, -from.dot(delta) / Math.max(1e-9, delta.dot(delta)))),
+      expected = from.add(delta.scale(t)).length() <= a.mesh.radius + b.mesh.radius + 1;
+    if (expected) overlaps++;
+    assert.equal(aircraftBroadphaseOverlap(a, b), expected);
+  }
+  assert.ok(overlaps > 1000 && overlaps < 19000);
+  const a = { state: { position: new Vec3() }, mesh: { radius: 10 } },
+    b = { state: { position: new Vec3(21, 0, 0) }, mesh: { radius: 10 } };
+  assert.equal(aircraftBroadphaseOverlap(a, b), true);
+  b.state.position.x += 1e-8;
+  assert.equal(aircraftBroadphaseOverlap(a, b), false);
 });

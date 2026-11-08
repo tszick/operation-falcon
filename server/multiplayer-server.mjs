@@ -1,3 +1,5 @@
+import { MultiplayerPump } from './multiplayer-pump.mjs';
+import { MultiplayerPerformance } from './multiplayer-performance.mjs';
 import { WebSocketServer, WebSocket } from 'ws';
 import { MultiplayerRooms } from './multiplayer-rooms.mjs';
 import { sameOriginRequest } from './request-policy.mjs';
@@ -5,8 +7,6 @@ import {
   PROTOCOL_VERSION,
   SNAPSHOT_BYTES_LIMIT,
   MULTIPLAYER_PATH,
-  SNAPSHOT_INTERVAL,
-  NETWORK_STEP,
   INPUT_BATCH_LIMIT,
   aircraftChoices,
   roomScenarios,
@@ -14,14 +14,15 @@ import {
 } from '../src/multiplayer/protocol.js';
 export function attachMultiplayer(
   server,
-  { allowedHosts = [], maxConnections = 80, rooms = new MultiplayerRooms() } = {},
+  { allowedHosts = [], maxConnections = 80, rooms = new MultiplayerRooms(), onPerformance } = {},
 ) {
+  const metrics = onPerformance
+    ? new MultiplayerPerformance(onPerformance, { observeGC: true })
+    : null;
   const wss = new WebSocketServer({ noServer: true, maxPayload: 4096, perMessageDeflate: false });
   let closed = false;
   let timer = null,
-    last = 0,
-    accumulator = 0,
-    frame = 0;
+    continuation = null;
   function send(ws, message) {
     if (ws.readyState !== WebSocket.OPEN) return;
     if (ws.bufferedAmount > SNAPSHOT_BYTES_LIMIT) {
@@ -30,43 +31,69 @@ export function attachMultiplayer(
     }
     ws.send(typeof message === 'string' ? message : JSON.stringify(message));
   }
+  function hasRecipient(room) {
+    for (const ws of wss.clients)
+      if (ws.session?.room === room && ws.readyState === WebSocket.OPEN) return true;
+    return false;
+  }
+  const pump = new MultiplayerPump({
+    step: () => {
+      const start = metrics && performance.now();
+      rooms.step();
+      if (metrics) metrics.step(performance.now() - start);
+    },
+    broadcast: () => {
+      for (const room of rooms.rooms.values()) {
+        if (!hasRecipient(room)) continue;
+        const start = metrics && performance.now(),
+          snapshot = rooms.serialize(room, room.broadcastEventId || 0);
+        room.broadcastEventId = room.combat.eventSequence;
+        let recipients = 0;
+        for (const ws of wss.clients)
+          if (ws.session?.room === room && ws.readyState === WebSocket.OPEN) {
+            send(ws, snapshot);
+            recipients++;
+          }
+        if (metrics)
+          metrics.snapshot(performance.now() - start, Buffer.byteLength(snapshot), recipients);
+      }
+    },
+  });
   function stopIdleTimer() {
     if (!wss.clients.size && !rooms.rooms.size && timer) {
       clearInterval(timer);
       timer = null;
+      clearImmediate(continuation);
+      continuation = null;
     }
+  }
+  function tick() {
+    if (closed || !timer) return;
+    clearImmediate(continuation);
+    continuation = null;
+    const now = performance.now(),
+      sample = pump.advance();
+    stopIdleTimer();
+    for (const ws of wss.clients) {
+      if (ws.readyState !== WebSocket.OPEN) continue;
+      if (now - ws.lastPong > 30000 || (!ws.session && now - ws.connectedAt > 10000))
+        ws.terminate();
+      else if (now - ws.lastPing > 10000) {
+        ws.lastPing = now;
+        ws.ping();
+      }
+    }
+    if (metrics)
+      metrics.loop(performance.now(), sample.elapsedMs, performance.now() - now, sample.droppedMs, {
+        rooms: rooms.rooms.size,
+        connections: wss.clients.size,
+      });
+    if (sample.backlog && timer) continuation = setImmediate(tick);
   }
   function startTimer() {
     if (timer) return;
-    last = performance.now();
-    accumulator = 0;
-    timer = setInterval(() => {
-      const now = performance.now();
-      accumulator = Math.min(accumulator + (now - last) / 1000, NETWORK_STEP * 12);
-      last = now;
-      while (accumulator >= NETWORK_STEP) {
-        rooms.step();
-        frame++;
-        accumulator -= NETWORK_STEP;
-        if (frame % SNAPSHOT_INTERVAL === 0) {
-          for (const room of rooms.rooms.values()) {
-            const snapshot = JSON.stringify(rooms.snapshot(room, room.broadcastEventId || 0));
-            room.broadcastEventId = room.combat.eventSequence;
-            for (const ws of wss.clients) if (ws.session?.room === room) send(ws, snapshot);
-          }
-        }
-      }
-      stopIdleTimer();
-      for (const ws of wss.clients) {
-        if (ws.readyState !== WebSocket.OPEN) continue;
-        if (now - ws.lastPong > 30000 || (!ws.session && now - ws.connectedAt > 10000))
-          ws.terminate();
-        else if (now - ws.lastPing > 10000) {
-          ws.lastPing = now;
-          ws.ping();
-        }
-      }
-    }, 8);
+    pump.reset();
+    timer = setInterval(tick, 8);
     timer.unref();
   }
   function upgrade(req, socket, head) {
@@ -173,7 +200,7 @@ export function attachMultiplayer(
         const error = rooms.preflight(ws.session.room, ws.session.player, msg);
         if (error) send(ws, { type: 'error', code: error });
         else {
-          const snapshot = JSON.stringify(rooms.snapshot(ws.session.room));
+          const snapshot = rooms.serialize(ws.session.room);
           for (const peer of wss.clients)
             if (peer.session?.room === ws.session.room) send(peer, snapshot);
         }
@@ -208,7 +235,10 @@ export function attachMultiplayer(
   function close() {
     if (closed) return;
     closed = true;
+    metrics?.close();
     if (timer) clearInterval(timer);
+    clearImmediate(continuation);
+    continuation = null;
     timer = null;
     server.off('upgrade', upgrade);
     for (const ws of wss.clients) ws.terminate();

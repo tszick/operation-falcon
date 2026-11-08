@@ -24,6 +24,7 @@ export class MultiplayerClient {
     socketFactory = (url) => new WebSocket(url),
     getStorage = () => globalThis.sessionStorage,
     scheduleSnapshot,
+    onTiming = null,
     connectionTimeoutMs = 10000,
   }) {
     Object.assign(this, { onWelcome, onStatus, onClose, onSnapshot, onReconcile, onRound, now });
@@ -34,6 +35,7 @@ export class MultiplayerClient {
     this.baseUrl = baseUrl;
     this.socketFactory = socketFactory;
     this.getStorage = getStorage;
+    this.onTiming = onTiming;
     this.inbox = new SnapshotInbox(
       (data, receivedAt) => this.acceptSnapshot(data, true, receivedAt),
       scheduleSnapshot,
@@ -45,10 +47,12 @@ export class MultiplayerClient {
       maxCorrectionM: 0,
       maxDecodeMs: 0,
       maxSnapshotApplyMs: 0,
+      maxHistoryMs: 0,
+      maxCombatApplyMs: 0,
     };
     this.prediction = new FlightPrediction();
     this.combat = new NetworkCombatView();
-    this.history = new SnapshotBuffer();
+    this.history = new SnapshotBuffer({ maxFrames: 8 });
     this.socket = null;
     this.latest = null;
     this.receivedAt = 0;
@@ -77,7 +81,7 @@ export class MultiplayerClient {
     previous?.close();
     this.inbox.clear();
     this.prediction = new FlightPrediction();
-    this.history = new SnapshotBuffer();
+    this.history = new SnapshotBuffer({ maxFrames: 8 });
     this.combat = new NetworkCombatView();
     this.id = this.code = this.round = this.latest = this.handshake = null;
     this.worldRevision = null;
@@ -128,7 +132,9 @@ export class MultiplayerClient {
         ws.close();
         return;
       }
-      this.metrics.maxDecodeMs = Math.max(this.metrics.maxDecodeMs, this.now() - decodeStart);
+      const decodeMs = this.now() - decodeStart;
+      this.metrics.maxDecodeMs = Math.max(this.metrics.maxDecodeMs, decodeMs);
+      this.onTiming?.('decode', decodeStart, decodeMs);
       if (!msg || typeof msg !== 'object') {
         ws.close();
         return;
@@ -242,12 +248,14 @@ export class MultiplayerClient {
       const own = msg.players.find((p) => p.id === this.id);
       if (!own) return;
       this.prediction.reset(own);
-      this.history = new SnapshotBuffer();
+      this.history = new SnapshotBuffer({ maxFrames: 8 });
       this.combat = new NetworkCombatView();
       reconcile = false;
     }
     this.round = round;
-    if (!this.history.add(msg)) return;
+    const historyStarted = this.now();
+    if (!this.history.add(msg, this.id)) return;
+    this.metrics.maxHistoryMs = Math.max(this.metrics.maxHistoryMs, this.now() - historyStarted);
     const own = msg.players.find((p) => p.id === this.id);
     if (!own) return;
     if (msg.world && this.worldRevision !== msg.world.revision) {
@@ -266,17 +274,21 @@ export class MultiplayerClient {
       );
       this.onReconcile(before, this.prediction.state);
     }
+    const combatStarted = this.now();
     this.combat.accept(msg, !reconcile);
+    this.metrics.maxCombatApplyMs = Math.max(
+      this.metrics.maxCombatApplyMs,
+      this.now() - combatStarted,
+    );
     this.latest = msg;
     this.receivedAt = receivedAt;
     this.transportReceivedAt = receivedAt;
     this.metrics.appliedSnapshots++;
     if (changedRound) this.onRound(msg);
     this.onSnapshot(msg);
-    this.metrics.maxSnapshotApplyMs = Math.max(
-      this.metrics.maxSnapshotApplyMs,
-      this.now() - started,
-    );
+    const applyMs = this.now() - started;
+    this.metrics.maxSnapshotApplyMs = Math.max(this.metrics.maxSnapshotApplyMs, applyMs);
+    this.onTiming?.('apply', started, applyMs);
   }
   get stale() {
     return !this.latest || this.now() - this.transportReceivedAt > 750;

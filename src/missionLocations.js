@@ -7,7 +7,12 @@ export const missionLocations = Object.freeze({
     lon: 48.2,
     surface: 'desert',
   },
-  'taiwan-invasion': { name: 'Tajvan · Tajvani-szoros', lat: 23.7, lon: 121, surface: 'ocean' },
+  'taiwan-invasion': {
+    name: 'Aster-sziget · Nyugati-Csendes-óceán',
+    lat: 24.2,
+    lon: 137.5,
+    surface: 'ocean',
+  },
   'flight-test-us': {
     name: 'Edwards · Kalifornia, USA',
     lat: 34.9,

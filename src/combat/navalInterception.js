@@ -140,7 +140,7 @@ export function updateSeaRam(w, player, targets, dt) {
     }
     stepMissile(p, { position: threat.position, velocity: threat.velocity }, null, dt);
     p.position.add(p.velocity.clone().scale(dt));
-    if (p.age < p.profile.burn) {
+    if (w.visualEffects !== false && p.age < p.profile.burn) {
       p.trailTimer += dt;
       if (p.trailTimer >= 0.045) {
         w.trails.push({

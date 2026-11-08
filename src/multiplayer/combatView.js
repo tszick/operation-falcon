@@ -1,12 +1,11 @@
+import { weaponProfiles } from '../weaponDynamics.js';
 import { Vec3 } from '../math.js';
 import { explosionEffect, impactEffect } from '../effects.js';
 import { unpackProjectile, unpackTarget } from './combatState.js';
 import { interpolateOrientation } from './flightState.js';
 const vector = (v) => new Vec3(v.x, v.y, v.z);
 const lerp = (a, b, t) =>
-  vector(a)
-    .scale(1 - t)
-    .add(vector(b).scale(t));
+  new Vec3(a.x * (1 - t) + b.x * t, a.y * (1 - t) + b.y * t, a.z * (1 - t) + b.z * t);
 export class NetworkCombatView {
   constructor() {
     this.frames = [];
@@ -32,9 +31,8 @@ export class NetworkCombatView {
       this.trails = [];
     }
     for (const p of snapshot.combat.projectiles) {
-      const before = previous.get(p.id),
-        projectile = unpackProjectile(p);
-      if (before && ['aam', 'agm'].includes(p.type) && p.age < projectile.profile.burn) {
+      const before = previous.get(p.id);
+      if (before && ['aam', 'agm'].includes(p.type) && p.age < weaponProfiles[p.profile].burn) {
         this.trails.push({
           from: vector(before.position),
           to: vector(p.position),
@@ -84,11 +82,7 @@ export class NetworkCombatView {
     const projectiles = [];
     for (const p of a.combat.projectiles) {
       const q = next.get(p.id),
-        out = unpackProjectile(q || p);
-      if (q) {
-        out.position = lerp(p.position, q.position, t);
-        out.age = p.age + (q.age - p.age) * t;
-      }
+        out = unpackProjectile(q || p, q ? p : null, t);
       if (q || t < 1 || a === b) projectiles.push(out);
       next.delete(p.id);
     }

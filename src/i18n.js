@@ -1,3 +1,4 @@
+import { LiteralFragments } from './literalFragments.js';
 import { renameEquipmentText } from './equipmentCatalog.js';
 import i18next from '../assets/vendor/i18next/i18next.js';
 import messages from './locales/messages.json' with { type: 'json' };
@@ -82,9 +83,7 @@ const fragments = [...new Set([...sources.keys(), ...reverse.keys()])]
       (s.length >= 4 || (s.length === 3 && s === s.toLocaleUpperCase('hu'))) && !s.includes('{{'),
   )
   .sort((a, b) => b.length - a.length);
-const fragmentPattern = fragments.length
-  ? new RegExp(fragments.map(escapePattern).join('|'), 'gu')
-  : null;
+const fragmentMatcher = new LiteralFragments(fragments);
 function lookup(key, values) {
   const hit = sources.get(key) || reverse.get(key);
   if (!hit) return null;
@@ -111,15 +110,13 @@ export function tr(value) {
     }
   }
   if (result === null)
-    result = fragmentPattern
-      ? text.replace(fragmentPattern, (part, offset) => {
-          const before = text[offset - 1],
-            after = text[offset + part.length];
-          if ((before && /[\p{L}\p{N}]/u.test(before)) || (after && /[\p{L}\p{N}]/u.test(after)))
-            return part;
-          return lookup(part) ?? part;
-        })
-      : text;
+    result = fragmentMatcher.replace(text, (part, offset) => {
+      const before = text[offset - 1],
+        after = text[offset + part.length];
+      if ((before && /[\p{L}\p{N}]/u.test(before)) || (after && /[\p{L}\p{N}]/u.test(after)))
+        return part;
+      return lookup(part) ?? part;
+    });
   result =
     input.slice(0, input.indexOf(raw)) + result + input.slice(input.indexOf(raw) + raw.length);
   result = renameEquipmentText(result);

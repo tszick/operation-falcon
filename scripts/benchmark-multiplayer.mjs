@@ -54,17 +54,29 @@ for (const mode of ['arena', 'defend-base']) {
     if (i >= 120) step.push(end - begin);
     if (i % 6 === 0) {
       const before = performance.now(),
-        json = JSON.stringify(rooms.snapshot(room, cursor));
+        json = rooms.serialize(room, cursor);
       if (i >= 120) encoding.push(performance.now() - before);
-      maxFullBytes = Math.max(
-        maxFullBytes,
-        Buffer.byteLength(JSON.stringify(rooms.snapshot(room))),
-      );
+      maxFullBytes = Math.max(maxFullBytes, Buffer.byteLength(rooms.serialize(room)));
       cursor = room.combat.eventSequence;
       maxBytes = Math.max(maxBytes, Buffer.byteLength(json));
     }
   }
   if (maxFullBytes + 512 > SNAPSHOT_BYTES_LIMIT) throw new Error('Snapshot exceeds network budget');
+  const copied = [],
+    wire = [];
+  for (let i = 0; i < 150; i++) {
+    const a = performance.now(),
+      old = JSON.stringify(rooms.snapshot(room));
+    const b = performance.now(),
+      current = rooms.serialize(room),
+      c = performance.now();
+    if (old !== current) throw new Error('Serialization changed the game state packet');
+    if (i >= 30) {
+      copied.push(b - a);
+      wire.push(c - b);
+    }
+  }
+
   console.log(
     JSON.stringify({
       mode,
@@ -74,6 +86,8 @@ for (const mode of ['arena', 'defend-base']) {
       physicsP95Ms: percentile(step, 0.95),
       physicsP99Ms: percentile(step, 0.99),
       snapshotP95Ms: percentile(encoding, 0.95),
+      copiedSnapshotP95Ms: percentile(copied, 0.95),
+      directSnapshotP95Ms: percentile(wire, 0.95),
       maxSnapshotBytes: maxBytes,
       maxFullSnapshotBytes: maxFullBytes,
       perClientMaxKBps: Math.round((maxBytes * 20) / 1024),

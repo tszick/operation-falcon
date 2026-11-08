@@ -162,3 +162,16 @@ export function featurePatchInView(r, patch) {
     Math.abs(p.y) <= (p.z * r.h * 0.53) / r.focal + radius * Math.hypot(1, (r.h * 0.53) / r.focal)
   );
 }
+
+// Return true only when the GPU-visible mask actually changes.
+export function updateFeatureVisibility(values, candidates, mask) {
+  let changed = false;
+  for (let i = 0; i < candidates.length; i++) {
+    const next = candidates[i] && mask[i] ? 1 : 0;
+    if (values[i] !== next) {
+      values[i] = next;
+      changed = true;
+    }
+  }
+  return changed;
+}

@@ -702,3 +702,46 @@ test(
     assert.equal(f.multiplayer.rooms.rooms.size, 1);
   },
 );
+
+test('default server limits admit ten rooms of five pilots, reject overflow and reuse released capacity', () => {
+  const rooms = new MultiplayerRooms();
+  const created = Array.from({ length: 10 }, () => rooms.create());
+  assert.ok(created.every(Boolean));
+  assert.equal(rooms.create(), null);
+  for (const room of created) {
+    for (let i = 0; i < 5; i++) assert.ok(rooms.join(room, 'f16'));
+    assert.equal(rooms.join(room, 'fa18'), null);
+  }
+  assert.equal(
+    [...rooms.rooms.values()].reduce((n, r) => n + r.players.size, 0),
+    50,
+  );
+  const room = created[0],
+    pilot = room.players.values().next().value;
+  assert.equal(rooms.resume(room, pilot.sessionToken), pilot);
+  for (const p of [...room.players.values()]) rooms.leave(room, p);
+  assert.equal(rooms.rooms.size, 9);
+  assert.ok(rooms.create());
+  assert.equal(rooms.rooms.size, 10);
+  assert.equal(rooms.create(), null);
+});
+
+test(
+  'real localhost clients cannot create an eleventh room but can join an existing room at capacity',
+  { timeout: 15000 },
+  async (t) => {
+    const f = await fixture(t);
+    let first;
+    for (let i = 0; i < 10; i++) {
+      const client = await connect(t, f, { mode: 'create' });
+      const welcome = await client.next((m) => m.type === 'welcome');
+      first ||= welcome;
+    }
+    const overflow = await connect(t, f, { mode: 'create' });
+    assert.equal((await overflow.next((m) => m.type === 'error')).code, 'server-full');
+    assert.equal(f.multiplayer.rooms.rooms.size, 10);
+    const joining = await connect(t, f, { mode: 'join', code: first.code });
+    assert.equal((await joining.next((m) => m.type === 'welcome')).players.length, 2);
+    assert.equal(f.multiplayer.rooms.rooms.size, 10);
+  },
+);

@@ -1,3 +1,4 @@
+import { ObjectiveLayout } from './rendering/objectiveLayout.js';
 import { equipmentLabel } from './equipmentCatalog.js';
 import { tr, trHtml } from './i18n.js';
 import { ironVeilVisibleRows } from './ironVeil.js';
@@ -31,10 +32,20 @@ const html = (element, value) => {
 };
 
 export function updateHUD(s, targets, weapons, aim, mission, muted, presentation = {}) {
+  // Optional local profiler; no timer reads or callback allocation in normal play.
+  let measuredAt = presentation.profile ? performance.now() : 0;
+  const mark = presentation.profile
+    ? (name) => {
+        const now = performance.now();
+        presentation.profile(name, now - measuredAt);
+        measuredAt = now;
+      }
+    : null;
   mountCockpit();
   const jammed = navigationJammed(s, targets);
   document.body.classList.toggle('navigation-jammed', jammed);
-  updateStores(s, weapons, { compact: true });
+  updateStores(s, weapons, { compact: true, profile: presentation.profile });
+  mark?.('stores');
   const flap = flapStatus(s),
     cm = s.countermeasures;
   const indicators = configurationIndicators(s),
@@ -175,6 +186,7 @@ export function updateHUD(s, targets, weapons, aim, mission, muted, presentation
   $('mission-card').title = tr(card.name + ' · ' + card.phase);
   const guideSteps = presentation.guideSteps || phaseGuide(s, mission, aim, weapons, targets);
   fitPhaseGuide(guideSteps);
+  mark?.('configuration-and-guide');
   const engine = engineInstruments(s),
     gauge = $('g-load');
   text($('throttle-value'), `${engine.throttle}%`);
@@ -270,9 +282,12 @@ export function updateHUD(s, targets, weapons, aim, mission, muted, presentation
           ? 'BASE / N'
           : `${contacts.filter((c) => c.visible && c.selectable).length} CÉL · ${contacts.filter((c) => c.visible && c.target.team === 'ally' && !c.target.home && !c.target.city).length} BARÁT`,
   );
+  mark?.('gauges-and-contacts');
   // Size the cockpit once after text updates, before drawing the radar.
   updateCockpit(s);
+  mark?.('cockpit-layout');
   const map = renderTacticalMap($('radar'), s, targets, aim);
+  mark?.('radar');
   text(
     $('map-range'),
     jammed ? 'NINCS JEL' : `${(map.halfExtent * 2) / 1000} KM · ${map.zoomFactor}×`,
@@ -320,7 +335,9 @@ export function updateHUD(s, targets, weapons, aim, mission, muted, presentation
     );
   }
   fitMissionObjectives();
+  mark?.('landing-and-objectives');
   updateFlightMessages(s, lock, aim, weapons);
+  mark?.('messages');
 }
 
 // Measure the untransformed screen: completed steps no longer consume glass space.
@@ -347,13 +364,11 @@ function fitPhaseGuide(steps) {
   }
 }
 
-const missionLayouts = new WeakMap();
+let missionLayout;
 function fitMissionObjectives() {
   const card = $('mission-card'),
     list = $('mission-objectives');
-  const key = list.innerHTML + ':' + list.clientWidth + ':' + list.clientHeight;
-  if (missionLayouts.get(list) === key) return;
-  card.classList.remove('dense-objectives');
-  if (list.scrollHeight > list.clientHeight + 1) card.classList.add('dense-objectives');
-  missionLayouts.set(list, key);
+  const key = list.innerHTML + ':' + innerWidth + ':' + innerHeight + ':' + document.body.className;
+  missionLayout ??= new ObjectiveLayout();
+  missionLayout.fit(card, list, key);
 }

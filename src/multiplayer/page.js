@@ -1,3 +1,4 @@
+import { FrameClock } from '../frameClock.js';
 import { Spectator } from './spectator.js';
 import { PlayersView } from './playersView.js';
 import { MultiplayerDiagnostics } from './diagnostics.js';
@@ -18,6 +19,7 @@ import { HeadLookInput } from '../headLookInput.js';
 import { tr } from '../i18n.js';
 const $ = (id) => document.getElementById(id);
 const diagnostics = MultiplayerDiagnostics.open();
+const frameClock = diagnostics ? new FrameClock() : null;
 const keys = new Set(),
   toggles = new Set();
 let renderer,
@@ -118,7 +120,7 @@ function busy(value) {
 async function setupRenderer() {
   if (renderer) return renderer.ready;
   await hud.mount();
-  renderer = new Renderer($('network-world'));
+  renderer = new Renderer($('network-world'), { backgroundTerrain: true });
   renderer.surfaceMode = 'grass';
   renderer.surfaceLines = false;
   renderer.headLook = head;
@@ -133,6 +135,7 @@ async function setupRenderer() {
   addEventListener('resize', () => renderer.resize());
   await renderer.ready;
   flightInstruments = new FlightInstrumentLayer(renderer);
+  await flightInstruments.prepareAssets();
 }
 function snapshotReceived(msg) {
   const own = msg.players.find((p) => p.id === client.id);
@@ -194,6 +197,9 @@ async function connect(mode) {
     renderer.wreckOffset = null;
     document.body.classList.remove('spectating', 'wreck-view');
     client = new MultiplayerClient({
+      onTiming: diagnostics
+        ? (kind, start, duration) => diagnostics.trace.recordNetwork(kind, start, duration)
+        : null,
       reconnectDelays: [1000, 2000, 4000],
       onReconnecting: ({ attempt, total }) => {
         active = false;
@@ -210,6 +216,7 @@ async function connect(mode) {
         status(`Kapcsolat helyreállítása · ${attempt}/${total} · A gépedet az AI vezeti.`);
       },
       onWelcome: (msg) => {
+        diagnostics?.reset();
         failure = '';
         renderer.wreckOffset = null;
         document.body.classList.remove('spectating', 'wreck-view');
@@ -226,6 +233,7 @@ async function connect(mode) {
         busy(false);
         accumulator = 0;
         last = performance.now();
+        frameClock?.reset();
         correction = new Vec3();
         rotationCorrection = new Quat();
         $('network-lobby').hidden = true;
@@ -242,6 +250,7 @@ async function connect(mode) {
       },
       onSnapshot: snapshotReceived,
       onRound: (msg) => {
+        diagnostics?.reset();
         releaseControls();
         spectator.reset();
         preflight.reset();
@@ -472,6 +481,7 @@ function targetsAt(now, excludedId = client.id) {
 function frame(now) {
   const frameStart = performance.now(),
     frameMs = Math.max(0, now - last);
+  const timing = frameClock?.begin(now, frameStart);
   const dt = Math.min(0.1, frameMs / 1000);
   last = now;
   if (active && client.latest && renderer) {
@@ -567,6 +577,8 @@ function frame(now) {
     diagnostics?.frame(
       {
         frameMs,
+        startedAt: frameStart,
+        ...timing,
         hudMs,
         instrumentMs,
         cpuMs: frameEnd - frameStart,
@@ -579,5 +591,6 @@ function frame(now) {
     );
   }
   requestAnimationFrame(frame);
+  frameClock?.end(performance.now());
 }
 requestAnimationFrame(frame);

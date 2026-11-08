@@ -34,16 +34,20 @@ export class FlightPrediction {
   }
 }
 export class SnapshotBuffer {
-  constructor() {
+  constructor({ maxFrames = 32 } = {}) {
+    this.maxFrames = maxFrames;
     this.frames = [];
     this.decoded = new WeakMap();
   }
-  add(snapshot) {
+  add(snapshot, excludedId = null) {
     if (this.frames.length && snapshot.tick < this.frames.at(-1).tick) return false;
     if (this.frames.at(-1)?.tick === snapshot.tick) this.frames.pop();
-    this.decoded.set(snapshot, new Map(snapshot.players.map((p) => [p.id, unpackFlight(p.state)])));
+    const decoded = new Map();
+    for (const p of snapshot.players)
+      if (p.id !== excludedId) decoded.set(p.id, unpackFlight(p.state));
+    this.decoded.set(snapshot, decoded);
     this.frames.push(snapshot);
-    if (this.frames.length > 32) this.frames.shift();
+    if (this.frames.length > this.maxFrames) this.frames.shift();
     return true;
   }
   sample(id, time) {

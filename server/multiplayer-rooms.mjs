@@ -38,7 +38,7 @@ function roomCode() {
   return Array.from({ length: 6 }, () => alphabet[randomInt(alphabet.length)]).join('');
 }
 export class MultiplayerRooms {
-  constructor({ maxRooms = 16, now = () => Date.now(), orphanTimeout = 120000 } = {}) {
+  constructor({ maxRooms = 10, now = () => Date.now(), orphanTimeout = 120000 } = {}) {
     this.rooms = new Map();
     this.maxRooms = maxRooms;
     this.now = now;
@@ -180,22 +180,29 @@ export class MultiplayerRooms {
     }
   }
   snapshot(room, afterEventId = null) {
+    return this.#snapshot(room, afterEventId, true);
+  }
+  serialize(room, afterEventId = null) {
+    // Serialize synchronously: borrowed nested state never escapes as objects.
+    return JSON.stringify(this.#snapshot(room, afterEventId, false));
+  }
+  #snapshot(room, afterEventId, copy) {
     return {
       type: 'snapshot',
       round: room.round,
-      world: structuredClone(room.world),
+      world: copy ? structuredClone(room.world) : room.world,
       scenario: room.scenario,
       mission: roomMissionSnapshot(room),
       lobby: roomLobbySnapshot(room),
       tick: room.tick,
       time: room.tick * NETWORK_STEP,
-      combat: roomCombatSnapshot(room, afterEventId),
+      combat: roomCombatSnapshot(room, afterEventId, { copy }),
       players: [...room.players.values()].map((p) => ({
         connected: p.connected,
         id: p.id,
         callSign: p.callSign,
         ack: p.ack,
-        state: packFlight(p.state),
+        state: packFlight(p.state, { copy }),
         combat: playerCombatSnapshot(p),
       })),
     };

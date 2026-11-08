@@ -1,3 +1,4 @@
+import { SnapshotBuffer } from '../src/multiplayer/prediction.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MultiplayerRooms } from '../server/multiplayer-rooms.mjs';
@@ -241,4 +242,22 @@ test('results expose authoritative kills and friendly hits independently of the 
   assert.equal(row.kills, 2);
   assert.equal(row.friendlyHits, 1);
   assert.equal(row.lost, false);
+});
+
+test('the live render buffer retains eight frames, omits duplicate own-flight decoding and preserves remote interpolation', () => {
+  const { rooms, room, pilots } = setup();
+  const base = rooms.snapshot(room),
+    buffer = new SnapshotBuffer({ maxFrames: 8 });
+  for (let i = 0; i < 100; i++) {
+    const snapshot = structuredClone(base);
+    snapshot.tick = i;
+    snapshot.time = i / 20;
+    for (const p of snapshot.players) p.state.position.x = i * 10;
+    buffer.add(snapshot, pilots[0].id);
+  }
+  assert.equal(buffer.frames.length, 8);
+  assert.equal(buffer.sample(pilots[0].id, 4.9), null);
+  assert.ok(Math.abs(buffer.sample(pilots[1].id, 4.925).position.x - 985) < 1e-9);
+  assert.equal(buffer.sample(pilots[1].id, 100).position.x, 990);
+  assert.equal(base.players[0].state.position.x, pilots[0].state.position.x);
 });

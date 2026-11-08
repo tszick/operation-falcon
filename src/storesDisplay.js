@@ -107,6 +107,21 @@ export function updateStores(s, weapons, options = {}) {
   if (previous?.signature === next) return;
   const count = previous?.visual === visual && root.querySelector('[data-weapon="gun"] b');
   if (count) count.textContent = String(s.ammo.gun);
-  else root.innerHTML = trHtml(storesMarkup(s, weapons.selected, options));
+  else {
+    let started = options.profile ? performance.now() : 0;
+    const mark = options.profile
+      ? (name) => {
+          const now = performance.now();
+          options.profile(name, now - started);
+          started = now;
+        }
+      : null;
+    const markup = storesMarkup(s, weapons.selected, options);
+    mark?.('stores-markup');
+    const localized = trHtml(markup);
+    mark?.('stores-translation');
+    root.innerHTML = localized;
+    mark?.('stores-dom');
+  }
   displays.set(root, { signature: next, visual });
 }

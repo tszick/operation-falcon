@@ -75,9 +75,15 @@ A WebGPU böngésző-API; működő adapterhez támogatott böngésző és grafi
 
 A fejlécben magyar és angol felület választható. Első indításkor a böngésző támogatott nyelve érvényes; más nyelvnél angol az alapértelmezés. A kézi választás a `falcon-language` helyi beállításban marad meg. Váltáskor a bevetés, felszerelés és repülési állapot megmarad; a wiki és a naplónézet is követi a választást. A hangfelvételek minden nyelven angolok, a rádiófeliratok fordíthatók.
 
+Az összetett feliratokban keresett szótári részleteket két karakter szerinti csoportok szűkítik.
+A keresés ugyanúgy a legkorábbi helyen kezdődő, leghosszabb szöveget választja, megőrizve a
+szóhatár-ellenőrzést; nem fordít le óriási reguláris kifejezést az első ismeretlen HUD-feliratnál.
+A `/tests/stores-build.html?plane=b52` helyi, hang nélküli próba külön méri az első fegyverpanel
+jelölőkódjának elkészítését, fordítását, DOM-beillesztését és elrendezését.
+
 Az i18next rögzített npm-függőség, helyi ESM-példánya az `assets/vendor/i18next/` alatt van. Az `npm install`/`npm ci` utáni `postinstall` frissíti a böngészős példányt és MIT-licencet; kézzel `npm run vendor:sync` futtatható. Játék közben nincs CDN vagy fordítószolgáltatás. A szótár: `src/locales/messages.json`. Minden forrásszöveghez teljes magyar/angol pár tartozik; a `{{v0}}` jellegű helyőrzőket meg kell őrizni. A megjelenítési réteg fordít, a szimuláció belső azonosítói és a naplóadatok változatlanok. A nyomtatható útmutató és a wiki közös fejezetadatokat használ.
 
-Az új [Invázió: Tajvan](docs/taiwan-invasion.md) bevetés a közös hullám-, harci és feltöltési rendszerekből épül fel.
+Az új [Invázió: Aster-sziget](docs/aster-island.md) bevetés a közös hullám-, harci és feltöltési rendszerekből épül fel.
 
 A [közös repülési modell](docs/flight-model.md) széllel, hajtómű-késleltetéssel, forgási csillapítással, talajhatással és Mach-függő hullámellenállással működik. A mérő- és elemzőscript exportált repülési naplókból ellenőrzi a működést.
 
@@ -155,6 +161,15 @@ Szobánként legfeljebb 192 lövedék és 128 harci esemény marad. A kapcsolato
 csomagméret (állapotnál 256 KiB), üzenetsebesség és vezérlési sor is korlátozott. Legfeljebb 16 szoba / 80 kapcsolat.
 A 8-as protokollverzió régebbi nyitott lap frissítését igényli.
 
+Az egyjátékos repülés fizikája, AI-ja, harca, grafikája és helyi IndexedDB-naplója a
+böngészőben fut. Ilyenkor a szerver statikus program- és médiafájlokat szolgál ki,
+folyamatos repülésszimulációt nem végez a játékosnak. A többjátékos közös világ viszont
+szerveroldali szimulációt használ. Alapértelmezésben legfeljebb **10 szoba**, szobánként
+**5 pilótahely** foglalható (összesen 50 hely). A korlátot a szerver ellenőrzi; telítettségnél
+új szoba nem nyitható, meglévő szabad helyhez csatlakozás és munkamenet-visszaállítás igen.
+Az előszobák és a visszacsatlakozásra még fenntartott szobák is beleszámítanak. Az üres
+előszoba azonnal felszabadul; a teljesen leszakadt aktív szoba két perc után törlődik.
+
 A szerver alapból csak `127.0.0.1` címen figyel; a `HOST` és `ALLOWED_HOSTS` kifejezett beállítást
 igényel. Origin/Host ellenőrzés védi a WebSocketet. Nincs automatikus portnyitás, felhős AI,
 külső matchmaking vagy hangátvitel. Távoli WebGPU-játékhoz HTTPS szükséges.
@@ -166,6 +181,28 @@ A még levegőben lévő ellenséges bombák a bombázó lelövése után is ves
 
 Ellenőrzés: `npm run verify`; célzott multiplayer tesztek a `tests/multiplayer*.test.js` fájlokban.
 Szerveroldali terhelésmérés: `node scripts/benchmark-multiplayer.mjs` (ez nem böngésző-FPS mérés).
+
+A szerveren a fegyverek fizikai és találati része fut, a grafikus részecskéket,
+felvillanásokat és rakétanyomokat a kliensek készítik a közös eseményekből.
+A rendszeres állapotküldés ugyanazt a JSON-t szinkron kódolja; a már elkülönített
+adatok ismételt mélymásolása nem terheli a küldési útvonalat. A programból
+lekért `snapshot()` továbbra is elkülönített adatokat ad, a `serialize()` pedig
+kizárólag kész szöveget ad vissza, megosztott állapotobjektumot nem.
+
+Opcionális szerverprofil: `MULTIPLAYER_DIAGNOSTICS=1` környezeti változóval
+indítva a helyi szerver öt másodpercenként időzítési JSON-t ír a konzoljára.
+Külön mérhető a fizika, a csomagkódolás és küldés, a folyamat CPU-ideje,
+az ütemezési késés, az eldobott szimulációs idő és a GC-szünetek. A CPU-százalék
+egy processzormag idejéhez viszonyul, nem a teljes géphez. A mérés alapból
+kikapcsolt, nem hoz létre új HTTP-végpontot és nem küld adatot külső szolgáltatásnak.
+
+A szerver a felzárkózó fizikai lépéseket legfeljebb négy lépéses, körülbelül 4 ms-os
+munkaszakaszokra bontja, és közöttük átadja a vezérlést a hálózati eseményeknek.
+Egyetlen lépés vagy memóriatakarítás ennél hosszabb lehet. Felzárkózás után csak a
+legfrissebb állapotot kódolja; az egyszeri harci eseményeket megőrzi. Kapcsolat nélküli,
+AI-val tovább élő szobákhoz nem készül kimenő csomag. A kliens a távoli gépekhez nyolc
+állapotot őriz, és a saját gépét nem dekódolja újra ebbe az interpolációs előzménybe.
+A saját vezérlési parancsok visszajátszása és a szerver által ellenőrzött fizika változatlan.
 
 ### Helyi hálózati és FPS-próba
 
@@ -180,6 +217,63 @@ node --test tests/multiplayer-network.test.js
 A visszaérkező állapotcsomagokból képkockánként csak a legújabb repülési állapotot dolgozza fel
 a kliens. Az egyszeri találati és robbanási eseményeket külön, korlátozott sorban megőrzi;
 az összevonás nem nyeli el ezeket. A készenléti és hibaüzenetek azonnal feldolgozódnak.
+
+A GPU-s repülési nézet első terephálóját és a mezőgazdasági/erdős felszíntérképet
+helyi Worker készíti elő. Az adatok átadható ArrayBufferként érkeznek vissza, és a
+felszíntérkép CPU-példánya a GPU-feltöltés után felszabadítható. A WebGPU ezt 128 soros
+részletekben tölti fel, képkockánként egy részlettel. Előkészítés közben rövid
+betöltési jelzés takarja az előző világot. Másik küldetés eredménye nem kerülhet a nézetbe;
+háttérszálhiba vagy tíz másodperces elakadás után a szinkron tartalék út működik tovább.
+A hagyományos CPU-megjelenítés és az egyszeri statikus előnézetek változatlanul közvetlenül
+állítják elő a terepet; a háttér-előkészítést az egyjátékos és a multiplayer repülési nézet használja.
+
+A WebGPU modelltextúráinak teljes mipmap-láncát is a helyi Worker készíti elő.
+Az előkészítési nézet képkockánként egy anyagot tölt fel; a CPU-adatok ezután elengedhetők.
+A műszerfal első felépítése is a panelenkénti frissítési keretet használja, és a festés során
+újrahasználja az adott elemhez már lekért stílust és méretet. A helyi diagnosztika külön méri
+a modellcsomagolást, a geometria feltöltését, az új textúrák előállítását/feltöltését és a GPU-parancsok beküldését.
+
+A procedurális anyagtextúrák képpontonkénti színtömbök nélkül készülnek. Az eredeti
+képek SHA-256 ellenőrzése védi a pontos megjelenést. A terepháromszögek normálvektorai
+szintén átmeneti élvektorok nélkül számolódnak; a tesztek az eredeti geometriai és
+megvilágítási számítással hasonlítják össze az eredményt.
+
+A többjátékos kapcsolódás előtt a műszerfal megvárja a grafikus felület és a betűatlasz
+elkészülését, valamint előre dekódolja és feltölti a CSS-ben használt háttereit. A rejtett
+HUD méreteit nem méri és nem teszi láthatóvá; a hiányzó díszítőképek nem blokkolják a
+kapcsolódást hibával. A tényleges panelgeometria továbbra is az aktuális, látható
+elrendezésből, képkockánként korlátozott munkával épül.
+
+A műszerfal perspektivikus vetítése a mátrix együtthatóiból közvetlenül számol, csúcsonkénti
+DOMPoint-foglalás nélkül. A színeket és az UV-koordinátákat is átmeneti tömbök nélkül másolja.
+Az egyedi ponttranszformációkhoz megmarad a kompatibilis út. A helyi
+`/tests/instrument-projection-conformance.html` próba 4000 ponton veti össze a valós böngésző
+DOMMatrix-eredményét a rajzolási adatokkal; hangot és hálózati játékot nem indít.
+
+A WebGPU vektorréteg a feltöltésekhez növekvő kapacitású, újrahasználható Float32-tárolót
+használ; csak az aktív adatokat másolja a GPU-ra. A műszerfal az adott képkockában közös
+transzformációs gyorsítótárral frissíti a paneleket. A helyi diagnosztika az indulás óta mért
+csúcsok mellett külön mutatja az utolsó öt másodperc rajzolási részidejeit, így az egyszeri
+terep- és műszerfal-előkészítés megkülönböztethető a repülés közbeni megakadásoktól.
+
+A vektoros szövegek és képek rajzolásakor az egyező vágókereteket közvetlenül hasonlítja
+össze a rendszer: nem készít betűnként új keretmásolatot és JSON-kulcsot. Új rajzolási
+csoportnál továbbra is külön keretpillanatkép készül, így a későbbi változtatás nem módosítja
+a korábbi vagy eltárolt műszerfal-elemek vágását.
+
+A helyi mérés külön rögzíti a képkockák közötti időt, az előző rAF-visszahívás munkáját,
+a visszahívás késését, valamint a rajzolási mikrotaskok és a megjelenítés csúcsait. A 24 elemre
+korlátozott akadáslista nem szűri ki a hosszú szüneteket az FPS-ből. Az opcionális GPU-sorpróba
+másodpercenként legfeljebb egy függőben levő, nem blokkoló fence-et indít. A mért késleltetés
+GPU-várakozást és a JavaScript-visszahívás késését egyaránt tartalmazhatja; nem tiszta GPU-futásidő.
+A helyi diagnosztika a támogatott böngészőkben időbélyeges hosszúfeladat- és hosszúképkocka-
+megfigyelőt is használ. Külön, korlátozott listában tartja a hálózati dekódolás és alkalmazás
+idejét; az előző képkocka HUD-, műszerfal- és szimulációs részidejét is a megakadáshoz rendeli.
+Az observer késleltetve érkező eredményeinek időbélyege az irányadó, nem az érkezési sorrend.
+A küldetéslista méretillesztése csak tartalom- vagy elrendezésváltozáskor mér újra; változatlan
+listán a ResizeObserver-alapú út nem kényszerít szinkron méretszámítást.
+Az utak/folyók láthatósági kérelmei rövid, pontos változásazonosítót használnak. A GPU-maszk
+csak tényleges változáskor frissül, a frustum-jelölők tárolója újrahasznosul.
 
 A `/multiplayer.html?diagnostics=1` oldal helyi címen bekapcsol egy kizárólag képernyőn látható,
 nem feltöltött FPS/CPU/hálózati mérőpanelt. A normál oldalon ez nincs jelen. A panel a valódi,
@@ -202,6 +296,18 @@ az újraszámítás mozgásra és terepváltozásra továbbra is megtörténik. 
 megváltozott feliratot ír a DOM-ba, a radart pedig frissítésenként egyszer, rajzolás előtt méretezi.
 A mérőpanelen a részfeladatok maximumai a lap indulását, beleértve a bemelegítést is tartalmazzák;
 az FPS-ablakok a tényleges repülés utolsó legfeljebb két percét fedik le.
+
+Öt teljes grafikus klienssel végzett harci próba: nyisd meg öt külön lapon a
+`/tests/multiplayer-load.html?diagnostics=1` oldalt, hozz létre arénaszobát, a
+másik négy lapon csatlakozz a kóddal, majd készültség után indíts. Ez a helyi
+próba a normál multiplayer oldalt és műszerfalat tölti be, de a tesztpilóta a
+rendes, szerver által ellenőrzött irányítási és tüzelési parancsokat adja ki.
+A lőszer, sérülés, lőtáv és elterelő-készlet nem kap felmentést. Külön panel
+mutatja a lövési eseményeket, találatokat és a lövedékcsúcsot. A teszt hang
+nélkül fut, és kizárólag localhoston használható. Az összehasonlításnál a
+korábbi, AI-val tovább élő tesztszobák és más párhuzamos ellenőrzések
+terhelését is ki kell zárni; öt grafikus nézet ugyanazon gépen nem öt külön
+játékos gépének teljesítményét méri.
 
 ### Több egymást követő menet
 

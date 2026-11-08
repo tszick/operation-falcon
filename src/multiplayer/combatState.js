@@ -17,15 +17,22 @@ export function packProjectile(p) {
     seekerLost: !!p.seekerLost,
   };
 }
-export function unpackProjectile(p) {
+export function unpackProjectile(p, previous = null, fraction = 1) {
   return {
     ...p,
     profile: weaponProfiles[p.profile],
-    position: vector(p.position),
+    position: previous
+      ? new Vec3(
+          previous.position.x * (1 - fraction) + p.position.x * fraction,
+          previous.position.y * (1 - fraction) + p.position.y * fraction,
+          previous.position.z * (1 - fraction) + p.position.z * fraction,
+        )
+      : vector(p.position),
     velocity: vector(p.velocity),
+    age: previous ? previous.age + (p.age - previous.age) * fraction : p.age,
   };
 }
-export function packTarget(t) {
+export function packTarget(t, { copy = true } = {}) {
   const out = {};
   for (const key of [
     'id',
@@ -64,7 +71,7 @@ export function packTarget(t) {
               : 'engaging';
   out.position = { ...t.position };
   out.velocity = { ...t.velocity };
-  if (t.flight) out.flight = packFlight(t.flight);
+  if (t.flight) out.flight = packFlight(t.flight, { copy });
   return out;
 }
 export function unpackTarget(t) {

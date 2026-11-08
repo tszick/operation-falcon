@@ -118,7 +118,10 @@ export class GpuTerrain {
     g.activeTexture(g.TEXTURE1);
     g.bindTexture(g.TEXTURE_2D, this.farmlandTexture);
     if (this.farmlandWorld !== terrainWorld) {
-      const { pixels } = buildFarmland();
+      const pixels =
+        r.terrainFarmlandRevision === terrainWorld.revision && r.terrainFarmland
+          ? r.terrainFarmland
+          : buildFarmland().pixels;
       g.texImage2D(
         g.TEXTURE_2D,
         0,
@@ -135,6 +138,7 @@ export class GpuTerrain {
       g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE);
       g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE);
       this.farmlandWorld = terrainWorld;
+      r.terrainFarmland = null;
     }
     g.uniform1i(l.farmlandMap, 1);
     g.uniform1f(l.farmlandExtent, farmlandExtent);

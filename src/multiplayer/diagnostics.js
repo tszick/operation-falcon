@@ -1,3 +1,4 @@
+import { StallTrace } from './stallTrace.js';
 import { FrameTelemetry } from '../frameTelemetry.js';
 // Opt-in local measurement only. Nothing is uploaded or persisted.
 export class MultiplayerDiagnostics {
@@ -10,11 +11,8 @@ export class MultiplayerDiagnostics {
     return new MultiplayerDiagnostics();
   }
   constructor() {
-    this.telemetry = new FrameTelemetry();
-    this.windows = [];
-    this.peakProjectiles = 0;
-    this.renderParts = {};
-    this.instrumentParts = {};
+    this.trace = new StallTrace();
+    this.reset();
     this.panel = document.createElement('pre');
     this.panel.id = 'network-diagnostics';
     this.panel.setAttribute('aria-label', 'Local multiplayer performance');
@@ -34,21 +32,65 @@ export class MultiplayerDiagnostics {
     this.panel.textContent = 'LOCALHOST / SILENT PERFORMANCE TEST\nMeasuring…';
     document.body.append(this.panel);
   }
+  reset() {
+    this.telemetry = new FrameTelemetry();
+    this.windows = [];
+    this.peakProjectiles = 0;
+    this.renderParts = {};
+    this.instrumentParts = {};
+    this.renderWindow = {};
+    this.instrumentWindow = {};
+    this.stalls = [];
+    this.previousWork = null;
+    this.trace?.reset();
+    if (this.panel) this.panel.textContent = 'LOCALHOST / SILENT PERFORMANCE TEST\nMeasuring…';
+  }
   bindRenderer(renderer) {
+    this.renderer = renderer;
+    if (renderer.gpuModels) renderer.gpuModels.profile = true;
+    if (renderer.ctx.surface) renderer.ctx.surface.profile = true;
     for (const name of ['terrain', 'runway', 'flushMeshes', 'hud']) {
       const draw = renderer[name].bind(renderer);
       renderer[name] = (...args) => {
         const start = performance.now(),
           result = draw(...args);
-        this.renderParts[name] = Math.max(this.renderParts[name] || 0, performance.now() - start);
+        const ms = performance.now() - start;
+        this.renderParts[name] = Math.max(this.renderParts[name] || 0, ms);
+        this.renderWindow[name] = Math.max(this.renderWindow[name] || 0, ms);
         return result;
       };
     }
   }
   frame(sample, client, instruments) {
-    for (const [name, ms] of instruments?.costs || [])
+    for (const [name, ms] of instruments?.costs || []) {
       this.instrumentParts[name] = Math.max(this.instrumentParts[name] || 0, ms);
+      this.instrumentWindow[name] = Math.max(this.instrumentWindow[name] || 0, ms);
+    }
     if (client.latest.mission?.phase === 'waiting') return;
+    if (sample.frameMs > 50) {
+      this.stalls.push({
+        wallTimeMs: Date.now(),
+        startedAt: sample.startedAt,
+        previousWork: this.previousWork,
+        browserWork: this.trace?.recent(sample.startedAt, Math.max(100, sample.frameMs + 50)),
+        frameMs: sample.frameMs,
+        cpuMs: sample.cpuMs,
+        previousCpuMs: sample.previousCpuMs,
+        betweenFramesMs: sample.betweenFramesMs,
+        callbackDelayMs: sample.callbackDelayMs,
+        visibility: document.visibilityState,
+        focused: document.hasFocus?.() ?? null,
+      });
+      if (this.stalls.length > 24) this.stalls.shift();
+    }
+    this.previousWork = {
+      startedAt: sample.startedAt,
+      simulationMs: sample.simulationMs,
+      renderMs: sample.renderMs,
+      uiMs: sample.uiMs,
+      hudMs: sample.hudMs,
+      instrumentMs: sample.instrumentMs,
+    };
     this.peakProjectiles = Math.max(this.peakProjectiles, client.latest.combat.projectiles.length);
     const report = this.telemetry.add(sample);
     if (!report) return;
@@ -68,11 +110,26 @@ export class MultiplayerDiagnostics {
         frameP95Ms: report.p95FrameMs,
         longFrames: report.longFrames,
         cpuMeanMs: report.cpuMs,
+        cpuMaxMs: report.maxCpuMs,
+        betweenFramesMaxMs: report.maxBetweenFramesMs,
+        callbackDelayMaxMs: report.maxCallbackDelayMs,
+        recentStalls: this.stalls.slice(-8),
+        browserWork: this.trace?.recent(performance.now()),
+        gpuAdapter: this.renderer?.ctx?.surface?.runtime?.adapterInfo || {},
+        gpuQueueFence: this.renderer?.gpuModels?.queueProbe?.stats || {},
+        featureMaskTransfers: this.renderer?.gpuModels?.featureMaskStats || {},
+        worldSurfaceTasks: this.renderer?.ctx?.surface?.profileMetrics || {},
+        instrumentSurfaceTasks: instruments?.surfaceTasks || {},
         simulationMaxMs: report.maxSimulationMs,
         renderMaxMs: report.maxRenderMs,
         uiMaxMs: report.maxUiMs,
         hudMaxMs: report.maxHudMs,
         instrumentsMaxMs: report.maxInstrumentMs,
+        backendTimingPeaksMs: this.renderer?.gpuModels?.timingPeaks || {},
+        terrainPreparing: !!this.renderer?.terrainPreparing,
+        terrainWorkerBuildMs: Math.round((this.renderer?.terrainWorkerMs || 0) * 100) / 100,
+        renderPartsWindowMaxMs: this.renderWindow,
+        instrumentPartsWindowMaxMs: this.instrumentWindow,
         renderPartsMaxMs: Object.fromEntries(
           Object.entries(this.renderParts).map(([k, v]) => [k, Math.round(v * 100) / 100]),
         ),
@@ -82,11 +139,16 @@ export class MultiplayerDiagnostics {
         rttMs: Math.round(client.rtt || 0),
         maxSnapshotApplyMs: Math.round(client.metrics.maxSnapshotApplyMs * 100) / 100,
         maxDecodeMs: Math.round(client.metrics.maxDecodeMs * 100) / 100,
+        maxReconcileMs: Math.round(client.metrics.maxReconcileMs * 100) / 100,
+        maxHistoryMs: Math.round(client.metrics.maxHistoryMs * 100) / 100,
+        maxCombatApplyMs: Math.round(client.metrics.maxCombatApplyMs * 100) / 100,
         pendingCommands: client.prediction.pending.length,
         coalescedSnapshots: client.inbox.coalesced,
       },
       null,
       2,
     );
+    this.renderWindow = {};
+    this.instrumentWindow = {};
   }
 }

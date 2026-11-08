@@ -2,7 +2,9 @@ export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const DEG = Math.PI / 180;
 export class Vec3 {
   constructor(x = 0, y = 0, z = 0) {
-    Object.assign(this, { x, y, z });
+    this.x = x;
+    this.y = y;
+    this.z = z;
   }
   clone() {
     return new Vec3(this.x, this.y, this.z);
@@ -47,7 +49,10 @@ export class Vec3 {
 }
 export class Quat {
   constructor(x = 0, y = 0, z = 0, w = 1) {
-    Object.assign(this, { x, y, z, w });
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    this.w = w;
   }
   clone() {
     return new Quat(this.x, this.y, this.z, this.w);
@@ -69,9 +74,15 @@ export class Quat {
     return this;
   }
   rotate(v) {
-    const q = new Vec3(this.x, this.y, this.z),
-      t = q.cross(v).scale(2);
-    return v.clone().add(t.clone().scale(this.w)).add(q.cross(t));
+    // Same cross-product arithmetic and order, without five temporary vectors.
+    const tx = (this.y * v.z - this.z * v.y) * 2,
+      ty = (this.z * v.x - this.x * v.z) * 2,
+      tz = (this.x * v.y - this.y * v.x) * 2;
+    return new Vec3(
+      v.x + tx * this.w + (this.y * tz - this.z * ty),
+      v.y + ty * this.w + (this.z * tx - this.x * tz),
+      v.z + tz * this.w + (this.x * ty - this.y * tx),
+    );
   }
   static axis(v, a) {
     const s = Math.sin(a / 2);

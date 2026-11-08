@@ -49,7 +49,7 @@ export function createRoomCombat(world, scenario = 'range') {
       : createRoomAI(world, []);
     return {
       ai,
-      weapons: new Weapons({ actorUpdates: false, friendlyFire: true }),
+      weapons: new Weapons({ actorUpdates: false, friendlyFire: true, visualEffects: false }),
       eventSequence: 0,
       events: [],
       targets: [
@@ -91,7 +91,7 @@ export function createRoomCombat(world, scenario = 'range') {
   });
 }
 export function createPlayerCombat() {
-  const weapons = new Weapons({ actorUpdates: false });
+  const weapons = new Weapons({ actorUpdates: false, visualEffects: false });
   weapons.selected = 'gun';
   return { weapons, aim: new Targeting(), feedback: '', hits: 0, kills: 0, friendlyHits: 0 };
 }
@@ -125,6 +125,7 @@ function recordEvent(room, event, time) {
   if (room.combat.events.length > EVENT_LIMIT) room.combat.events.shift();
 }
 function transferFire(room, player, time) {
+  if (!player.combat.weapons.projectiles.length && !player.combat.weapons.events.length) return;
   const personal = player.combat.weapons,
     shared = room.combat.weapons,
     ids = new Map();
@@ -197,14 +198,12 @@ export function stepRoomCombat(room, commands, dt) {
     }
   }
   shared.update(players[0].state, targets, dt);
-  for (const player of players) {
-    player.state.incomingMissiles = shared.projectiles.filter(
-      (p) =>
-        p.type === 'aam' &&
-        p.targetEntityId === player.id &&
-        !p.seekerLost &&
-        p.decoyId === undefined,
-    ).length;
+  for (const player of players) player.state.incomingMissiles = 0;
+  for (const projectile of shared.projectiles) {
+    if (projectile.type !== 'aam' || projectile.seekerLost || projectile.decoyId !== undefined)
+      continue;
+    const target = room.players.get(projectile.targetEntityId);
+    if (target) target.state.incomingMissiles++;
   }
   for (const event of shared.drainEvents()) {
     const player = room.players.get(event.sourceId);
@@ -217,6 +216,10 @@ export function stepRoomCombat(room, commands, dt) {
     }
     recordEvent(room, event, time);
   }
+  // Cosmetic impacts must not evict scoring events from the bounded weapon log.
+  if (shared.impactEvents.length)
+    for (const e of shared.drainImpacts())
+      recordEvent(room, { type: 'impact', position: e.position }, time);
   // The solver owns hit decisions; clients build cosmetic particles from these bounded events.
   for (const e of shared.effects)
     if (e.kind === 'impact' && e.age === 0)
@@ -252,10 +255,10 @@ export function playerCombatSnapshot(player) {
     friendlyHits,
   };
 }
-export function roomCombatSnapshot(room, afterEventId = null) {
+export function roomCombatSnapshot(room, afterEventId = null, { copy = true } = {}) {
   return {
     ai: roomAIStatus(room),
-    targets: room.combat.targets.map(packTarget),
+    targets: room.combat.targets.map((t) => packTarget(t, { copy })),
     projectiles: room.combat.weapons.projectiles.map(packProjectile),
     events:
       afterEventId === null

@@ -15,7 +15,13 @@
           {
             ready: true,
             secureContext: isSecureContext,
-            adapter: adapter.info,
+            adapter: {
+              vendor: adapter.info?.vendor || '',
+              architecture: adapter.info?.architecture || '',
+              device: adapter.info?.device || '',
+              description: adapter.info?.description || '',
+              fallback: adapter.info?.isFallbackAdapter ?? adapter.isFallbackAdapter ?? null,
+            },
             features: [...adapter.features],
             maxTextureDimension2D: device.limits.maxTextureDimension2D,
           },

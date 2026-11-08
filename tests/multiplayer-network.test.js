@@ -578,3 +578,36 @@ test(
     assert.deepEqual(b.errors, []);
   },
 );
+
+test(
+  'an orphaned localhost room keeps simulating without encoding packets for absent recipients',
+  { timeout: 10000 },
+  async (t) => {
+    const f = await fixture(t),
+      a = await connect(t, f, { mode: 'create' }),
+      b = await connect(t, f, { mode: 'create' });
+    const rooms = f.multiplayer.rooms,
+      room = rooms.rooms.get(a.client.code),
+      pilot = room.players.get(a.client.id),
+      counts = new Map();
+    const serialize = rooms.serialize.bind(rooms);
+    t.mock.method(rooms, 'serialize', (r, ...args) => {
+      counts.set(r.code, (counts.get(r.code) || 0) + 1);
+      return serialize(r, ...args);
+    });
+    const closed = once(a.client.socket.raw, 'close');
+    a.client.disconnect();
+    await closed;
+    await until(() => !pilot.connected);
+    counts.clear();
+    const tick = room.tick;
+    await until(() => (counts.get(b.client.code) || 0) >= 3);
+    assert.equal(counts.get(room.code) || 0, 0);
+    assert.ok(room.tick > tick);
+    assert.equal(rooms.rooms.has(room.code), true);
+    const resumed = await connect(t, f, { mode: 'join', code: room.code }, {}, a.storage);
+    assert.equal(resumed.client.id, pilot.id);
+    await until(() => (counts.get(room.code) || 0) > 0);
+    assert.deepEqual(resumed.errors, []);
+  },
+);

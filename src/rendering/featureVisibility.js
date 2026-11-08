@@ -36,7 +36,20 @@ export class FeatureVisibility {
         }
       this.workerMs = ready.buildMs;
     }
-    const key = `${windowKey}:${Math.floor(camera.x / 8)}:${Math.floor(camera.y)}:${Math.floor(camera.z / 8)}:${candidates.join('')}`;
+    let changed = this.candidates?.length !== candidates.length;
+    if (!changed)
+      for (let i = 0; i < candidates.length; i++)
+        if (this.candidates[i] !== candidates[i]) {
+          changed = true;
+          break;
+        }
+    if (changed) {
+      if (this.candidates?.length !== candidates.length)
+        this.candidates = new Uint8Array(candidates.length);
+      this.candidates.set(candidates);
+      this.candidateRevision = (this.candidateRevision || 0) + 1;
+    }
+    const key = `${windowKey}:${Math.floor(camera.x / 8)}:${Math.floor(camera.y)}:${Math.floor(camera.z / 8)}:${this.candidateRevision}`;
     if (this.requestKey !== key) {
       this.requestKey = key;
       this.queue.request({
