@@ -20,7 +20,9 @@ function display() {
       html = v;
     },
     querySelector(selector) {
-      return selector === '[data-weapon="gun"] b' && html.includes('data-weapon="gun"')
+      // DOM-less translation keeps inert, escaped markup; model the same ammo slot.
+      return selector === '[data-weapon="gun"] b' &&
+        (html.includes('data-weapon="gun"') || html.includes('data-weapon=&quot;gun&quot;'))
         ? count
         : null;
     },

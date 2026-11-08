@@ -1,3 +1,4 @@
+import { decodeWorld } from './worldState.js';
 import {
   PROTOCOL_VERSION,
   MULTIPLAYER_PATH,
@@ -128,6 +129,7 @@ export class MultiplayerClient {
       const decodeStart = this.now();
       try {
         msg = JSON.parse(event.data);
+        if (msg?.world) msg.world = decodeWorld(msg.world);
       } catch {
         ws.close();
         return;
@@ -210,7 +212,7 @@ export class MultiplayerClient {
       } catch {
         /* Flight does not require browser storage. */
       }
-      configureTerrain({ battlefield: { environment: msg.world } });
+      configureTerrain({ battlefield: { environment: decodeWorld(msg.world) } });
       const own = msg.players.find((p) => p.id === this.id);
       this.prediction.reset(own);
       this.acceptSnapshot(msg, false, receivedAt);
@@ -259,7 +261,7 @@ export class MultiplayerClient {
     const own = msg.players.find((p) => p.id === this.id);
     if (!own) return;
     if (msg.world && this.worldRevision !== msg.world.revision) {
-      configureTerrain({ battlefield: { environment: msg.world } });
+      configureTerrain({ battlefield: { environment: decodeWorld(msg.world) } });
       this.worldRevision = msg.world.revision;
     }
     this.prediction.simulating = !msg.mission || msg.mission.phase === 'active';

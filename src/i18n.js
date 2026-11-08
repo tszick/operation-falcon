@@ -1,3 +1,4 @@
+import DOMPurify from '../assets/vendor/dompurify/purify.js';
 import { LiteralFragments } from './literalFragments.js';
 import { renameEquipmentText } from './equipmentCatalog.js';
 import i18next from '../assets/vendor/i18next/i18next.js';
@@ -159,13 +160,21 @@ export function localizeTree(root) {
   }
 }
 export function trHtml(value) {
-  if (!browser || !value) return value;
+  if (!value) return '';
+  // Node has no DOM sanitizer: return inert text rather than unsanitized markup.
+  if (!browser)
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   const key = String(value);
   if (markupCache.has(key)) return markupCache.get(key);
   const template = document.createElement('template');
-  template.innerHTML = key;
+  template.innerHTML = DOMPurify.sanitize(key);
   localizeTree(template.content);
-  const output = template.innerHTML;
+  const output = DOMPurify.sanitize(template.innerHTML);
   if (markupCache.size >= 256) markupCache.delete(markupCache.keys().next().value);
   markupCache.set(key, output);
   return output;
