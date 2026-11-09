@@ -46,7 +46,7 @@ import { Weapons } from './weapons.js';
 import { Mission } from './mission.js';
 import { AudioSystem } from './audio.js';
 import { Renderer, renderTargetPreview } from './renderer.js';
-import { updateHUD } from './hud.js';
+import { updateHUD, renderMissionSummary } from './hud.js';
 import { evaluateApproach } from './landing.js';
 import { armament, weaponLabel } from './armament.js';
 import { toggleActuator, advanceCrashSequence } from './damage.js';
@@ -834,6 +834,8 @@ function showOverlay(kind) {
     $('overlay-text').textContent = tr(
       'A feladatokat teljesítetted és megálltál. A földetérés sérüléssel járt; a részleteket a kiértékelés mutatja.',
     );
+  $('mission-card').hidden = kind !== 'pause';
+  if (kind === 'pause') renderMissionSummary(state, mission, targets);
   $('mission-debrief').hidden = kind === 'pause';
   if (kind === 'pause') {
     missionResult.hide();

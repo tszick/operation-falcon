@@ -47,6 +47,8 @@ export class MultiplayerClient {
       maxReconcileMs: 0,
       maxCorrectionM: 0,
       maxDecodeMs: 0,
+      decodeFailures: 0,
+      lastDecodeError: '',
       maxSnapshotApplyMs: 0,
       maxHistoryMs: 0,
       maxCombatApplyMs: 0,
@@ -130,7 +132,9 @@ export class MultiplayerClient {
       try {
         msg = JSON.parse(event.data);
         if (msg?.world) msg.world = decodeWorld(msg.world);
-      } catch {
+      } catch (error) {
+        this.metrics.decodeFailures++;
+        this.metrics.lastDecodeError = error.message;
         ws.close();
         return;
       }

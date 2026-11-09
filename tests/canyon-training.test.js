@@ -1,3 +1,4 @@
+import { renderCanyonCourse } from '../src/canyonTraining.js';
 import { trainingAircraft } from '../src/trainingAircraft.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -128,4 +129,53 @@ test('the opening canyon has alternating S bends while the final pull-up corrido
       b = pathPoint(path, t + 100);
     assert.ok(a.distance(b) < 125, 'no sharp corners or discontinuities');
   }
+});
+
+test('final three virtual gates render without terrain occlusion and retain the current gate cue', () => {
+  const { s } = setup();
+  s.canyonTraining.index = 5;
+  const lines = [],
+    labels = [];
+  const ctx = {
+    save() {},
+    restore() {},
+    beginPath() {},
+    stroke() {},
+    fillText(text) {
+      labels.push(text);
+    },
+  };
+  const r = {
+    ctx,
+    w: 1280,
+    h: 720,
+    line() {
+      throw new Error('Navigation gate must not use terrain-occluded lines');
+    },
+    rawLine(a, b) {
+      lines.push([a, b]);
+    },
+    project() {
+      return { x: 640, y: 100 };
+    },
+    marker() {},
+  };
+  renderCanyonCourse(r, s);
+  assert.equal(lines.length, 24);
+  for (const gate of ['6/8', '7/8', '8/8']) assert.ok(labels.some((t) => t.includes(gate)));
+  const cues = [];
+  r.project = () => null;
+  r.marker = (...args) => cues.push(args);
+  renderCanyonCourse(r, s);
+  assert.equal(cues.length, 1);
+  assert.match(cues[0][1], /6\/8/);
+  assert.equal(cues[0][4].offscreenLabel, true);
+});
+test('a missed ridge gate is the first visible flight reminder rather than being lost behind climb instructions', () => {
+  const x = setup();
+  x.s.canyonTraining.index = 5;
+  x.s.canyonTraining.missed = true;
+  x.m.setPhase('canyon-climb', 'GERINC ÁTREPÜLÉSE', '');
+  const guide = phaseGuide(x.s, x.m, { id: null, locked: false }, { ...x.w, selected: 'none' }, []);
+  assert.match(guide[0].text, /6\/8.*kihagyva/);
 });

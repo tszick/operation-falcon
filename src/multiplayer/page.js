@@ -125,7 +125,10 @@ async function setupRenderer() {
   renderer.headLook = head;
   diagnostics?.bindRenderer(renderer);
   headInput = new HeadLookInput($('network-world'), head, document, {
-    canLook: () => active && !client?.prediction.state?.crashed,
+    canLook: () => active && !hud.map.open && !client?.prediction.state?.crashed,
+    onEscape: () => {
+      if (active && !hud.map.open) hud.toggleMap();
+    },
   });
   document.addEventListener('pointerlockchange', () => headInput.changed());
   document.addEventListener('pointerlockerror', () => headInput.failed());
@@ -346,6 +349,7 @@ const toggleMap = {
 const flightKeys = new Set([
   'Digit0',
   'KeyO',
+  'Escape',
   'KeyH',
   'Space',
   'Tab',
@@ -390,7 +394,7 @@ addEventListener('keydown', (e) => {
     return;
   e.preventDefault();
   if (!e.repeat && e.code === 'Digit0') hud.zoomIn();
-  if (!e.repeat && e.code === 'KeyO') {
+  if (!e.repeat && ['KeyO', 'Escape'].includes(e.code)) {
     releaseControls();
     hud.toggleMap();
   }
@@ -557,6 +561,7 @@ function frame(now) {
       },
       client,
       flightInstruments?.metrics,
+      flightInstruments,
     );
   }
   requestAnimationFrame(frame);

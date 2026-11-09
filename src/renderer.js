@@ -699,7 +699,6 @@ export class Renderer {
         getRefuellingRoute(s, targets, { jammed }) || getLandingRoute(s, { jammed }),
       );
     this.worldOcclusion = true;
-    if (!this.cinematic) renderCanyonCourse(this, s);
     const contacts = this.cinematic ? [] : radarContacts(s, targets);
     if (s.spec.transport && !jammed) {
       const transport = targets.find((t) => t.playerControlled);
@@ -776,6 +775,7 @@ export class Renderer {
     this.flushMeshes();
     renderRunwayLightGlows(this);
     this.markerLabels = [];
+    if (!this.cinematic) renderCanyonCourse(this, s);
     const friendlyFighters = targets.filter((t) => t.team === 'ally' && t.type === 'fighter');
     for (const t of this.cinematic ? [] : targets) {
       if (

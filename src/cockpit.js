@@ -1,13 +1,6 @@
+import { mountCockpitInterior, updateCockpitInterior } from './rendering/cockpitInterior.js';
 import { tr, trHtml } from './i18n.js';
-import {
-  FRAME,
-  screenWells,
-  controlWells,
-  cockpitHeight,
-  wellQuad,
-  homography,
-  matrix3d,
-} from './cockpitGeometry.js';
+import { cockpitHeight, cockpitProjection } from './cockpitGeometry.js';
 let layoutKey = '';
 export function mountCockpit() {
   if (document.getElementById('cockpit')) return;
@@ -16,37 +9,45 @@ export function mountCockpit() {
   const root = document.createElement('section');
   root.id = 'cockpit';
   root.setAttribute('aria-label', tr('Fedélzeti műszerfal'));
-  root.innerHTML = trHtml(
-    '<div id="cockpit-frame" aria-hidden="true"></div>' +
-      Object.keys(screenWells)
-        .map(
-          (name) =>
-            `<section id="cockpit-${name}" class="cockpit-screen" data-well="${name}"></section>`,
-        )
-        .join('') +
-      '<div id="cockpit-annunciator"></div>',
-  );
+  root.innerHTML =
+    trHtml(`<svg id="cockpit-frame" viewBox="0 0 1600 260" preserveAspectRatio="none" aria-hidden="true">
+    <path class="cockpit-shell" d="M0 62L260 26L520 8H1080L1340 26L1600 62V260H0Z"/>
+    <path class="cockpit-rim" d="M0 62L260 26L520 8H1080L1340 26L1600 62L1592 76L1336 40L1078 22H522L264 40L8 76Z"/>
+    <path class="cockpit-seams" d="M360 36L375 260M770 22V260M1040 22L1030 260M1320 42L1300 260M0 245H1600"/>
+    <path class="cockpit-trim" d="M25 81L251 50M535 30H1065M1349 50L1575 81"/>
+    <g class="cockpit-fasteners"><circle cx="22" cy="95" r="4"/><circle cx="350" cy="58" r="4"/><circle cx="785" cy="33" r="4"/><circle cx="1024" cy="33" r="4"/><circle cx="1323" cy="60" r="4"/><circle cx="1578" cy="95" r="4"/></g>
+  </svg><div class="cockpit-instruments">
+    <section id="cockpit-weapons" class="cockpit-screen"></section>
+    <section id="cockpit-radar" class="cockpit-screen"></section>
+    <section id="cockpit-engine" class="cockpit-screen"></section>
+    <section id="cockpit-right"><section id="cockpit-controls" class="cockpit-screen"></section>
+      <section id="cockpit-landing" class="cockpit-screen"></section>
+      <section id="cockpit-guide" class="cockpit-screen"></section></section>
+  </div>`);
+  mountCockpitInterior(ui);
   ui.append(root);
   const move = (id, to) => {
     const node = document.getElementById(id);
     if (node) document.getElementById(to).append(node);
   };
   move('stores-display', 'cockpit-weapons');
-  move('landing-guidance', 'cockpit-weapons');
+  move('landing-guidance', 'cockpit-landing');
   move('map-heading', 'cockpit-radar');
   move('radar', 'cockpit-radar');
-  move('landing-attitude', 'cockpit-radar');
+  move('landing-attitude', 'cockpit-landing');
   move('target-data', 'cockpit-radar');
   move('config-countermeasures', 'cockpit-radar');
-  move('landing-route-button', 'cockpit-radar');
-  move('mission-card', 'cockpit-mission');
-  document
-    .querySelector('.mission-card-heading')
-    .prepend(document.getElementById('mission-card-name'));
+  move('landing-route-button', 'cockpit-landing');
+  document.getElementById('radar').dataset.native2d = 'true';
+  const missionCard = document.getElementById('mission-card');
+  const pause = document.querySelector('#overlay .modal');
+  if (pause) {
+    missionCard.hidden = true;
+    pause.insertBefore(missionCard, document.getElementById('result-details'));
+  } else missionCard.remove();
   move('flight-config', 'cockpit-controls');
   move('phase-guide', 'cockpit-guide');
   move('open-guide', 'cockpit-guide');
-  move('damage-status', 'cockpit-annunciator');
   const old = document.getElementById('fuel-status');
   old.remove();
   document.getElementById('cockpit-engine').innerHTML = trHtml(
@@ -68,67 +69,47 @@ export function layoutCockpit() {
   if (!root) return;
   const w = window.innerWidth,
     h = window.innerHeight,
-    deck = cockpitHeight(w, h),
     key = `${w}:${h}`;
   if (key === layoutKey) return;
   layoutKey = key;
-  root.style.height = `${deck}px`;
-  document.body.style.setProperty('--cockpit-height', `${deck}px`);
-  root.style.setProperty('--frame-scale', `${(FRAME.height / (FRAME.height - FRAME.top)) * 100}%`);
-  root.classList.toggle('compact-cockpit', w < 1450 || deck < 200);
-  for (const name of Object.keys(screenWells)) {
-    const q = wellQuad(name, w, deck),
-      length = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
-    const width = (length(q[0], q[1]) + length(q[3], q[2])) / 2,
-      height = (length(q[0], q[3]) + length(q[1], q[2])) / 2,
-      element = document.getElementById(`cockpit-${name}`);
-    if (name === 'controls') {
-      element.style.width = `${w}px`;
-      element.style.height = `${deck}px`;
-      element.style.transform = 'none';
-      for (const [id, corners] of Object.entries(controlWells)) {
-        const quad = corners.map(([x, y]) => [
-            (x / FRAME.width) * w,
-            ((y - FRAME.top) / (FRAME.height - FRAME.top)) * deck,
-          ]),
-          bw = (length(quad[0], quad[1]) + length(quad[3], quad[2])) / 2,
-          bh = (length(quad[0], quad[3]) + length(quad[1], quad[2])) / 2,
-          button = document.getElementById(id);
-        button.style.width = `${bw}px`;
-        button.style.height = `${bh}px`;
-        button.style.transform = `matrix3d(${matrix3d(homography(bw, bh, quad)).join(',')})`;
-      }
-    } else {
-      element.style.width = `${width}px`;
-      element.style.height = `${height}px`;
-      element.style.transform = `matrix3d(${matrix3d(homography(width, height, q)).join(',')})`;
-    }
-
-    if (name === 'radar') {
-      const radar = document.getElementById('radar');
-      radar.width = Math.max(80, Math.round(width));
-      radar.height = Math.max(60, Math.round(height - 25));
-    }
-  }
+  document.body.style.setProperty('--cockpit-height', `${cockpitHeight(w, h)}px`);
 }
 export function updateCockpit(s) {
   const root = document.getElementById('cockpit');
   if (!root) return;
-  const landing = !!s.approach?.active && !s.onGround && !s.crashed;
   root.classList.toggle(
     'cockpit-landing',
-    landing && !document.body.classList.contains('navigation-jammed'),
+    !!s.approach?.active &&
+      !s.onGround &&
+      !s.crashed &&
+      !document.body.classList.contains('navigation-jammed'),
   );
   document.getElementById('fuel-fill').style.width =
     `${Math.max(0, Math.min(100, (s.fuel / s.spec.fuelCapacity) * 100))}%`;
   document.getElementById('throttle-fill').style.width =
     `${Math.max(0, Math.min(100, s.throttle * 100))}%`;
-  const radar = document.getElementById('radar'),
-    rw = Math.round(radar.clientWidth),
+  const radar = document.getElementById('radar');
+  const rw = Math.round(radar.clientWidth),
     rh = Math.round(radar.clientHeight);
   if (rw > 0 && rh > 0 && (radar.width !== rw || radar.height !== rh)) {
     radar.width = rw;
     radar.height = rh;
   }
-  root.querySelector('#phase-guide').title = tr(document.getElementById('guide-title').textContent);
+}
+export function updateCockpitView(root, width, height, head) {
+  if (!root || root.hidden) return;
+  const yaw = head?.yaw || 0,
+    pitch = head?.pitch || 0;
+  const key = `${width}:${height}:${yaw.toFixed(4)}:${pitch.toFixed(4)}`;
+  if (root.dataset.view === key) return;
+  root.dataset.view = key;
+  const matrix = cockpitProjection(width, height, yaw, pitch);
+  root.style.transform = `matrix3d(${matrix.join(',')})`;
+  updateCockpitInterior(
+    root.parentElement?.querySelector('#cockpit-interior'),
+    width,
+    height,
+    yaw,
+    pitch,
+  );
 }

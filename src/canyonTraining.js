@@ -101,10 +101,39 @@ export function renderCanyonCourse(r, s) {
       new Vec3(p.x + w, p.y - h, p.z),
     ];
     c.globalAlpha = i === course.index ? 1 : 0.4;
-    c.beginPath();
-    corners.forEach((v, j) => r.line(v, corners[(j + 1) % 4]));
-    c.stroke();
+    // Training gates are navigation symbology, like the landing guide. A ridge
+    // can hide real objects, but must not erase the virtual corridor outline.
+    for (const [ink, width] of [
+      ['#071014', 4],
+      [canyonColor, 1.5],
+    ]) {
+      c.strokeStyle = ink;
+      c.lineWidth = width;
+      c.beginPath();
+      corners.forEach((v, j) => r.rawLine(v, corners[(j + 1) % 4]));
+      c.stroke();
+    }
+    const center = r.project(p);
     const label = r.project(new Vec3(p.x, p.y + h + 40, p.z));
+    if (
+      i === course.index &&
+      (!center ||
+        center.x < 0 ||
+        center.x > r.w ||
+        center.y < 0 ||
+        center.y > r.h ||
+        !label ||
+        label.y < 50 ||
+        label.y > r.h)
+    ) {
+      r.marker(
+        p,
+        `KAPU ${i + 1}/${course.gates.length} · ${(s.position.distance(p) / 1000).toFixed(1)} KM`,
+        canyonColor,
+        false,
+        { offscreenLabel: true },
+      );
+    }
     if (label) {
       c.fillStyle = canyonColor;
       c.font = 'bold 13px Consolas,monospace';

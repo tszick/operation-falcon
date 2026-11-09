@@ -141,3 +141,13 @@ test('co-op load pilots attack hostile mission targets instead of allied player 
     'allied human aircraft are not fallback combat targets',
   );
 });
+
+test('flight-only performance pilot maintains ordinary flight without attacking or mutating the aircraft', () => {
+  const { snapshot, id, state } = fixture(),
+    before = structuredClone(state);
+  const command = new CombatLoadPilot({ flightOnly: true }).command(state, snapshot, id);
+  assert.equal(validCommand({ seq: 1, ...command }), true);
+  assert.equal(command.combat.fire, false);
+  assert.equal(command.combat.cycle, false);
+  assert.deepEqual(structuredClone(state), before);
+});

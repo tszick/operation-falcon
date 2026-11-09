@@ -627,7 +627,10 @@ test(
     await stale.next((m) => m.type === 'welcome');
     await once(returning.ws, 'close');
     const retained = await clients[0].next(
-      (m) => m.type === 'snapshot' && m.players.some((p) => p.id === pilot.id && p.connected),
+      (m) =>
+        m.type === 'snapshot' &&
+        m.tick > detached.tick &&
+        m.players.some((p) => p.id === pilot.id && p.connected),
     );
     assert.equal(retained.players.length, 5);
     for (const p of room.players.values()) if (p.id !== welcomes[0].id) p.state.crashed = true;

@@ -132,19 +132,6 @@ export class MultiplayerHUD {
         status: 'pending',
         optional: false,
       });
-    const count = (optional) => ({
-      done: rows.filter((o) => !!o.optional === optional && o.status === 'done').length,
-      total: rows.filter((o) => !!o.optional === optional).length,
-    });
-    const card = {
-      name: mission.spec.name,
-      elapsed: view?.time || new Date(s.elapsed * 1000).toISOString().slice(14, 19),
-      phase,
-      priority: '',
-      rows,
-      primary: count(false),
-      optional: count(true),
-    };
     const guideSteps = s.approach?.active
       ? [
           { key: 'G', text: 'Futómű kiengedése', done: s.gear },
@@ -165,7 +152,7 @@ export class MultiplayerHUD {
             { key: 'C', text: 'Elterelők közeledő rakéta ellen' },
           ];
     s.threatWarning = s.incomingMissiles > 0 ? 'RAKÉTA KÖZELEDIK · C: ELTERELŐ' : '';
-    updateHUD(s, targets, weapons, aim, mission, true, { card, guideSteps });
+    updateHUD(s, targets, weapons, aim, mission, true, { guideSteps });
     if (notice && notice !== this.notice) postFlightMessage(notice, s.elapsed, 6);
     this.notice = notice;
     document.body.classList.toggle('wreck-view', !!(s.dying || s.crashed));

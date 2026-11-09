@@ -1,5 +1,4 @@
 import { roadWet } from './terrainFeatures.js';
-import { drawingContext } from './rendering/createBackend.js';
 import { tr } from './i18n.js';
 import { transportExitPosition } from './transportRole.js';
 import { getRefuellingRoute } from './refuellingRoute.js';
@@ -95,7 +94,8 @@ function contours(map) {
     canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
-  const c = drawingContext(canvas),
+  if (canvas.dataset) canvas.dataset.native2d = 'true';
+  const c = canvas.getContext('2d'),
     nx = 72,
     nz = Math.ceil((nx * height) / width),
     h = [];
@@ -217,10 +217,11 @@ function glyph(c, p, heading, color, air = true) {
   c.restore();
 }
 export function renderTacticalMap(canvas, s, targets, aim, options = {}) {
+  if (canvas.dataset) canvas.dataset.native2d = 'true';
   const width = canvas.width || 240,
     height = canvas.height || 240,
     map = tacticalMapState(s, targets, { width, height, ...options }),
-    c = drawingContext(canvas),
+    c = canvas.getContext('2d'),
     cx = map.centerX,
     cy = map.centerY;
   c.clearRect(0, 0, width, height);
