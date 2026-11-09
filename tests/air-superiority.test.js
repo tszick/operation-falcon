@@ -1,3 +1,6 @@
+import { stepAircraft } from '../src/physics.js';
+import { formationContext, coordinatedFlightPlan } from '../src/formationAI.js';
+import { updateTargets } from '../src/targeting.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { aircraft, missions } from '../src/aircraftSpec.js';
@@ -172,4 +175,32 @@ test('the fourth enemy squad is active immediately and twelve kills no longer se
   for (const t of fourth) t.alive = false;
   x.m.update(x.s, x.targets, x.w);
   assert.equal(x.m.objectiveComplete, true);
+});
+
+test('initial stations match the actual callsign leader on both headings and with fighter or bomber player seats', () => {
+  for (const id of ['fa18', 'b52'])
+    for (const random of [0.05, 0.5, 0.95]) {
+      const x = setup(id, random);
+      const context = formationContext(x.s, x.targets);
+      for (const t of x.targets.filter((t) => t.kind === 'air')) {
+        const plan = coordinatedFlightPlan(t, null, context);
+        if (plan)
+          assert.ok(
+            t.position.distance(plan.position) < 60,
+            t.id + ' should not cross the formation at mission start',
+          );
+      }
+    }
+});
+test('the first twenty seconds of superiority flight do not destroy squadrons through station-crossing collisions', () => {
+  const x = setup('fa18', 0.5),
+    collisions = [];
+  for (let i = 0; i < 20 * 120; i++) {
+    stepAircraft(x.s, {}, 1 / 120);
+    updateTargets(x.targets, 1 / 120);
+    x.w.update(x.s, x.targets, 1 / 120);
+    for (const e of x.w.drainEvents())
+      if (e.type === 'collision') collisions.push([e.sourceId, e.targetId]);
+  }
+  assert.deepEqual(collisions, []);
 });

@@ -1,6 +1,8 @@
 import { Surface } from './device.js';
 import { cachedRgba as rgba, transformPoint, multiply, triangulate } from '../shared/shapes.js';
 const surfaces = new WeakMap();
+const zeroUV = Object.freeze([0, 0]);
+const plainUV = () => zeroUV;
 export const shader = `
 diagnostic(off, derivative_uniformity);
 struct Out { @builtin(position) position:vec4f, @location(0) color:vec4f, @location(1) uv:vec2f, @location(2) @interpolate(flat) mode:u32, @location(3) @interpolate(flat) stroke:f32 };
@@ -298,7 +300,7 @@ export class VectorContext {
   }
   paint(style) {
     if (!(style instanceof Gradient))
-      return { color: rgba(style), mode: 0, texture: null, uv: () => [0, 0] };
+      return { color: rgba(style), mode: 0, texture: null, uv: plainUV };
     const key = JSON.stringify(style.stops);
     let texture = this.gradients.get(key);
     if (!texture && this.surface.device) {
@@ -348,37 +350,64 @@ export class VectorContext {
   triangles(points, style, options = {}) {
     if (!points.length) return;
     const paint = this.paint(style),
-      color = [...paint.color];
-    color[3] *= this.globalAlpha;
-    if (color[3] <= 0) return;
-    const first = this.vertices.length / 9;
+      color = paint.color,
+      alpha = color[3] * this.globalAlpha;
+    if (alpha <= 0) return;
+    const first = this.vertices.length / 9,
+      mode = options.mode ?? paint.mode,
+      matrix = this.projective,
+      m11 = matrix?.m11,
+      m21 = matrix?.m21,
+      m41 = matrix?.m41,
+      m12 = matrix?.m12,
+      m22 = matrix?.m22,
+      m42 = matrix?.m42,
+      m14 = matrix?.m14,
+      m24 = matrix?.m24,
+      m44 = matrix?.m44,
+      direct = matrix && Number.isFinite(m11 + m21 + m41 + m12 + m22 + m42 + m14 + m24 + m44);
     for (let i = 0; i < points.length; i++) {
-      let p = points[i];
-      const uv = options.uv?.[i] || paint.uv(p);
-      if (this.projective) {
-        const v = this.projective.transformPoint(new DOMPoint(p[0], p[1]));
-        p = [v.x / v.w, v.y / v.w];
+      const p = points[i],
+        uv = options.uv?.[i] || paint.uv(p);
+      let x = p[0],
+        y = p[1];
+      if (direct) {
+        const w = m14 * x + m24 * y + m44,
+          px = m11 * x + m21 * y + m41;
+        y = (m12 * x + m22 * y + m42) / w;
+        x = px / w;
+      } else if (matrix) {
+        const v = matrix.transformPoint(new DOMPoint(x, y));
+        x = v.x / v.w;
+        y = v.y / v.w;
       }
       this.vertices.push(
-        ((p[0] * this.coordinateScale) / this.canvas.width) * 2 - 1,
-        1 - ((p[1] * this.coordinateScale) / this.canvas.height) * 2,
-        ...color,
-        ...uv,
-        options.mode ?? paint.mode,
+        ((x * this.coordinateScale) / this.canvas.width) * 2 - 1,
+        1 - ((y * this.coordinateScale) / this.canvas.height) * 2,
+        color[0],
+        color[1],
+        color[2],
+        alpha,
+        uv[0],
+        uv[1],
+        mode,
       );
     }
     const texture = options.texture || paint.texture || (style instanceof Gradient ? style : null),
-      clip = this.clipRect && [...this.clipRect],
+      clip = this.clipRect,
       last = this.batches.at(-1),
-      key = JSON.stringify(clip);
-    if (
-      last &&
-      last.texture === texture &&
-      last.clipKey === key &&
-      last.first + last.count === first
-    )
+      sameClip =
+        last &&
+        (clip
+          ? last.clip &&
+            clip[0] === last.clip[0] &&
+            clip[1] === last.clip[1] &&
+            clip[2] === last.clip[2] &&
+            clip[3] === last.clip[3]
+          : !last.clip);
+    if (last && last.texture === texture && sameClip && last.first + last.count === first)
       last.count += points.length;
-    else this.batches.push({ first, count: points.length, texture, clip, clipKey: key });
+    else this.batches.push({ first, count: points.length, texture, clip: clip && [...clip] });
     this.surface.schedule();
   }
   fill() {
@@ -598,6 +627,7 @@ export class VectorContext {
       uv: [uv[0], uv[1], uv[2], uv[0], uv[2], uv[3]],
     });
   }
+
   // Retain tessellated panels without repeating DOM layout and glyph construction.
   capture(draw) {
     const vertices = this.vertices,
@@ -631,6 +661,14 @@ export class VectorContext {
     for (const batch of record.batches)
       this.batches.push({ ...batch, first: batch.first + offset });
   }
+  uploadVertices(buffer, vertices) {
+    const count = vertices.length;
+    if (!this.uploadStaging || this.uploadStaging.length < count)
+      this.uploadStaging = new Float32Array(2 ** Math.ceil(Math.log2(Math.max(1024, count))));
+    this.uploadStaging.set(vertices);
+    // writeBuffer copies the specified bytes before this staging memory is reused.
+    this.surface.device.queue.writeBuffer(buffer, 0, this.uploadStaging.buffer, 0, count * 4);
+  }
   renderRecords(records) {
     if (!this.pipeline || !this.surface.resize()) return;
     const d = this.surface.device,
@@ -640,15 +678,15 @@ export class VectorContext {
     for (const record of records) {
       if (!record?.vertices.length) continue;
       if (!record.uploaded) {
-        const values = new Float32Array(record.vertices);
-        if (!record.buffer || record.buffer.size < values.byteLength) {
+        const byteLength = record.vertices.length * 4;
+        if (!record.buffer || record.buffer.size < byteLength) {
           record.buffer?.destroy();
           record.buffer = d.createBuffer({
-            size: Math.max(4096, values.byteLength * 2),
+            size: Math.max(4096, byteLength * 2),
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
           });
         }
-        d.queue.writeBuffer(record.buffer, 0, values);
+        this.uploadVertices(record.buffer, record.vertices);
         record.uploaded = true;
       }
       pass.setVertexBuffer(0, record.buffer);
@@ -669,15 +707,15 @@ export class VectorContext {
       return;
     }
     const d = this.surface.device,
-      values = new Float32Array(this.vertices);
-    if (!this.buffer || this.buffer.size < values.byteLength) {
+      byteLength = this.vertices.length * 4;
+    if (!this.buffer || this.buffer.size < byteLength) {
       this.buffer?.destroy();
       this.buffer = d.createBuffer({
-        size: Math.max(65536, values.byteLength * 2),
+        size: Math.max(65536, byteLength * 2),
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
       });
     }
-    d.queue.writeBuffer(this.buffer, 0, values);
+    this.uploadVertices(this.buffer, this.vertices);
     const encoder = d.createCommandEncoder(),
       pass = this.surface.pass(encoder);
     pass.setPipeline(this.pipeline);

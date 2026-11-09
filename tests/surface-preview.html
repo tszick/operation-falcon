@@ -60,12 +60,14 @@
         <option value="models">Gépek és katonai járművek</option>
         <option value="busy">Sok gép és város</option>
         <option value="high">Nagy magasság</option>
+        <option value="runway">Kifutópálya · mozgó légi nézet</option>
+        <option value="runway-far">Kifutópálya · távoli nézet</option>
         <option value="farmland">Művelt földek</option>
         <option value="forest">Erdő · lombkoronaszint</option>
         <option value="forest-high">Erdő · magasból</option>
       </select></label
     ><button id="benchmark">Tájváltozatok összehasonlítása</button><a href="/">Játék</a
-    ><small>Hang nélkül, álló tesztjelenet · a játék fizikáját nem módosítja.</small>
+    ><small>Hang nélküli tesztjelenet · a játék fizikáját nem módosítja.</small>
     <pre id="status">Betöltés…</pre>
     <pre id="report"></pre>
   </aside>
@@ -157,7 +159,20 @@
       })),
     ];
     function pose() {
-      if ($('scene').value === 'forest') {
+      if ($('scene').value.startsWith('runway')) {
+        const far = $('scene').value === 'runway-far',
+          t = performance.now() / 1000;
+        s.position = new Vec3(
+          (far ? 8000 : 2000) + Math.sin(t * 0.35) * 240,
+          far ? 14000 : 4000,
+          far ? -16000 : -4500,
+        );
+        s.orientation = Quat.euler(
+          Math.atan2(-s.position.x, -s.position.z),
+          Math.atan2(-s.position.y, Math.hypot(s.position.x, s.position.z)),
+          0,
+        );
+      } else if ($('scene').value === 'forest') {
         s.position = new Vec3(-4800, terrainHeight(-4800, 4000) + 45, 4000);
         s.orientation = Quat.euler(0, -0.02, 0);
       } else if ($('scene').value === 'forest-high') {
@@ -214,9 +229,16 @@
         r.surfaceMode = run.ids[run.index];
         r.surfaceLines = r.surfaceMode === 'vector';
       }
+      if ($('scene').value.startsWith('runway')) pose();
+      const runwayView = $('scene').value.startsWith('runway');
+      r.cinematic = runwayView;
+      r.replayCamera = runwayView ? { position: s.position, orientation: s.orientation } : null;
+      const viewState = runwayView
+        ? { ...s, position: s.position.clone().add(new Vec3(80000, 0, 0)) }
+        : s;
       const start = performance.now();
       r.render(
-        s,
+        viewState,
         [...targets, ...extras, ...($('scene').value === 'busy' ? stressUnits : [])],
         w,
         aim,

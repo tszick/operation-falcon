@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <title>HTML translation security test</title>
+  <h1>HTML translation security test</h1>
+  <pre id="result">Running</pre>
+  <script type="module">
+    import { trHtml, setLanguage } from '/src/i18n.js';
+    setLanguage('en', { persist: false });
+    const samples = [
+      '<img src=x onerror="alert(1)"><script>alert(1)<\/script>',
+      '<svg><a xlink:href="javascript:alert(1)"><text>Danger</text></a></svg>',
+      '<a href="javascript:alert(1)">Danger</a><button onclick="alert(1)" data-action="safe">Védd meg a repteret</button>',
+    ];
+    const results = samples.map((input) => {
+      const output = trHtml(input);
+      const safe = !/onerror|onclick|javascript:|<script/i.test(output);
+      if (!safe) throw new Error('Unsafe HTML retained');
+      return { safe, output };
+    });
+    const controls = trHtml(
+      '<button id="start" data-weapon="aam">Védd meg a repteret</button><svg viewBox="0 0 10 10"><path d="M0 0L10 10"/></svg>',
+    );
+    document.getElementById('result').textContent = JSON.stringify(
+      { attacks: results, controls },
+      null,
+      2,
+    );
+    if (
+      !controls.includes('id="start"') ||
+      !controls.includes('data-weapon="aam"') ||
+      !controls.includes('<path') ||
+      !controls.includes('Defend the Airfield')
+    )
+      throw new Error('Safe controls lost');
+    document.getElementById('result').textContent = JSON.stringify(
+      { passed: true, attacks: results, controls },
+      null,
+      2,
+    );
+  </script>
+</html>

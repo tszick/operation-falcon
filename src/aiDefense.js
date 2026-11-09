@@ -56,7 +56,7 @@ export function retreatReason(t) {
   if (s.condition?.parts.weapons <= 0.35) return 'weapons-failure';
   return '';
 }
-export function beginRetreat(t, targets, player, w) {
+export function beginRetreat(t, targets, player, w, reason = retreatReason(t)) {
   const side = teamOf(t, player),
     bases = targets.filter(
       (u) => u.type === 'airbase' && u.alive !== false && teamOf(u, player) === side,
@@ -89,7 +89,7 @@ export function beginRetreat(t, targets, player, w) {
   delete t.coordinatedFlight;
   t.retreat = {
     origin: t.position.clone(),
-    reason: retreatReason(t),
+    reason,
     stage: home ? 'home' : 'exit',
     homeId: home?.id || null,
     home: homePosition,

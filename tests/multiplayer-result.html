@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="hu">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Multiplayer result layout test</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/src/multiplayer/multiplayer.css" />
+  </head>
+  <body class="multiplayer">
+    <header>
+      <strong>Operation Falcon: Redline</strong>
+      <span>LOCALHOST / SILENT / RESULT FIXTURE</span>
+      <button id="language">English</button>
+      <button id="scenario">Arena</button>
+    </header>
+    <section id="network-mission" data-no-i18n></section>
+    <script type="module">
+      import { renderRoomMission } from '/src/multiplayer/missionView.js';
+      import { setLanguage } from '/src/i18n.js';
+      let english = false,
+        arena = false;
+      const mission = {
+        assignment: 'defend-base',
+        phase: 'success',
+        reason: 'base-defended-and-landed',
+        elapsed: 483,
+        participants: ['One', 'Two', 'Three', 'Four', 'Five'].map((name, i) => ({
+          id: String(i),
+          callSign: 'Falcon ' + name,
+          present: i !== 2,
+          lost: i === 4,
+          returned: i !== 4,
+          health: i === 4 ? 0 : 92 - i * 15,
+          hits: 18 - i * 3,
+          kills: i === 0 ? 2 : 0,
+          friendlyHits: i === 1 ? 2 : 0,
+          gunRounds: 185 - i * 15,
+          missiles: i === 0 ? 3 : 1,
+          bombs: 0,
+          eliminatedAt: i === 4 ? 390 : null,
+        })),
+        objectives: [
+          { id: 'base', status: 'complete' },
+          { id: 'attackers', status: 'complete' },
+          { id: 'landing', status: 'complete' },
+          { id: 'survival', status: 'failed' },
+        ],
+        defense: { baseHealth: 76, neutralized: 3, total: 3 },
+      };
+      function render() {
+        setLanguage(english ? 'en' : 'hu', { persist: false });
+        document.getElementById('language').textContent = english ? 'Magyar' : 'English';
+        document.getElementById('scenario').textContent = arena ? 'Co-op' : 'Arena';
+        const data = structuredClone(mission);
+        if (arena) {
+          data.assignment = 'arena';
+          data.reason = 'last-survivor';
+          data.winnerId = '0';
+          data.objectives = [];
+          delete data.defense;
+          for (const p of data.participants) {
+            p.returned = false;
+            p.lost = p.id !== '0';
+          }
+        }
+        renderRoomMission(document.getElementById('network-mission'), data, '1');
+      }
+      document.getElementById('language').onclick = () => {
+        english = !english;
+        render();
+      };
+      document.getElementById('scenario').onclick = () => {
+        arena = !arena;
+        render();
+      };
+      render();
+    </script>
+  </body>
+</html>

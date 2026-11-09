@@ -1,3 +1,4 @@
+import { formationStation } from './formationGeometry.js';
 import { unitAirVelocity } from './flightEnvironment.js';
 import { stepEngine, stepBodyRates, waveDragCoefficient, thrustFactor } from './flightModel.js';
 import { Vec3, clamp, DEG } from './math.js';
@@ -109,14 +110,14 @@ export function coordinatedFlightPlan(t, target, context) {
       ? 'rejoin'
       : 'formation';
   const number = t.radioCallSign?.number || 2,
-    lateral = escort
-      ? number % 2
-        ? -800
-        : 800
-      : (number % 2 ? 550 : -550) * Math.ceil((number - 1) / 2),
-    trail = escort ? 1000 : -450 * Math.max(1, number - 1);
+    station = formationStation(number),
+    lateral = escort ? (number % 2 ? -800 : 800) : station.lateral,
+    trail = escort ? 1000 : station.trail;
   let position = p.clone().add(nose.clone().scale(trail)).add(side.scale(lateral));
-  position.y = Math.max(p.y + (escort ? 200 : 100), terrainHeight(position.x, position.z) + 350);
+  position.y = Math.max(
+    p.y + (escort ? 200 : station.height),
+    terrainHeight(position.x, position.z) + 350,
+  );
   let desired;
   if (engage) {
     const lead = Math.min(4, targetRange / 1000);

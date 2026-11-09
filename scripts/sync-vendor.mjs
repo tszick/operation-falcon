@@ -14,3 +14,22 @@ await writeFile(
   new URL('version.json', destination),
   JSON.stringify({ name: 'i18next', version, license: 'MIT' }, null, 2) + '\n',
 );
+
+const purify = new URL('assets/vendor/dompurify/', root);
+await mkdir(purify, { recursive: true });
+await copyFile(
+  new URL('node_modules/dompurify/dist/purify.es.mjs', root),
+  new URL('purify.js', purify),
+);
+await copyFile(new URL('node_modules/dompurify/LICENSE', root), new URL('LICENSE.txt', purify));
+const purifyPackage = JSON.parse(
+  await readFile(new URL('node_modules/dompurify/package.json', root), 'utf8'),
+);
+await writeFile(
+  new URL('version.json', purify),
+  JSON.stringify(
+    { name: 'dompurify', version: purifyPackage.version, license: purifyPackage.license },
+    null,
+    2,
+  ) + '\n',
+);

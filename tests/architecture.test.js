@@ -14,12 +14,13 @@ async function sources(dir) {
   return list;
 }
 test('browser modules resolve local imports without dependency cycles or server coupling', async () => {
-  // Exact browser-only leaf dependencies: local JSON resources and the pinned MIT vendor bundle.
+  // Exact browser-only leaf dependencies: local JSON resources and the pinned browser vendor bundles.
   const browserLeaves = new Set(
     [
       '../src/locales/messages.json',
       '../src/equipmentCatalogData.json',
       '../assets/vendor/i18next/i18next.js',
+      '../assets/vendor/dompurify/purify.js',
     ].map((p) => fileURLToPath(new URL(p, import.meta.url))),
   );
   const files = await sources(source),

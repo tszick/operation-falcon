@@ -6,7 +6,7 @@ import { missionForSide } from '../src/missionSides.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { detectLanguage, setLanguage, i18n, tr } from '../src/i18n.js';
+import { detectLanguage, setLanguage, i18n, tr, trHtml } from '../src/i18n.js';
 import messages from '../src/locales/messages.json' with { type: 'json' };
 import { radioLines } from '../src/radioLines.js';
 
@@ -82,4 +82,18 @@ test('all mission, unit, weapon and handbook prose has English coverage', () => 
   ]);
   setLanguage('hu', { persist: false });
   assert.deepEqual([...new Set(untranslated)], []);
+});
+
+test('HTML translation without a browser returns inert text, and DOMPurify vendor matches the pinned dependency', () => {
+  assert.equal(
+    trHtml('<img src=x onerror="alert(1)">'),
+    '&lt;img src=x onerror=&quot;alert(1)&quot;&gt;',
+  );
+  const pkg = JSON.parse(
+    readFileSync(new URL('../node_modules/dompurify/package.json', import.meta.url), 'utf8'),
+  );
+  const vendor = JSON.parse(
+    readFileSync(new URL('../assets/vendor/dompurify/version.json', import.meta.url), 'utf8'),
+  );
+  assert.equal(vendor.version, pkg.version);
 });

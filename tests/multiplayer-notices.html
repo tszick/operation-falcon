@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="hu">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Multiplayer notification layout test</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/flight.css" />
+    <style>
+      body {
+        margin: 0;
+        background: linear-gradient(#0c2430, #102b23);
+        color: #d5edc8;
+        min-height: 100vh;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 20px;
+      }
+      main {
+        max-width: 55vw;
+        padding: 40px;
+      }
+      button {
+        padding: 8px 14px;
+        color: #c7efa2;
+        background: #071a15;
+        border: 1px solid #66845a;
+      }
+    </style>
+  </head>
+  <body class="flying">
+    <header>
+      <strong>Operation Falcon: Redline</strong><span>LOCALHOST / SILENT / UI FIXTURE</span>
+    </header>
+    <main>
+      <h1>Multiplayer eseményjelzések</h1>
+      <p>A közös HUD üzenetfolyamának néma próbája.</p>
+      <button id="burst">Több esemény</button><button id="reset">Új kör</button
+      ><button id="language">English</button>
+      <button id="freeze">Rögzített nézet</button>
+    </main>
+    <div id="combat-messages"></div>
+    <script type="module">
+      import { MultiplayerNotices } from '/src/multiplayer/notices.js';
+      import {
+        updateFlightMessages,
+        postFlightMessage,
+        resetFlightMessages,
+      } from '/src/flightMessages.js';
+      import { setLanguage } from '/src/i18n.js';
+      const notices = new MultiplayerNotices();
+      let english = false,
+        frozen = false,
+        start = performance.now();
+      const state = { elapsed: 0, damage: 0 };
+      const lock = { state: 'locked', label: 'BEFOGVA', hint: '' };
+      function burst() {
+        resetFlightMessages();
+        start = performance.now();
+        const base = {
+          round: 1,
+          scenario: 'cooperative',
+          time: 0,
+          mission: { phase: 'active' },
+          players: ['One', 'Two', 'Three'].map((name, i) => ({
+            id: String(i),
+            callSign: 'Falcon ' + name,
+            connected: true,
+            state: { team: 'ally', dying: false, crashed: false },
+          })),
+          combat: {
+            eventSequence: 0,
+            events: [],
+            targets: [{ id: 'hostile', kind: 'air', aircraftId: 'mig29', team: 'enemy' }],
+          },
+        };
+        notices.reset(base);
+        base.combat.events = [
+          {
+            id: 1,
+            time: 0,
+            type: 'target-hit',
+            sourceId: '0',
+            targetId: 'hostile',
+            destroyed: true,
+            weapon: 'aam',
+          },
+          {
+            id: 2,
+            time: 0.1,
+            type: 'target-hit',
+            sourceId: '0',
+            targetId: '1',
+            destroyed: false,
+            friendlyFire: true,
+            weapon: 'gun',
+          },
+        ];
+        base.combat.eventSequence = 2;
+        base.players[2].connected = false;
+        notices.receive(base, '0');
+        base.players[2].connected = true;
+        notices.receive(base, '0');
+        for (const item of notices.drain()) postFlightMessage(item.text, 0, item.duration, item);
+      }
+      document.getElementById('burst').onclick = () => {
+        frozen = false;
+        burst();
+      };
+      document.getElementById('freeze').onclick = () => {
+        frozen = true;
+        burst();
+      };
+      document.getElementById('reset').onclick = () => {
+        resetFlightMessages();
+        notices.reset();
+      };
+      document.getElementById('language').onclick = () => {
+        english = !english;
+        setLanguage(english ? 'en' : 'hu', { persist: false });
+        document.getElementById('language').textContent = english ? 'Magyar' : 'English';
+      };
+      setLanguage('hu', { persist: false });
+      burst();
+      function frame() {
+        state.elapsed = frozen ? 2 : (performance.now() - start) / 1000;
+        updateFlightMessages(state, lock, { id: 'hostile' }, { selected: 'aam' });
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    </script>
+  </body>
+</html>

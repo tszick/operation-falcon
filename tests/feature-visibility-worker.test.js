@@ -1,3 +1,4 @@
+import { updateFeatureVisibility } from '../src/rendering/shared/featureData.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { FeatureVisibility } from '../src/rendering/featureVisibility.js';
@@ -93,4 +94,53 @@ test('flight telemetry distinguishes feature rays, HUD layout, instrument painti
   assert.equal(report.maxHudMs, 25);
   assert.equal(report.maxInstrumentMs, 8);
   assert.equal(report.maxAudioMs, 3);
+});
+
+test('candidate changes use short exact request keys without retaining mutable input arrays', () => {
+  const { w, visibility: v, camera } = setup();
+  const patches = Array.from({ length: 8000 }, (_, i) => ({ center: new Vec3(i, 2500, 1000) }));
+  const candidates = new Uint8Array(patches.length).fill(1);
+  v.update(camera, patches, candidates, 'large-window');
+  const first = w.sent[0];
+  assert.ok(first.key.length < 100);
+  w.onmessage({
+    data: {
+      key: first.key,
+      revision: first.revision,
+      windowKey: 'large-window',
+      mask: new Uint32Array(8000),
+    },
+  });
+  v.update(camera, patches, new Uint8Array(candidates), 'large-window');
+  assert.equal(w.sent.length, 1);
+  candidates[4321] = 0;
+  v.update(camera, patches, candidates, 'large-window');
+  assert.equal(w.sent.length, 2);
+  assert.notEqual(w.sent[1].key, first.key);
+  assert.equal(w.sent[1].points[4321], null);
+  candidates[4321] = 1;
+  assert.equal(w.sent[1].points[4321], null);
+  v.update(camera, patches, candidates, 'large-window');
+  w.onmessage({
+    data: {
+      key: w.sent[1].key,
+      revision: first.revision,
+      windowKey: 'large-window',
+      mask: new Uint32Array(8000),
+    },
+  });
+  assert.equal(w.sent.length, 3);
+  assert.notEqual(w.sent[2].key, w.sent[1].key);
+  assert.equal(w.sent[2].points[4321], patches[4321].center);
+});
+
+test('unchanged feature masks skip uploads while newly visible and hidden patches both update', () => {
+  const values = new Uint32Array(4);
+  assert.equal(updateFeatureVisibility(values, [1, 1, 0, 1], [0, 0, 1, 0]), false);
+  assert.equal(updateFeatureVisibility(values, [1, 1, 0, 1], [1, 0, 1, 1]), true);
+  assert.deepEqual([...values], [1, 0, 0, 1]);
+  assert.equal(updateFeatureVisibility(values, [1, 1, 0, 1], [1, 0, 1, 1]), false);
+  assert.equal(updateFeatureVisibility(values, [0, 1, 1, 1], [1, 0, 1, 1]), true);
+  assert.deepEqual([...values], [0, 0, 1, 1]);
+  assert.equal(updateFeatureVisibility(values, [0, 1, 1, 1], [1, 0, 1, 1]), false);
 });

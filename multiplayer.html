@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="hu">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#071211" />
+    <title>Operation Falcon: Redline · Multiplayer</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/flight.css" />
+    <link rel="stylesheet" href="/src/ui/language.css" />
+    <link rel="stylesheet" href="/src/multiplayer/multiplayer.css" />
+  </head>
+  <body class="multiplayer">
+    <canvas id="network-world" aria-label="Közös gyakorlórepülés"></canvas>
+    <header>
+      <a class="brand" href="/"><strong>O / F</strong> Operation Falcon: Redline</a>
+      <span>Multiplayer · prototípus</span>
+    </header>
+    <main id="network-lobby">
+      <div class="eyebrow" data-no-i18n>FALCON / FLIGHT ROOM</div>
+      <h1>Közös gyakorlórepülés</h1>
+      <p>
+        Legfeljebb öt pilóta, egy légtér. Hozz létre egy szobát, és add át a kódját a társadnak.
+      </p>
+      <label for="network-scenario">Repülés típusa</label>
+      <select id="network-scenario">
+        <option value="arena">Aréna · mindenki mindenki ellen</option>
+        <option value="cooperative" selected>Közös küldetés · csapásmérés</option>
+        <option value="combat">Közös légiharc · gépi ellenfél</option>
+        <option value="range">Közös fegyverpróba · AI nélkül</option>
+      </select>
+      <p class="network-note">
+        A közös küldetés 2–5 pilótával indul, a szobagazda indítja. Cél: a vadász leküzdése és a
+        földi céljármű megsemmisítése. A reptérvédő feladatnál felszállás és sikeres visszatérés is
+        szükséges.
+      </p>
+      <label for="network-aircraft">Repülőgép</label>
+      <select id="network-aircraft"></select>
+      <button id="network-create" type="button">Új szoba létrehozása</button>
+      <div class="network-join">
+        <label for="network-code">Szobakód</label>
+        <input
+          id="network-code"
+          maxlength="6"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+          placeholder="ABC234"
+        />
+        <button id="network-join" type="button">Csatlakozás</button>
+      </div>
+      <p class="network-note">
+        A fegyverpróba két közös gyakorlócélt ad. Légiharcban egy ellenséges vadász is érkezik, 20
+        másodperc felkészülési idővel. A baráti tűz valódi sérülést okoz. Csatlakozáskor a szoba
+        repüléstípusa érvényes.
+      </p>
+      <a href="/">Vissza a küldetésekhez</a> ·
+      <a href="/encyclopedia.html#guide-multiplayer">ⓘ Wiki</a>
+    </main>
+    <section id="network-preflight" hidden aria-label="Közös előszoba">
+      <h1>Közös előszoba</h1>
+      <p><span>Szobakód</span>: <strong data-preflight="code" data-no-i18n></strong></p>
+      <div class="preflight-grid">
+        <div>
+          <label for="preflight-mission" data-preflight="mission-label">Küldetés</label>
+          <select id="preflight-mission" data-preflight="mission">
+            <option value="strike">Közös csapásmérés</option>
+            <option value="intercept">Közös légtérellenőrzés</option>
+            <option value="defend-base">Védd meg a repteret</option>
+          </select>
+          <p data-preflight="role" data-no-i18n></p>
+          <p data-preflight="briefing">
+            Csapásmérés: a vadász és a földi cél kötelező. Légtérellenőrzés: a földi cél opcionális.
+            A reptérvédő küldetés felszállással indul; a bázis megvédése után a túlélőknek le is
+            kell szállniuk.
+          </p>
+          <div data-preflight="roster" data-no-i18n></div>
+          <p>Felszerelés- vagy küldetésváltás után mindannyian újra jelezzétek a készültséget.</p>
+        </div>
+        <div>
+          <div data-preflight="equipment">
+            <label for="preflight-aircraft">Saját repülőgép</label
+            ><select id="preflight-aircraft" data-preflight="aircraft" data-no-i18n></select>
+            <label for="preflight-fuel">Induló üzemanyag (%)</label
+            ><input
+              id="preflight-fuel"
+              data-preflight="fuel"
+              type="number"
+              min="10"
+              max="100"
+              step="10"
+            />
+            <label
+              ><input type="checkbox" data-preflight="gun" /> <span>Gépágyú lőszerrel</span></label
+            >
+            <div class="preflight-stations" data-preflight="stations" data-no-i18n></div>
+          </div>
+          <p data-preflight="mass" data-no-i18n></p>
+          <p data-preflight="unsaved" data-no-i18n></p>
+          <button data-preflight="save" type="button">Felszerelés mentése</button>
+          <button data-preflight="ready" type="button" data-no-i18n>Kész vagyok</button>
+          <button data-preflight="start" type="button">Bevetés indítása</button>
+        </div>
+      </div>
+      <p data-preflight="notice" role="status" data-no-i18n></p>
+      <button data-preflight="leave" type="button">Kilépés a szobából</button>
+    </section>
+    <aside id="network-flight" hidden>
+      <div class="network-room">
+        <span>Szoba</span> <strong id="network-room-code" data-no-i18n></strong>
+        <span id="network-roster" data-no-i18n></span>
+      </div>
+      <section id="network-mission" aria-label="Közös küldetés" data-no-i18n hidden></section>
+      <button
+        id="network-players-toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="network-players"
+      >
+        Játékosok
+      </button>
+      <button id="network-rematch" type="button" title="Vissza az előszobába" hidden>
+        Új menet
+      </button>
+      <button id="network-leave" type="button">Kilépés a szobából</button>
+    </aside>
+    <aside id="network-players" hidden aria-label="Játékoslista">
+      <h2>Játékosok</h2>
+      <ul></ul>
+    </aside>
+    <aside id="network-spectator" hidden aria-label="Megfigyelőnézet">
+      <button id="spectator-prev" type="button" aria-label="Előző pilóta">◀</button>
+      <span id="spectator-label" data-no-i18n></span>
+      <button id="spectator-next" type="button" aria-label="Következő pilóta">▶</button>
+      <small>[ / ] · Nézetváltás</small>
+    </aside>
+    <div id="network-status" role="status" aria-live="polite"></div>
+    <script type="module" src="/src/multiplayer/page.js"></script>
+  </body>
+</html>

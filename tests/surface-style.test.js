@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -74,4 +75,59 @@ test('winter covers gentle ground with snow while steep cliffs expose rock; moun
   assert.equal(surfaceStyle('winter').stars, 0);
   assert.equal(surfaceStyle('winter').clouds, true);
   assert.equal(surfaceStyle('sunset').sun, true);
+});
+
+test('allocation-free surface generation preserves every original material pixel', () => {
+  const fixtures = {
+    aircraft: {
+      size: 256,
+      sha256: '25eaae52138e9f98adffcfb477d65646fa1956e5eda51de870e84c0a5dd9a735',
+    },
+    camo: {
+      size: 256,
+      sha256: 'c9687d50bffd4d47c30cf24272b0cfe07e9c60f2719d07ad2c9977dd68878e7a',
+    },
+    concrete: {
+      size: 256,
+      sha256: 'fbe85fad2c36edb36731a6c352ea72a0753d1c4ce6f339f61259a3513ab4c96d',
+    },
+    hangar: {
+      size: 512,
+      sha256: 'c29bfaef962fba78d311a5843ca1619ebc69bac48dee57ad2822d50549fd86e9',
+    },
+    asphalt: {
+      size: 256,
+      sha256: '807bed1d87e46312a02ac68c5726abb0d903463d2d1a9092b70324cf819b580a',
+    },
+    terrain: {
+      size: 256,
+      sha256: 'c015abe9d40c8243dd35941090625107828acb84fa36a3094edbc588cd8e221c',
+    },
+    'terrain-sand': {
+      size: 256,
+      sha256: 'd7bbd4f760250616102069941b1f85bad126bbfb12688b1673355f2e5d968061',
+    },
+    'terrain-rock': {
+      size: 256,
+      sha256: '2f7f0fb5e76a314a5c17b193fb45d95626cebe283856a4a3b0f1fa7d7cca7fb4',
+    },
+    'terrain-sea': {
+      size: 256,
+      sha256: 'd51a63aa71a64e3df688ee3d52a37bbbf37e42ea8b8c558af8bb981146b668a1',
+    },
+    'terrain-snow': {
+      size: 256,
+      sha256: 'd7d3bb58d0a212ac0b246251b94e34f5cd6ac3f3b2b9c70fd6d7f2a8d52b32a0',
+    },
+    unknown: {
+      size: 256,
+      sha256: 'd39c04fb8e1d52a14022f1ce4e8882199a753a111c1f26429d010ed880941c43',
+    },
+  };
+  for (const [kind, { size, sha256 }] of Object.entries(fixtures))
+    assert.equal(
+      createHash('sha256').update(materialPixels(kind, size)).digest('hex'),
+      sha256,
+      kind,
+    );
 });

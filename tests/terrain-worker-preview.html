@@ -55,7 +55,8 @@
         s = createMissionAircraft(spec, mission),
         w = new Weapons(),
         aim = new Targeting(),
-        r = new Renderer(document.getElementById('world'));
+        r = new Renderer(document.getElementById('world'), { backgroundTerrain: true });
+      if (r.gpuModels) r.gpuModels.profile = true;
       r.surfaceMode = 'desert';
       r.surfaceLines = false;
       Object.assign(s, {
@@ -107,11 +108,11 @@
       function probe() {
         s.position.x += 470;
         r.render(s, targets, w, aim);
-        if (r.terrainDeferred) {
+        if (r.terrainRebuilt) {
           commits++;
           maxMain = Math.max(maxMain, r.terrainFrameMs);
         }
-        info.textContent = `Terrain: ${++step} frames / worker commits: ${commits} / main max: ${maxMain.toFixed(1)} ms / worker: ${(r.terrainWorkerMs || 0).toFixed(1)} ms`;
+        info.textContent = `Terrain: ${++step} frames / worker commits: ${commits} / main max: ${maxMain.toFixed(1)} ms / worker: ${(r.terrainWorkerMs || 0).toFixed(1)} ms / mask writes: ${r.gpuModels?.featureMaskStats?.writes || 0}/${r.gpuModels?.featureMaskStats?.frames || 0}`;
         if (step < 60) setTimeout(probe, 120);
       }
       setTimeout(probe, 500);

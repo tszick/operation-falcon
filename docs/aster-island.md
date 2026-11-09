@@ -1,6 +1,6 @@
-# Invázió: Tajvan
+# Invázió: Aster-sziget
 
-Játékbeli, stilizált hadszíntér; a térképen Tajvanhoz rendelve. A pályán egyetlen, nyugati sziget van; a procedurális sziget nem valódi méretarányú térkép.
+Fiktív, stilizált hadszíntér a Csendes-óceán nyugati részén; nem valós sziget vagy ország térképe. A pályán egyetlen, nyugati sziget van; a procedurális sziget nem valódi méretarányú térkép.
 
 - Kelet: három hullám 0 / 180 / 360 másodpercnél, hullámonként három négygépes raj (1 Tu-95 és 3 Su-27). Összesen 36 gép. A keleti játékos az első hullám egyik rajhelyét foglalja el.
 - Nyugat: három négygépes raj (1 B-52 és 3 F/A-18). A játékos beleszámít a 12 gépbe: vadásszal vadászhelyen, csapásmérő/bombázó géppel bombázóhelyen kezd.
@@ -21,3 +21,21 @@ A berepülési térképjelölők és jelmagyarázat lilák; kijelöléskor is li
 ## Ellenőrzés
 
 A battlefield-scenario.test.js lefedi mindkét oldal és vadász/bombázó játékos pontos rajlétszámát, késleltetett hullámokat, mindkét győzelmi ágat, bázisvesztést és pótlást, kompatibilis leszállóhely-választást, az eltolással/elforgatással lefuttatott tényleges katapult- és fékezőkötelezési fizikát, az álló anyahajókat, a romboló mozgását és hosszúkás szigetek megkerülését.
+
+A belső `taiwan-invasion` azonosító és `taiwanMission.js` modulnév kompatibilitási okból megmaradt: a korábbi naplók és küldetésazonosítók továbbra is működnek. A játékban megjelenő név, leírás, helyszín és hadműveleti kód már Aster-szigetre utal.
+
+## Helyi teljesítménypróba
+
+A `node scripts/benchmark-battlefield.mjs 90 west` (vagy `east`) hang és külső kapcsolat nélkül méri a szimuláció részidejét. Ez CPU-mérés, nem böngészős FPS. A pilóta semleges bemenetekkel repül, nincs sérthetetlenség vagy lőszerpótlás; kiesését az eredmény külön jelzi.
+
+A `/tests/battlefield-load.html?side=west` (vagy `east`) kizárólag localhoston indítható, hang nélküli grafikus terhelési próba. A rendes küldetés-, harci, sebzési, naplózási és kirajzolási rendszereket használja. Az öt másodperces mérési ablakok legfeljebb egy percig maradnak meg; az első képkockák költségét nem szűri ki. Kiesett pilóta utáni eredményből nem szabad aktív légiharcra következtetni.
+
+### Későbbi hullámok megfigyelőként
+
+A `node scripts/benchmark-battlefield.mjs 420 west observer` mindhárom hullám szimulációját méri; `east` oldalról is futtatható. A játékos eredeti rajhelyére rendes AI-gép kerül vissza, így 48 repülő van összesen a három hullámban és a védelemben. A megfigyelő nem harci szereplő: a térképen kívül, nem repülő állapotban van, saját hívójel nélkül. Nem választható harci célnak. Az AI-egységek véges lőszerrel, rendes sérüléssel és feltöltéssel működnek; a győzelmi feltételek továbbra is lezárhatják a próbát.
+
+Grafikus próba: `/tests/battlefield-load.html?side=west&mode=observer&at=350`. Az `at` legfeljebb 420 másodperc valós, 120 Hz-es szimulációs előkészítést kér, nem kényszerített hullámindítást. Ez az előkészítés nem FPS-mérés; a kijelzett FPS csak az utána kirajzolt, valós idejű képkockákból származik. A külön megfigyelőkamera legfeljebb 400 m/s sebességgel követi a csatát, hogy a célváltás ne okozzon mesterséges kameraugrást.
+
+A géppárok ütközési előszűrése közvetlen koordinátaszámítást használ, páronként három ideiglenes vektor létrehozása nélkül. A söpört gömbpróba képlete, sugártűrése és az azt követő tényleges felületi ütközésvizsgálat változatlan; húszezer véletlen, valamint érintő és álló eset ellenőrzi az azonosságot.
+
+A grafikus terhelési próba opcionális HUD-részidőket is rögzít (`hudPartsMaxMs`, `recentHUDSpikes`). A normál játékban nem olvas külön időmérőt emiatt. A radartérkép szintvonalépítése még a pont- és él-listák létrehozása előtt kizárja azokat a cellákat, amelyek mind a négy sarka az adott szint ugyanazon oldalán van. A megmaradt keresztezések rajzolási sorrendje és a 100 méteres szintköz változatlan.

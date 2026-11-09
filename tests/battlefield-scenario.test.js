@@ -35,7 +35,7 @@ const kill = (t) => {
   t.pending = false;
 };
 
-test('Taiwan uses three waves of three 3+1 flights, with one human seat and ordinary ground units', () => {
+test('Aster Island uses three waves of three 3+1 flights, with one human seat and ordinary ground units', () => {
   for (const side of ['west', 'east'])
     for (const plane of [side === 'west' ? 'fa18' : 'su27', side === 'west' ? 'b52' : 'tu95']) {
       const x = setup(side, plane);
@@ -84,7 +84,7 @@ test('Taiwan uses three waves of three 3+1 flights, with one human seat and ordi
     }
 });
 
-test('Taiwan rises from low shores to a level central airfield plateau', () => {
+test('Aster Island rises from low shores to a level central airfield plateau', () => {
   const x = setup(),
     island = terrainWorld.islands[0],
     airfield = x.by('WEST-AIRFIELD');

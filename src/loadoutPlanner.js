@@ -113,11 +113,12 @@ export function configureAircraft(spec, choice) {
     weapons = {},
     stations = [];
   if (choice.gun && preset.weapons.gun) weapons.gun = { ...preset.weapons.gun };
+  for (const type of ['aam', 'agm', 'bomb']) {
+    const quantity = choice.stations.filter((selected) => selected === type).length;
+    if (quantity) weapons[type] = { ...preset.weapons[type], quantity };
+  }
   choice.stations.forEach((type, index) => {
-    if (!type) return;
-    weapons[type] ??= { ...preset.weapons[type], quantity: 0 };
-    weapons[type].quantity++;
-    stations.push({ ...preset.stations[index], type });
+    if (type) stations.push({ ...preset.stations[index], type });
   });
   return {
     ...spec,

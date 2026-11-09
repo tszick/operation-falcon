@@ -458,7 +458,10 @@ test('short bank input is gentle, release damps rotation and the settled bank st
 });
 test('reselecting the only radar contact preserves acquisition progress and lock', () => {
   const s = inFlight(),
-    targets = createTargets(missions[0]),
+    // Optional generated bridges are valid selectable contacts, but outside this one-contact test.
+    targets = createTargets(missions[0], undefined, { rng: () => 0.5 }).filter(
+      (t) => t.id === 'T01',
+    ),
     aim = new Targeting();
   targets[0].position = new Vec3(0, 1500, 4000);
   aim.cycle(s, targets);

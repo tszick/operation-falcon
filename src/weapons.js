@@ -36,7 +36,16 @@ export const weaponNames = {
   bomb: 'BOMBA / CCIP',
 };
 export class Weapons {
-  constructor({ enemyFire = false, random = Math.random } = {}) {
+  constructor({
+    enemyFire = false,
+    random = Math.random,
+    actorUpdates = true,
+    friendlyFire = false,
+    visualEffects = true,
+  } = {}) {
+    this.actorUpdates = actorUpdates;
+    this.visualEffects = visualEffects;
+    this.friendlyFire = friendlyFire;
     this.selected = 'aam';
     this.projectiles = [];
     this.cooldown = 0;
@@ -47,6 +56,7 @@ export class Weapons {
     this.hits = 0;
     this.misses = 0;
     this.effects = [];
+    this.impactEvents = [];
     this.trails = [];
     this.events = [];
     this.sequence = 0;
@@ -169,7 +179,7 @@ export class Weapons {
       profile: profile.id,
       initialVelocity: this.projectiles.at(-1).velocity.clone(),
     });
-    if (w === 'gun')
+    if (w === 'gun' && this.visualEffects)
       this.effects.push({
         kind: 'muzzle',
         position: s.position.clone(),
@@ -179,10 +189,27 @@ export class Weapons {
       });
     return w === 'gun' ? 'ÁGYÚTŰZ' : w === 'bomb' ? 'BOMBA KIOLDVA' : 'RAKÉTA INDÍTVA';
   }
+  impact(position) {
+    if (this.visualEffects) this.effects.push(impactEffect(position));
+    else {
+      this.impactEvents.push({ position: position.clone() });
+      if (this.impactEvents.length > 128) this.impactEvents.shift();
+    }
+  }
+  drainImpacts() {
+    const impacts = this.impactEvents;
+    this.impactEvents = [];
+    return impacts;
+  }
   explode(position, weapon, { ground = false, target = null } = {}) {
     const heavy = weapon === 'bomb';
     if (weapon === 'gun' && !target) {
-      this.effects.push(impactEffect(position));
+      this.impact(position);
+      return;
+    }
+    if (!this.visualEffects) {
+      this.sequence++;
+      this.emit({ type: 'explosion', weapon, ground, position: position.clone(), heavy });
       return;
     }
     const effect = explosionEffect(position, {
@@ -204,12 +231,14 @@ export class Weapons {
     this.emit({ type: 'explosion', weapon, ground, position: position.clone(), heavy });
   }
   update(s, targets, dt) {
-    syncPlayerTransport(s, targets);
-    updateCountermeasures(s, dt);
-    if (this.enemyCombat) updateAIResupply(s, targets, this, this.enemyCombat, dt);
-    updateAIDefense(s, targets, this, dt);
-    this.enemyCombat?.update(s, targets, this, dt);
-    updateAircraftCollisions(s, targets, this);
+    if (this.actorUpdates) {
+      syncPlayerTransport(s, targets);
+      updateCountermeasures(s, dt);
+      if (this.enemyCombat) updateAIResupply(s, targets, this, this.enemyCombat, dt);
+      updateAIDefense(s, targets, this, dt);
+      this.enemyCombat?.update(s, targets, this, dt);
+      updateAircraftCollisions(s, targets, this);
+    }
     if (s.impactPending) {
       s.impactPending = false;
       this.explode(s.position, 'bomb', { ground: true });
@@ -237,7 +266,13 @@ export class Weapons {
           collisionBounds.set(t, groundCollisionBounds(t));
     const remaining = [];
     for (const p of this.projectiles) {
-      p.previous = p.position.clone();
+      if (!(p.previous instanceof Vec3) || p.previous === p.position)
+        p.previous = p.position.clone();
+      else {
+        p.previous.x = p.position.x;
+        p.previous.y = p.position.y;
+        p.previous.z = p.position.z;
+      }
       p.age += dt;
       const hostile = p.owner === 'enemy',
         ai = !!p.sourceId,
@@ -269,20 +304,23 @@ export class Weapons {
       }
       if (p.type === 'bomb' || p.type === 'gun') stepBallistic(p, dt);
       else if (p.type === 'flak') p.velocity.y -= 9.81 * dt;
-      p.position.add(p.velocity.clone().scale(dt));
+      p.position.x += p.velocity.x * dt;
+      p.position.y += p.velocity.y * dt;
+      p.position.z += p.velocity.z * dt;
       if (p.profile?.inert) {
         if (p.position.y <= terrainHeight(p.position.x, p.position.z)) {
           const impact = practiceBombImpact(s, p, targets);
           if (impact.hit) this.hits++;
           else this.misses++;
-          this.effects.push({
-            kind: 'practice-impact',
-            position: impact.position,
-            age: 0,
-            life: 8,
-            maxLife: 8,
-            hit: impact.hit,
-          });
+          if (this.visualEffects)
+            this.effects.push({
+              kind: 'practice-impact',
+              position: impact.position,
+              age: 0,
+              life: 8,
+              maxLife: 8,
+              hit: impact.hit,
+            });
           this.emit({ type: 'practice-bomb-impact', ...impact });
         } else if (p.age > p.profile.life) {
           this.misses++;
@@ -290,7 +328,7 @@ export class Weapons {
         } else remaining.push(p);
         continue;
       }
-      if (missile && p.age < p.profile.burn) {
+      if (this.visualEffects && missile && p.age < p.profile.burn) {
         p.trailTimer += dt;
         if (p.trailTimer >= 0.045) {
           this.trails.push({
@@ -354,7 +392,7 @@ export class Weapons {
                 time: s.elapsed,
               };
               if (missile) this.explode(hit.point, 'aam');
-              else this.effects.push(impactEffect(hit.point));
+              else this.impact(hit.point);
               this.emit({
                 type: 'damage-hit',
                 position: hit.point,
@@ -415,7 +453,9 @@ export class Weapons {
       const canHit = (t) =>
         !t.exited &&
         !t.playerControlled &&
-        (!ai || (teamOf(t, s) !== p.owner && teamOf(t, s) !== 'neutral'));
+        (!ai ||
+          (t.id !== p.sourceId &&
+            (this.friendlyFire || (teamOf(t, s) !== p.owner && teamOf(t, s) !== 'neutral'))));
       const recordHit = (t, p, info = null) => {
         const amount =
             p.type === 'gun'
@@ -438,6 +478,7 @@ export class Weapons {
           engineIndex: info?.engineIndex,
           amount,
           destroyed,
+          friendlyFire: teamOf(t, s) === (p.owner || 'ally'),
           position: t.position.clone(),
         });
         if (!ai) {
@@ -571,7 +612,7 @@ export class Weapons {
       if (hitTarget && (!missile || p.armed)) {
         const destroyed = recordHit(hitTarget, p, hitInfo),
           point = hitInfo?.point || hitTarget.position;
-        if (p.type === 'gun' && !destroyed) this.effects.push(impactEffect(point));
+        if (p.type === 'gun' && !destroyed) this.impact(point);
         else
           this.explode(point, p.type, { ground: hitTarget.kind === 'ground', target: hitTarget });
       } else if (ground) {
@@ -583,15 +624,17 @@ export class Weapons {
     }
     remaining.push(...interceptors);
     this.projectiles = remaining;
-    s.incomingMissiles = remaining.filter(
-      (p) =>
+    s.incomingMissiles = 0;
+    for (const p of remaining)
+      if (
         p.owner === 'enemy' &&
         !p.interceptor &&
         !p.targetEntityId &&
         p.type === 'aam' &&
         !p.seekerLost &&
-        p.decoyId === undefined,
-    ).length;
+        p.decoyId === undefined
+      )
+        s.incomingMissiles++;
     s.threatWarning = s.incomingMissiles
       ? `RAKÉTA KÖZELEDIK · ${s.incomingMissiles} · C: ELTERELŐ`
       : '';

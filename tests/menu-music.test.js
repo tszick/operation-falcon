@@ -122,3 +122,30 @@ test('two game tabs share one playback lock and a global mute stops all sources'
   b.instance.receiveEnabled(false);
   await flush();
 });
+
+test('music button labels use inert DOM text while preserving icon and accessibility state', () => {
+  const attributes = {},
+    nodes = [];
+  const button = {
+    ownerDocument: { createElement: () => ({ setAttribute() {}, textContent: '' }) },
+    setAttribute: (key, value) => {
+      attributes[key] = value;
+    },
+    replaceChildren: (...children) => {
+      nodes.splice(0, nodes.length, ...children);
+    },
+    set innerHTML(value) {
+      throw new Error('HTML parsing is not allowed for button labels');
+    },
+  };
+  const music = Object.assign(Object.create(MenuMusic.prototype), { button, enabled: true });
+  music.refresh();
+  assert.equal(nodes[0].textContent, '♫');
+  assert.equal(attributes['aria-pressed'], 'true');
+  assert.equal(nodes.length, 2);
+  music.enabled = false;
+  music.refresh();
+  assert.equal(nodes[0].textContent, '♪');
+  assert.equal(attributes['aria-pressed'], 'false');
+  assert.equal(typeof nodes[1].textContent, 'string');
+});

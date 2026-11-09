@@ -1,0 +1,85 @@
+import { MultiplayerClient } from '../src/multiplayer/client.js';
+import { FlightPrediction } from '../src/multiplayer/prediction.js';
+import { CombatLoadPilot } from './helpers/combat-load-pilot.js';
+if (typeof document !== 'undefined') await mountLoadTest();
+async function mountLoadTest() {
+  if (!['localhost', '127.0.0.1', '[::1]'].includes(location.hostname))
+    throw new Error('This load test is restricted to localhost.');
+  // Reuse the real page and all its instruments; do not keep a separate cockpit.
+  const response = await fetch('/multiplayer.html');
+  if (!response.ok) throw new Error('Multiplayer template unavailable');
+  const template = new DOMParser().parseFromString(await response.text(), 'text/html');
+  for (const script of template.querySelectorAll('script')) script.remove();
+  for (const style of template.head.querySelectorAll('link[rel="stylesheet"]'))
+    document.head.append(style);
+  document.body.className = template.body.className;
+  document.body.replaceChildren(...template.body.childNodes);
+  const marker = document.createElement('pre');
+  marker.id = 'combat-load-status';
+  marker.setAttribute('aria-label', 'Local combat load test');
+  Object.assign(marker.style, {
+    position: 'fixed',
+    right: '12px',
+    top: '60px',
+    zIndex: 9,
+    color: '#ffdd77',
+    background: '#071211dd',
+    padding: '10px',
+    font: '12px monospace',
+    pointerEvents: 'none',
+  });
+  document.body.append(marker);
+  const pilots = new WeakMap(),
+    states = new WeakMap();
+  const accept = MultiplayerClient.prototype.acceptSnapshot;
+  MultiplayerClient.prototype.acceptSnapshot = function (...args) {
+    accept.apply(this, args);
+    if (!this.latest) return;
+    let state = states.get(this);
+    if (!state || state.round !== this.round) {
+      state = {
+        round: this.round,
+        pilot: new CombatLoadPilot(),
+        cursor: 0,
+        shots: 0,
+        hits: 0,
+        peakProjectiles: 0,
+      };
+      states.set(this, state);
+    }
+    pilots.set(this.prediction, { client: this, state });
+    for (const e of this.latest.combat.events) {
+      if (e.id <= state.cursor) continue;
+      state.cursor = e.id;
+      if (['missile-launch', 'gun'].includes(e.type)) state.shots++;
+      if (e.type === 'target-hit') state.hits++;
+    }
+    state.peakProjectiles = Math.max(state.peakProjectiles, this.latest.combat.projectiles.length);
+    marker.textContent = JSON.stringify(
+      {
+        test: 'LOCALHOST / SILENT AUTOPILOT',
+        pilot: this.latest.players.find((p) => p.id === this.id)?.callSign,
+        round: this.round,
+        phase: this.latest.mission?.phase,
+        elapsed: Math.round(this.latest.mission?.elapsed || 0),
+        shots: state.shots,
+        hits: state.hits,
+        peakProjectiles: state.peakProjectiles,
+      },
+      null,
+      2,
+    );
+  };
+  const step = FlightPrediction.prototype.step;
+  FlightPrediction.prototype.step = function (axes, toggles, combat) {
+    const binding = pilots.get(this);
+    const command =
+      binding &&
+      this.state &&
+      binding.state.pilot.command(this.state, binding.client.latest, binding.client.id);
+    return command
+      ? step.call(this, command.axes, command.toggles, command.combat)
+      : step.call(this, axes, toggles, combat);
+  };
+  await import('../src/multiplayer/page.js');
+}

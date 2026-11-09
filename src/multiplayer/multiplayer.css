@@ -1,0 +1,420 @@
+.multiplayer {
+  margin: 0;
+  overflow: hidden;
+  background: #071211;
+  color: #d5edc8;
+}
+#network-world {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.multiplayer header {
+  position: relative;
+  height: 66px;
+  padding: 0 20px;
+  font-size: 14px;
+  box-sizing: border-box;
+  z-index: 5;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+#network-lobby {
+  position: relative;
+  z-index: 2;
+  margin: 12vh auto 24px;
+  width: min(640px, calc(100% - 40px));
+  max-height: 78vh;
+  overflow: auto;
+  padding: 28px;
+  box-sizing: border-box;
+  border: 1px solid #638953;
+  background: #081a16f5;
+  box-shadow: 0 20px 90px #0009;
+}
+#network-lobby h1 {
+  font-size: clamp(24px, 4vw, 36px);
+  color: #baf37d;
+}
+#network-lobby p {
+  line-height: 1.6;
+}
+#network-lobby label {
+  display: block;
+  margin: 18px 0 6px;
+}
+.multiplayer
+  :is(
+    #network-lobby,
+    #network-preflight,
+    #network-flight,
+    #network-players,
+    #network-spectator,
+    .network-tactical
+  )
+  button,
+.multiplayer :is(#network-lobby, #network-preflight) select,
+.multiplayer :is(#network-lobby, #network-preflight) input {
+  font: inherit;
+  padding: 11px 14px;
+  border: 1px solid #71955d;
+  color: #c8f6a7;
+  background: #112b21;
+}
+#network-aircraft,
+#network-scenario {
+  width: 100%;
+  margin-bottom: 16px;
+}
+.multiplayer
+  :is(
+    #network-lobby,
+    #network-preflight,
+    #network-flight,
+    #network-players,
+    #network-spectator,
+    .network-tactical
+  )
+  button {
+  cursor: pointer;
+}
+.multiplayer
+  :is(
+    #network-lobby,
+    #network-preflight,
+    #network-flight,
+    #network-players,
+    #network-spectator,
+    .network-tactical
+  )
+  button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.multiplayer a {
+  color: #baf37d;
+}
+#network-code {
+  width: 9ch;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.network-note {
+  font-size: 14px;
+  color: #a1bba7;
+}
+#network-flight {
+  position: fixed;
+  inset: 7px 20px auto auto;
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+#network-flight[hidden],
+#network-lobby[hidden] {
+  display: none;
+}
+.network-room strong {
+  color: #ffe397;
+  letter-spacing: 2px;
+  margin: 0 8px;
+}
+#network-roster {
+  color: #75d4f4;
+}
+#network-leave {
+  padding: 3px 8px;
+  font-size: 12px;
+}
+#network-status {
+  position: fixed;
+  right: 20px;
+  top: 85px;
+  z-index: 6;
+  max-width: 340px;
+  color: #ffe397;
+  text-shadow: 0 1px 3px #000;
+}
+
+.multiplayer .brand {
+  font: 600 16px var(--mono, monospace);
+  letter-spacing: 0;
+  gap: 10px;
+}
+@media (max-width: 600px) {
+  .multiplayer header > span {
+    display: none;
+  }
+  .multiplayer .brand {
+    font-size: 12px;
+  }
+  #network-lobby {
+    margin-top: 4vh;
+    max-height: 78vh;
+    padding: 20px;
+  }
+}
+
+#network-mission {
+  margin: 8px 0;
+  padding: 8px 0;
+  border-block: 1px solid #32563d;
+  font-size: 12px;
+}
+#network-mission p {
+  margin: 4px 0;
+}
+.network-mission-title {
+  font-weight: bold;
+  color: #e2f5d7;
+}
+#network-mission ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  list-style: none;
+  margin: 5px 0;
+  padding: 0;
+}
+.network-objective-complete,
+.network-mission-success {
+  color: #abff7a;
+}
+.network-objective-failed,
+.network-mission-failed {
+  color: #ff8b7d;
+}
+.network-objective-pending {
+  color: #d2dcd6;
+}
+.network-mission-waiting {
+  color: #ffe397;
+}
+.network-mission-result {
+  color: #75d4f4;
+}
+
+#network-preflight {
+  position: relative;
+  z-index: 3;
+  width: min(1050px, calc(100% - 32px));
+  max-height: calc(100vh - 105px);
+  overflow: auto;
+  margin: 15px auto;
+  padding: 24px;
+  box-sizing: border-box;
+  border: 1px solid #638953;
+  background: #081a16f5;
+}
+#network-preflight[hidden] {
+  display: none;
+}
+#network-preflight h1 {
+  font-size: 32px;
+  line-height: 1.15;
+  margin: 0 0 12px;
+  color: #baf37d;
+}
+.preflight-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+#network-preflight label {
+  display: block;
+  margin: 8px 0;
+}
+#network-preflight select {
+  width: 100%;
+}
+#network-preflight p {
+  margin: 7px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.preflight-stations {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 10px;
+}
+.preflight-stations label {
+  font-size: 12px;
+}
+.preflight-stations select {
+  font-size: 12px;
+  padding: 7px;
+}
+.preflight-ready {
+  color: #abff7a;
+}
+.preflight-waiting,
+[data-preflight='unsaved'] {
+  color: #ffe397;
+}
+[data-preflight='notice'] {
+  color: #ff8b7d;
+}
+@media (max-width: 700px) {
+  .preflight-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+}
+
+#network-preflight button {
+  padding: 8px 10px;
+}
+
+body.multiplayer.flying #network-status {
+  display: none;
+}
+body.multiplayer #network-mission:not([hidden]) {
+  position: fixed;
+  top: 12vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1100px, calc(100vw - 32px));
+  box-sizing: border-box;
+  max-height: 74vh;
+  overflow: auto;
+  background: #071a15f5;
+  padding: 20px;
+  border: 1px solid #9cce77;
+}
+.network-tactical {
+  color: #c4ef96;
+  background: #071a15f5;
+  border: 1px solid #749a65;
+  width: min(900px, 90vw);
+  max-height: 85vh;
+  overflow: auto;
+}
+.network-tactical::backdrop {
+  background: #0009;
+}
+.network-tactical canvas {
+  width: 100%;
+  max-height: 55vh;
+  object-fit: contain;
+}
+.network-tactical button {
+  float: right;
+}
+
+#network-players {
+  position: fixed;
+  top: 60px;
+  right: 18px;
+  z-index: 8;
+  width: min(440px, 90vw);
+  padding: 14px;
+  background: #071a15f5;
+  border: 1px solid #71955d;
+}
+#network-players[hidden],
+#network-spectator[hidden],
+#network-rematch[hidden] {
+  display: none;
+}
+#network-players h2 {
+  font-size: 16px;
+  margin: 0 0 10px;
+}
+#network-players ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+#network-players li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid #32563d;
+  font-size: 13px;
+}
+#network-players li[data-state='lost'] {
+  color: #ff8b7d;
+}
+#network-players li[data-state='ai'] {
+  color: #ffe397;
+}
+#network-spectator {
+  position: fixed;
+  z-index: 7;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #071a15ef;
+  border: 1px solid #71955d;
+  padding: 10px;
+  text-align: center;
+}
+#network-spectator small {
+  display: block;
+  margin-top: 6px;
+}
+body.spectating #cockpit,
+body.spectating #warning,
+body.spectating #combat-messages,
+body.spectating #flight-message-feed {
+  display: none;
+}
+body.multiplayer #network-mission table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+#network-mission th,
+#network-mission td {
+  padding: 8px;
+  border-bottom: 1px solid #32563d;
+  text-align: left;
+}
+#network-mission caption {
+  text-align: left;
+  margin: 12px 0;
+  font-weight: bold;
+}
+#network-mission .network-winner {
+  color: #ffe397;
+}
+#network-rematch {
+  color: #ffe397;
+}
+
+body.multiplayer.flying #network-status[data-error='true'] {
+  display: block;
+}
+
+.network-result-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin: 18px 0;
+}
+.network-result-summary dt {
+  font-size: 13px;
+  color: #9cbaa3;
+}
+.network-result-summary dd {
+  margin: 4px 0 0;
+  font-size: 22px;
+}
+.network-result-warning {
+  color: #ffb58c;
+}
+.network-result-table {
+  overflow-x: auto;
+}
+#network-mission .network-result-self {
+  background: #a8dd7712;
+}
+#network-mission .network-result-self td:first-child {
+  border-left: 2px solid #a8dd77;
+}

@@ -66,6 +66,12 @@ export const mapPoint = (p, map) => ({
   x: (map.centerX ?? 120) + (p.x - (map.originX || 0)) * map.scale,
   y: (map.centerY ?? 120) - (p.z - (map.originZ || 0)) * map.scale,
 });
+// A contour can cross a cell only if its corners lie on both sides of
+// the level. Preserve the original strict comparison at exact-height corners.
+export function contourCellCrossesLevel(a, b, c, d, level) {
+  const below = a < level;
+  return b < level !== below || c < level !== below || d < level !== below;
+}
 const contourCache = new Map();
 function contours(map) {
   const tile = map.halfExtent / 4,
@@ -148,6 +154,8 @@ function contours(map) {
     c.beginPath();
     for (let z = 0; z < nz; z++)
       for (let x = 0; x < nx; x++) {
+        if (!contourCellCrossesLevel(h[z][x], h[z][x + 1], h[z + 1][x + 1], h[z + 1][x], level))
+          continue;
         const corners = [
             [x, z, h[z][x]],
             [x + 1, z, h[z][x + 1]],

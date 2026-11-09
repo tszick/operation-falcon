@@ -1,7 +1,9 @@
+import { layoutMessageFeeds } from './rendering/messageLayout.js';
 import { tr, trHtml } from './i18n.js';
 import { damageWarnings } from './damage.js';
 export class FlightMessages {
-  constructor() {
+  constructor({ eventLimit = 128 } = {}) {
+    this.eventLimit = eventLimit;
     this.reset();
   }
   reset() {
@@ -58,6 +60,12 @@ export class FlightMessages {
       shownAt: null,
       expires: null,
     });
+    const events = this.items.filter((item) => !item.channel);
+    if (events.length > this.eventLimit) {
+      // Preserve active statuses and currently readable messages under overload.
+      const oldest = events.find((item) => item.shownAt === null) || events[0];
+      this.items.splice(this.items.indexOf(oldest), 1);
+    }
   }
   view(now, capacity = 6) {
     this.items = this.items.filter(
@@ -98,8 +106,8 @@ export function resetFlightMessages() {
   for (const id of ['flight-message-feed', 'radio-message-feed'])
     document.getElementById(id)?.replaceChildren();
 }
-export function postFlightMessage(text, now, duration) {
-  feed.event(text, now, duration);
+export function postFlightMessage(text, now, duration, options) {
+  feed.event(text, now, duration, options);
 }
 export function postRadioMessage(line, now) {
   radioFeed.event(
@@ -147,8 +155,14 @@ export function updateFlightMessages(s, lock, aim, weapons) {
       'warning',
     );
   else feed.clearStatus('systems', now);
-  renderMessages(host, feed, nodes, now);
-  renderMessages(radioHost, radioFeed, radioNodes, now);
+  // Measure feed capacity together before inserting/removing any messages.
+  const capacity = (host, feed) =>
+    feed.items.length ? Math.max(2, Math.min(6, Math.floor((host.clientHeight - 15) / 90))) : 2;
+  const warningCapacity = capacity(host, feed),
+    radioCapacity = capacity(radioHost, radioFeed);
+  const warnings = renderMessages(host, feed, nodes, now, warningCapacity);
+  const radio = renderMessages(radioHost, radioFeed, radioNodes, now, radioCapacity);
+  layoutMessageFeeds([warnings, radio], now);
 }
 function messageHost(id, label) {
   let host = document.getElementById(id);
@@ -165,9 +179,8 @@ function messageHost(id, label) {
   }
   return host;
 }
-function renderMessages(host, feed, nodes, now) {
-  const capacity = Math.max(2, Math.min(6, Math.floor((host.clientHeight - 15) / 90))),
-    items = feed.view(now, capacity),
+function renderMessages(host, feed, nodes, now, capacity) {
+  const items = feed.view(now, capacity),
     ids = new Set(items.map((i) => i.id));
   for (const [id, node] of nodes)
     if (!ids.has(id)) {
@@ -193,16 +206,7 @@ function renderMessages(host, feed, nodes, now) {
     node.lastChild.hidden = !item.detail;
     node.dataset.level = item.level;
     node.dataset.active = String(item.active);
-    positioned.push({ node, item, height: node.offsetHeight });
+    positioned.push({ node, item });
   }
-  const free = Math.max(
-    0,
-    host.clientHeight - positioned.reduce((sum, p) => sum + p.height + 14, 0),
-  );
-  let y = 0;
-  for (const { node, item, height } of positioned) {
-    node.style.transform = `translateY(${y + Math.min(free, (now - item.shownAt) * 8)}px)`;
-    node.style.opacity = item.fading ? '0' : '1';
-    y += height + 14;
-  }
+  return { host, positioned };
 }

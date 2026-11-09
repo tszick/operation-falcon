@@ -69,14 +69,25 @@ function probes(a) {
     to: a.state.orientation.rotate(p).add(a.state.position),
   }));
 }
+// Scalar swept-sphere rejection avoids three temporary vectors for every
+// aircraft pair on every physics tick. Exact surface probes remain unchanged.
+export function aircraftBroadphaseOverlap(a, b) {
+  const ap = a.state.previousPosition || a.state.position,
+    bp = b.state.previousPosition || b.state.position,
+    fx = ap.x - bp.x,
+    fy = ap.y - bp.y,
+    fz = ap.z - bp.z,
+    dx = a.state.position.x - b.state.position.x - fx,
+    dy = a.state.position.y - b.state.position.y - fy,
+    dz = a.state.position.z - b.state.position.z - fz,
+    t = clamp(-(fx * dx + fy * dy + fz * dz) / Math.max(1e-9, dx * dx + dy * dy + dz * dz), 0, 1),
+    x = fx + dx * t,
+    y = fy + dy * t,
+    z = fz + dz * t;
+  return Math.sqrt(x * x + y * y + z * z) <= a.mesh.radius + b.mesh.radius + 1;
+}
 function airContact(a, b) {
-  const from = (a.state.previousPosition || a.state.position)
-      .clone()
-      .sub(b.state.previousPosition || b.state.position),
-    to = a.state.position.clone().sub(b.state.position),
-    delta = to.clone().sub(from),
-    t = clamp(-from.dot(delta) / Math.max(1e-9, delta.dot(delta)), 0, 1);
-  if (from.add(delta.scale(t)).length() > a.mesh.radius + b.mesh.radius + 1) return null;
+  if (!aircraftBroadphaseOverlap(a, b)) return null;
   for (const [first, second] of [
     [a, b],
     [b, a],
@@ -121,8 +132,18 @@ function hitEvent(weapons, source, target, point, amount, destroyed) {
   });
 }
 export function updateAircraftCollisions(player, targets, weapons) {
+  updateAircraftGroupCollisions([{ id: 'PLAYER', state: player }], targets, weapons);
+}
+// Every human/taken-over aircraft participates once, with its stable network ID.
+// Damage is resolved by the authority, never by a client collision report.
+export function updateAircraftGroupCollisions(players, targets, weapons) {
+  const playerActors = players.map(({ id, state }) => {
+    const a = actor(state, true);
+    if (a) a.id = id;
+    return a;
+  });
   const actors = [
-    actor(player, true),
+    ...playerActors,
     ...targets
       .filter(
         (t) =>

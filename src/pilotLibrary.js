@@ -14,6 +14,68 @@ const guide = (id, name, description, steps, watch, pitfalls, related = [], sect
 });
 export const pilotEntries = [
   guide(
+    'multiplayer',
+    'Multiplayer · co-op és aréna',
+    'Legfeljebb öt pilóta, a megszokott cockpit, közös bevetések és mindenki mindenki elleni aréna.',
+    [
+      [
+        'SZOBA',
+        'Nyisd meg a Multiplayer oldalt ugyanazon a szerveren és porton. Hozz létre szobát, a többiek a hatkarakteres kóddal csatlakozzanak. Legfeljebb öt pilóta fér el.',
+      ],
+      [
+        'ELŐSZOBA',
+        'Co-opban a meglévő csapásmérés, légtérellenőrzés vagy reptérvédelem választható. Mindenki saját gépet, kompatibilis fegyvereket, gépágyút és 10–100% üzemanyagot állít be. Mentés után mindenki jelezzen készültséget. Legalább két kész pilóta szükséges, majd a szobagazda indít.',
+      ],
+      [
+        'ARÉNA',
+        'Minden pilóta ellenfél. Külön, azonos magasságú indulópontokról kezdtek a levegőben. Az utolsó túlélő nyer; nincs újraéledés. A szerver kivárja a zuhanásokat, teljes veszteség döntetlen.',
+      ],
+      [
+        'MŰSZERFAL',
+        'Ugyanaz a cockpit és HUD látható, mint egyedül. 1–4: fegyver; T / Tab: célkijelölés és befogás; Space: tűz; C: elterelő. 0: radarzoom; O vagy radarkattintás: nagy taktikai térkép, amely online nem állítja meg a világot. H: segítség.',
+      ],
+      [
+        'REPTÉRVÉDELEM',
+        'A kifutóról indultok. A bunker, két SAM és Guardian One segít a bombázó és két vadász ellen. A bázis megvédése után minden túlélő pilóta szálljon le és álljon meg. N: leszállási mód; I: lila segédív. A bombázó lelövése után a kioldott bombák még veszélyesek.',
+      ],
+      [
+        'BARÁTI TŰZ',
+        'Co-opban a baráti lövedék, rakéta és bomba is valódi sérülést okoz. Arénában minden másik játékos ellenséges cél. Minden fegyver lőtávját, befogását, lőszerét és találatát a szerver ellenőrzi.',
+      ],
+      [
+        'LESZAKADÁS',
+        'Aktív repülésben az AI átveszi a kilépő vagy leszakadt gép irányítását. Megmarad a sérülés, üzemanyag, lőszer és elterelőkészlet; az AI rendes harci szabályokkal folytatja a repülést. Előszobai távozás felszabadítja a helyet.',
+      ],
+      [
+        'AUTOMATIKUS VISSZATÉRÉS',
+        'Rövid kapcsolatvesztéskor három automatikus visszacsatlakozási próba indul, 1, 2 és 4 másodperc várakozással. Közben az AI vezeti a gépedet. A Kilépés megszakítja a próbálkozásokat. A helyreállítás csak a meglévő gépet veszi vissza; nem tölti fel vagy javítja meg.',
+      ],
+      [
+        'VISSZATÉRÉS',
+        'Ugyanazon böngészőlapon, a szobakóddal újra csatlakozva visszakapod az eredeti gépedet az aktuális állapotában. A privát munkamenetet a böngésző tárolja; másik eszközre vagy új böngészőmunkamenetre nem kerül át. A kilépés nem ad új gépet.',
+      ],
+      [
+        'MEGFIGYELÉS',
+        'A saját zuhanásod földetérésig látható. Ezután az életben maradt pilótákat követheted külső kamerából; a nyilakkal vagy a [ és ] gombbal válthatsz közöttük. Megfigyelőként nem irányíthatod a gépüket.',
+      ],
+      [
+        'JÁTÉKOSLISTA',
+        'A Játékosok gomb mutatja a hívójeleket, a szobagazdát, a kapcsolódott és AI által átvett gépeket, valamint a kieséseket. A kör végén a táblázatban a találatok, lelövések, baráti találatok és a gép állapota látszik.',
+      ],
+      [
+        'LEZÁRÁS',
+        'Ha mindenki leszakad, két percig még visszatérhettek. A szerver újraindítása törli a szobákat. A kör végén a szobagazda az Új menet gombbal ugyanabba az előszobába léptet mindenkit. A hívójel és a felszerelési választás megmarad; mindenki újra jelezzen készültséget.',
+      ],
+    ],
+    [
+      'A radar, a sérülések, a fegyverkészlet és a célok a saját műszerfaladon látszanak. A világ más játékosokra várva sem áll meg repülés közben.',
+    ],
+    [
+      'A próba hang nélkül fut. Nincs felhős AI vagy külső matchmaking. A teljes egyjátékos küldetéskatalógus nincs átemelve a multi módba.',
+    ],
+    ['guide-formation', 'guide-air-combat', 'guide-ground-unit'],
+  ),
+  guide(
     'mobile-threats',
     'Mobil légvédelem és drónok',
     'A konvojt mozgó légvédelem és jelzavaró védi, miközben egy külön drónindító a repteret fenyegeti.',

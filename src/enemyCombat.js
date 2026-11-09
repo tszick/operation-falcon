@@ -57,7 +57,9 @@ export function interceptTime(position, velocity, source, speed) {
   return future.length ? Math.min(...future) : null;
 }
 export class EnemyCombat {
-  constructor() {
+  constructor({ warmup = 4, projectileLimit = Infinity } = {}) {
+    this.warmup = warmup;
+    this.projectileLimit = projectileLimit;
     this.units = new Map();
     this.activeTime = 0;
   }
@@ -132,6 +134,7 @@ export class EnemyCombat {
     t.pitch = Math.atan2(t.velocity.y, speed);
   }
   launch(kind, t, s, w, u, solution = null) {
+    if (w.projectiles.length >= this.projectileLimit) return false;
     const ground = t.kind === 'ground',
       airToGround = !ground && s.kind === 'ground',
       origin =
@@ -201,7 +204,7 @@ export class EnemyCombat {
     }
     w.projectiles.push({
       id: ++w.sequence,
-      owner: t.team === 'ally' ? 'ally' : 'enemy',
+      owner: t.team || 'enemy',
       type: kind === 'missile' ? (airToGround ? 'agm' : 'aam') : kind,
       profile,
       targetPlayer: !s.id || !!s.playerControlled,
@@ -221,7 +224,7 @@ export class EnemyCombat {
       type: kind === 'missile' ? 'missile-launch' : 'gun',
       position: origin.clone(),
       weapon: kind === 'missile' && airToGround ? 'agm' : kind,
-      owner: t.team === 'ally' ? 'ally' : 'enemy',
+      owner: t.team || 'enemy',
       projectileId: w.sequence,
       sourceId: t.id,
       targetId: s.id || 'PLAYER',
@@ -255,11 +258,8 @@ export class EnemyCombat {
   }
   defensiveFire(t, player, targets, w, u, dt) {
     u.gun -= dt;
-    if (u.gun > 0 || u.rounds <= 0) return;
-    if (
-      w.projectiles.filter((p) => p.owner === (t.team === 'ally' ? 'ally' : 'enemy')).length >= 220
-    )
-      return;
+    if (u.gun > 0 || u.rounds <= 0 || w.projectiles.length >= this.projectileLimit) return;
+    if (w.projectiles.filter((p) => p.owner === (t.team || 'enemy')).length >= 220) return;
     const solution = defensiveFireSolution(t, player, targets);
     u.defensiveTargetId = solution ? solution.target.id || 'PLAYER' : null;
     if (!solution) {
@@ -372,7 +372,7 @@ export class EnemyCombat {
     )
       return;
     this.activeTime += dt;
-    if (this.activeTime < 4) return;
+    if (this.activeTime < this.warmup) return;
     const commitments = missileCommitments(w.projectiles),
       formations = formationContext(player, targets);
     const projectileCounts = new Map(),
@@ -502,6 +502,7 @@ export class EnemyCombat {
               1.5,
           ) &&
         u.bombs > 0 &&
+        w.projectiles.length < this.projectileLimit &&
         u.bomb <= 0 &&
         (this.bombCommitments.get(s.id) || 0) * 100 < (s.health ?? 100)
       ) {
@@ -519,7 +520,7 @@ export class EnemyCombat {
             position = t.position.clone().add(new Vec3(0, -2, 0));
           w.projectiles.push({
             id: ++w.sequence,
-            owner: t.team === 'ally' ? 'ally' : 'enemy',
+            owner: t.team || 'enemy',
             type: 'bomb',
             profile,
             position,
@@ -537,7 +538,7 @@ export class EnemyCombat {
           w.emit({
             type: 'bomb-release',
             position,
-            owner: t.team === 'ally' ? 'ally' : 'enemy',
+            owner: t.team || 'enemy',
             projectileId: w.sequence,
             sourceId: t.id,
             targetId: s.id,
@@ -628,12 +629,12 @@ export class EnemyCombat {
         missileStores.missiles > 0 &&
         u.lock >= (source.spec.lockTime ?? 2) &&
         u.missile <= 0 &&
-        countProjectiles(t.team === 'ally' ? 'ally' : 'enemy', true) < 6
+        countProjectiles(t.team || 'enemy', true) < 6
       ) {
         const finalStatus = guidedLaunchStatus(source, s, missileProfile),
           decision = aiMissileDecision(missileStores, finalStatus, defensePriority);
         u.missileDecision = decision;
-        if (decision.allow) {
+        if (decision.allow && w.projectiles.length < this.projectileLimit) {
           u.launchRange = finalStatus.maxRange;
           this.launch('missile', t, s, w, u);
           commitments.set(commitmentKey, (commitments.get(commitmentKey) || 0) + 1);
@@ -643,7 +644,7 @@ export class EnemyCombat {
           u.missile = 12 + this.random(u) * 5;
         }
       }
-      if (countProjectiles(t.team === 'ally' ? 'ally' : 'enemy') >= 220) continue;
+      if (countProjectiles(t.team || 'enemy') >= 220) continue;
       if (
         types.includes('flak') &&
         u.shells > 0 &&
@@ -680,6 +681,7 @@ export class EnemyCombat {
       if (
         t.type !== 'bomber' &&
         types.includes('gun') &&
+        w.projectiles.length < this.projectileLimit &&
         u.rounds > 0 &&
         gunEligible &&
         u.gun <= 0

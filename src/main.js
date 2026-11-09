@@ -54,7 +54,7 @@ import { threatMarkup, missionThreatsFor, threatTypes } from './threats.js';
 import { deployCountermeasures } from './countermeasures.js';
 mountCockpit();
 const $ = (id) => document.getElementById(id),
-  renderer = new Renderer($('world')),
+  renderer = new Renderer($('world'), { backgroundTerrain: true }),
   flightInstruments = new FlightInstrumentLayer(renderer),
   missionResult = new MissionResultView(renderer),
   menuMusic = new MenuMusic($('menu-music-toggle')),

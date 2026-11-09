@@ -277,7 +277,12 @@ export class MenuMusic {
     this.button.title = tr(
       this.enabled ? 'Madárka, madárka · menüzene bekapcsolva' : 'Menüzene kikapcsolva',
     );
-    this.button.innerHTML = `<span aria-hidden="true">${this.enabled ? '♫' : '♪'}</span><span>${tr(this.enabled ? 'ZENE BE' : 'ZENE KI')}</span>`;
+    const symbol = this.button.ownerDocument.createElement('span'),
+      label = this.button.ownerDocument.createElement('span');
+    symbol.setAttribute('aria-hidden', 'true');
+    symbol.textContent = this.enabled ? '♫' : '♪';
+    label.textContent = tr(this.enabled ? 'ZENE BE' : 'ZENE KI');
+    this.button.replaceChildren(symbol, label);
   }
   setActive(active) {
     this.active = active;

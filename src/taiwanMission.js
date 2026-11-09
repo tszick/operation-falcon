@@ -54,14 +54,14 @@ const assets = [
 ];
 export const taiwanMission = {
   id: 'taiwan-invasion',
-  name: 'Invázió: Tajvan',
+  name: 'Invázió: Aster-sziget',
   difficulty: 'TOP-GUN',
   icon: '◈',
   kind: 'mixed',
   objective: 'invasion',
   composition: true,
   airStart: true,
-  code: 'TAIWAN SHIELD',
+  code: 'ASTER SHIELD',
   needs: ['aam', 'bomb'],
   speed: 0,
   description:
@@ -86,7 +86,7 @@ export const taiwanMission = {
   sideBriefings: {
     east: {
       description:
-        'Keleti támadás Tajvan ellen. Három hullám, hullámonként három négyszeres raj, egy bombázóval és három vadásszal rajonként. Te az első hullám egyik gépének helyén indulsz. A további hullámok hárompercenként érkeznek. A Nyugat tizenkét géppel, szigeti reptérrel, anyahajóval és partvédelmi ütegekkel védekezik. Keletnek nincs szigete vagy reptere: egy anyahajó és egy romboló támogatja. Fedélzeti típus saját anyahajón tölthet fel; a szárazföldi típusok szükség esetén végleg kivonulnak. A győzelemhez mindkét nyugati leszállóhely VAGY mind a tizenkét nyugati repülő megsemmisítése szükséges.',
+        'Keleti támadás az Aster-sziget ellen. Három hullám, hullámonként három négyszeres raj, egy bombázóval és három vadásszal rajonként. Te az első hullám egyik gépének helyén indulsz. A további hullámok hárompercenként érkeznek. A Nyugat tizenkét géppel, szigeti reptérrel, anyahajóval és partvédelmi ütegekkel védekezik. Keletnek nincs szigete vagy reptere: egy anyahajó és egy romboló támogatja. Fedélzeti típus saját anyahajón tölthet fel; a szárazföldi típusok szükség esetén végleg kivonulnak. A győzelemhez mindkét nyugati leszállóhely VAGY mind a tizenkét nyugati repülő megsemmisítése szükséges.',
       primary: [
         'Semmisítsétek meg a nyugati repteret ÉS az anyahajót, VAGY küzdjétek le mind a 12 nyugati repülőt.',
       ],

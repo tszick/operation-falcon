@@ -1,3 +1,4 @@
+import { controlTextWidth } from '../src/rendering/instrumentText.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ellipsizeText } from '../src/rendering/instrumentText.js';
@@ -31,4 +32,20 @@ test('test-flight cockpit objectives use short labels while retaining full sourc
     assert.equal(compactObjective(row), expected);
     assert.ok(row.text.includes('altitude'));
   }
+});
+
+test('explicit borderless cockpit widths fit labels without synchronous geometry reads and follow resizing', () => {
+  const element = {
+    style: { width: '103.7px' },
+    get clientWidth() {
+      throw new Error('layout forced');
+    },
+  };
+  assert.equal(controlTextWidth(element), 104);
+  element.style.width = '127.2px';
+  assert.equal(controlTextWidth(element), 127);
+});
+test('controls without a valid explicit pixel width keep measured-width fallback', () => {
+  for (const width of ['', 'auto', '50%', '0px', '-10px', 'Infinitypx'])
+    assert.equal(controlTextWidth({ style: { width }, clientWidth: 87 }), 87);
 });

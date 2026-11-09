@@ -1,3 +1,4 @@
+import { formationStation } from './formationGeometry.js';
 import { Vec3 } from './math.js';
 export const playerStrikeRole = (spec) =>
   /bombáz|csapásmérő|közvetlen támogató/i.test(spec.role || '');
@@ -61,12 +62,20 @@ export function superiorityPlan(player, rng = Math.random) {
       center = (
         friendly ? axis.clone().scale(7500) : enemyBase.clone().sub(axis.clone().scale(7500))
       ).add(side.clone().scale((group - 1) * 3200)),
-      lateral = [0, -450, 450, 900][member],
-      trail = member === 0 ? -550 : 0;
+      playerGroup = friendly && group === squad,
+      number = playerGroup
+        ? member === slot
+          ? 1
+          : member < slot
+            ? member + 2
+            : member + 1
+        : member + 1,
+      station = formationStation(number),
+      direction = friendly ? 1 : -1;
     return center
-      .add(side.clone().scale(lateral))
-      .add(axis.clone().scale(trail * (friendly ? 1 : -1)))
-      .add(new Vec3(0, 2400 + group * 180 + (member === 0 ? 0 : 100), 0));
+      .add(side.clone().scale(station.lateral * direction))
+      .add(axis.clone().scale(station.trail * direction))
+      .add(new Vec3(0, 2400 + group * 180 + station.height, 0));
   };
   const playerStart = {
     position: position('ally', squad, slot),

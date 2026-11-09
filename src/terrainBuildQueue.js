@@ -1,6 +1,8 @@
 // One in-flight build and one replaceable latest request; no accumulating backlog.
 export class TerrainBuildQueue {
-  constructor(worker) {
+  constructor(worker, { now = () => performance.now(), timeoutMs = 10000 } = {}) {
+    this.now = now;
+    this.timeoutMs = timeoutMs;
     this.worker = worker;
     this.busy = null;
     this.latest = null;
@@ -26,12 +28,17 @@ export class TerrainBuildQueue {
   }
   request(job) {
     if (this.failed) return;
+    if (this.busy && this.now() - this.startedAt >= this.timeoutMs) {
+      this.fail();
+      return;
+    }
     this.latest = job;
     if (!this.busy && this.ready?.key !== job.key) this.start(job);
   }
   start(job) {
     if (!job || this.failed) return;
     this.busy = job;
+    this.startedAt = this.now();
     try {
       this.worker.postMessage(job);
     } catch {

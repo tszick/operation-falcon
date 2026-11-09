@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { allowedHost } from './request-policy.mjs';
 import { realpath, stat } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
@@ -29,6 +30,7 @@ function allowed(relative) {
     (parts.length === 1 &&
       [
         'index.html',
+        'multiplayer.html',
         'encyclopedia.html',
         'flight-log.html',
         'tutorial.html',
@@ -48,14 +50,14 @@ function headers(testPage) {
     'Cache-Control': 'no-store',
   };
 }
-export function createStaticServer({ root }) {
+export function createStaticServer({ root, allowedHosts = [] }) {
   const server = http.createServer(async (req, res) => {
     const reply = (status, message) => {
       res.writeHead(status, { 'Content-Type': 'text/plain; charset=utf-8', ...headers(false) });
       res.end(message);
     };
     try {
-      if (!/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$/i.test(req.headers.host || '')) {
+      if (!allowedHost(req.headers.host, allowedHosts)) {
         reply(403, 'Forbidden host');
         return;
       }

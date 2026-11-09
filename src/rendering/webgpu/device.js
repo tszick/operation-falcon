@@ -9,6 +9,13 @@ async function initialize() {
   if (!adapter) throw new Error('No WebGPU adapter is available.');
   const device = await adapter.requestDevice();
   const state = {
+    adapterInfo: {
+      vendor: adapter.info?.vendor || '',
+      architecture: adapter.info?.architecture || '',
+      device: adapter.info?.device || '',
+      description: adapter.info?.description || '',
+      fallback: adapter.info?.isFallbackAdapter ?? adapter.isFallbackAdapter ?? null,
+    },
     device,
     format: navigator.gpu.getPreferredCanvasFormat(),
     lost: false,
@@ -124,8 +131,17 @@ export class Surface {
     this.scheduled = true;
     queueMicrotask(() => {
       this.scheduled = false;
+      const start = this.profile ? performance.now() : 0;
       this.painter?.flush();
+      const flushed = this.profile ? performance.now() : 0;
       this.present();
+      if (this.profile) {
+        const end = performance.now(),
+          metrics = (this.profileMetrics ??= { tasks: 0, flushPeakMs: 0, presentPeakMs: 0 });
+        metrics.tasks++;
+        metrics.flushPeakMs = Math.max(metrics.flushPeakMs, flushed - start);
+        metrics.presentPeakMs = Math.max(metrics.presentPeakMs, end - flushed);
+      }
     });
   }
   present() {
