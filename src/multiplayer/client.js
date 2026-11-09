@@ -69,7 +69,7 @@ export class MultiplayerClient {
     clearInterval(this.pingTimer);
   }
   connect(
-    { mode, code, aircraftId, scenario = 'range', resumeToken: recoveryToken },
+    { mode, code, aircraftId, playerName, scenario = 'range', resumeToken: recoveryToken },
     { recovering = false } = {},
   ) {
     this.stopConnectionTimers();
@@ -114,6 +114,7 @@ export class MultiplayerClient {
         code,
         aircraftId,
         scenario,
+        ...(playerName !== undefined ? { playerName } : {}),
         ...(resumeToken ? { resumeToken } : {}),
       };
       this.send(this.handshake);

@@ -32,6 +32,7 @@ import {
   INPUT_QUEUE_LIMIT,
   NETWORK_STEP,
   validCommand,
+  normalizePlayerName,
 } from '../src/multiplayer/protocol.js';
 const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function roomCode() {
@@ -72,8 +73,10 @@ export class MultiplayerRooms {
     this.rooms.set(code, room);
     return room;
   }
-  join(room, aircraftId) {
+  join(room, aircraftId, playerName = '') {
+    const name = normalizePlayerName(playerName);
     if (
+      name === null ||
       !room ||
       room.players.size >= ROOM_CAPACITY ||
       (room.mission && room.mission.phase !== 'waiting')
@@ -90,7 +93,7 @@ export class MultiplayerRooms {
       spawnSeed,
       id: randomBytes(12).toString('hex'),
       slot,
-      callSign: 'Falcon ' + ['One', 'Two', 'Three', 'Four', 'Five'][slot],
+      callSign: name || 'Falcon ' + ['One', 'Two', 'Three', 'Four', 'Five'][slot],
       state: spawnAircraft(aircraftId, slot, spawnSeed, { armed: true }),
       combat: createPlayerCombat(),
       queue: [],

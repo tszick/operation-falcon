@@ -265,3 +265,11 @@ test('invalid terrain is counted and closes the connection without applying the 
   assert.equal(f.client.metrics.lastDecodeError, 'Invalid terrain number');
   assert.equal(f.client.latest, previous);
 });
+
+test('the handshake carries the chosen pilot name separately from the private identity', (t) => {
+  const f = setup(t);
+  f.client.connect({ mode: 'create', aircraftId: 'f16', playerName: 'Ace' });
+  f.sockets[0].open();
+  assert.equal(f.sockets[0].messages[0].playerName, 'Ace');
+  assert.equal(f.sockets[0].messages[0].resumeToken, undefined);
+});

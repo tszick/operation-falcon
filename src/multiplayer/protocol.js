@@ -20,6 +20,16 @@ export const toggleKeys = [
   'landing',
   'landingGuide',
 ];
+// Optional names are display-only; private session tokens remain the identity.
+export const PLAYER_NAME_LIMIT = 10;
+export function normalizePlayerName(value = '') {
+  if (typeof value !== 'string' || value.length > 64) return null;
+  const name = value.normalize('NFC').trim();
+  if (!name) return '';
+  return [...name].length <= PLAYER_NAME_LIMIT && /^[\p{L}\p{N}][\p{L}\p{M}\p{N} _-]*$/u.test(name)
+    ? name
+    : null;
+}
 export function validRoomCode(code) {
   return typeof code === 'string' && /^[A-HJ-NP-Z2-9]{6}$/.test(code);
 }

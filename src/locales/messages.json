@@ -10838,5 +10838,17 @@
   "Pilóta visszavette az irányítást.": {
     "hu": "Pilóta visszavette az irányítást.",
     "en": "Pilot resumed control."
+  },
+  "Pilótanév (legfeljebb 10 karakter)": {
+    "hu": "Pilótanév (legfeljebb 10 karakter)",
+    "en": "Pilot name (up to 10 characters)"
+  },
+  "Betűk, számok, szóköz, kötőjel vagy aláhúzás. Üresen hagyva automatikus hívójelet kapsz.": {
+    "hu": "Betűk, számok, szóköz, kötőjel vagy aláhúzás. Üresen hagyva automatikus hívójelet kapsz.",
+    "en": "Letters, numbers, spaces, hyphens or underscores. Leave blank for an automatic call sign."
+  },
+  "A pilótanév legfeljebb 10 karakter: betű, szám, szóköz, kötőjel vagy aláhúzás.": {
+    "hu": "A pilótanév legfeljebb 10 karakter: betű, szám, szóköz, kötőjel vagy aláhúzás.",
+    "en": "Pilot names allow up to 10 characters: letters, numbers, spaces, hyphens or underscores."
   }
 }

@@ -127,3 +127,14 @@ test('localized marker text uses the same label for measurement, outline and fil
     setLanguage('hu', { persist: false });
   }
 });
+
+test('multiplayer pilot labels keep their chosen spelling instead of translating it', () => {
+  const { r, calls } = fixture();
+  try {
+    setLanguage('en', { persist: false });
+    r.marker(new Vec3(0, 0, 100), 'Bázis 1.0 KM', '#64d7ff', false, { literalLabel: true });
+    assert.equal(calls.labels.at(-1), 'Bázis 1.0 KM');
+  } finally {
+    setLanguage('hu', { persist: false });
+  }
+});

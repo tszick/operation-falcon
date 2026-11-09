@@ -14,6 +14,7 @@ import {
   validCommand,
   validRoomCode,
   NETWORK_STEP,
+  normalizePlayerName,
 } from '../src/multiplayer/protocol.js';
 import {
   packFlight,
@@ -753,3 +754,87 @@ test(
     assert.equal(f.multiplayer.rooms.rooms.size, 10);
   },
 );
+
+test('pilot names are bounded Unicode display text, with an optional automatic call sign', () => {
+  assert.equal(normalizePlayerName(), '');
+  assert.equal(normalizePlayerName('   '), '');
+  assert.equal(normalizePlayerName('  Árvíz-01  '), 'Árvíz-01');
+  assert.equal(normalizePlayerName('A\u0301sz'), 'Ász');
+  assert.equal(normalizePlayerName('1234567890'), '1234567890');
+  for (const value of [
+    null,
+    7,
+    {},
+    '12345678901',
+    '<img>',
+    'Ace\nTwo',
+    'Ace\u202e',
+    'Ace/Two',
+    'x'.repeat(65),
+  ])
+    assert.equal(normalizePlayerName(value), null);
+  const rooms = new MultiplayerRooms(),
+    room = rooms.create();
+  assert.equal(rooms.join(room, 'f16', '<script>'), null);
+  assert.equal(room.players.size, 0);
+  assert.equal(rooms.join(room, 'f16', '  Ace  ').callSign, 'Ace');
+  assert.equal(rooms.join(room, 'f16').callSign, 'Falcon Two');
+});
+
+test(
+  'real clients share pilot names across the lobby, aircraft, recovery and final results',
+  { timeout: 15000 },
+  async (t) => {
+    const f = await fixture(t);
+    const one = await connect(t, f, {
+      mode: 'create',
+      scenario: 'arena',
+      playerName: '  Árvíz-01  ',
+    });
+    const first = await one.next((m) => m.type === 'welcome');
+    assert.equal(first.players[0].callSign, 'Árvíz-01');
+    const two = await connect(t, f, { mode: 'join', code: first.code, playerName: 'Bandit_2' });
+    const second = await two.next((m) => m.type === 'welcome');
+    assert.deepEqual(
+      second.players.map((p) => p.callSign),
+      ['Árvíz-01', 'Bandit_2'],
+    );
+    assert.deepEqual(
+      second.lobby.players.map((p) => p.callSign),
+      ['Árvíz-01', 'Bandit_2'],
+    );
+    const revision = second.lobby.revision;
+    for (const c of [one, two]) c.ws.send(JSON.stringify({ type: 'ready', revision, ready: true }));
+    await one.next((m) => m.type === 'snapshot' && m.lobby.players.every((p) => p.ready));
+    one.ws.send(JSON.stringify({ type: 'start', revision }));
+    await two.next((m) => m.type === 'snapshot' && m.mission.phase === 'active');
+    const room = f.multiplayer.rooms.rooms.get(first.code);
+    const disconnected = once(two.ws, 'close');
+    two.ws.close();
+    await disconnected;
+    const returning = await connect(t, f, {
+      mode: 'join',
+      code: first.code,
+      resumeToken: second.sessionToken,
+      playerName: 'NewName',
+    });
+    const restored = await returning.next((m) => m.type === 'welcome');
+    assert.equal(restored.players.find((p) => p.id === second.id).callSign, 'Bandit_2');
+    assert.equal(restored.id, second.id);
+    room.players.get(second.id).state.crashed = true;
+    const ended = await one.next((m) => m.type === 'snapshot' && m.mission.phase === 'success');
+    assert.deepEqual(
+      ended.mission.participants.map((p) => p.callSign).sort(),
+      ['Bandit_2', 'Árvíz-01'].sort(),
+    );
+  },
+);
+
+test('invalid pilot names are rejected before allocating a room', async (t) => {
+  const f = await fixture(t);
+  for (const playerName of ['<script>', '12345678901', null, { name: 'Ace' }]) {
+    const c = await connect(t, f, { mode: 'create', playerName });
+    assert.equal((await c.next((m) => m.type === 'error')).code, 'player-name-invalid');
+    assert.equal(f.multiplayer.rooms.rooms.size, 0);
+  }
+});

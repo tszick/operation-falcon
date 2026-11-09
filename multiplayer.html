@@ -22,6 +22,17 @@
       <p>
         Legfeljebb öt pilóta, egy légtér. Hozz létre egy szobát, és add át a kódját a társadnak.
       </p>
+      <label for="network-name">Pilótanév (legfeljebb 10 karakter)</label>
+      <input
+        id="network-name"
+        maxlength="10"
+        autocomplete="nickname"
+        spellcheck="false"
+        aria-describedby="network-name-hint"
+      />
+      <p id="network-name-hint" class="network-note">
+        Betűk, számok, szóköz, kötőjel vagy aláhúzás. Üresen hagyva automatikus hívójelet kapsz.
+      </p>
       <label for="network-scenario">Repülés típusa</label>
       <select id="network-scenario">
         <option value="arena">Aréna · mindenki mindenki ellen</option>

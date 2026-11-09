@@ -11,6 +11,7 @@ import {
   aircraftChoices,
   roomScenarios,
   validRoomCode,
+  normalizePlayerName,
 } from '../src/multiplayer/protocol.js';
 export function attachMultiplayer(
   server,
@@ -152,6 +153,11 @@ export function attachMultiplayer(
           ws.close(1008, 'Invalid handshake');
           return;
         }
+        const playerName = normalizePlayerName(msg.playerName);
+        if (playerName === null) {
+          send(ws, { type: 'error', code: 'player-name-invalid' });
+          return;
+        }
         const room =
           msg.mode === 'create' ? rooms.create(msg.scenario || 'range') : rooms.rooms.get(msg.code);
         if (!room) {
@@ -161,7 +167,7 @@ export function attachMultiplayer(
         const player =
           msg.resumeToken !== undefined
             ? rooms.resume(room, msg.resumeToken)
-            : rooms.join(room, msg.aircraftId);
+            : rooms.join(room, msg.aircraftId, playerName);
         if (!player) {
           send(ws, {
             type: 'error',
