@@ -4,10 +4,33 @@ import { combatFlightInput } from '../../src/aiDefense.js';
 // Test-only autopilot. It submits ordinary predicted controls, never changes
 // aircraft state, loadout, damage, cooldowns or authoritative weapon limits.
 export class CombatLoadPilot {
+  constructor({ flightOnly = false } = {}) {
+    this.flightOnly = flightOnly;
+  }
   lastCycle = -Infinity;
   lastDecoy = -Infinity;
   command(s, snapshot, id) {
-    if (snapshot?.mission?.phase !== 'active' || s.dying || s.crashed) return null;
+    if ((snapshot?.mission && snapshot.mission.phase !== 'active') || s.dying || s.crashed)
+      return null;
+    if (this.flightOnly) {
+      const goal = new Vec3(s.position.x, 3000, s.position.z + 10000);
+      const axes = {
+        ...neutralAxes(),
+        ...combatFlightInput({
+          flight: { ...s, condition: structuredClone(s.condition) },
+          cruiseSpeed: 180,
+          navigationGoal: { kind: 'air', position: goal },
+        }),
+      };
+      for (const key of ['pitch', 'roll', 'yaw', 'throttle'])
+        axes[key] = Math.max(-1, Math.min(1, axes[key] || 0));
+      axes.brake = !!axes.brake;
+      return {
+        axes,
+        toggles: [],
+        combat: { weapon: 'gun', fire: false, cycle: false, countermeasures: false },
+      };
+    }
     const own = snapshot.players.find((p) => p.id === id);
     if (!own) return null;
     const candidates =

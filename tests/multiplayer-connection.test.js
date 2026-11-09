@@ -249,3 +249,19 @@ test('a control backlog preserves ordered unsent inputs until acknowledgements f
   );
   assert.equal(f.client.prediction.outgoing.length, 0);
 });
+
+// A rejected packet must not replace the last trusted world or snapshot.
+test('invalid terrain is counted and closes the connection without applying the packet', (t) => {
+  const f = setup(t),
+    msg = welcome();
+  f.client.connect({ mode: 'create', aircraftId: 'f16' });
+  const socket = f.sockets[0];
+  socket.open();
+  socket.message(msg);
+  const previous = f.client.latest;
+  socket.message({ type: 'snapshot', world: { revision: 'invalid' } });
+  assert.equal(socket.readyState, 3);
+  assert.equal(f.client.metrics.decodeFailures, 1);
+  assert.equal(f.client.metrics.lastDecodeError, 'Invalid terrain number');
+  assert.equal(f.client.latest, previous);
+});

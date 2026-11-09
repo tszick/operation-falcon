@@ -152,6 +152,14 @@ export function phaseGuide(s, mission, aim, weapons, targets) {
       break;
     case 'canyon-run':
       steps = [
+        ...(s.canyonTraining?.missed
+          ? [
+              step(
+                '↶',
+                `Kapu ${s.canyonTraining.index + 1}/${s.canyonTraining.gates.length} kihagyva: fordulj vissza`,
+              ),
+            ]
+          : []),
         step('A / D', 'Finom bedöntéssel kövesd a völgyet'),
         step('W / S', 'Türkiz kapuk sorban; 40–350 m AGL'),
         step('R / F', 'Őrizd a sebességet; ne fékezz túl'),
@@ -160,6 +168,14 @@ export function phaseGuide(s, mission, aim, weapons, targets) {
       break;
     case 'canyon-climb':
       steps = [
+        ...(s.canyonTraining?.missed
+          ? [
+              step(
+                '↶',
+                `Kapu ${s.canyonTraining.index + 1}/${s.canyonTraining.gates.length} kihagyva: fordulj vissza`,
+              ),
+            ]
+          : []),
         step('R', 'Felhúzás előtt gyűjts sebességet'),
         step('S', 'Időben, fokozatosan húzd fel az orrot'),
         step('—', 'Figyeld az IAS-t, az AGL-t és a G-t'),

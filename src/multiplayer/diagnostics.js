@@ -1,3 +1,4 @@
+import { presentationMemory } from './presentationMemory.js';
 import { StallTrace } from './stallTrace.js';
 import { FrameTelemetry } from '../frameTelemetry.js';
 // Opt-in local measurement only. Nothing is uploaded or persisted.
@@ -61,7 +62,7 @@ export class MultiplayerDiagnostics {
       };
     }
   }
-  frame(sample, client, instruments) {
+  frame(sample, client, instruments, instrumentLayer) {
     for (const [name, ms] of instruments?.costs || []) {
       this.instrumentParts[name] = Math.max(this.instrumentParts[name] || 0, ms);
       this.instrumentWindow[name] = Math.max(this.instrumentWindow[name] || 0, ms);
@@ -99,7 +100,12 @@ export class MultiplayerDiagnostics {
     this.panel.textContent = JSON.stringify(
       {
         localhost: true,
+        memory: presentationMemory(this.renderer, instrumentLayer),
+        decodeFailures: client.metrics.decodeFailures || 0,
+        lastDecodeError: client.metrics.lastDecodeError || null,
         visibility: document.visibilityState,
+        viewport: [this.renderer?.w, this.renderer?.h],
+        pixels: [this.renderer?.canvas?.width, this.renderer?.canvas?.height],
         pilots: client.latest.players.length,
         fps: report.fps,
         worstWindowFPS: Math.min(...this.windows.map((w) => w.fps)),

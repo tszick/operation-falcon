@@ -1,14 +1,9 @@
-import { PhaseGuideLayout } from './rendering/phaseGuideLayout.js';
-import { controlTextWidth } from './rendering/instrumentText.js';
-import { ObjectiveLayout } from './rendering/objectiveLayout.js';
 import { equipmentLabel } from './equipmentCatalog.js';
 import { tr, trHtml } from './i18n.js';
-import { ironVeilVisibleRows } from './ironVeil.js';
 import { tailGunStatus } from './tailGunnery.js';
 import { afterburnerStatus } from './engineState.js';
 import { updateFlightMessages } from './flightMessages.js';
 import { mountCockpit, updateCockpit } from './cockpit.js';
-import { compactObjective } from './cockpitGeometry.js';
 import { missionCardState, missionGoalsMarkup, configurationIndicators } from './flightPanels.js';
 import { navigationJammed } from './electronicWarfare.js';
 import { radarContacts, targetingStatus } from './targeting.js';
@@ -20,8 +15,7 @@ import { renderTacticalMap } from './tacticalMap.js';
 import { landingAttitudeMarkup } from './landingAttitude.js';
 import { flapStatus } from './flaps.js';
 const $ = (id) => document.getElementById(id);
-const htmlCache = new WeakMap(),
-  controlFit = new WeakMap();
+const htmlCache = new WeakMap();
 const text = (element, value) => {
   value = tr(value);
   if (element.textContent !== value) element.textContent = value;
@@ -93,21 +87,9 @@ export function updateHUD(s, targets, weapons, aim, mission, muted, presentation
       state: s.approach?.active && !s.naval.hook ? 'danger' : s.naval.hook ? 'active' : 'off',
     };
   }
-  // Read changed control dimensions together before any label/style writes.
-  const controls = Object.entries(indicators).map(([key, indicator]) => {
-    const element = $(ids[key]),
-      label = shortLabels[key] || labels[key],
-      fitKey = `${innerWidth}:${innerHeight}:${label}`,
-      fit = element.tagName === 'BUTTON' && controlFit.get(element) !== fitKey;
-    return { key, indicator, element, label, fitKey, width: fit ? controlTextWidth(element) : 0 };
-  });
-  configMark?.('widths');
-  for (const { key, indicator, element, label, fitKey, width } of controls) {
-    text(element, label);
-    if (width > 0) {
-      element.style.fontSize = `${Math.max(7, Math.min(innerWidth <= 1050 ? 9 : 10, (width - 2) / (label.length * 0.62)))}px`;
-      controlFit.set(element, fitKey);
-    }
+  for (const [key, indicator] of Object.entries(indicators)) {
+    const element = $(ids[key]);
+    text(element, shortLabels[key] || labels[key]);
     if (element.dataset.state !== indicator.state) element.dataset.state = indicator.state;
     element.setAttribute(
       'aria-label',
@@ -179,26 +161,6 @@ export function updateHUD(s, targets, weapons, aim, mission, muted, presentation
   text($('phase-hint'), mission.phaseHint);
   text($('guide-title'), mission.phase);
   configMark?.('target-status');
-  const card = presentation.card || missionCardState(s, mission, targets);
-  $('mission-card').dataset.operation = mission.spec.objective;
-  text($('mission-card-name'), card.name);
-  text($('mission-time'), card.elapsed);
-  $('mission-time').title = tr('Eltelt küldetésidő');
-  text($('mission-card-phase'), card.phase);
-  $('mission-priority').hidden = true;
-  text($('mission-priority'), card.priority);
-  html(
-    $('mission-objectives'),
-    missionGoalsMarkup({
-      ...card,
-      rows: (mission.spec.objective === 'iron-veil'
-        ? ironVeilVisibleRows(mission, card.rows)
-        : card.rows
-      ).map((row) => ({ ...row, text: compactObjective(row), fullText: row.text })),
-    }),
-  );
-  $('mission-card').title = tr(card.name + ' · ' + card.phase);
-  configMark?.('mission-card');
   const guideSteps = presentation.guideSteps || phaseGuide(s, mission, aim, weapons, targets);
   fitPhaseGuide(guideSteps, presentation.profile);
   configMark?.('guide-fit');
@@ -335,13 +297,19 @@ export function updateHUD(s, targets, weapons, aim, mission, muted, presentation
       approach.items
         .filter(
           (item) =>
-            !['FUTÓMŰ', 'FÉKSZÁRNY', 'LÉGFÉK', 'BEDÖNTÉS', 'ORRHELYZET', 'PÁLYAIRÁNY'].includes(
-              item.label,
-            ),
+            ![
+              'FUTÓMŰ',
+              'FÉKSZÁRNY',
+              'LÉGFÉK',
+              'BEDÖNTÉS',
+              'ORRHELYZET',
+              'PÁLYAIRÁNY',
+              'BEÉRKEZÉS',
+            ].includes(item.label),
         )
         .map(
           (item) =>
-            `<div class="${item.ok ? 'check-ok' : 'check-warn'}" title="${item.label}"><span>${item.ok ? '✓' : '!'} ${{ SEBESSÉG: 'IAS', SÜLLYEDÉS: 'V/S', SIKLÓPÁLYA: 'SIKLÁS', BEÉRKEZÉS: 'SZÖG' }[item.label] || item.label}</span><b>${item.value}</b></div>`,
+            `<div class="${item.ok ? 'check-ok' : 'check-warn'}" title="${item.label}"><span>${item.ok ? '✓' : '!'} ${{ SEBESSÉG: 'IAS', SÜLLYEDÉS: 'V/S', SIKLÓPÁLYA: 'SIKLÁS' }[item.label] || item.label}</span><b>${item.value}</b></div>`,
         )
         .join(''),
     );
@@ -350,53 +318,29 @@ export function updateHUD(s, targets, weapons, aim, mission, muted, presentation
       approach.instruction + (map.landingRoute?.advisory ? ' ' + map.landingRoute.advisory : ''),
     );
   }
-  fitMissionObjectives();
   mark?.('landing-and-objectives');
   updateFlightMessages(s, lock, aim, weapons);
   mark?.('messages');
 }
 
-// Measure the untransformed screen: completed steps no longer consume glass space.
-const guideLayout = new PhaseGuideLayout();
-function fitPhaseGuide(steps, profile) {
-  let started = profile ? performance.now() : 0;
-  const mark = profile
-    ? (name) => {
-        const now = performance.now();
-        profile('guide-' + name, now - started);
-        started = now;
-      }
-    : null;
-  const list = $('guide-steps'),
-    pending = steps.filter((item) => !item.done);
-  const html = pending
-    .map(
-      (item) =>
-        `<li class="${item.active ? 'current' : ''}"><kbd>${item.key}</kbd><span>${item.text}</span></li>`,
-    )
-    .join('');
-  const key =
-    html +
-    ':' +
-    innerWidth +
-    ':' +
-    innerHeight +
-    ':' +
-    document.body.className +
-    ':' +
-    document.documentElement.lang;
-  mark?.('prepare');
-  const translated = trHtml(html);
-  mark?.('translation');
-  guideLayout.update(list, key, translated, profile);
-  mark?.('schedule');
+// Keep a small, current checklist; CSS lays out ordinary text without measuring glyphs.
+function fitPhaseGuide(steps) {
+  const list = $('guide-steps');
+  html(
+    list,
+    steps
+      .filter((item) => !item.done)
+      .slice(0, 2)
+      .map(
+        (item) =>
+          `<li class="${item.active ? 'current' : ''}"><kbd>${item.key}</kbd><span>${item.text}</span></li>`,
+      )
+      .join(''),
+  );
 }
-
-let missionLayout;
-function fitMissionObjectives() {
-  const card = $('mission-card'),
-    list = $('mission-objectives');
-  const key = list.innerHTML + ':' + innerWidth + ':' + innerHeight + ':' + document.body.className;
-  missionLayout ??= new ObjectiveLayout();
-  missionLayout.fit(card, list, key);
+export function renderMissionSummary(s, mission, targets) {
+  const card = missionCardState(s, mission, targets);
+  text($('mission-card-name'), card.name);
+  text($('mission-time'), card.elapsed);
+  html($('mission-objectives'), missionGoalsMarkup(card));
 }

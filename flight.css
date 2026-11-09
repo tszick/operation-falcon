@@ -1,4 +1,4 @@
-/* A single physical cockpit, with live instruments registered to the recessed screen wells. */
+/* Vector airframe, native browser text and live instruments. One responsive layout. */
 body.flying {
   --cockpit-height: 25vh;
 }
@@ -20,7 +20,11 @@ body.flying .flight-bottom,
 body.flying .phase-status,
 body.flying #flight-name,
 body.flying #aircraft-status,
-body.flying .flight-side {
+body.flying .flight-side,
+body.flying #approach-button,
+body.flying #pause-button,
+body.flying #flight-help,
+body.flying #combat-messages #targeting-panel {
   display: none !important;
 }
 body.flying .flight-top {
@@ -28,10 +32,15 @@ body.flying .flight-top {
   right: 12px;
   left: auto;
 }
-body.flying #approach-button,
-body.flying #pause-button,
-body.flying #flight-help {
-  display: none !important;
+body.flying #warning {
+  top: 70px;
+  max-width: 75%;
+  font-size: 15px;
+  text-align: center;
+  z-index: 3;
+}
+body.flying #overlay {
+  inset: 40px 0 0;
 }
 #cockpit {
   position: fixed;
@@ -42,37 +51,93 @@ body.flying #flight-help {
   z-index: 2;
   pointer-events: none;
   color: #baf37d;
-  font: 11px/1.2 var(--mono);
+  font: 13px/1.3 var(--mono);
+  transform-origin: 0 0;
+  contain: layout style;
 }
 #cockpit-frame {
   position: absolute;
   inset: 0;
-  background-image: url('/assets/cockpit/strike-frame.png');
-  background-size: 100% var(--frame-scale);
-  background-position: center bottom;
-  background-repeat: no-repeat;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
 }
-#cockpit .cockpit-screen {
+.cockpit-shell {
+  fill: #091713;
+  stroke: #6a8a76;
+  stroke-width: 2;
+}
+.cockpit-rim {
+  fill: #20362e;
+  stroke: #7b9982;
+  stroke-width: 1;
+}
+.cockpit-seams {
+  fill: none;
+  stroke: #304b3c;
+  stroke-width: 3;
+}
+.cockpit-trim {
+  fill: none;
+  stroke: #a8ce89;
+  stroke-width: 2;
+}
+.cockpit-fasteners {
+  fill: #07110e;
+  stroke: #627e67;
+  stroke-width: 1;
+}
+.cockpit-instruments {
   position: absolute;
-  left: 0;
-  top: 0;
-  transform-origin: 0 0;
-  pointer-events: auto;
+  inset: 5% 2% 3%;
+  display: grid;
+  grid-template-columns: 1.08fr 1.06fr 0.72fr 1.3fr;
+  gap: 1.5%;
+  align-items: stretch;
+}
+#cockpit .cockpit-screen {
   min-width: 0;
+  min-height: 0;
+  position: relative;
+  padding: 8px;
+  border: 1px solid #547257;
+  border-radius: 4px;
+  background: #03100b;
+  box-shadow:
+    0 0 0 4px #14261d,
+    0 0 0 5px #364b3a,
+    inset 0 0 12px #0d2215;
+  pointer-events: auto;
+  overflow: hidden;
+}
+#cockpit-weapons {
+  margin-top: 26px;
+  transform: perspective(1000px) rotateY(10deg) skewY(-3deg) translateY(-12px);
+  transform-origin: right center;
+}
+#cockpit-right {
   display: flex;
   flex-direction: column;
-  padding: 2px 3px;
-  background: #04100980;
-  color: #baf37d;
+  gap: 10px;
+  min-height: 0;
+  min-width: 0;
+  margin-top: 26px;
+  transform: perspective(1000px) rotateY(-10deg) skewY(3deg) translateY(-20px);
+  transform-origin: left center;
 }
-#cockpit button {
-  font: inherit;
-  cursor: pointer;
+#cockpit #cockpit-engine {
+  margin-top: 12px;
 }
-#cockpit button:focus-visible {
-  outline: 2px solid #cef897;
-  outline-offset: 1px;
+#cockpit #cockpit-controls {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+}
+#cockpit #cockpit-guide,
+#cockpit #cockpit-landing {
+  flex: 1;
+}
+#cockpit [hidden] {
+  display: none !important;
 }
 #cockpit
   :is(
@@ -83,524 +148,318 @@ body.flying #flight-help {
     #flight-config,
     #phase-guide,
     #open-guide,
-    #mission-card,
     #damage-status
   ) {
   position: static;
   inset: auto;
-  width: 100%;
+  width: auto;
+  height: auto;
   max-height: none;
   margin: 0;
   padding: 0;
   border: 0;
   background: none;
-  overflow: visible;
+  box-shadow: none;
   transform: none;
+  overflow: visible;
 }
-#cockpit [hidden] {
-  display: none !important;
+#cockpit button {
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  padding: 0;
+}
+#cockpit button:focus-visible {
+  outline: 1px solid #c7f9a0;
+  outline-offset: 2px;
 }
 #cockpit #stores-display {
-  height: 100%;
   display: grid;
-  grid-template-columns: 30% minmax(0, 1fr);
-  grid-template-rows: 28px minmax(0, 1fr);
-  gap: 0 5px;
-  color: #9bd47e;
+  height: 100%;
+  grid-template-columns: 34% minmax(0, 1fr);
+  grid-template-rows: 19px minmax(0, 1fr) 19px;
+  gap: 2px 7px;
 }
 #cockpit .stores-heading {
   grid-column: 1/-1;
-  grid-row: 1;
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 2px;
-  font: 11px/1.1 var(--mono);
-  letter-spacing: 0;
-  padding-right: 32px;
-  min-width: 0;
-}
-#cockpit .stores-heading span {
+  justify-content: space-between;
+  gap: 6px;
+  border-bottom: 1px solid #345038;
+  font-size: 11px;
   white-space: nowrap;
-  color: #baf37d;
 }
 #cockpit .stores-heading small {
-  font: inherit;
-  white-space: nowrap;
+  max-width: 45%;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 10px;
+  color: #8bb07d;
 }
 #cockpit #stores-display svg {
-  grid-row: 2;
   grid-column: 1;
+  grid-row: 2;
   width: 100%;
   height: 100%;
   min-height: 0;
 }
 #cockpit .stores-health {
-  position: absolute;
-  top: 1px;
-  right: 4px;
-  font: 11px/1 var(--mono);
-  margin: 0;
-  border: 0;
-  padding: 0;
-}
-#cockpit .stores-health span {
-  display: none;
-}
-#cockpit .stores-health b {
-  font: inherit;
+  grid-row: 3;
+  grid-column: 1/-1;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
 }
 #cockpit .store-options {
-  grid-row: 2;
   grid-column: 2;
+  grid-row: 2;
   display: grid;
   grid-auto-rows: minmax(0, 1fr);
-  gap: 1px;
   min-height: 0;
-}
-#cockpit .store-options > small {
-  font: 11px/1.2 var(--mono);
-  align-self: start;
-  margin-top: 3px;
-  white-space: nowrap;
+  gap: 2px;
 }
 #cockpit .store-option {
-  font: 11px/1.05 var(--mono);
-  padding: 1px 3px;
-  gap: 4px;
   min-height: 0;
-  white-space: nowrap;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+  padding: 0 2px;
+  font: 11px/1.2 var(--mono);
+  text-align: left;
+  border-bottom: 1px solid #203a25;
 }
 #cockpit .store-option span {
   overflow: hidden;
+  white-space: nowrap;
   text-overflow: ellipsis;
 }
 #cockpit .store-option kbd {
-  font: 10px/1 var(--mono);
-  padding: 1px 3px;
-  margin: 0;
+  font: inherit;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+#cockpit .store-option.selected {
+  color: #e3ffb1;
+  background: #46632b40;
+}
+#cockpit #cockpit-radar {
+  margin-top: 0;
+  display: grid;
+  grid-template-rows: 18px minmax(0, 1fr) 22px;
+  gap: 2px;
 }
 #cockpit #map-heading {
   display: flex;
-  font: 10px/1 var(--mono);
+  justify-content: space-between;
+  margin: 0;
+  font: 11px var(--mono);
   letter-spacing: 0;
-  margin: 0 0 2px;
-  flex-shrink: 0;
+  color: #aad58a;
+}
+#cockpit #map-range {
+  font: inherit;
+  white-space: nowrap;
 }
 #cockpit #radar {
   display: block;
   width: 100%;
-  height: calc(100% - 25px);
+  height: 100%;
   min-height: 0;
-  flex: 1;
-  object-fit: fill;
-  border: 0;
-  margin: 0;
-  align-self: stretch;
+  cursor: zoom-in;
 }
 #cockpit #target-data {
-  font: 10px/1 var(--mono);
-  white-space: nowrap;
+  font: 10px/1.15 var(--mono);
   overflow: hidden;
-  text-overflow: ellipsis;
-  padding: 1px 0;
-  color: #a3bd91;
-  flex-shrink: 0;
+  color: #92b581;
 }
-#cockpit #config-countermeasures {
-  position: absolute;
-  left: 4px;
-  bottom: 1px;
-  max-width: 85%;
-  font: 10px/1 var(--mono);
-  background: #07180d;
-  border: 0;
-  padding: 1px 0;
-  color: #baf37d;
-  display: none;
+#cockpit #target-data[data-lock='acquiring'] {
+  color: #ffe28b;
+  animation: radar-acquiring 0.8s ease-in-out infinite;
 }
-#cockpit #cockpit-radar:hover #config-countermeasures,
-#cockpit #config-countermeasures:focus-visible {
-  display: block;
+#cockpit #target-data[data-lock='locked'] {
+  color: #d6ffa5;
+}
+@keyframes radar-acquiring {
+  50% {
+    opacity: 0.4;
+  }
 }
 #cockpit #fuel-status {
-  font: 11px/1.1 var(--mono);
-  color: #baf37d;
+  min-height: 0;
+  text-align: left;
   display: flex;
   flex-direction: column;
+  gap: 4px;
   height: 100%;
-  gap: 2px;
-  text-align: left;
 }
 #cockpit #fuel-gauge {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 1px 4px;
+  align-items: baseline;
+  gap: 4px;
 }
 #cockpit #fuel-label {
-  font: inherit;
-  letter-spacing: 0;
-  display: block !important;
+  font-size: 11px;
 }
 #cockpit #fuel-value {
-  font: inherit;
   position: static;
-  display: block;
-  white-space: nowrap;
+  inset: auto;
+  font-size: 24px;
+  font-weight: 600;
 }
 #cockpit #fuel-meter {
-  display: block;
   grid-column: 1/-1;
-  height: 4px;
-  background: #42673455;
-  margin: 0;
+  height: 7px;
+  border: 1px solid #466938;
+  background: #122917;
 }
 #cockpit #fuel-fill {
   display: block;
   height: 100%;
   background: currentColor;
+  stroke: none;
 }
 #cockpit .cockpit-range {
   display: flex;
-  justify-content: space-between;
-  gap: 3px;
-  font-size: 10px;
+  flex-direction: column;
+  gap: 2px;
 }
 #cockpit #fuel-range {
-  white-space: nowrap;
-  flex-shrink: 0;
-  font: inherit;
+  font-size: 15px;
 }
 #cockpit #fuel-quantity {
-  display: none;
-}
-#cockpit #fuel-status[data-level='low'] {
-  color: #f5d984;
-}
-#cockpit #fuel-status:is([data-level='critical'], [data-level='empty']) {
-  color: #ff9d88;
+  font-size: 10px;
+  color: #88a77a;
 }
 #cockpit #g-load {
   display: flex;
-  gap: 9px;
-  align-items: center;
-  color: #baf37d;
-}
-#cockpit #g-value {
-  font: inherit;
-}
-#cockpit #g-load[data-level='warning'] {
-  color: #f5d984;
-}
-#cockpit #g-load[data-level='danger'] {
-  color: #ff8270;
+  justify-content: space-between;
+  border-top: 1px solid #304c31;
+  padding-top: 7px;
+  font-size: 18px;
 }
 #cockpit #throttle-status {
+  margin-top: auto;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
   gap: 5px;
-  align-items: center;
-  flex-wrap: nowrap;
-  color: #baf37d;
-}
-#cockpit #throttle-value {
-  font: inherit;
 }
 #cockpit .throttle-track {
-  height: 4px;
-  flex: 1;
-  background: #42673455;
-  border: 0;
+  width: 100%;
+  height: 5px;
+  background: #1b331e;
 }
 #cockpit #throttle-fill {
   display: block;
   height: 100% !important;
-  background: #baf37d;
+  background: #9fdb72;
 }
-#cockpit #flight-config {
-  height: 100%;
+#cockpit :is(#fuel-status[data-level='low'], #g-load[data-level='warning']) {
+  color: #ffdb81;
+}
+#cockpit
+  :is(
+    #fuel-status[data-level='critical'],
+    #fuel-status[data-level='empty'],
+    #g-load[data-level='danger']
+  ) {
+  color: #ff8d7b;
 }
 #cockpit #flight-config > div {
-  height: 100%;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: repeat(2, minmax(0, 1fr));
-  gap: 3px 6px;
+  gap: 4px 9px;
 }
 #cockpit #config-engine {
   display: none;
 }
-/* Text controls keep the existing green / yellow / red state logic. */
 #cockpit #flight-config > div > button {
-  min-width: 0;
-  position: relative;
-  padding: 0;
-  border: 0;
-  background: none;
-  text-align: center;
-  color: #baf37d;
-  font: 10px/1.05 var(--mono);
+  font: 12px/1.4 var(--mono);
+  text-align: left;
   white-space: nowrap;
-  touch-action: none;
+  color: #91cb78;
 }
 #cockpit #flight-config > div > button[data-state='active'] {
-  color: #f5d984;
-  text-shadow: 0 0 4px #c3ab5555;
+  color: #ffe18a;
 }
 #cockpit #flight-config > div > button[data-state='danger'] {
-  color: #ff9989;
-  text-shadow: 0 0 4px #8e252566;
+  color: #ff8c7a;
 }
-#cockpit #config-flaps[data-moving='true'] {
-  color: #efbd74;
+#cockpit #config-countermeasures {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  font-size: 10px;
+  background: #03100b;
+  color: #98d7c4;
 }
-#cockpit #cockpit-mission {
-  padding: 2px 4px;
-}
-#cockpit #mission-card {
+#cockpit #phase-guide {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  font: 10px/1.12 var(--mono);
 }
-#cockpit .mission-card-heading {
+#cockpit .guide-heading {
   display: flex;
   justify-content: space-between;
-  gap: 4px;
-  font: 10px/1 var(--mono);
-  margin-bottom: 2px;
-}
-#cockpit .mission-card-heading small {
-  font: inherit;
-}
-#cockpit #mission-time {
-  color: #c3eda1;
-  font: inherit;
-}
-#cockpit #mission-card-name {
-  font: 11px/1.05 var(--mono);
-  color: #d6e7c6;
-  margin: 0 0 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-#cockpit #mission-card-phase,
-#cockpit #mission-priority {
-  display: none !important;
-}
-#cockpit #mission-objectives {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  min-height: 0;
-  font: inherit;
-}
-#cockpit .mission-goal-group h4 {
-  display: none;
-}
-#cockpit .mission-goal-group ul {
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-#cockpit .mission-goal-group li {
-  display: flex;
-  gap: 4px;
-  font: 10px/1.12 var(--mono);
-  margin: 1px 0;
-  color: #edf2e7;
-}
-#cockpit .mission-goal-group .goal-done {
-  color: #baf37d;
-}
-#cockpit .mission-goal-group .goal-failed {
-  color: #f09580;
-}
-#cockpit .mission-goal-group li > span:first-child {
-  font: inherit;
-}
-#cockpit .mission-goal-group li > span:last-child {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-#cockpit.compact-cockpit #mission-card-name {
-  display: none;
-}
-#cockpit.compact-cockpit #mission-objectives {
-  display: flex;
-  flex-wrap: wrap;
-  column-gap: 5px;
-}
-#cockpit.compact-cockpit .mission-goal-group {
-  flex: 1;
-  min-width: 0;
-}
-#cockpit.compact-cockpit .mission-goal-group ul {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 2px 4px;
-}
-#cockpit #phase-guide:not([hidden]) {
-  display: block !important;
-  height: 100%;
-  font: 10px/1.1 var(--mono);
-  color: #baf37d;
-}
-#cockpit #phase-guide .guide-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 0 0 2px;
-  font: 10px/1 var(--mono);
-  letter-spacing: 0;
-}
-#cockpit #close-guide {
-  font: 12px/1 var(--mono);
-  padding: 0 2px;
-  border: 0;
-  background: none;
-  color: #bad794;
+  gap: 8px;
+  font-size: 10px;
+  color: #759e72;
 }
 #cockpit #guide-title {
   display: none;
 }
 #cockpit #guide-steps {
-  display: grid;
-  grid-template-rows: repeat(4, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
   list-style: none;
-  margin: 0;
+  margin: 5px 0 0;
   padding: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 #cockpit #guide-steps li {
   display: flex;
-  align-items: start;
-  gap: 4px;
-  font: 10px/1.1 var(--mono);
-  padding: 0;
-  margin: 0;
-  border: 0;
-}
-#cockpit #guide-steps li::before {
-  display: none;
-}
-#cockpit #guide-steps i {
-  display: none;
+  align-items: baseline;
+  gap: 7px;
+  font: 12px/1.3 var(--mono);
 }
 #cockpit #guide-steps kbd {
-  font: 10px/1 var(--mono);
-  margin: 0;
-  padding: 0;
-  white-space: nowrap;
+  flex: 0 0 auto;
+  font: inherit;
+  color: #d3efac;
   border: 0;
-  color: #d0eab2;
   background: none;
-}
-#cockpit #open-guide:not([hidden]) {
-  display: block !important;
-  font: 11px var(--mono);
-  text-align: center;
-  padding: 6px;
-  color: #baf37d;
-}
-#cockpit #cockpit-annunciator {
-  position: absolute;
-  left: 2%;
-  top: 10%;
-  max-width: 26%;
-  pointer-events: auto;
-}
-#cockpit #damage-status:not([hidden]) {
-  display: block !important;
-  color: #edbb80;
-  font: 10px/1.1 var(--mono);
-  text-shadow: 0 1px #000;
-}
-#cockpit #damage-title,
-#cockpit #damage-integrity,
-#cockpit .damage-track {
-  display: none;
-}
-#cockpit #damage-faults {
-  font: 10px/1.1 var(--mono);
-  margin: 0;
-  padding: 2px 4px;
-  background: #15100cd9;
-}
-#cockpit #landing-guidance {
-  height: 100%;
-  color: #cad0f7;
-}
-#cockpit #landing-guidance .eyebrow,
-#cockpit #landing-guidance > small {
-  display: none;
-}
-#cockpit #approach-stage {
-  font: 10px/1 var(--mono);
-  margin: 0 0 3px;
-  display: block;
-}
-#cockpit #approach-checks {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3px 8px;
-}
-#cockpit #approach-checks > div {
-  display: flex;
-  justify-content: space-between;
-  gap: 3px;
   padding: 0;
-  font: 10px/1.1 var(--mono);
 }
-#cockpit #approach-checks b {
-  font-weight: 400;
-  float: none;
-  text-align: right;
-  white-space: nowrap;
+#cockpit #guide-steps li > span {
+  min-width: 0;
 }
-#cockpit #approach-instruction {
-  font: 10px/1.15 var(--mono);
-  margin: 3px 0 0;
-  color: #d6ddca;
+#cockpit #cockpit-landing {
+  display: none;
+}
+#cockpit.cockpit-landing #cockpit-guide {
+  display: none;
+}
+#cockpit.cockpit-landing #cockpit-landing {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 8px;
 }
 #cockpit #landing-attitude {
-  display: none;
-  color: #c9cff2;
-  font: 10px/1.1 var(--mono);
-}
-#cockpit.cockpit-landing #stores-display {
-  display: none;
-}
-#cockpit.cockpit-landing #cockpit-radar {
-  display: grid;
-  grid-template-columns: 44% minmax(0, 1fr);
-  grid-template-rows: 12px minmax(0, 1fr) 10px;
-  gap: 1px 4px;
-}
-#cockpit.cockpit-landing #map-heading {
-  grid-row: 1;
-  grid-column: 1/-1;
-}
-#cockpit.cockpit-landing #radar {
-  grid-row: 2;
-  grid-column: 1;
-  width: 100%;
-  height: 100%;
   min-height: 0;
-}
-#cockpit.cockpit-landing #target-data {
-  grid-row: 3;
-  grid-column: 1/-1;
-}
-#cockpit.cockpit-landing #landing-attitude:not([hidden]) {
-  display: flex;
-  grid-row: 2;
-  grid-column: 2;
-  flex-direction: column;
-  justify-content: space-around;
-  gap: 2px;
+  align-self: start;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-content: start;
+  gap: 4px;
+  font: 10px/1.2 var(--mono);
 }
 #cockpit #landing-attitude > strong {
   display: none;
@@ -609,307 +468,145 @@ body.flying #flight-help {
 #cockpit .landing-pitch {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 #cockpit .landing-angles svg {
-  width: 30px;
-  height: 29px;
+  width: 35px;
+  height: 39px;
   flex-shrink: 0;
 }
 #cockpit .landing-pitch svg {
-  width: 36px;
-  height: 23px;
+  width: 38px;
+  height: 30px;
   flex-shrink: 0;
 }
-#cockpit .landing-angles b,
-#cockpit .landing-angles small,
+#cockpit .landing-angles div,
+#cockpit .landing-pitch div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+#cockpit .landing-angles span,
 #cockpit .landing-pitch small {
-  font: 10px/1.1 var(--mono);
-  margin: 0;
-  display: block;
-}
-#cockpit .landing-angles span {
   display: none;
-}
-#cockpit .landing-pitch {
-  border: 0;
-  padding: 0;
-}
-#cockpit .landing-pitch b {
-  font: 10px/1 var(--mono);
 }
 #cockpit .landing-bank {
   display: flex;
-  flex-wrap: wrap;
-  font: 10px/1 var(--mono);
+  flex-direction: column;
+  gap: 3px;
+  grid-column: 1/-1;
+}
+#cockpit #landing-guidance {
+  align-self: start;
+  font: 10px/1.2 var(--mono);
+}
+#cockpit #landing-guidance .eyebrow,
+#cockpit #landing-guidance > small {
+  display: none;
+}
+#cockpit #approach-stage {
+  line-height: 11px;
+  margin-top: 0;
+  display: block;
+  font-size: 10px;
+  margin-bottom: 2px;
+}
+#cockpit #approach-checks {
+  display: flex;
+  flex-direction: column;
   gap: 2px;
+}
+#cockpit #approach-checks > div {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  font: 10px/1.15 var(--mono);
+  gap: 4px;
   padding: 0;
+}
+#cockpit #approach-instruction {
+  margin: 5px 0 0;
+  font-size: 10px;
 }
 #cockpit #landing-route-button {
   position: absolute;
-  bottom: 0;
-  right: 3px;
-  max-width: 75px;
-  font: 10px/1 var(--mono);
-  padding: 1px 2px;
-  border: 1px solid #767ca155;
-  background: #11172b;
-  color: #c6baff;
-  z-index: 3;
-}
-body.flying #combat-messages {
-  position: absolute;
-  left: 50%;
-  bottom: calc(var(--cockpit-height) + 13px);
-  width: min(440px, 46vw);
-  z-index: 3;
-}
-body.flying #combat-messages #targeting-panel {
-  position: static;
-  transform: none;
-  width: 100%;
-  padding: 6px 9px;
-  margin: 0;
-}
-body.flying #flight-toast {
-  position: static;
-  transform: none;
-  width: 100%;
-  padding: 6px 9px;
-  font: 11px/1.3 var(--mono);
-  margin: 0 0 5px;
-}
-body.flying #lock-hint {
-  margin-top: 4px;
+  bottom: 5px;
+  right: 5px;
   font-size: 10px;
-}
-body.flying #lock-button {
-  font-size: 10px;
-}
-body.flying #warning {
-  top: 100px;
-  max-width: 75%;
-  font-size: 15px;
-  text-align: center;
-  z-index: 3;
-}
-body.flying #overlay {
-  inset: 40px 0 0;
+  color: #c1b0ff;
+  background: #03100b;
 }
 body.flying.wreck-view #cockpit,
 body.flying.rear-view #cockpit {
   display: none !important;
 }
-body.flying.rear-view #combat-messages {
-  bottom: 24px;
+#overlay #mission-card {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #39563b;
 }
-#cockpit.compact-cockpit #stores-display,
-#cockpit.compact-cockpit .store-option,
-#cockpit.compact-cockpit #fuel-status {
-  font-size: 10px;
+#overlay .mission-card-heading {
+  display: flex;
+  justify-content: space-between;
+  color: #94b184;
 }
-@media (max-width: 1050px) {
-  #cockpit #guide-steps li,
-  #cockpit #guide-steps kbd {
-    font-size: 10px;
+#overlay #mission-card-name {
+  margin: 8px 0;
+  font: 22px var(--display);
+}
+#overlay .mission-goal-group ul {
+  list-style: none;
+  padding: 0;
+}
+#overlay .mission-goal-group li {
+  display: flex;
+  gap: 10px;
+  margin: 9px 0;
+  font: 13px/1.4 var(--mono);
+}
+#overlay .goal-done {
+  color: #baf37d;
+}
+#overlay .goal-failed {
+  color: #ff967e;
+}
+@media (max-width: 1100px) {
+  .cockpit-instruments {
+    inset: 14% 1.5% 3%;
+    gap: 1%;
+    grid-template-columns: 1.05fr 1fr 0.7fr 1.2fr;
   }
-  #cockpit #flight-config > div > button {
-    font-size: 9px;
-  }
-  #cockpit #cockpit-engine {
-    padding: 1px;
-  }
-  #cockpit #fuel-status {
-    gap: 1px;
+  #cockpit .cockpit-screen {
+    padding: 5px;
   }
   #cockpit .stores-heading small {
     display: none;
   }
-  #cockpit #approach-instruction {
-    display: none;
+  #cockpit #stores-display {
+    grid-template-columns: 28% minmax(0, 1fr);
+    gap: 2px;
+  }
+  #cockpit .store-option,
+  #cockpit #flight-config > div > button {
+    font-size: 10px;
+  }
+  #cockpit #guide-steps li {
+    font-size: 10px;
+    gap: 4px;
+  }
+  #cockpit #fuel-value {
+    position: static;
+    inset: auto;
+    font-size: 20px;
+  }
+  #cockpit #cockpit-controls {
+    padding: 4px;
   }
 }
-
-/* Compact screen typography: one physical row per reading, no nested scroll areas. */
-#cockpit #cockpit-radar {
-  display: block;
-}
-#cockpit #radar {
-  flex: none;
-  height: calc(100% - 24px);
-}
-#cockpit #target-data {
-  position: absolute;
-  right: 3px;
-  bottom: 0;
-  min-height: 0;
-  height: 11px;
-  max-width: 55%;
-  padding: 0;
-  white-space: nowrap;
-  text-align: right;
-}
-#cockpit #config-countermeasures {
-  display: block;
-  left: 3px;
-  bottom: 0;
-  max-width: 52%;
-  font-size: 10px;
-  background: none;
-  padding: 0;
-  height: 11px;
-}
-#cockpit #fuel-status {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto auto auto;
-  gap: 1px 3px;
-  font: 10px/1 var(--mono);
-}
-#cockpit #fuel-gauge {
-  grid-column: 1/-1;
-  grid-row: 1;
-  gap: 1px 4px;
-}
-#cockpit .cockpit-range {
-  grid-column: 1;
-  grid-row: 2;
-  font: 10px/1 var(--mono);
-}
-#cockpit #g-load {
-  grid-column: 2;
-  grid-row: 2;
-  gap: 4px;
-  font: 10px/1 var(--mono);
-}
-#cockpit #throttle-status {
-  grid-column: 1/-1;
-  grid-row: 3;
-  font: 10px/1 var(--mono);
-}
-#cockpit #fuel-meter {
-  height: 3px;
-}
-#cockpit #cockpit-controls {
-  padding: 0 1px;
-}
-
-#cockpit #cockpit-guide {
-  padding: 2px 4px;
-}
-#cockpit #phase-guide .guide-heading {
-  margin-bottom: 0;
-  height: 12px;
-}
-#cockpit.cockpit-landing #cockpit-radar {
-  display: grid;
-}
-#cockpit.cockpit-landing #target-data {
-  display: none;
-}
-body.flying #combat-messages {
-  width: min(280px, 38vw);
-}
-
-#cockpit .mission-card-heading > small {
-  display: none;
-}
-#cockpit #mission-card-name,
-#cockpit.compact-cockpit #mission-card-name {
-  display: block;
-  flex: 1;
-  min-width: 0;
-  font: 10px/1 var(--mono);
-  margin: 0;
-}
-#cockpit #mission-time {
-  flex-shrink: 0;
-}
-#cockpit.compact-cockpit .landing-pitch small,
-#cockpit.compact-cockpit .landing-bank > span:last-child {
-  display: none;
-}
-#cockpit.compact-cockpit .landing-angles svg {
-  height: 26px;
-}
-
-/* Match the approved two-row physical switch plate. */
-#cockpit #config-gear {
-  grid-area: 1/1;
-}
-#cockpit #config-flaps {
-  grid-area: 1/2;
-}
-#cockpit #config-airbrake {
-  grid-area: 1/3;
-}
-#cockpit #config-assist {
-  grid-area: 2/1;
-}
-#cockpit #config-afterburner {
-  grid-area: 2/2;
-}
-#cockpit #config-wheel-brake {
-  grid-area: 2/3;
-}
-
-/* Show only pending instructions that fit the actual perspective screen well. */
-#cockpit #cockpit-guide {
-  display: block;
-  overflow: hidden;
-}
-#cockpit #phase-guide:not([hidden]) {
-  position: relative;
-  height: 100%;
-  overflow: hidden;
-}
-#cockpit #phase-guide .guide-heading {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 13px;
-  height: 13px;
-  margin: 0;
-  z-index: 1;
-}
-#cockpit #phase-guide .guide-heading > span {
-  display: none;
-}
-#cockpit #close-guide {
-  width: 13px;
-  height: 13px;
-  padding: 0;
-}
-#cockpit #guide-steps,
-#cockpit.compact-cockpit #guide-steps {
-  position: relative;
-  display: block;
-  width: calc(100% - 16px);
-  height: 100%;
-  overflow: hidden;
-}
-#cockpit #guide-steps li,
-#cockpit.compact-cockpit #guide-steps li {
-  display: flex;
-  gap: 4px;
-  margin: 0;
-  padding: 0 0 1px;
-  font: 10px/12px var(--mono);
-}
-#cockpit #guide-steps li[hidden] {
-  display: none !important;
-}
-#cockpit #guide-steps kbd {
-  flex: none;
-  line-height: 12px;
-}
-#cockpit #guide-steps li > span {
-  min-width: 0;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: var(--guide-lines, 2);
+@media (prefers-reduced-motion: reduce) {
+  #cockpit #target-data {
+    animation: none !important;
+  }
 }
 
 /* Independent message lifetimes; no framed panel over the central flight view. */
@@ -954,7 +651,7 @@ body.flying .flight-message strong {
 body.flying .flight-message p {
   margin: 4px 0 0;
   color: #acbea2;
-  font: 11px/1.4 var(--mono);
+  font: 12px/1.4 var(--mono);
 }
 body.flying .flight-message[data-level='warning'] {
   color: #f5cf86;
@@ -1033,104 +730,7 @@ body.flying #flight-message-feed {
 body.flying.rear-view #radio-message-feed {
   bottom: 24px;
 }
-body.flying #combat-messages #targeting-panel,
-body.flying #cockpit-annunciator {
-  display: none !important;
-}
-#cockpit #target-data {
-  right: 3px;
-  left: 3px;
-  bottom: 12px;
-  max-width: none;
-  text-align: left;
-}
-#cockpit #radar {
-  height: calc(100% - 36px);
-}
-#cockpit #target-data[data-lock='acquiring'] {
-  color: #f5cf86;
-  animation: radar-acquiring 0.8s ease-in-out infinite;
-}
-#cockpit #target-data[data-lock='locked'] {
-  color: #baf37d;
-}
-@keyframes radar-acquiring {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  #cockpit #target-data[data-lock='acquiring'] {
-    animation: none;
-    text-decoration: underline;
-  }
-}
 
-#cockpit #flight-config > div > button:focus-visible {
-  outline: none;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-/* Only luminous lettering overlays the physical switch plates; no console tint. */
-#cockpit #cockpit-controls {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  pointer-events: none;
-}
-#cockpit #flight-config > div {
-  display: block;
-  position: static;
-  gap: 0;
-  background: none;
-  border: 0;
-  box-shadow: none;
-}
-#cockpit #flight-config > div > button {
-  position: absolute;
-  left: 0;
-  top: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform-origin: 0 0;
-  pointer-events: auto;
-  border: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  outline: none;
-}
-#cockpit #flight-config > div > button::before,
-#cockpit #flight-config > div > button::after {
-  display: none;
-}
-
-/* The staged operation shows three current rows, each across the whole MFD. */
-#cockpit #mission-card[data-operation='iron-veil'] #mission-objectives {
-  display: block;
-}
-#cockpit #mission-card[data-operation='iron-veil'] .mission-goal-group ul {
-  display: block;
-}
-
-#cockpit #map-range {
-  border: 0;
-  background: none;
-  color: inherit;
-  padding: 0;
-  font: inherit;
-  cursor: pointer;
-  white-space: nowrap;
-}
-#cockpit #radar {
-  cursor: zoom-in;
-}
 #mission-control-view {
   position: fixed;
   inset: 0;
@@ -1326,74 +926,6 @@ body.flying #cockpit-annunciator {
   }
 }
 
-/* Mission objectives stay inside the registered glass at all cockpit sizes. */
-#cockpit #cockpit-mission {
-  overflow: hidden;
-  box-sizing: border-box;
-}
-#cockpit #mission-card {
-  min-height: 0;
-  overflow: hidden;
-}
-#cockpit .mission-card-heading {
-  flex-shrink: 0;
-}
-#cockpit #mission-objectives,
-#cockpit.compact-cockpit #mission-objectives {
-  display: flex;
-  flex-direction: column;
-  flex-wrap: nowrap;
-  flex: 1;
-  min-height: 0;
-  min-width: 0;
-  gap: 1px;
-  overflow: hidden;
-}
-#cockpit .mission-goal-group,
-#cockpit.compact-cockpit .mission-goal-group {
-  flex: 0 0 auto;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-}
-#cockpit .mission-goal-group ul,
-#cockpit.compact-cockpit .mission-goal-group ul {
-  display: grid;
-  grid-template-columns: repeat(var(--objective-columns, 1), minmax(0, 1fr));
-  gap: 1px 5px;
-}
-#cockpit .mission-goal-group[data-optional='true'] ul,
-#cockpit.compact-cockpit .mission-goal-group[data-optional='true'] ul {
-  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
-}
-#cockpit .mission-goal-group li {
-  min-width: 0;
-  margin: 0;
-  line-height: 1.12;
-}
-#cockpit .mission-goal-group li > span:first-child {
-  flex: 0 0 auto;
-}
-#cockpit .mission-goal-group li > span:last-child {
-  flex: 1;
-  min-width: 0;
-}
-#cockpit #mission-card.dense-objectives {
-  --objective-columns: 2;
-}
-
-#cockpit
-  #mission-card[data-operation='carrier-defense']
-  .mission-goal-group[data-optional='true']
-  ul {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-/* Semantic controls retain keyboard, pointer and accessibility behavior; WebGPU paints them. */
-body.webgpu-flight #flight-ui {
-  opacity: 0;
-}
-
 #graphics-error {
   position: fixed;
   inset: 100px 10% auto;
@@ -1403,4 +935,53 @@ body.webgpu-flight #flight-ui {
   background: #201914;
   color: #ffe2c9;
   font: 16px/1.6 sans-serif;
+}
+
+@media (max-height: 760px) {
+  #cockpit #fuel-quantity {
+    display: none;
+  }
+  #cockpit #g-load {
+    font-size: 16px;
+    padding-top: 4px;
+  }
+  #cockpit #fuel-status {
+    gap: 4px;
+  }
+  #cockpit #approach-instruction {
+    display: none;
+  }
+}
+
+#cockpit .landing-angles b,
+#cockpit .landing-angles small,
+#cockpit .landing-pitch small {
+  margin: 0;
+}
+#cockpit .landing-pitch {
+  border: 0;
+  padding: 0;
+}
+#cockpit .landing-bank {
+  padding: 0;
+  justify-content: start;
+}
+#cockpit #cockpit-landing {
+  align-items: start;
+}
+
+/* Airframe geometry surrounds the eye; transparent window openings retain the world. */
+#cockpit-interior {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+}
+body.flying.wreck-view #cockpit-interior,
+body.flying.rear-view #cockpit-interior,
+body.spectating #cockpit-interior {
+  display: none !important;
 }

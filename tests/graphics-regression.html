@@ -10,7 +10,7 @@
         (new URLSearchParams(location.search).get('backend') || 'webgpu') === 'webgpu';
       HTMLCanvasElement.prototype.getContext = function (kind, ...args) {
         contextRequests.push(kind);
-        if (strictWebGPU && kind !== 'webgpu')
+        if (strictWebGPU && kind !== 'webgpu' && this.dataset.native2d !== 'true')
           throw new Error('Legacy context requested during WebGPU rendering: ' + kind);
         return nativeGetContext.call(this, kind, ...args);
       };
@@ -133,6 +133,36 @@
           });
         }
       }
+      if (state.canyonTraining && params.has('gate')) {
+        const { canyonPoint } = await import('/src/canyonTraining.js');
+        const { terrainHeight } = await import('/src/terrain.js');
+        const { Vec3, Quat } = await import('/src/math.js');
+        const index = Math.max(0, Math.min(7, Number(params.get('gate')) || 0)),
+          gate = state.canyonTraining.gates[index];
+        const point = canyonPoint(gate.along - 1800);
+        state.canyonTraining.index = index;
+        state.position = new Vec3(point.x, terrainHeight(point.x, point.z) + 220, point.z);
+        state.previousPosition = state.position.clone();
+        state.orientation = Quat.euler(
+          Math.atan2(gate.position.x - point.x, gate.position.z - point.z),
+          0.08,
+          0,
+        );
+        state.agl = 220;
+        mission.update(state, targets, weapons, aim);
+        state.onGround = false;
+        state.airborne = true;
+      }
+      if (params.has('damage')) {
+        (await import('/src/damage.js')).applyDamage(state, 18, {
+          part: 'leftWing',
+          source: 'Visual fixture',
+        });
+      }
+      if (params.has('approach')) {
+        state.landingMode = 'on';
+        state.approach = (await import('/src/landing.js')).evaluateApproach(state);
+      }
       mountCockpit();
       document.body.classList.add('flying');
       document.body.classList.toggle('landing-practice', !!state.training);
@@ -148,16 +178,39 @@
       renderer.cloudsEnabled = params.get('clouds') !== 'off';
       const hideInstruments = params.get('instruments') === 'off';
       if (hideInstruments) document.getElementById('flight-ui').hidden = true;
-      if (params.get('frame') === 'old')
-        document.getElementById('cockpit-frame').style.backgroundImage =
-          "url('/assets/cockpit/two-row-frame.png')";
+      renderer.headLook = {
+        yaw: Number(params.get('lookYaw') || 0),
+        pitch: Number(params.get('lookPitch') || 0),
+        get active() {
+          return Math.abs(this.yaw) + Math.abs(this.pitch) > (0.5 * Math.PI) / 180;
+        },
+        orientation(q) {
+          return q.clone().multiply(TurnQuat.euler(this.yaw, this.pitch, 0));
+        },
+      };
       const { Quat: TurnQuat } = await import('/src/math.js');
       renderer.debugMetrics = true;
+      if (params.has('pause')) {
+        const { renderMissionSummary } = await import('/src/hud.js');
+        renderMissionSummary(state, mission, targets);
+        document.getElementById('mission-card').hidden = false;
+        document.getElementById('overlay').hidden = false;
+      }
       const status = document.createElement('output');
       status.id = 'graphics-test-status';
       status.style.cssText =
         'position:fixed;top:45px;left:8px;z-index:1000;background:#071511;color:#baf37d;font:11px monospace;padding:4px';
       document.body.append(status);
+      const hideMetrics = document.createElement('button');
+      hideMetrics.type = 'button';
+      hideMetrics.textContent = 'Mérés elrejtése';
+      hideMetrics.style.cssText =
+        'position:fixed;top:44px;right:12px;z-index:1001;font:11px monospace;color:#baf37d;background:#071511;border:1px solid #52744a;padding:5px';
+      hideMetrics.onclick = () => {
+        status.hidden = true;
+        hideMetrics.hidden = true;
+      };
+      document.body.append(hideMetrics);
       const samples = [],
         coldSamples = [],
         benchmark = params.has('benchmark');
@@ -179,6 +232,10 @@
       function frame(time = performance.now()) {
         try {
           const start = performance.now();
+          if (params.has('lookMotion')) {
+            renderer.headLook.yaw = Math.sin(time / 1400) * 1.4;
+            renderer.headLook.pitch = -0.35 + Math.sin(time / 1100) * 0.4;
+          }
           if (params.get('scene') === 'missile-close' && renderer.f) {
             const position = renderer.camera
               .clone()
@@ -250,6 +307,10 @@
             pixels: [renderer.canvas.width, renderer.canvas.height],
             ...(benchmark && samples.length >= 240
               ? {
+                  fps: +(
+                    (samples.length * 1000) /
+                    samples.reduce((sum, s) => sum + s.interval, 0)
+                  ).toFixed(2),
                   benchmark: Object.fromEntries(
                     ['cpu', 'world', 'instruments', 'interval', 'sky'].map((key) => [
                       key,
