@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "dompurify": "3.4.17",
-    "i18next": "26.7.1",
+    "i18next": "26.7.2",
     "ws": "8.22.1"
   },
   "overrides": {
