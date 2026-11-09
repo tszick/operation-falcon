@@ -81,6 +81,12 @@ test('arena cannon uses ordinary hit geometry and counts a hostile hit rather th
     pilots: [one, two],
   } = setup(2);
   start(rooms, room, [one, two]);
+  // Scoring/geometry is the subject of this test; keep ordinary dispersion reproducible.
+  let spreadSeed = 171;
+  one.combat.weapons.random = () => {
+    spreadSeed = (Math.imul(spreadSeed, 1664525) + 1013904223) >>> 0;
+    return (spreadSeed + 0.5) / 4294967296;
+  };
   one.state.position = new Vec3(0, 3000, 0);
   two.state.position = new Vec3(0, 3000, 400);
   for (const p of [one, two]) {
