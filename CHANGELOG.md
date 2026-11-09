@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.2 — 2026-11-09
+
+- Added server-authoritative multiplayer: five pilots per room, ten live rooms, co-op missions and last-survivor arena matches.
+- Added shared loadout lobbies, ready checks, AI takeover, private-session recovery, host migration, spectators, rematches and multiplayer results.
+- Friendly fire and aircraft collisions use the shared damage model.
+- Replaced the image-based cockpit with a vector cabin and native text instruments shared by single-player and multiplayer; mission objectives move to the pause/tactical map view.
+- Optimized network scheduling, terrain preparation and cockpit updates; added bounded queues and local performance diagnostics.
+- Hardened translated markup, terrain decoding and loadout configuration; updated dependencies.
+- Fixed formation spawn collisions, canyon gate visibility, cockpit console flicker and HUD outline artifacts.
+- Validation: 1,039 automated tests passed; Node 24/26 CI, dependency audits and CodeQL passed. A uniform-resolution five-client browser FPS comparison remains incomplete.
+
 ## 1.0.0 — 2026-10-25
 
 First stable release of Operation Falcon: Redline.
