@@ -6,7 +6,13 @@ import { MultiplayerDiagnostics } from './diagnostics.js';
 import { PreflightView } from './preflightView.js';
 import { renderRoomMission } from './missionView.js';
 import { MultiplayerClient } from './client.js';
-import { aircraftChoices, NETWORK_STEP, neutralAxes, validRoomCode } from './protocol.js';
+import {
+  aircraftChoices,
+  NETWORK_STEP,
+  neutralAxes,
+  validRoomCode,
+  normalizePlayerName,
+} from './protocol.js';
 import { Renderer } from '../renderer.js';
 import { FlightInstrumentLayer } from '../rendering/flightInstrumentLayer.js';
 import { MultiplayerHUD } from './hudView.js';
@@ -81,6 +87,8 @@ const preflight = new PreflightView($('network-preflight'), (message) => client.
 preflight.onLeave = () => client?.disconnect();
 addEventListener('falcon:languagechange', () => preflight.refreshLanguage());
 const statusText = {
+  'player-name-invalid':
+    'A pilótanév legfeljebb 10 karakter: betű, szám, szóköz, kötőjel vagy aláhúzás.',
   'lobby-changed': 'Az előszoba módosult. Ellenőrizd az új beállításokat, és próbáld újra.',
   'lobby-locked': 'A bevetés már elindult, a felszerelés nem módosítható.',
   'loadout-invalid': 'Hibás vagy túl nehéz felszerelés.',
@@ -113,6 +121,7 @@ function busy(value) {
     'network-aircraft',
     'network-code',
     'network-scenario',
+    'network-name',
   ])
     $(id).disabled = value;
 }
@@ -164,6 +173,17 @@ function snapshotReceived(msg) {
 }
 async function connect(mode) {
   if (connecting || active) return;
+  const playerName = normalizePlayerName($('network-name').value);
+  if (playerName === null) {
+    status(statusText['player-name-invalid'], true);
+    $('network-name').focus();
+    return;
+  }
+  try {
+    localStorage.setItem('falcon-pilot-name', playerName);
+  } catch {
+    /* A pilot name also works without browser storage. */
+  }
   const code = $('network-code').value.trim().toUpperCase();
   if (mode === 'join' && !validRoomCode(code)) {
     status('Adj meg egy hatkarakteres szobakódot.');
@@ -286,6 +306,7 @@ async function connect(mode) {
       code,
       scenario: $('network-scenario').value,
       aircraftId: $('network-aircraft').value,
+      playerName,
     });
   } catch (error) {
     busy(false);
@@ -295,6 +316,12 @@ async function connect(mode) {
 }
 try {
   $('network-code').value = sessionStorage.getItem('falcon-last-room') || '';
+} catch {
+  /* Storage is optional. */
+}
+try {
+  const savedName = normalizePlayerName(localStorage.getItem('falcon-pilot-name') || '');
+  $('network-name').value = savedName ?? '';
 } catch {
   /* Storage is optional. */
 }
@@ -443,6 +470,7 @@ function targetsAt(now, excludedId = client.id) {
           team: client.latest.scenario === 'arena' ? 'enemy' : 'ally',
           aircraftId: s.spec.id,
           displayCallSign: p.callSign,
+          multiplayerPilot: true,
           position: s.position,
           velocity: s.velocity,
           flight: s,

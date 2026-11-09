@@ -468,7 +468,13 @@ export class Renderer {
     this.mesh(mesh, p, new Quat(), 1, color, null, 'hangar');
   }
 
-  marker(p, label, color = '#baf37d', locked = false, { offscreenLabel = false } = {}) {
+  marker(
+    p,
+    label,
+    color = '#baf37d',
+    locked = false,
+    { offscreenLabel = false, literalLabel = false } = {},
+  ) {
     if (this.cinematic) return;
     const c = this.ctx,
       screen = this.project(p);
@@ -490,7 +496,7 @@ export class Renderer {
       }
       c.font = 'bold 12px Consolas,monospace';
       c.textAlign = 'center';
-      this.markerLabel(label, x, y - 22);
+      this.markerLabel(label, x, y - 22, literalLabel);
       return screen;
     }
     const local = this.local(p),
@@ -510,13 +516,13 @@ export class Renderer {
     c.fillStyle = color;
     c.font = 'bold 12px Consolas,monospace';
     c.textAlign = 'center';
-    if (offscreenLabel) this.markerLabel(label, x, y + 25);
+    if (offscreenLabel) this.markerLabel(label, x, y + 25, literalLabel);
     return null;
   }
-  markerLabel(label, x, y) {
+  markerLabel(label, x, y, literalLabel = false) {
     if (!label) return;
     const c = this.ctx,
-      renderedLabel = tr(label),
+      renderedLabel = literalLabel ? label : tr(label),
       width = (c.measureText?.(renderedLabel).width || renderedLabel.length * 6) + 10,
       half = width / 2,
       px = clamp(x, half + 8, this.w - half - 8),
@@ -791,7 +797,8 @@ export class Renderer {
         const contact = contacts.find((x) => x.target === t),
           locked = aim.id === t.id && aim.locked;
         let name = equipmentLabel(t, { compact: true });
-        if (t.team === 'ally' && t.kind === 'air')
+        if (t.multiplayerPilot && t.displayCallSign) name = t.displayCallSign;
+        else if (t.team === 'ally' && t.kind === 'air')
           name =
             t.displayCallSign ||
             (t.radioCallSign
@@ -805,9 +812,9 @@ export class Renderer {
             aircraftFlightSpec(t.aircraftId).name;
         // Unlocked hostile contacts keep their geometry/marker, without a wall of names.
         const label =
-          isHostile(t, s) && !locked
+          isHostile(t, s) && !locked && !t.multiplayerPilot
             ? ''
-            : `${name.toUpperCase()} ${(t.position.distance(s.position) / 1000).toFixed(1)} KM`;
+            : `${t.multiplayerPilot ? name : name.toUpperCase()} ${(t.position.distance(s.position) / 1000).toFixed(1)} KM`;
         this.marker(
           t.position,
           label,
@@ -821,6 +828,7 @@ export class Renderer {
                 ? '#ff9875'
                 : '#92a08a',
           locked,
+          { literalLabel: !!t.multiplayerPilot },
         );
       }
     }

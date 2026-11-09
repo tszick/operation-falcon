@@ -98,6 +98,8 @@ A saját elnevezések nem jelentenek gyártói jóváhagyást vagy jogi névelle
 ## Multiplayer · co-op és aréna
 
 Nyisd meg a `/multiplayer.html` oldalt ugyanazon a szerveren és porton minden játékosnál.
+Csatlakozás előtt opcionális, legfeljebb **10 karakteres pilótanév** adható meg (betűk, számok, szóköz, kötőjel, aláhúzás). A név a gép mellett, a játékoslistában és az eredményekben is megjelenik; a böngésző megjegyzi. Üresen hagyva automatikus Falcon-hívójelet kapsz. Visszacsatlakozáskor az eredeti név marad meg; a név nem helyettesíti a privát munkamenet-azonosítót.
+
 Egy szobába **legfeljebb öt pilóta** fér. A szobagazda létrehozza a szobát, a többiek a
 hatkarakteres kóddal csatlakoznak. A játék jelenleg hang nélkül fut.
 
