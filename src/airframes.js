@@ -331,6 +331,17 @@ export const airframes = {
     engineBack: -8.7,
     canopy: 3.2,
     canopyLength: 4.2,
+    // Taper the tandem canopy into the fuselage instead of a short hexagonal tube.
+    canopySections: [
+      [0.5, 0.035, 0.03, 0.65],
+      [0.36, 0.48, 0.3, 0.82],
+      [0.17, 0.94, 0.58, 0.9],
+      [-0.08, 1, 0.62, 0.9],
+      [-0.3, 0.76, 0.44, 0.85],
+      [-0.44, 0.35, 0.2, 0.76],
+      [-0.5, 0.035, 0.03, 0.65],
+    ],
+    canopySegments: 10,
     sweep: true,
     intakes: 'box',
     glove: true,
@@ -1078,6 +1089,21 @@ class MeshBuilder {
       this.edges.push([rings.at(-1)[i], rings.at(-1)[(i + 1) % segments]]);
   }
   surface(outline, y = 0, rise = 0) {
+    // GPU and collision meshes both fan out from the first vertex. A concave
+    // wing needs a vertex that can see the complete planform, on either side.
+    const area = outline.reduce((sum, a, i) => {
+      const b = outline[(i + 1) % outline.length];
+      return sum + a[0] * b[1] - a[1] * b[0];
+    }, 0);
+    const pivot = outline.findIndex((a, start) =>
+      Array.from({ length: outline.length - 2 }, (_, i) => {
+        const b = outline[(start + i + 1) % outline.length],
+          c = outline[(start + i + 2) % outline.length];
+        return ((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])) * Math.sign(area);
+      }).every((cross) => cross >= -1e-8),
+    );
+    if (pivot < 0) throw new Error('Aircraft surface has no valid triangle-fan origin');
+    outline = [...outline.slice(pivot), ...outline.slice(0, pivot)];
     const sides = [];
     for (const sign of [-1, 1]) {
       const max = Math.max(...outline.map((p) => p[0]));
@@ -1256,13 +1282,20 @@ export function aircraftMesh(id = 'f16', sweep = 0, flaps = 0) {
     z = p.canopy,
     cl = p.canopyLength;
   b.tube(
-    [
-      [z + cl / 2, 0.04, 0.05, W * 0.65],
-      [z + cl * 0.2, canopyWidth, W * 0.7, W * 0.9],
-      [z - cl * 0.3, canopyWidth * 0.85, W * 0.6, W * 0.9],
-      [z - cl / 2, 0.1, 0.08, W * 0.72],
-    ],
-    6,
+    p.canopySections
+      ? p.canopySections.map(([along, width, radius, center]) => [
+          z + cl * along,
+          canopyWidth * width,
+          W * radius,
+          W * center,
+        ])
+      : [
+          [z + cl / 2, 0.04, 0.05, W * 0.65],
+          [z + cl * 0.2, canopyWidth, W * 0.7, W * 0.9],
+          [z - cl * 0.3, canopyWidth * 0.85, W * 0.6, W * 0.9],
+          [z - cl / 2, 0.1, 0.08, W * 0.72],
+        ],
+    p.canopySegments || 6,
   );
   // Frames distinguish tandem cockpits without a dense wire cage.
   if (cl > 3.5) b.line([-canopyWidth, W, z], [canopyWidth, W, z]);
@@ -1337,6 +1370,36 @@ export function aircraftMesh(id = 'f16', sweep = 0, flaps = 0) {
           [x + dx + 0.12, y + dy, front + 0.12],
           [x + 0.18, y, front + 0.12],
         ]);
+      }
+    }
+    if (p.engineMount === 'wing') {
+      const section = wingSection(wing, Math.abs(x)),
+        wingY = (p.wingY || 0) + (p.wingTipRise || 0) * (Math.abs(x) / span) ** 3,
+        rear = section ? Math.max(back + 0.05, section.rear + 0.05) : 0,
+        nose = section ? Math.min(front - 0.05, section.front - 0.05) : 0;
+      if (section && nose > rear && wingY > y + r * 0.85 + 0.02) {
+        const halfWidth = r * 0.18,
+          bottom = y + r * 0.55,
+          top = wingY + 0.05,
+          corners = [
+            [x - halfWidth, bottom, rear],
+            [x + halfWidth, bottom, rear],
+            [x + halfWidth, bottom, nose],
+            [x - halfWidth, bottom, nose],
+            [x - halfWidth, top, rear],
+            [x + halfWidth, top, rear],
+            [x + halfWidth, top, nose],
+            [x - halfWidth, top, nose],
+          ];
+        for (const face of [
+          [0, 1, 5, 4],
+          [1, 2, 6, 5],
+          [2, 3, 7, 6],
+          [3, 0, 4, 7],
+          [4, 5, 6, 7],
+          [3, 2, 1, 0],
+        ])
+          b.face(face.map((i) => corners[i]));
       }
     }
     for (let i = startFace; i < b.faces.length; i++) {

@@ -47,17 +47,25 @@ class Builder {
     let prev = null;
     for (const [y, r] of rings) {
       const ids = [];
-      for (let i = 0; i < n; i++) {
-        const a = (i / n) * Math.PI * 2;
-        ids.push(this.points.push(new Vec3(x + Math.cos(a) * r, y, z + Math.sin(a) * r)) - 1);
+      if (r === 0) ids.push(this.points.push(new Vec3(x, y, z)) - 1);
+      else
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 2;
+          ids.push(this.points.push(new Vec3(x + Math.cos(a) * r, y, z + Math.sin(a) * r)) - 1);
+        }
+      if (!prev && ids.length > 1) this.faces.push([...ids].reverse());
+      if (prev) {
+        if (prev.length === 1 && ids.length > 1)
+          for (let i = 0; i < n; i++) this.faces.push([prev[0], ids[(i + 1) % n], ids[i]]);
+        else if (ids.length === 1 && prev.length > 1)
+          for (let i = 0; i < n; i++) this.faces.push([prev[i], prev[(i + 1) % n], ids[0]]);
+        else if (prev.length > 1 && ids.length > 1)
+          for (let i = 0; i < n; i++)
+            this.faces.push([prev[i], prev[(i + 1) % n], ids[(i + 1) % n], ids[i]]);
       }
-      if (!prev) this.faces.push([...ids].reverse());
-      if (prev)
-        for (let i = 0; i < n; i++)
-          this.faces.push([prev[i], prev[(i + 1) % n], ids[(i + 1) % n], ids[i]]);
       prev = ids;
     }
-    this.faces.push(prev);
+    if (prev?.length > 1) this.faces.push(prev);
   }
   wheel(x, y, z) {
     const start = this.points.length;

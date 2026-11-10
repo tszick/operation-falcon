@@ -1,0 +1,24 @@
+services:
+  game:
+    image: operation-falcon:local
+    build: .
+    init: true
+    restart: unless-stopped
+    ports:
+      - '${FALCON_BIND_ADDRESS:-127.0.0.1}:${FALCON_PORT:-5173}:5173'
+    environment:
+      HOST: 0.0.0.0
+      PORT: '5173'
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-}
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: ${FALCON_MEMORY_LIMIT:-512m}
+    cpus: ${FALCON_CPUS:-1.0}
+    logging:
+      driver: json-file
+      options:
+        max-size: '5m'
+        max-file: '2'

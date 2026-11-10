@@ -15,6 +15,39 @@ npm start
 
 A játék: [localhost:5173](http://localhost:5173). Más portot a `PORT` környezeti változóval lehet megadni. A szerver kizárólag `127.0.0.1`-en hallgatózik; nem publikus éles webszerver. A fejlesztői csomagok a kódellenőrzéshez kellenek, nem kerülnek a böngészőbe.
 
+## Docker · Linux konténer
+
+Docker Engine / Docker Desktop Linux-konténerekkel és Docker Compose szükséges. A repó gyökerében:
+
+```sh
+docker compose up -d --build
+```
+
+Játék: [localhost:5173](http://localhost:5173), multiplayer: [localhost:5173/multiplayer.html](http://localhost:5173/multiplayer.html).
+Az 5173-as port legyen szabad; ha ott már helyi Node-szerver fut, állítsd le, vagy válassz másik külső portot.
+
+```sh
+docker compose ps                  # állapot és healthcheck
+docker compose logs -f game        # szervernapló
+docker stats                       # tényleges memória- és CPU-használat
+docker compose down                # leállítás
+```
+
+A kép rögzített hivatalos **Node 24 LTS + Alpine Linux** alapot használ. Csak a futáshoz szükséges fájlokat és production függőségeket tartalmazza; fejlesztői eszközök, tesztek, Git és helyi beállítások nem kerülnek bele. Nem root felhasználóként, csak olvasható fájlrendszerrel fut. Nincs adatbázis, háttérböngésző vagy szerveroldali GPU. A grafika és az egyjátékos szimuláció a játékos böngészőjét terheli; a multiplayer szimuláció a konténerben fut. A szobák memóriában élnek, konténer-újraindításkor megszűnnek.
+
+Alapértelmezett felső korlát **512 MiB RAM és 1 CPU**; ez nem lefoglalt vagy folyamatosan elfogyasztott erőforrás. Sok aktív multis szobához mérés alapján emeld a korlátokat. A meglévő maximum 10 szoba és szobánként 5 pilóta marad. A részletes napló mérete korlátozott, a healthcheck rendszeresen ellenőrzi a HTTP-kiszolgálást.
+
+Opcionális beállítások: másold a `.env.docker.example` fájlt `.env` néven a repó gyökerébe. A `FALCON_PORT` a külső portot, a `FALCON_MEMORY_LIMIT` és `FALCON_CPUS` a korlátokat állítja. A konténeren belüli port mindig 5173. Módosítás után futtasd újra a `docker compose up -d --build` parancsot.
+
+Alapból csak a saját gépedről érhető el. LAN-kapcsolathoz állítsd a `FALCON_BIND_ADDRESS` értékét `0.0.0.0`-ra, és az `ALLOWED_HOSTS` értékébe írd a böngészőben használt pontos címet porttal, például `192.168.1.50:5173` (több cím vesszővel elválasztva). A webszerver és a WebSocket ugyanazon a porton fut. A WebGPU távoli gépről biztonságos böngészőkörnyezetet, általában HTTPS-t igényel; a `localhost` helyi HTTP-címe kivétel. Internetes használatnál HTTPS/WSS-t biztosító fordított proxy és a szerver host/origin szabályaihoz illeszkedő telepítés szükséges.
+
+Compose nélkül is indítható:
+
+```sh
+docker build -t operation-falcon:local .
+docker run -d --name operation-falcon --init --read-only --cap-drop ALL --security-opt no-new-privileges --memory 512m --cpus 1 -p 127.0.0.1:5173:5173 operation-falcon:local
+```
+
 ## Fejlesztés és ellenőrzés
 
 ```sh
