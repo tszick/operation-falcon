@@ -10850,5 +10850,25 @@
   "A pilótanév legfeljebb 10 karakter: betű, szám, szóköz, kötőjel vagy aláhúzás.": {
     "hu": "A pilótanév legfeljebb 10 karakter: betű, szám, szóköz, kötőjel vagy aláhúzás.",
     "en": "Pilot names allow up to 10 characters: letters, numbers, spaces, hyphens or underscores."
+  },
+  "Vadász": {
+    "hu": "Vadász",
+    "en": "Fighter"
+  },
+  "Tankergép": {
+    "hu": "Tankergép",
+    "en": "Tanker"
+  },
+  "Gyakorlógép": {
+    "hu": "Gyakorlógép",
+    "en": "Trainer"
+  },
+  "Kísérleti gép": {
+    "hu": "Kísérleti gép",
+    "en": "Experimental aircraft"
+  },
+  "Földi cél": {
+    "hu": "Földi cél",
+    "en": "Ground target"
   }
 }

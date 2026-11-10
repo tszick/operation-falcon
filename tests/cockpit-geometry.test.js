@@ -94,3 +94,32 @@ test('cockpit view matches the world camera at combined yaw and pitch', async ()
     close(actual[1], h * 0.53 - (focal * v.dot(up(q))) / z - (h - deck));
   }
 });
+
+test('leaning instrument projection agrees with the translated world eye at all panel corners', async () => {
+  const { Quat, Vec3, right, up, forward } = await import('../src/math.js');
+  const { cabinEyeOffset } = await import('../src/cockpitInteriorGeometry.js');
+  const w = 1280,
+    h = 720,
+    f = h * 0.8,
+    deck = cockpitHeight(w, h);
+  for (const yaw of [-0.6, 0, 0.6])
+    for (const pitch of [-0.3, -0.6]) {
+      const eye = cabinEyeOffset(pitch),
+        q = Quat.euler(yaw, pitch, 0),
+        matrix = cockpitProjection(w, h, yaw, pitch, eye);
+      for (const [x, y] of [
+        [0, 0],
+        [w, 0],
+        [w, deck],
+        [0, deck],
+      ]) {
+        const point = new Vec3(x - w / 2, h * 0.53 - (h - deck + y), f).sub(
+          new Vec3(...eye).scale(f),
+        );
+        const depth = point.dot(forward(q)),
+          actual = project(matrix, x, y);
+        close(actual[0], w / 2 + (f * point.dot(right(q))) / depth);
+        close(actual[1], h * 0.53 - (f * point.dot(up(q))) / depth - (h - deck));
+      }
+    }
+});

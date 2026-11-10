@@ -1,3 +1,4 @@
+import { skyTexture } from '../../skyTextures.js';
 import { GpuQueueProbe } from './queueProbe.js';
 import { TextureUpload } from './textureUpload.js';
 import { buildFarmland, farmlandSize, farmlandExtent, farmlandPalette } from '../../farmland.js';
@@ -173,6 +174,19 @@ export class WebGPUBackend {
     // At kilometre distances 8 cm of paint can share a 24-bit depth value with asphalt.
     this.asphaltPipeline = this.pipeline(shaders.models, [modelLayout], { bias: -4 });
     this.paintPipeline = this.pipeline(shaders.models, [modelLayout], { bias: -8 });
+    this.shadowPipeline = this.pipeline(
+      shaders.aircraftShadows,
+      [
+        {
+          arrayStride: 16,
+          attributes: [
+            { shaderLocation: 0, offset: 0, format: 'float32x3' },
+            { shaderLocation: 1, offset: 12, format: 'float32' },
+          ],
+        },
+      ],
+      { blend: true, bias: -12, writeDepth: false },
+    );
     this.edgePipeline = this.pipeline(shaders.models, [modelLayout], { lines: true });
     this.terrainDepthPipeline = this.pipeline(shaders.terrain, [terrainLayout], {
       mask: true,
@@ -205,6 +219,7 @@ export class WebGPUBackend {
       mask = false,
       noDepth = false,
       blend = false,
+      writeDepth = true,
       layout = this.layout,
     } = {},
   ) {
@@ -233,7 +248,7 @@ export class WebGPUBackend {
     if (!noDepth)
       descriptor.depthStencil = {
         format: 'depth24plus',
-        depthWriteEnabled: !lines,
+        depthWriteEnabled: writeDepth && !lines,
         depthCompare: 'less-equal',
         depthBias: Number(bias),
         depthBiasSlopeScale: Number(bias),
@@ -403,12 +418,17 @@ export class WebGPUBackend {
     this.terrainKey = r.terrainSurfaceKey;
   }
   renderHorizon(r) {
-    if (!this.available) return false;
-    const image = horizonImage();
-    if (!image) return false;
-    if (!this.panorama) {
+    return this.renderPanorama(r, horizonImage(), r.surfaceMode === 'ocean' ? 1 : 0);
+  }
+  renderNightSky(r) {
+    return this.renderPanorama(r, skyTexture('night'), 2);
+  }
+  renderPanorama(r, image, mode) {
+    if (!this.available || !image) return false;
+    const key = mode === 2 ? 'nightPanorama' : 'panorama';
+    if (!this[key]) {
       const d = this.device;
-      this.panorama = d.createTexture({
+      this[key] = d.createTexture({
         size: [image.naturalWidth, image.naturalHeight],
         format: 'rgba8unorm',
         usage:
@@ -416,7 +436,7 @@ export class WebGPUBackend {
           GPUTextureUsage.COPY_DST |
           GPUTextureUsage.RENDER_ATTACHMENT,
       });
-      d.queue.copyExternalImageToTexture({ source: image }, { texture: this.panorama }, [
+      d.queue.copyExternalImageToTexture({ source: image }, { texture: this[key] }, [
         image.naturalWidth,
         image.naturalHeight,
       ]);
@@ -426,9 +446,9 @@ export class WebGPUBackend {
       data = this.frameUniform(r);
     data.set(paddedMatrix([r.r.x, r.r.y, r.r.z, r.u.x, r.u.y, r.u.z, r.f.x, r.f.y, r.f.z]), 12);
     data.set(rgba(surfaceStyle(r.surfaceMode).sky[1]).slice(0, 3), 64);
-    data[35] = r.surfaceMode === 'ocean' ? 1 : 0;
+    data[35] = mode;
     pass.setPipeline(this.horizonPipeline);
-    pass.setBindGroup(0, this.bind(this.panorama, null, true), [this.uniform(data)]);
+    pass.setBindGroup(0, this.bind(this[key], null, true), [this.uniform(data)]);
     pass.draw(3);
     pass.end();
     this.submit(encoder);
@@ -676,6 +696,18 @@ export class WebGPUBackend {
       pass.setBindGroup(0, this.bind(this.texture('concrete')), [this.uniform(data)]);
       pass.drawIndexed(count);
     }
+    if (r.aircraftShadowData?.length) {
+      this.shadowBuffer = updateBuffer(
+        this.device,
+        this.shadowBuffer,
+        r.aircraftShadowData,
+        GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      );
+      pass.setPipeline(this.shadowPipeline);
+      pass.setVertexBuffer(0, this.shadowBuffer);
+      pass.setBindGroup(0, this.bind(this.texture('concrete')), [this.uniform(base)]);
+      pass.draw(r.aircraftShadowData.length / 4);
+    }
     pass.end();
     this.submit(encoder);
     if (r.debugMetrics)
@@ -710,7 +742,15 @@ export class WebGPUBackend {
     for (const item of this.resources) item.buffers.forEach((b) => b.destroy());
     this.resources.clear();
     for (const t of this.textures.values()) t.destroy();
-    for (const key of ['terrainFill', 'terrainLines', 'featureBuffer', 'featureMask', 'panorama'])
+    for (const key of [
+      'shadowBuffer',
+      'terrainFill',
+      'terrainLines',
+      'featureBuffer',
+      'featureMask',
+      'panorama',
+      'nightPanorama',
+    ])
       this[key]?.destroy();
   }
 }

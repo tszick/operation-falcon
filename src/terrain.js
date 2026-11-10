@@ -159,6 +159,20 @@ function buildTerrain(m, anchor, rng) {
       radius: 2000 + rng() * 2500,
       platform: 0,
     });
+  if (rng() < 0.48) {
+    const angle = rng() * Math.PI * 2,
+      distance = 17000 + rng() * 13000;
+    const x = Math.sin(angle) * distance,
+      z = Math.cos(angle) * distance;
+    for (let i = 0, count = 1 + Math.floor(rng() * 3); i < count; i++)
+      peaks.push({
+        x: x + i * 1700,
+        z: z + Math.sin(i * 2) * 1100,
+        height: 1400 + rng() * 1100,
+        radius: 1050 + rng() * 500,
+        platform: 0,
+      });
+  }
   if (road && m.id !== 'bridge') {
     road.detours = peaks
       .map((p) => {
@@ -202,6 +216,18 @@ function buildTerrain(m, anchor, rng) {
       : null,
   };
   return terrainWorld;
+}
+// Compact, unflattened peaks are jagged rocky outcrops; broad hills retain their old profile.
+export function terrainPeakHeight(p, x, z) {
+  const dx = x - p.x,
+    dz = z - p.z;
+  if (p.radius <= 1700 && !p.platform) {
+    const angle = Math.atan2(dz, dx),
+      edge = 1 + 0.1 * Math.cos(angle * 5) + 0.06 * Math.sin(angle * 8);
+    return p.height * Math.max(0, 1 - Math.hypot(dx, dz) / (p.radius * edge)) ** 0.78;
+  }
+  const d = Math.max(0, Math.hypot(dx, dz) - (p.platform || 0));
+  return p.height * Math.exp(-2.8 * (d / p.radius) ** 2);
 }
 function pathOffset(path, t) {
   let offset = path.bend * (Math.sin(t / 6000 + path.phase) - Math.sin(path.phase));
@@ -256,8 +282,7 @@ function landscape(x, z) {
     } else h -= canyon.depth * (1 - smooth((d - canyon.width * 0.25) / canyon.width));
   }
   for (const p of terrainWorld.peaks) {
-    const d = Math.max(0, Math.hypot(x - p.x, z - p.z) - p.platform);
-    h = Math.max(h, p.height * Math.exp(-2.8 * (d / p.radius) ** 2));
+    h = Math.max(h, terrainPeakHeight(p, x, z));
   }
   const river = terrainWorld.river;
   if (river) {

@@ -96,7 +96,20 @@ export const taiwanMission = {
   battlefield: {
     environment: {
       ocean: true,
-      islands: [island(0, 0, 10000, 22000, 0.15, 650)],
+      islands: [
+        island(0, 0, 10000, 22000, 0.15, 650),
+        ...[
+          [3400, 3800, 1700, 1450],
+          [-3600, -4200, 1500, 1650],
+          [4800, -500, 1250, 1850],
+        ].map(([x, z, radius, height]) => ({
+          ...island(x, z, radius, radius * 0.85, 0.3, height),
+          plateau: 0.001,
+          rocky: true,
+          baseColor: [91, 128, 65],
+          landColor: [115, 120, 126],
+        })),
+      ],
     },
     assets,
     flights: [

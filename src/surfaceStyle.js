@@ -125,7 +125,9 @@ export function terrainTint(id, normalY, height, light = 1) {
   const snow =
     p.snow * smooth(p.snowLine, p.snowLine + p.snowRange, height) * (1 - smooth(0.25, 0.68, slope));
   return p.terrain.map((v, i) => {
-    const stone = v * (1 - rock) + p.rock[i] * rock;
+    const granite = smooth(0.34, 0.65, slope) * smooth(650, 1200, height);
+    const stone =
+      (v * (1 - rock) + p.rock[i] * rock) * (1 - granite) + [0.4, 0.42, 0.44][i] * granite;
     return (stone * (1 - snow) + [0.89, 0.92, 0.95][i] * snow) * (0.48 + 0.52 * light) * p.light;
   });
 }

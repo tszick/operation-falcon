@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { orderCabinSurfaces } from '../src/cabinOcclusion.js';
-import { cockpitInteriorGeometry } from '../src/cockpitInteriorGeometry.js';
+import { orderCabinSurfaces, prepareCabinSurfaces } from '../src/cabinOcclusion.js';
+import { cockpitInteriorGeometry, cabinEyeOffset } from '../src/cockpitInteriorGeometry.js';
 import { Quat, forward } from '../src/math.js';
 const dot = (a, b) => a.reduce((s, v, i) => s + v * b[i], 0);
 const cross = (a, b) => [
@@ -83,4 +83,41 @@ test('HUD glass keeps exactly its original perimeter through BSP cuts, without c
     );
   }
   assert.ok(Math.abs(actual - expected) < 1e-8, 'No extra or duplicated outline');
+});
+
+test('leaning over the dashboard clears a 25-degree bombing sightline while keeping the cabin solid', () => {
+  const shapes = cockpitInteriorGeometry(),
+    angle = (25 * Math.PI) / 180,
+    ray = [0, -Math.sin(angle), Math.cos(angle)];
+  const blocked = (eye) =>
+    shapes
+      .filter((s) => s.fill !== 'none')
+      .some(
+        (s) =>
+          rayHit({ ...s, points: s.points.map((p) => p.map((v, i) => v - eye[i])) }, ray) !== null,
+      );
+  assert.equal(blocked([0, 0, 0]), true);
+  assert.equal(blocked(cabinEyeOffset(-0.61)), false);
+});
+
+test('cached cabin ordering stays depth-correct throughout forward leaning and side looks', () => {
+  const scene = prepareCabinSurfaces(cockpitInteriorGeometry(), [[0, 0, 0], cabinEyeOffset(-1)]);
+  for (const pitch of [-0.1, -0.3, -0.5, -0.78]) {
+    const eye = cabinEyeOffset(pitch),
+      ordered = scene.order(eye).filter((s) => s.fill !== 'none');
+    for (let yaw = -1.7; yaw < 1.7; yaw += 0.09) {
+      const d = forward(Quat.euler(yaw, pitch, 0));
+      const hits = ordered
+        .map((s) =>
+          rayHit({ ...s, points: s.points.map((p) => p.map((v, i) => v - eye[i])) }, [
+            d.x,
+            d.y,
+            d.z,
+          ]),
+        )
+        .filter((v) => v !== null);
+      for (let i = 1; i < hits.length; i++)
+        assert.ok(hits[i] <= hits[i - 1] + 1e-5, `${yaw}/${pitch}`);
+    }
+  }
 });

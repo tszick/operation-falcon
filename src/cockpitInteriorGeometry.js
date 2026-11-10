@@ -1,12 +1,14 @@
+import { hudGlassPoints } from './hudGlassGeometry.js';
+import { cabinSurfaceVisible } from './cabinOcclusion.js';
 // Eye-centred airframe coordinates: +X right, +Y up, +Z forward.
 // Solid panels occlude the world; only the canopy and combiner glass are open.
 const palette = {
-  hull: '#081711',
-  wall: '#0b2118',
-  deck: '#10281d',
-  edge: '#527b5b',
-  trim: '#86a584',
-  control: '#172f23',
+  hull: '#1c2025',
+  wall: '#292e34',
+  deck: '#394149',
+  edge: '#77838e',
+  trim: '#a4adb5',
+  control: '#343b43',
 };
 export function cockpitInteriorGeometry(aspect = 16 / 9) {
   const shapes = [];
@@ -218,27 +220,22 @@ export function cockpitInteriorGeometry(aspect = 16 / 9) {
       palette.control,
     );
   }
-  const glassWidth = (aspect * 0.2) / 0.8;
-  face(
-    'hud-glass',
-    [
-      [-glassWidth * 0.85, 0.43, 1.06],
-      [glassWidth * 0.85, 0.43, 1.06],
-      [glassWidth, -0.22, 1.06],
-      [-glassWidth, -0.22, 1.06],
-    ],
-    'none',
-    '#799a8466',
-    1,
-  );
+  face('hud-glass', hudGlassPoints(aspect), 'none', '#a0b1bc66', 1);
   box('stick-base', -0.06, -0.94, 0.1, 0.12, -0.83, 0.28, palette.wall);
   beam('control-stick', [0.03, -0.85, 0.19], [0.03, -0.49, 0.27], 0.022, palette.control);
   box('stick-grip', -0.014, -0.53, 0.23, 0.075, -0.38, 0.31, palette.hull);
   box('throttle-lever', -half + 0.1, -0.42, -0.13, -half + 0.19, -0.34, 0.08, palette.control);
   return shapes;
 }
-export function cabinCameraRotation(yaw, pitch) {
-  return [Math.cos(yaw), Math.sin(yaw), Math.cos(pitch), Math.sin(pitch)];
+// A modest forward/up lean lets the pilot look over the glare shield.
+// It returns continuously to the normal seat position with the head angle.
+export function cabinEyeOffset(pitch = 0) {
+  const t = Math.max(0, Math.min(1, (-pitch - 0.08) / 0.53)),
+    lean = t * t * (3 - 2 * t);
+  return [0, 0.3 * lean, 0.2 * lean];
+}
+export function cabinCameraRotation(yaw, pitch, eye = [0, 0, 0]) {
+  return [Math.cos(yaw), Math.sin(yaw), Math.cos(pitch), Math.sin(pitch), ...eye];
 }
 export function cabinCameraPoint(
   [x, y, z],
@@ -246,7 +243,10 @@ export function cabinCameraPoint(
   pitch,
   rotation = cabinCameraRotation(yaw, pitch),
 ) {
-  const [cy, sy, cp, sp] = rotation;
+  const [cy, sy, cp, sp, ex = 0, ey = 0, ez = 0] = rotation;
+  x -= ex;
+  y -= ey;
+  z -= ez;
   const rx = cy * x - sy * z,
     rz = sy * x + cy * z;
   return [rx, cp * y - sp * rz, sp * y + cp * rz];
@@ -285,7 +285,7 @@ export function projectCabinShape(
   pitch = 0,
   rotation = cabinCameraRotation(yaw, pitch),
 ) {
-  if (shape.frontFacing === false) return null;
+  if (!cabinSurfaceVisible(shape, rotation.slice(4))) return null;
   const cameraPoints = shape.points.map((p) => cabinCameraPoint(p, yaw, pitch, rotation));
   const points = shape.open ? clipCabinEdge(cameraPoints) : clipCabinPolygon(cameraPoints);
   if (points.length < (shape.open ? 2 : 3)) return null;

@@ -63,13 +63,21 @@ export function islandGeometry(island) {
             0.06 * Math.cos(angle * 5 - island.phase),
           x = Math.cos(angle) * shore * radius * island.radiusX,
           z = Math.sin(angle) * shore * radius * island.radiusZ,
-          y =
+          baseY =
             radius <= 1
               ? island.plateau
                 ? island.height *
                   (1 - clamp((radius - island.plateau) / (1 - island.plateau), 0, 1))
                 : island.height * (1 - radius * radius) ** 2
-              : (-650 * (radius - 1)) / 0.7;
+              : (-650 * (radius - 1)) / 0.7,
+          y =
+            island.rocky && baseY > 0
+              ? baseY *
+                (1 +
+                  0.13 *
+                    Math.sin(angle * 3 + island.phase) *
+                    Math.sin(Math.PI * Math.min(radius, 1)))
+              : baseY;
         return new Vec3(island.x + x * c + z * s, y, island.z - x * s + z * c);
       }),
     );
@@ -86,8 +94,10 @@ export function islandGeometry(island) {
       deep = clamp(-center.y / 650, 0, 1),
       rgb = water
         ? [22 + deep * 3, 155 - deep * 78, 164 - deep * 57]
-        : (island.landColor && center.y > island.height * 0.3
-            ? island.landColor
+        : (island.landColor && (island.rocky || center.y > island.height * 0.3)
+            ? island.rocky && center.y < island.height * 0.3
+              ? island.baseColor || island.landColor
+              : island.landColor
             : [219, 188, 126]
           ).map((c) => c * light);
     const face = {

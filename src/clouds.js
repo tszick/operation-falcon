@@ -1,3 +1,4 @@
+import { skyTexture } from './skyTextures.js';
 import { requestSkySprite } from './skySpriteLoader.js';
 import { Vec3 } from './math.js';
 import { seededRandom } from './oceanEnvironment.js';
@@ -67,6 +68,7 @@ export function cloudPixels(mode, variant, width = 256, height = 128) {
 }
 const requestedModes = new Set();
 function cloudSprite(mode, variant) {
+  if (mode !== 'vector') return skyTexture('cloud');
   if (!requestedModes.has(mode)) {
     requestedModes.add(mode);
     // Prepare all variants together off the main thread before a turn reveals them.
@@ -84,35 +86,46 @@ function cloudSprite(mode, variant) {
 export function cloudScreenAngle(r) {
   return Math.atan2(r.r.y, r.u.y);
 }
+// World-fixed tangent planes: centre, apparent size and tilt all use the same
+// projection. A screen-aligned sprite would slide/rotate oddly during head turns.
+export function cloudViewTransform(r, cloud) {
+  const b = cloud.bearing,
+    e = cloud.elevation;
+  const direction = new Vec3(Math.sin(b) * Math.cos(e), Math.sin(e), Math.cos(b) * Math.cos(e));
+  const horizontal = new Vec3(Math.cos(b), 0, -Math.sin(b));
+  const vertical = direction.cross(horizontal);
+  const project = (dir) => r.project(r.camera.clone().add(dir.scale(100000)));
+  const c = project(direction.clone()),
+    right = project(direction.clone().add(horizontal.scale(cloud.size * 0.5))),
+    top = project(direction.clone().add(vertical.scale(cloud.size * 0.25)));
+  if (!c || !right || !top) return null;
+  return [
+    2 * (right.x - c.x),
+    2 * (right.y - c.y),
+    -4 * (top.x - c.x),
+    -4 * (top.y - c.y),
+    c.x,
+    c.y,
+  ];
+}
 export function renderCumulus(r, world) {
   const c = r.ctx,
     mode = r.surfaceMode || 'vector',
     palette = cloudPalette(mode),
     seed = world.skySeed ?? Math.round((world.revision || 1) * 22695477);
   for (const cloud of cloudLayout(seed)) {
-    const cos = Math.cos(cloud.elevation),
-      direction = new Vec3(
-        Math.sin(cloud.bearing) * cos,
-        Math.sin(cloud.elevation),
-        Math.cos(cloud.bearing) * cos,
-      ),
-      point = r.project(r.camera.clone().add(direction.scale(100000)));
-    if (
-      !point ||
-      point.x < -r.w * 0.5 ||
-      point.x > r.w * 1.5 ||
-      point.y < -r.h * 0.5 ||
-      point.y > r.h * 1.5
-    )
-      continue;
+    const transform = cloudViewTransform(r, cloud);
+    if (!transform) continue;
+    const x = transform[4],
+      y = transform[5];
+    if (x < -r.w * 0.5 || x > r.w * 1.5 || y < -r.h * 0.5 || y > r.h * 1.5) continue;
     const image = cloudSprite(mode, cloud.variant);
     if (!image) continue;
-    const size = r.focal * cloud.size;
     c.save();
-    c.globalAlpha = palette.opacity;
-    c.translate(point.x, point.y);
-    c.rotate(cloudScreenAngle(r));
-    c.drawImage(image, -size * 0.5, -size * 0.25, size, size * 0.5);
+    c.globalAlpha = palette.opacity * (mode === 'night' ? 0.35 : 1);
+    c.transform(...transform);
+    if (cloud.variant % 2) c.scale(-1, 1);
+    c.drawImage(image, -0.5, -0.25, 1, 0.5);
     c.restore();
   }
 }
