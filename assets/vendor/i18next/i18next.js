@@ -112,12 +112,11 @@ const _entityMap = {
   '<': '&lt;',
   '>': '&gt;',
   '"': '&quot;',
-  "'": '&#39;',
-  '/': '&#x2F;'
+  "'": '&#39;'
 };
 const escape = data => {
   if (isString(data)) {
-    return data.replace(/[&<>"'\/]/g, s => _entityMap[s]);
+    return data.replace(/[&<>"']/g, s => _entityMap[s]);
   }
   return data;
 };
@@ -163,6 +162,9 @@ const deepFind = (obj, path, keySeparator = '.') => {
   if (obj[path]) {
     if (!Object.prototype.hasOwnProperty.call(obj, path)) return undefined;
     return obj[path];
+  }
+  if (!keySeparator) {
+    return Object.prototype.hasOwnProperty.call(obj, path) ? obj[path] : undefined;
   }
   const tokens = path.split(keySeparator);
   let current = obj;
@@ -311,15 +313,20 @@ class EventEmitter {
 }
 
 const nonEmptyBundles = new WeakSet();
+const assertSeparateArguments = (method, ...args) => {
+  if (args.some(a => !isString(a))) {
+    throw new TypeError(`${method}: pass language, namespace${method === 'addResource' ? ' and key' : ''} as separate strings; the dotted form ('en.translation.key') was removed in i18next v27`);
+  }
+};
 class ResourceStore extends EventEmitter {
   constructor(data, options = {
     ns: ['translation'],
     defaultNS: 'translation'
-  }) {
+  }, logger = baseLogger) {
     super();
     this.data = data || {};
     this.options = options;
-    this.logger = baseLogger.create('resourceStore');
+    this.logger = logger.create('resourceStore');
     if (this.options.keySeparator === undefined) {
       this.options.keySeparator = '.';
     }
@@ -338,49 +345,30 @@ class ResourceStore extends EventEmitter {
       this.options.ns.splice(index, 1);
     }
   }
-  deprecateDottedLng(method) {
-    this.logger.once(method, 'deprecate', `${method}: a dotted language ('en.translation.key') that carries the namespace and key is removed in v27; pass language, namespace and key as separate arguments`);
-  }
   getResource(lng, ns, key, options = {}) {
     const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator;
     const ignoreJSONStructure = options.ignoreJSONStructure !== undefined ? options.ignoreJSONStructure : this.options.ignoreJSONStructure;
-    let path;
-    if (lng.includes('.')) {
-      this.deprecateDottedLng('getResource');
-      path = lng.split('.');
-    } else {
-      path = [lng, ns];
-      if (key) {
-        if (Array.isArray(key)) {
-          path.push(...key);
-        } else if (isString(key) && keySeparator) {
-          path.push(...key.split(keySeparator));
-        } else {
-          path.push(key);
-        }
+    const path = [lng, ns];
+    if (key) {
+      if (Array.isArray(key)) {
+        path.push(...key);
+      } else if (isString(key) && keySeparator) {
+        path.push(...key.split(keySeparator));
+      } else {
+        path.push(key);
       }
     }
     const result = getPath(this.data, path);
-    if (result == null && !ns && !key && lng.includes('.')) {
-      lng = path[0];
-      ns = path[1];
-      key = path.slice(2).join('.');
-    }
     if (result != null || !ignoreJSONStructure || !isString(key)) return result;
     return deepFind(this.data?.[lng]?.[ns], key, keySeparator);
   }
   addResource(lng, ns, key, value, options = {
     silent: false
   }) {
+    assertSeparateArguments('addResource', lng, ns, key);
     const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator;
     let path = [lng, ns];
     if (key) path = path.concat(keySeparator ? key.split(keySeparator) : key);
-    if (lng.includes('.')) {
-      this.deprecateDottedLng('addResource');
-      path = lng.split('.');
-      value = ns;
-      ns = path[1];
-    }
     this.addNamespaces(ns);
     setPath(this.data, path, value);
     if (!options.silent) this.emit('added', lng, ns, key, value);
@@ -388,25 +376,21 @@ class ResourceStore extends EventEmitter {
   addResources(lng, ns, resources, options = {
     silent: false
   }) {
-    for (const m in resources) {
-      if (isString(resources[m]) || Array.isArray(resources[m])) this.addResource(lng, ns, m, resources[m], {
+    assertSeparateArguments('addResources', lng, ns);
+    Object.keys(resources || {}).forEach(m => {
+      if (m === '__proto__' || m === 'constructor') return;
+      this.addResource(lng, ns, m, resources[m], {
         silent: true
       });
-    }
+    });
     if (!options.silent) this.emit('added', lng, ns, resources);
   }
   addResourceBundle(lng, ns, resources, deep, overwrite, options = {
     silent: false,
     skipCopy: false
   }) {
-    let path = [lng, ns];
-    if (lng.includes('.')) {
-      this.deprecateDottedLng('addResourceBundle');
-      path = lng.split('.');
-      deep = resources;
-      resources = ns;
-      ns = path[1];
-    }
+    assertSeparateArguments('addResourceBundle', lng, ns);
+    const path = [lng, ns];
     this.addNamespaces(ns);
     let pack = getPath(this.data, path) || {};
     if (!options.skipCopy) resources = JSON.parse(JSON.stringify(resources));
@@ -454,19 +438,6 @@ class ResourceStore extends EventEmitter {
   }
 }
 
-var postProcessor = {
-  processors: {},
-  addPostProcessor(module) {
-    this.processors[module.name] = module;
-  },
-  handle(processors, value, key, options, translator) {
-    processors.forEach(processor => {
-      value = this.processors[processor]?.process(value, key, options, translator) ?? value;
-    });
-    return value;
-  }
-};
-
 const PATH_KEY = Symbol('i18next/PATH_KEY');
 function createProxy() {
   const state = [];
@@ -485,7 +456,7 @@ function keysFromSelector(selector, opts) {
   const {
     [PATH_KEY]: path
   } = selector(createProxy());
-  const keySeparator = opts?.keySeparator ?? '.';
+  const keySeparator = opts?.keySeparator || '.';
   const nsSeparator = opts?.nsSeparator ?? ':';
   const strict = opts?.enableSelector === 'strict';
   if (path.length > 1 && nsSeparator) {
@@ -505,12 +476,12 @@ const shouldHandleAsObject = res => !isString(res) && typeof res !== 'boolean' &
 class Translator extends EventEmitter {
   constructor(services, options = {}) {
     super();
-    copy(['resourceStore', 'languageUtils', 'pluralResolver', 'interpolator', 'backendConnector', 'i18nFormat', 'utils', 'ownPostProcessors'], services, this);
+    copy(['resourceStore', 'languageUtils', 'pluralResolver', 'interpolator', 'backendConnector', 'i18nFormat', 'utils', 'postProcessors'], services, this);
     this.options = options;
     if (this.options.keySeparator === undefined) {
       this.options.keySeparator = '.';
     }
-    this.logger = baseLogger.create('translator');
+    this.logger = (services.logger || baseLogger).create('translator');
     this.checkedLoadedFor = {};
   }
   changeLanguage(lng) {
@@ -634,23 +605,24 @@ class Translator extends EventEmitter {
     }
     const handleAsObject = shouldHandleAsObject(resForObjHndl);
     const resType = Object.prototype.toString.apply(resForObjHndl);
-    if (handleAsObjectInI18nFormat && resForObjHndl && handleAsObject && !noObject.includes(resType) && !(isString(joinArrays) && Array.isArray(resForObjHndl))) {
-      if (!opt.returnObjects && !this.options.returnObjects) {
-        if (!this.options.returnedObjectHandler) {
-          this.logger.warn('accessing an object - but returnObjects options is not enabled!');
-          this.logger.once('returnedObject', 'deprecate', "accessing an object without returnObjects returns a sentence about it today; from v27 t() returns the key, as for a missing key (returnedObjectHandler can keep today's text)");
-        }
-        const r = this.options.returnedObjectHandler ? this.options.returnedObjectHandler(resUsedKey, resForObjHndl, {
-          ...opt,
-          ns: namespaces
-        }) : `key '${key} (${this.language})' returned an object instead of string.`;
-        if (returnDetails) {
-          resolved.res = r;
-          resolved.usedParams = this.getUsedParamsDetails(opt);
-          return resolved;
-        }
-        return r;
+    const isObjectHit = handleAsObjectInI18nFormat && resForObjHndl && handleAsObject && !noObject.includes(resType) && !(isString(joinArrays) && Array.isArray(resForObjHndl));
+    const objectNotReturned = isObjectHit && !opt.returnObjects && !this.options.returnObjects;
+    if (objectNotReturned && this.options.returnedObjectHandler) {
+      const r = this.options.returnedObjectHandler(resUsedKey, resForObjHndl, {
+        ...opt,
+        ns: namespaces
+      });
+      if (returnDetails) {
+        resolved.res = r;
+        resolved.usedParams = this.getUsedParamsDetails(opt);
+        return resolved;
       }
+      return r;
+    }
+    if (objectNotReturned) {
+      this.logger.warn('accessing an object - but returnObjects options is not enabled!');
+    }
+    if (isObjectHit && !objectNotReturned) {
       if (keySeparator) {
         const resTypeIsArray = Array.isArray(resForObjHndl);
         const copy = resTypeIsArray ? [] : {};
@@ -687,18 +659,19 @@ class Translator extends EventEmitter {
     } else {
       let usedDefault = false;
       let usedKey = false;
-      if (!this.isValidLookup(res) && hasDefaultValue) {
+      if (objectNotReturned) res = undefined;
+      if (!this.isValidLookup(res) && hasDefaultValue && !(objectNotReturned && shouldHandleAsObject(defaultValue))) {
         usedDefault = true;
         res = defaultValue;
       }
-      if (!this.isValidLookup(res)) {
+      if (!this.isValidLookup(res) && !(usedDefault && res === '')) {
         usedKey = true;
         res = key;
       }
       const missingKeyNoValueFallbackToKey = opt.missingKeyNoValueFallbackToKey || this.options.missingKeyNoValueFallbackToKey;
       const resForMissing = missingKeyNoValueFallbackToKey && usedKey ? undefined : res;
       const updateMissing = hasDefaultValue && defaultValue !== res && this.options.updateMissing;
-      if (usedKey || usedDefault || updateMissing) {
+      if (!objectNotReturned && (usedKey || usedDefault || updateMissing)) {
         this.logger.log(updateMissing ? 'updateKey' : 'missingKey', lng, namespace, needsPluralHandling && !updateMissing ? `${key}${this.pluralResolver.getSuffix(lng, opt.count, opt)}` : key, updateMissing ? defaultValue : res);
         if (keySeparator) {
           const fk = this.resolve(key, {
@@ -806,18 +779,21 @@ class Translator extends EventEmitter {
     const postProcess = opt.postProcess || this.options.postProcess;
     const postProcessorNames = isString(postProcess) ? [postProcess] : postProcess;
     if (res != null && postProcessorNames?.length && opt.applyPostProcessor !== false) {
-      postProcessorNames.forEach(name => {
-        if (this.logger.debug && postProcessor.processors[name] && this.ownPostProcessors && !this.ownPostProcessors.has(name)) {
-          this.logger.once(name, 'deprecate', `postProcess: '${name}' was registered with use() on another i18next instance; from v27 post-processors are per instance, so call use() with it on this instance too`);
-        }
-      });
-      res = postProcessor.handle(postProcessorNames, res, key, this.options && this.options.postProcessPassResolved ? {
+      const ppOptions = this.options?.postProcessPassResolved ? {
         i18nResolved: {
           ...resolved,
           usedParams: this.getUsedParamsDetails(opt)
         },
         ...opt
-      } : opt, this);
+      } : opt;
+      postProcessorNames.forEach(name => {
+        const processor = this.postProcessors?.[name];
+        if (!processor) {
+          this.logger.once(`postProcess:${name}`, 'warn', `postProcess: '${name}' is not registered on this i18next instance; call use() with it on this instance`);
+          return;
+        }
+        res = processor.process(res, key, ppOptions, this) ?? res;
+      });
     }
     return res;
   }
@@ -947,14 +923,16 @@ class Translator extends EventEmitter {
 }
 
 class LanguageUtil {
-  constructor(options) {
+  constructor(options, logger = baseLogger) {
     this.options = options;
     this.supportedLngs = this.options.supportedLngs || false;
-    this.logger = baseLogger.create('languageUtils');
+    this.logger = logger.create('languageUtils');
     this.resolveHierarchyCache = {};
+    this.formattedCodes = new Map();
   }
   clearCache() {
     this.resolveHierarchyCache = {};
+    this.formattedCodes.clear();
   }
   getScriptPartFromCode(code) {
     code = getCleanedCode(code);
@@ -972,34 +950,27 @@ class LanguageUtil {
     return this.formatLanguageCode(p[0]);
   }
   formatLanguageCode(code) {
-    if (isString(code) && code.includes('-')) {
-      let formattedCode;
-      try {
-        formattedCode = Intl.getCanonicalLocales(code)[0];
-      } catch (e) {}
-      if (formattedCode && this.options.lowerCaseLng) {
-        formattedCode = formattedCode.toLowerCase();
-      }
-      if (formattedCode) return formattedCode;
-      if (this.options.lowerCaseLng) {
-        return code.toLowerCase();
-      }
-      return code;
-    }
-    const formatted = this.options.cleanCode || this.options.lowerCaseLng ? code.toLowerCase() : code;
-    if (this.logger.debug && isString(code)) this.deprecateBareCode(code, formatted);
+    if (!isString(code)) return code;
+    let formatted = this.formattedCodes.get(code);
+    if (formatted !== undefined) return formatted;
+    formatted = this.formatUncached(code);
+    if (this.formattedCodes.size >= 1000) this.formattedCodes.clear();
+    this.formattedCodes.set(code, formatted);
     return formatted;
   }
-  deprecateBareCode(code, formatted) {
-    let v27;
-    try {
-      v27 = Intl.getCanonicalLocales(code)[0];
-    } catch (e) {
-      return;
+  formatUncached(code) {
+    const hasSubtags = code.includes('-');
+    if (hasSubtags || this.options.cleanCode !== false) {
+      let canonical;
+      try {
+        canonical = Intl.getCanonicalLocales(code)[0];
+      } catch (e) {}
+      if (canonical && (hasSubtags || canonical.toLowerCase() === code.toLowerCase())) {
+        return this.options.lowerCaseLng ? canonical.toLowerCase() : canonical;
+      }
+      if (canonical) return code.toLowerCase();
     }
-    if (this.options.lowerCaseLng) v27 = v27.toLowerCase();
-    if (v27 === formatted) return;
-    this.logger.once(code, 'deprecate', `language code '${code}' is used as '${formatted}'; i18next v27 canonicalizes it to '${v27}', use '${v27}' in lng, fallbackLng, supportedLngs and the resources`);
+    return this.options.lowerCaseLng || this.options.cleanCode && !hasSubtags ? code.toLowerCase() : code;
   }
   isSupportedCode(code) {
     if (this.options.load === 'languageOnly' || this.options.nonExplicitSupportedLngs) {
@@ -1110,10 +1081,10 @@ const dummyRule = {
   })
 };
 class PluralResolver {
-  constructor(languageUtils, options = {}) {
+  constructor(languageUtils, options = {}, logger = baseLogger) {
     this.languageUtils = languageUtils;
     this.options = options;
-    this.logger = baseLogger.create('pluralResolver');
+    this.logger = logger.create('pluralResolver');
     this.pluralRulesCache = {};
   }
   clearCache() {
@@ -1179,8 +1150,8 @@ const deepFindWithDefaults = (data, defaultData, key, keySeparator = '.', ignore
   return path;
 };
 class Interpolator {
-  constructor(options = {}) {
-    this.logger = baseLogger.create('interpolator');
+  constructor(options = {}, logger = baseLogger) {
+    this.logger = logger.create('interpolator');
     this.options = options;
     this.format = options?.interpolation?.format || (value => value);
     this.init(options);
@@ -1194,39 +1165,26 @@ class Interpolator {
       escapeValue,
       useRawValueToEscape,
       prefix,
-      prefixEscaped,
       suffix,
-      suffixEscaped,
       formatSeparator,
       unescapeSuffix,
       unescapePrefix,
       nestingPrefix,
-      nestingPrefixEscaped,
       nestingSuffix,
-      nestingSuffixEscaped,
       nestingOptionsSeparator,
       maxReplaces,
       alwaysFormat
     } = options.interpolation;
-    if (prefixEscaped || suffixEscaped || nestingPrefixEscaped || nestingSuffixEscaped) {
-      const names = Object.entries({
-        prefixEscaped,
-        suffixEscaped,
-        nestingPrefixEscaped,
-        nestingSuffixEscaped
-      }).filter(([, v]) => v).map(([k]) => k);
-      this.logger.once(names.join(), 'deprecate', `interpolation.${names.join(', interpolation.')}: the regex-escaped delimiter options are removed in v27; pass the literal delimiters as prefix, suffix, nestingPrefix and nestingSuffix`);
-    }
     this.escape = escape$1 !== undefined ? escape$1 : escape;
     this.escapeValue = escapeValue !== undefined ? escapeValue : true;
     this.useRawValueToEscape = useRawValueToEscape !== undefined ? useRawValueToEscape : false;
-    this.prefix = prefix ? regexEscape(prefix) : prefixEscaped || '{{';
-    this.suffix = suffix ? regexEscape(suffix) : suffixEscaped || '}}';
+    this.prefix = prefix ? regexEscape(prefix) : '{{';
+    this.suffix = suffix ? regexEscape(suffix) : '}}';
     this.formatSeparator = formatSeparator || ',';
     this.unescapePrefix = unescapeSuffix ? '' : unescapePrefix ? regexEscape(unescapePrefix) : '-';
     this.unescapeSuffix = this.unescapePrefix ? '' : unescapeSuffix ? regexEscape(unescapeSuffix) : '';
-    this.nestingPrefix = nestingPrefix ? regexEscape(nestingPrefix) : nestingPrefixEscaped || regexEscape('$t(');
-    this.nestingSuffix = nestingSuffix ? regexEscape(nestingSuffix) : nestingSuffixEscaped || regexEscape(')');
+    this.nestingPrefix = regexEscape(nestingPrefix || '$t(');
+    this.nestingSuffix = regexEscape(nestingSuffix || ')');
     this.nestingOptionsSeparator = nestingOptionsSeparator || ',';
     this.maxReplaces = maxReplaces || 1000;
     this.alwaysFormat = alwaysFormat !== undefined ? alwaysFormat : false;
@@ -1282,13 +1240,7 @@ class Interpolator {
       safeValue: val => val
     }, {
       regex: this.regexp,
-      safeValue: val => {
-        if (!this.escapeValue) return val;
-        if (this.escape === escape && this.options?.interpolation?.escapeValue !== false && isString(val) && val.includes('/')) {
-          this.logger.once('/', 'deprecate', "escapeValue renders '/' in a value as '&#x2F;' today; from v27 the default escape leaves '/' as it is");
-        }
-        return this.escape(val);
-      }
+      safeValue: val => this.escapeValue ? this.escape(val) : val
     }];
     const unescapedValues = [];
     let shift = 0;
@@ -1440,8 +1392,9 @@ const parseFormatStr = formatStr => {
     formatOptions
   };
 };
+const cachedFormattersLimit = 1000;
 const createCachedFormatter = fn => {
-  const cache = {};
+  const cache = new Map();
   return (v, l, o) => {
     let optForCache = o;
     if (o && o.interpolationkey && o.formatParams && o.formatParams[o.interpolationkey] && o[o.interpolationkey]) {
@@ -1456,10 +1409,11 @@ const createCachedFormatter = fn => {
     } catch (e) {
       return fn(getCleanedCode(l), o)(v);
     }
-    let frm = cache[key];
+    let frm = cache.get(key);
     if (!frm) {
       frm = fn(getCleanedCode(l), o);
-      cache[key] = frm;
+      if (cache.size >= cachedFormattersLimit) cache.delete(cache.keys().next().value);
+      cache.set(key, frm);
     }
     return frm(v);
   };
@@ -1474,6 +1428,7 @@ class Formatter {
   init(services, options = {
     interpolation: {}
   }) {
+    if (services?.logger?.create) this.logger = services.logger.create('formatter');
     this.formatSeparator = options.interpolation.formatSeparator || ',';
     const cf = options.cacheInBuiltFormats ? createCachedFormatter : createNonCachedFormatter;
     this.formats = {
@@ -1570,7 +1525,7 @@ class Connector extends EventEmitter {
     this.services = services;
     this.languageUtils = services.languageUtils;
     this.options = options;
-    this.logger = baseLogger.create('backendConnector');
+    this.logger = (services.logger || baseLogger).create('backendConnector');
     this.waitingReads = [];
     this.maxParallelReads = options.maxParallelReads || 10;
     this.readingCalls = 0;
@@ -1729,15 +1684,10 @@ class Connector extends EventEmitter {
       reload: true
     }, callback);
   }
-  noticeDevFallback(lng) {
-    if (lng !== 'dev' || !this.devIsDefaultFallback) return;
-    this.logger.once('dev', 'warn', "language 'dev' is requested because fallbackLng is not set (its default is ['dev']); i18next v27 defaults to fallbackLng: false and loads and saves missing keys in the requested language instead. Set fallbackLng to your source language, or to 'dev' to keep this behavior");
-  }
   loadOne(name, prefix = '') {
     const s = name.split('|');
     const lng = s[0];
     const ns = s[1];
-    this.noticeDevFallback(lng);
     this.read(lng, ns, 'read', undefined, undefined, (err, data) => {
       if (err) this.logger.warn(`${prefix}loading namespace ${ns} for language ${lng} failed`, err);
       if (!err && data) this.logger.log(`${prefix}loaded namespace ${ns} for language ${lng}`, data);
@@ -1751,7 +1701,6 @@ class Connector extends EventEmitter {
     }
     if (key === undefined || key === null || key === '') return;
     if (this.backend?.create) {
-      languages?.forEach?.(l => this.noticeDevFallback(l));
       const opts = {
         ...options,
         isUpdate
@@ -1787,7 +1736,7 @@ const get = () => ({
   initAsync: true,
   ns: ['translation'],
   defaultNS: ['translation'],
-  fallbackLng: ['dev'],
+  fallbackLng: false,
   fallbackNS: false,
   supportedLngs: false,
   nonExplicitSupportedLngs: false,
@@ -1808,7 +1757,7 @@ const get = () => ({
   postProcess: false,
   postProcessPassResolved: false,
   returnNull: false,
-  returnEmptyString: true,
+  returnEmptyString: false,
   returnObjects: false,
   joinArrays: false,
   returnedObjectHandler: false,
@@ -1853,7 +1802,38 @@ const transformOptions = options => {
 };
 
 const noop = () => {};
-let loggerOwner;
+const withDefaults = options => {
+  const defOpts = get();
+  const merged = {
+    ...defOpts,
+    ...options
+  };
+  merged.interpolation = {
+    ...defOpts.interpolation,
+    ...options.interpolation
+  };
+  if (typeof merged.overloadTranslationOptionHandler !== 'function') {
+    merged.overloadTranslationOptionHandler = defOpts.overloadTranslationOptionHandler;
+  }
+  return merged;
+};
+const configuredLanguageCodes = options => {
+  const codes = [].concat(options.supportedLngs || [], options.preload || []);
+  codes.push(...Object.keys(options.resources || {}));
+  const fallbackLng = options.fallbackLng;
+  if (isString(fallbackLng) || Array.isArray(fallbackLng)) codes.push(...[].concat(fallbackLng));else if (fallbackLng && typeof fallbackLng === 'object') {
+    Object.keys(fallbackLng).forEach(code => {
+      if (code !== 'default') codes.push(code);
+      codes.push(...[].concat(fallbackLng[code]));
+    });
+  }
+  return codes;
+};
+const isRefusedLanguageCode = (i18n, code) => {
+  if (!isString(code) || isSafeLanguageCode(code) || i18n.configuredLngs?.has(code)) return false;
+  i18n.logger.once(`lng:${code}`, 'warn', `refused the language code '${code.slice(0, 64)}' from lng, changeLanguage(), the language detector or loadLanguages(): it is not configured and has other characters than letters, digits, '-', '_', '@' and '.' (or '..', or more than 128). List it in supportedLngs to use it`);
+  return true;
+};
 const bindMemberFunctions = inst => {
   const mems = Object.getOwnPropertyNames(Object.getPrototypeOf(inst));
   mems.forEach(mem => {
@@ -1865,17 +1845,18 @@ const bindMemberFunctions = inst => {
 class I18n extends EventEmitter {
   constructor(options = {}, callback) {
     super();
-    this.options = transformOptions(options);
+    this.userOptions = transformOptions(options);
+    this.options = withDefaults(this.userOptions);
     this.services = {
-      ownPostProcessors: new Set()
+      postProcessors: Object.create(null)
     };
-    this.logger = baseLogger;
+    this.logger = new Logger(null, this.options);
     this.modules = {
       external: []
     };
     bindMemberFunctions(this);
     if (callback && !this.isInitialized && !options.isClone) {
-      if (!this.options.initAsync) {
+      if (!this.userOptions.initAsync) {
         this.init(options, callback);
         return this;
       }
@@ -1897,25 +1878,23 @@ class I18n extends EventEmitter {
         options.defaultNS = options.ns[0];
       }
     }
-    const fallbackLngIsDefault = options.fallbackLng === undefined && this.options.fallbackLng === undefined;
-    const defOpts = get();
-    this.options = {
-      ...defOpts,
+    transformOptions(options);
+    const userOptions = {
+      ...this.userOptions,
+      ...options
+    };
+    this.options = withDefaults({
       ...this.options,
-      ...transformOptions(options)
-    };
-    this.options.interpolation = {
-      ...defOpts.interpolation,
-      ...this.options.interpolation
-    };
-    if (options.keySeparator !== undefined) {
-      this.options.userDefinedKeySeparator = options.keySeparator;
+      ...options
+    });
+    if (userOptions.keySeparator !== undefined) {
+      this.options.userDefinedKeySeparator = userOptions.keySeparator;
     }
-    if (options.nsSeparator !== undefined) {
-      this.options.userDefinedNsSeparator = options.nsSeparator;
+    if (userOptions.nsSeparator !== undefined) {
+      this.options.userDefinedNsSeparator = userOptions.nsSeparator;
     }
-    if (typeof this.options.overloadTranslationOptionHandler !== 'function') {
-      this.options.overloadTranslationOptionHandler = defOpts.overloadTranslationOptionHandler;
+    if (!this.options.isClone) {
+      this.configuredLngs = new Set([...(this.configuredLngs || []), ...configuredLanguageCodes(userOptions)]);
     }
     const createClassOnDemand = ClassOrObject => {
       if (!ClassOrObject) return null;
@@ -1923,15 +1902,10 @@ class I18n extends EventEmitter {
       return ClassOrObject;
     };
     if (!this.options.isClone) {
-      if (loggerOwner && loggerOwner !== this && loggerOwner.modules.logger !== this.modules.logger) {
-        baseLogger.deprecate('init: this init() replaces the logger another i18next instance set with use(), as the logger is shared in v26; from v27 each instance keeps its own logger');
-      }
-      loggerOwner = this.modules.logger ? this : undefined;
-      if (this.modules.logger) {
-        baseLogger.init(createClassOnDemand(this.modules.logger), this.options);
-      } else {
-        baseLogger.init(null, this.options);
-      }
+      this.logger.init(createClassOnDemand(this.modules.logger), this.options);
+      const {
+        logger
+      } = this;
       this.pendingWarnings?.forEach(msg => this.logger.warn(msg));
       this.pendingWarnings = undefined;
       let formatter;
@@ -1940,27 +1914,26 @@ class I18n extends EventEmitter {
       } else {
         formatter = Formatter;
       }
-      const lu = new LanguageUtil(this.options);
-      this.store = new ResourceStore(this.options.resources, this.options);
+      const lu = new LanguageUtil(this.options, logger);
+      this.store = new ResourceStore(this.options.resources, this.options, logger);
       const s = this.services;
-      s.logger = baseLogger;
+      s.logger = logger;
       s.resourceStore = this.store;
       s.languageUtils = lu;
       s.pluralResolver = new PluralResolver(lu, {
         prepend: this.options.pluralSeparator
-      });
+      }, logger);
       if (formatter) {
         s.formatter = createClassOnDemand(formatter);
         if (s.formatter.init) s.formatter.init(s, this.options);
         this.options.interpolation.format = s.formatter.format.bind(s.formatter);
       }
-      s.interpolator = new Interpolator(this.options);
+      s.interpolator = new Interpolator(this.options, logger);
       s.utils = {
         hasLoadedNamespace: this.hasLoadedNamespace.bind(this),
         reloadResources: this.reloadResources.bind(this)
       };
       s.backendConnector = new Connector(createClassOnDemand(this.modules.backend), s.resourceStore, s, this.options);
-      s.backendConnector.devIsDefaultFallback = fallbackLngIsDefault;
       s.backendConnector.on('*', (event, ...args) => {
         this.emit(event, ...args);
       });
@@ -2100,8 +2073,7 @@ class I18n extends EventEmitter {
       setModule('i18nFormat');
     }
     if (module.type === 'postProcessor') {
-      postProcessor.addPostProcessor(module);
-      this.services.ownPostProcessors?.add(module.name);
+      this.services.postProcessors[module.name] = module;
     }
     if (module.type === 'formatter') {
       setModule('formatter');
@@ -2176,14 +2148,16 @@ class I18n extends EventEmitter {
     };
     const setLng = lngs => {
       if (!lng && !lngs && this.services.languageDetector) lngs = [];
-      const fl = isString(lngs) ? lngs : lngs && lngs[0];
-      const l = this.store.hasLanguageSomeTranslations(fl) ? fl : this.services.languageUtils.getBestMatchFromCodes(isString(lngs) ? [lngs] : lngs);
-      if (l && this.logger.debug && !isSafeLanguageCode(l)) {
-        const configured = [].concat(this.options.supportedLngs || [], this.services.languageUtils.getFallbackCodes(this.options.fallbackLng, l), this.options.preload || []);
-        if (!configured.includes(l) && !Object.prototype.hasOwnProperty.call(this.store.data, l)) {
-          this.logger.once(`lng:${l}`, 'deprecate', `changeLanguage: the language code '${l.slice(0, 64)}' comes from lng, changeLanguage() or the language detector and is not configured; from v27 such a code is refused unless it has only letters, digits, '-', '_', '@' and '.' (no '..'), at most 128 characters. Set supportedLngs, or check the code before passing it on`);
-        }
+      const {
+        supportedLngs
+      } = this.options;
+      if (lngs && !supportedLngs) {
+        const accepted = [].concat(lngs).filter(c => !isRefusedLanguageCode(this, c));
+        if (accepted.length < [].concat(lngs).length) lngs = accepted;
       }
+      const fl = isString(lngs) ? lngs : lngs && lngs[0];
+      let l = this.store.hasLanguageSomeTranslations(fl) ? fl : this.services.languageUtils.getBestMatchFromCodes(isString(lngs) ? [lngs] : lngs);
+      if (supportedLngs && isRefusedLanguageCode(this, l)) l = this.services.languageUtils.getBestMatchFromCodes([]);
       if (l) {
         if (!this.language) {
           setLngProps(l);
@@ -2298,7 +2272,7 @@ class I18n extends EventEmitter {
   }
   loadNamespaces(ns, callback) {
     const deferred = defer();
-    if (!this.options.ns) {
+    if (!this.options.ns || !this.services.backendConnector) {
       if (callback) callback();
       return Promise.resolve();
     }
@@ -2316,7 +2290,7 @@ class I18n extends EventEmitter {
     const deferred = defer();
     if (isString(lngs)) lngs = [lngs];
     const preloaded = this.options.preload || [];
-    const newLngs = lngs.filter(lng => !preloaded.includes(lng) && this.services.languageUtils.isSupportedCode(lng));
+    const newLngs = lngs.filter(lng => !preloaded.includes(lng) && !isRefusedLanguageCode(this, lng) && this.services.languageUtils.isSupportedCode(lng));
     if (!newLngs.length) {
       if (callback) callback();
       return Promise.resolve();
@@ -2365,16 +2339,15 @@ class I18n extends EventEmitter {
       }
     };
     const clone = new I18n(mergedOptions);
-    if (options.debug !== undefined || options.prefix !== undefined) {
-      clone.logger = clone.logger.clone(options);
-    }
-    const membersToCopy = ['store', 'services', 'language'];
+    clone.logger = options.debug !== undefined || options.prefix !== undefined ? this.logger.clone(options) : this.logger;
+    const membersToCopy = ['store', 'language'];
     membersToCopy.forEach(m => {
       clone[m] = this[m];
     });
     clone.services = {
       ...this.services
     };
+    clone.services.postProcessors = Object.create(this.services.postProcessors);
     clone.services.utils = {
       ...clone.services.utils,
       hasLoadedNamespace: clone.hasLoadedNamespace.bind(clone),
@@ -2391,7 +2364,7 @@ class I18n extends EventEmitter {
         return copied;
       };
       const clonedData = copyData(this.store.data);
-      clone.store = new ResourceStore(clonedData, mergedOptions);
+      clone.store = new ResourceStore(clonedData, mergedOptions, this.logger);
       clone.services.resourceStore = clone.store;
     }
     if (options.interpolation) {
@@ -2405,8 +2378,9 @@ class I18n extends EventEmitter {
         ...mergedOptions,
         interpolation: mergedInterpolation
       };
-      clone.services.interpolator = new Interpolator(mergedForInterpolator);
+      clone.services.interpolator = new Interpolator(mergedForInterpolator, this.logger);
     }
+    clone.configuredLngs = new Set([...(this.configuredLngs || []), ...configuredLanguageCodes(options)]);
     clone.translator = new Translator(clone.services, mergedOptions);
     clone.translator.on('*', (event, ...args) => {
       clone.emit(event, ...args);
