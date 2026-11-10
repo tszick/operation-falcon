@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width" /><title>
+    Model geometry review · no audio
+  </title>
+  <style>
+    body {
+      margin: 0;
+      padding: 12px;
+      background: #26343b;
+      color: #e3ebe6;
+      font: 15px system-ui;
+    }
+    nav {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    button,
+    select {
+      padding: 8px;
+      font: inherit;
+    }
+    main {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+    figure {
+      margin: 0;
+      background: #34434a;
+      border: 1px solid #65777c;
+    }
+    canvas {
+      width: 100%;
+      height: 185px;
+      display: block;
+    }
+    figcaption {
+      padding: 6px;
+    }
+    h1 {
+      font-size: 18px;
+    }
+  </style>
+  <h1>Model geometry review · no audio</h1>
+  <nav>
+    <select id="group">
+      <option value="air">Aircraft</option>
+      <option value="ground">Ground and naval</option></select
+    ><button id="prev">Previous</button><span id="status"></span><button id="next">Next</button
+    ><button id="angle">Change angle</button>
+  </nav>
+  <main></main>
+  <script type="module">
+    import { airframes } from '/src/airframes.js';
+    import { groundMesh } from '/src/groundModels.js';
+    import { renderAircraftPreview } from '/src/renderer.js';
+    const groups = {
+      air: Object.keys(airframes),
+      ground: [
+        'carrier',
+        'destroyer',
+        'city-building',
+        'ballistic-silo',
+        'ballistic',
+        'mobile-sam',
+        'mobile-jammer',
+        'drone-command',
+        'attack-drone',
+        'convoy',
+        'truck',
+        'bunker',
+        'jammer',
+        'sam-system',
+        'sam',
+        'bridge',
+        'airbase',
+        'target-range',
+      ],
+    };
+    let page = 0,
+      angle = 0;
+    const group = document.querySelector('#group'),
+      main = document.querySelector('main');
+    function draw() {
+      const ids = groups[group.value],
+        count = Math.ceil(ids.length / 12);
+      page = (page + count) % count;
+      main.replaceChildren();
+      document.querySelector('#status').textContent = `${page + 1} / ${count}`;
+      for (const id of ids.slice(page * 12, page * 12 + 12)) {
+        const figure = document.createElement('figure'),
+          caption = document.createElement('figcaption'),
+          canvas = document.createElement('canvas');
+        caption.textContent = id;
+        figure.append(caption, canvas);
+        main.append(figure);
+        renderAircraftPreview(
+          canvas,
+          { id },
+          angle,
+          group.value === 'air' ? null : groundMesh(id),
+          'surface',
+          { decorations: false },
+        );
+      }
+    }
+    group.onchange = () => {
+      page = 0;
+      draw();
+    };
+    document.querySelector('#prev').onclick = () => {
+      page--;
+      draw();
+    };
+    document.querySelector('#next').onclick = () => {
+      page++;
+      draw();
+    };
+    document.querySelector('#angle').onclick = () => {
+      angle += 4;
+      draw();
+    };
+    addEventListener('resize', draw);
+    draw();
+  </script>
+</html>
