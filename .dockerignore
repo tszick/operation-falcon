@@ -1,0 +1,14 @@
+# Only runtime files and dependency manifests enter the build context.
+**
+!Dockerfile
+!package.json
+!package-lock.json
+!server.mjs
+!*.html
+!*.css
+!server/
+!server/**
+!src/
+!src/**
+!assets/
+!assets/**
