@@ -1,3 +1,7 @@
+import { MarkerLabelLayout } from './rendering/markerLabelLayout.js';
+import { AircraftShadows } from './rendering/aircraftShadows.js';
+import { HudGlassLayer } from './rendering/hudGlassLayer.js';
+import { cabinEyeOffset } from './cockpitInteriorGeometry.js';
 import { catalogLabel, equipmentLabel } from './equipmentCatalog.js';
 import { windHudReadout } from './flightEnvironment.js';
 import { getRefuellingRoute } from './refuellingRoute.js';
@@ -21,7 +25,12 @@ import { formatCallSign } from './airSuperiority.js';
 import { renderCanyonCourse } from './canyonTraining.js';
 import { silhouetteIndices } from './modelDetail.js';
 import { visibleMeshEdges } from './hiddenLines.js';
-import { cockpitHudFooterY } from './cockpitGeometry.js';
+import {
+  cockpitHudFooterY,
+  hudTapeSpan,
+  hudViewTransform,
+  hudSourcePoint,
+} from './cockpitGeometry.js';
 import { renderTerrainSurface, prepareInitialTerrain } from './terrainSurface.js';
 import { getLandingRoute, renderLandingRoute } from './landingRoute.js';
 import { enemyAircraft } from './enemies.js';
@@ -54,6 +63,7 @@ export class Renderer {
   constructor(canvas, { backgroundTerrain = false } = {}) {
     this.backgroundTerrain = backgroundTerrain;
     this.canvas = canvas;
+    this.hudGlass = new HudGlassLayer(canvas);
     this.ctx = drawingContext(canvas);
     this.gpuModels = createBackend(this.ctx);
     this.ready = this.ctx.surface
@@ -303,6 +313,20 @@ export class Renderer {
           .sort((a, b) => b.faces - a.faces)
           .slice(0, 4),
       };
+    const shadowData = this.aircraftShadowData;
+    for (let i = 0; i < (shadowData?.length || 0); i += 12) {
+      const points = [0, 4, 8].map((j) =>
+        new Vec3(shadowData[i + j], shadowData[i + j + 1], shadowData[i + j + 2]).add(this.camera),
+      );
+      if (points.some((p) => !this.worldVisible(p))) continue;
+      const polygon = projectFeaturePolygon(this, points);
+      if (polygon.length < 3) continue;
+      fills.push({
+        ids: polygon.map((p) => screen.push(p) - 1),
+        depth: polygon.reduce((n, p) => n + p.depth, 0) / polygon.length,
+        color: `rgba(0,0,0,${(shadowData[i + 3] + shadowData[i + 7] + shadowData[i + 11]) / 3})`,
+      });
+    }
     fills.sort((a, b) => b.depth - a.depth);
     for (const face of fills) {
       c.beginPath();
@@ -339,6 +363,7 @@ export class Renderer {
       starLevel = surfaceStyle(this.surfaceMode).stars;
     if (!starLevel) return;
     for (const star of this.stars) {
+      if (this.nightSkyPainted && star.brightness < 0.66) continue;
       const p = projectStar(star, this, this.w, this.h, this.focal);
       if (!p || starOccluded(star.direction, this.camera, terrainHeight)) continue;
       const opacity = starLevel * star.brightness * Math.min(1, 0.35 + star.direction.y * 3);
@@ -473,7 +498,7 @@ export class Renderer {
     label,
     color = '#baf37d',
     locked = false,
-    { offscreenLabel = false, literalLabel = false } = {},
+    { offscreenLabel = false, literalLabel = false, labelId = null } = {},
   ) {
     if (this.cinematic) return;
     const c = this.ctx,
@@ -496,7 +521,7 @@ export class Renderer {
       }
       c.font = 'bold 12px Consolas,monospace';
       c.textAlign = 'center';
-      this.markerLabel(label, x, y - 22, literalLabel);
+      this.markerLabel(label, x, y - 22, literalLabel, labelId);
       return screen;
     }
     const local = this.local(p),
@@ -516,10 +541,10 @@ export class Renderer {
     c.fillStyle = color;
     c.font = 'bold 12px Consolas,monospace';
     c.textAlign = 'center';
-    if (offscreenLabel) this.markerLabel(label, x, y + 25, literalLabel);
+    if (offscreenLabel) this.markerLabel(label, x, y + 25, literalLabel, labelId);
     return null;
   }
-  markerLabel(label, x, y, literalLabel = false) {
+  markerLabel(label, x, y, literalLabel = false, labelId = null) {
     if (!label) return;
     const c = this.ctx,
       renderedLabel = literalLabel ? label : tr(label),
@@ -529,24 +554,17 @@ export class Renderer {
       top = 45,
       bottom = cockpitHudFooterY(this.w, this.h) - 12,
       used = this.markerLabels || (this.markerLabels = []);
-    let py = clamp(y, top, bottom);
-    for (let step = 0; step < 40; step++) {
-      const candidate = clamp(y - step * 16, top, bottom),
-        rect = { left: px - half, right: px + half, top: candidate - 12, bottom: candidate + 4 };
-      if (
-        used.every(
-          (r) =>
-            rect.right < r.left ||
-            rect.left > r.right ||
-            rect.bottom < r.top ||
-            rect.top > r.bottom,
-        )
-      ) {
-        py = candidate;
-        used.push(rect);
-        break;
-      }
-    }
+    this.markerLayout ??= new MarkerLabelLayout();
+    const py = this.markerLayout.place(
+      labelId ?? label,
+      px,
+      y,
+      width,
+      top,
+      bottom,
+      used,
+      this.markerFrameTime ?? performance.now(),
+    );
     c.strokeStyle = '#071014';
     c.lineWidth = 3.5;
     c.lineJoin = 'round';
@@ -602,6 +620,11 @@ export class Renderer {
     c.stroke();
   }
   render(s, targets, weapons, aim) {
+    this.markerLabels = [];
+    this.markerFrameTime = performance.now();
+    this.markerLayout?.beginFrame(this.markerFrameTime);
+    this.hudGlass?.hide();
+    this.aircraftShadowData = null;
     this.terrainFrameMs = 0;
     this.terrainRebuilt = false;
     const c = this.ctx,
@@ -655,8 +678,10 @@ export class Renderer {
           .add(up(s.orientation).scale(Math.sin(s.elapsed * 31) * shake * 0.12));
       }
     }
-    if (!wreck && !rear && !this.thirdPerson && !this.cinematic && this.headLook)
+    if (!wreck && !rear && !this.thirdPerson && !this.cinematic && this.headLook) {
       cameraQ = this.headLook.orientation(s.orientation);
+      camera.add(s.orientation.rotate(new Vec3(...cabinEyeOffset(this.headLook.pitch))));
+    }
     if (
       !wreck &&
       !this.cinematic &&
@@ -687,7 +712,6 @@ export class Renderer {
     renderEnvironmentSky(this);
     if (this.debugMetrics) this.skyMs = performance.now() - skyStart;
     this.worldOcclusion = false;
-    this.skyStars();
     if (!this.gpuModels?.renderHorizon(this, true)) this.groundHorizon();
     this.terrain(targets);
     const featureStart = performance.now();
@@ -710,7 +734,13 @@ export class Renderer {
       const transport = targets.find((t) => t.playerControlled);
       if (transport && !transport.exited) {
         const exit = transportExitPosition(transport);
-        this.marker(exit, `KIJÁRAT ${(s.position.distance(exit) / 1000).toFixed(1)} KM`, '#8ccbe3');
+        this.marker(
+          exit,
+          `KIJÁRAT ${(s.position.distance(exit) / 1000).toFixed(1)} KM`,
+          '#8ccbe3',
+          false,
+          { labelId: 'transport-exit' },
+        );
       }
     }
     renderCityVisuals(this, targets);
@@ -778,9 +808,23 @@ export class Renderer {
         s.condition,
         'aircraft',
       );
+    this.shadowLayer ??= new AircraftShadows();
+    const shadowEntries = this.meshQueue.filter((e) => e.material === 'aircraft');
+    if (!this.thirdPerson && !wreck && !this.cinematic)
+      shadowEntries.push({
+        mesh: aircraftMesh(s.spec.id),
+        position: s.position,
+        q: s.orientation,
+        scale: 1,
+        condition: s.condition,
+      });
+    this.aircraftShadowData = this.shadowLayer.build(
+      this,
+      shadowEntries,
+      targets.filter((t) => t.type === 'carrier' && t.alive),
+    );
     this.flushMeshes();
     renderRunwayLightGlows(this);
-    this.markerLabels = [];
     if (!this.cinematic) renderCanyonCourse(this, s);
     const friendlyFighters = targets.filter((t) => t.team === 'ally' && t.type === 'fighter');
     for (const t of this.cinematic ? [] : targets) {
@@ -828,7 +872,7 @@ export class Renderer {
                 ? '#ff9875'
                 : '#92a08a',
           locked,
-          { literalLabel: !!t.multiplayerPilot },
+          { literalLabel: !!t.multiplayerPilot, labelId: t.id },
         );
       }
     }
@@ -839,6 +883,8 @@ export class Renderer {
         center,
         `VÁROS ${Math.round((city.filter((t) => t.alive).length / city.length) * 100)}%`,
         '#64d7ff',
+        false,
+        { labelId: 'city' },
       );
     }
     if (
@@ -855,7 +901,7 @@ export class Renderer {
         `${s.recoveryExit ? 'KIVONULÁS' : s.airfield?.carrier ? 'ANYAHAJÓ' : 'BASE'} ${(s.position.distance(s.recoveryExit || s.airfield?.position || new Vec3()) / 1000).toFixed(1)} KM`,
         '#baf37d',
         false,
-        { offscreenLabel: true },
+        { offscreenLabel: true, labelId: 'home-base' },
       );
     const effectsStart = this.debugMetrics ? performance.now() : 0;
     renderWeapons(this, s, weapons);
@@ -900,21 +946,27 @@ export class Renderer {
         c.stroke();
       }
     }
-    const nose =
-      !this.thirdPerson && this.headLook?.active
-        ? this.project(s.position.clone().add(forward(s.orientation).scale(1500)))
-        : { x: w * 0.5, y: h * 0.53 };
-    if (
-      nose &&
-      Math.abs(this.headLook?.yaw || 0) < 75 * DEG &&
-      Math.abs(this.headLook?.pitch || 0) < 60 * DEG
-    ) {
-      this.hudOffset = { x: nose.x - w * 0.5, y: nose.y - h * 0.53 };
-      c.save();
-      c.translate(this.hudOffset.x, this.hudOffset.y);
-      this.hud(s, weapons, aim, jammed);
-      c.restore();
-      this.hudOffset = null;
+    const yaw = this.thirdPerson ? 0 : this.headLook?.yaw || 0,
+      pitch = this.thirdPerson ? 0 : this.headLook?.pitch || 0;
+    const hudTransform = hudViewTransform(w, h, yaw, pitch, cabinEyeOffset(pitch));
+    this.hudTransform = hudTransform;
+    try {
+      this.hudGlass.render(
+        w,
+        h,
+        hudTransform,
+        (context) => {
+          this.ctx = context;
+          try {
+            this.hud(s, weapons, aim, jammed);
+          } finally {
+            this.ctx = c;
+          }
+        },
+        1 - clamp((s.g - 6) * 0.09, 0, 0.65),
+      );
+    } finally {
+      this.hudTransform = null;
     }
     if (s.g > 6) {
       c.fillStyle = `rgba(8,8,8,${clamp((s.g - 6) * 0.09, 0, 0.65)})`;
@@ -956,7 +1008,7 @@ export class Renderer {
       a = attitude(s.orientation),
       cx = w * 0.5,
       cy = h * 0.53,
-      span = Math.min(210, w * 0.2);
+      span = hudTapeSpan(w);
     c.strokeStyle = '#baf37d';
     c.fillStyle = '#baf37d';
     c.font = '12px Consolas,monospace';
@@ -968,7 +1020,7 @@ export class Renderer {
       cx - span + 35,
       Math.max(180, cy - 150),
       span * 2 - 70,
-      Math.min(300, h - 90 - Math.max(180, cy - 150)),
+      Math.min(300, cockpitHudFooterY(w, h) - 24 - Math.max(180, cy - 150)),
     );
     c.clip();
     c.translate(cx, cy);
@@ -1000,8 +1052,7 @@ export class Renderer {
     c.stroke();
     const fp = this.project(s.position.clone().add(s.velocity.clone().normalize().scale(1500)));
     if (!jammed && fp && s.speed > 10) {
-      fp.x -= this.hudOffset?.x || 0;
-      fp.y -= this.hudOffset?.y || 0;
+      if (this.hudTransform) Object.assign(fp, hudSourcePoint(this.hudTransform, fp));
       c.beginPath();
       c.arc(fp.x, fp.y, 8, 0, Math.PI * 2);
       c.moveTo(fp.x - 16, fp.y);
@@ -1022,7 +1073,7 @@ export class Renderer {
       for (let i = -3; i <= 3; i++) {
         const tick = Math.floor(value / increment) * increment + i * increment,
           y = cy - (tick - value) * (side < 0 ? 1 : 0.5);
-        if (tick < 0 || y < 180 || y > h - 100) continue;
+        if (tick < 0 || y < 180 || y > cockpitHudFooterY(w, h) - 20) continue;
         c.beginPath();
         c.moveTo(x - side * 25, y);
         c.lineTo(x - side * 15, y);
@@ -1063,7 +1114,7 @@ export class Renderer {
       cockpitHudFooterY(w, h),
     );
     const wind = windHudReadout(s),
-      wx = Math.max(28, cx - span - 220),
+      wx = cx - span - 30,
       wy = cockpitHudFooterY(w, h) + 20;
     c.save();
     c.font = '11px Consolas,monospace';
@@ -1092,20 +1143,10 @@ export class Renderer {
       cockpitHudFooterY(w, h) + 20,
     );
     c.textAlign = 'center';
-    if (!this.thirdPerson) {
-      c.strokeStyle = '#4b6546';
-      c.lineWidth = 3;
-      c.beginPath();
-      c.moveTo(0, h);
-      c.lineTo(w * 0.18, h * 0.88);
-      c.lineTo(w * 0.32, h * 0.85);
-      c.moveTo(w, h);
-      c.lineTo(w * 0.82, h * 0.88);
-      c.lineTo(w * 0.68, h * 0.85);
-      c.stroke();
-    }
   }
+
   idle(time) {
+    this.hudGlass?.hide();
     const c = this.ctx;
     c.fillStyle = '#071211';
     c.fillRect(0, 0, this.w, this.h);

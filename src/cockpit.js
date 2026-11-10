@@ -1,3 +1,4 @@
+import { cabinEyeOffset } from './cockpitInteriorGeometry.js';
 import { mountCockpitInterior, updateCockpitInterior } from './rendering/cockpitInterior.js';
 import { tr, trHtml } from './i18n.js';
 import { cockpitHeight, cockpitProjection } from './cockpitGeometry.js';
@@ -103,7 +104,7 @@ export function updateCockpitView(root, width, height, head) {
   const key = `${width}:${height}:${yaw.toFixed(4)}:${pitch.toFixed(4)}`;
   if (root.dataset.view === key) return;
   root.dataset.view = key;
-  const matrix = cockpitProjection(width, height, yaw, pitch);
+  const matrix = cockpitProjection(width, height, yaw, pitch, cabinEyeOffset(pitch));
   root.style.transform = `matrix3d(${matrix.join(',')})`;
   updateCockpitInterior(
     root.parentElement?.querySelector('#cockpit-interior'),

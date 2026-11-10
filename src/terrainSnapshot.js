@@ -52,10 +52,15 @@ export function readTerrainSnapshot(value) {
     airfields: list(input.airfields, (p) => fields(p, 'x z elevation heading')),
     islands: list(input.islands, (p) => {
       const island = fields(p, 'x z radiusX radiusZ radius heading height phase plateau');
-      if (p.landColor !== undefined) {
-        island.landColor = list(p.landColor, number, 3);
-        if (island.landColor.length !== 3) throw new TypeError('Invalid island colour');
+      if (p.rocky !== undefined) {
+        if (typeof p.rocky !== 'boolean') throw new TypeError('Invalid rocky surface flag');
+        island.rocky = p.rocky;
       }
+      for (const key of ['landColor', 'baseColor'])
+        if (p[key] !== undefined) {
+          island[key] = list(p[key], number, 3);
+          if (island[key].length !== 3) throw new TypeError('Invalid island colour');
+        }
       return island;
     }),
     site: input.site == null ? null : fields(input.site, 'x z height'),

@@ -31,7 +31,8 @@ void main(){if(canopyKind>0.0&&canopyElevation<0.75)discard;if(depthOnly){outCol
  vec3 normal=normalize(cross(dFdx(worldPosition),dFdy(worldPosition)));float slope=1.0-abs(normal.y);
  float rock=smoothstep(0.12,0.58,slope)*climate.x;
  float snow=climate.y*smoothstep(climate.z,climate.z+climate.w,worldPosition.y)*(1.0-smoothstep(0.25,0.68,slope));
- vec3 base=mix(groundColor,rockColor,rock);base=mix(base,vec3(0.89,0.92,0.95),snow);
+ float granite=smoothstep(0.34,0.65,slope)*smoothstep(650.0,1200.0,worldPosition.y);
+ vec3 base=mix(mix(groundColor,rockColor,rock),vec3(0.4,0.42,0.44),granite);base=mix(base,vec3(0.89,0.92,0.95),snow);
  vec2 landUV=worldPosition.xz/farmlandExtent+0.5;
  vec4 field=texture(farmlandMap,clamp(landUV,vec2(0.0),vec2(1.0)));
  ivec2 atlasSize=textureSize(farmlandMap,0);

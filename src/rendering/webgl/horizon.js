@@ -28,9 +28,13 @@ export function horizonImage() {
 const vertex = `#version 300 es
 void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_Position=vec4(p*2.0-1.0,0.0,1.0);}`;
 const fragment = `#version 300 es
-precision highp float;uniform sampler2D panorama;uniform bool textured;uniform bool ocean;uniform vec3 haze;uniform float daylight;uniform mat3 basis;uniform vec3 screen;uniform float depression;uniform vec2 elevationRange;out vec4 outColor;
+precision highp float;uniform sampler2D panorama;uniform bool textured;uniform bool ocean;uniform bool night;uniform vec3 haze;uniform float daylight;uniform mat3 basis;uniform vec3 screen;uniform float depression;uniform vec2 elevationRange;out vec4 outColor;
 void main(){vec3 ray=basis*vec3((gl_FragCoord.x-screen.x*0.5)/screen.z,(gl_FragCoord.y-screen.y*0.47)/screen.z,1.0);
  float turn=fract(atan(ray.x,ray.z)/6.28318530718+1.0),u=1.0-abs(2.0*turn-1.0),v=(atan(ray.y,length(ray.xz))+depression-elevationRange.x)/elevationRange.y;
+ if(night){float alpha=smoothstep(0.0,0.08,normalize(ray).y);vec2 uv=vec2(turn,0.5+asin(clamp(normalize(ray).y,-1.0,1.0))/3.14159265359),texel=2.0/vec2(textureSize(panorama,0));vec3 stars=texture(panorama,uv).rgb;
+ stars=min(stars,texture(panorama,uv+vec2(texel.x,0)).rgb);stars=min(stars,texture(panorama,uv-vec2(texel.x,0)).rgb);
+ stars=min(stars,texture(panorama,uv+vec2(0,texel.y)).rgb);stars=min(stars,texture(panorama,uv-vec2(0,texel.y)).rgb);
+ outColor=vec4(stars*alpha*0.75,alpha);return;}
  if(ocean){
   // World-space horizon follows pitch and bank; periodic detail has no wrap seam.
   float e=atan(ray.y,length(ray.xz))+depression;
@@ -67,6 +71,7 @@ export class GpuHorizon {
     this.locations = {};
     for (const name of [
       'ocean',
+      'night',
       'textured',
       'haze',
       'daylight',
@@ -87,12 +92,13 @@ export class GpuHorizon {
     g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE);
     g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE);
   }
-  render(r) {
+  render(r, night = false) {
     const g = this.gl,
       l = this.locations;
     g.useProgram(this.program);
     const style = surfaceStyle(r.surfaceMode);
     g.uniform1i(l.ocean, r.surfaceMode === 'ocean');
+    g.uniform1i(l.night, night);
     g.uniform1i(l.textured, !!r.surfaceMode && r.surfaceMode !== 'vector');
     g.uniform1f(l.daylight, style.light);
     g.uniform3fv(

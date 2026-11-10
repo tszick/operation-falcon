@@ -66,7 +66,8 @@ test('Aster Island uses three waves of three 3+1 flights, with one human seat an
         assert.equal(x.s.airfield, undefined);
         assert.ok(x.s.recoveryExit);
       }
-      assert.equal(terrainWorld.islands.length, 1);
+      assert.equal(terrainWorld.islands.filter((i) => !i.rocky).length, 1);
+      assert.equal(terrainWorld.islands.filter((i) => i.rocky).length, 3);
       assert.equal(x.targets.filter((t) => t.type === 'airbase').length, 1);
       assert.equal(x.by('EAST-AIRFIELD'), undefined);
       assert.equal(terrainHeight(-45000, 17000), 0);

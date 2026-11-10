@@ -1,4 +1,4 @@
-import { equipmentLabel } from './equipmentCatalog.js';
+import { targetTypeLabel } from './targetPresentation.js';
 import { tr, trHtml } from './i18n.js';
 import { tailGunStatus } from './tailGunnery.js';
 import { afterburnerStatus } from './engineState.js';
@@ -233,7 +233,7 @@ export function updateHUD(s, targets, weapons, aim, mission, muted, presentation
     : mission.spec.objective === 'landing'
       ? 'LESZÁLLÁSI GYAKORLAT · BASE'
       : selected?.visible
-        ? `${equipmentLabel(selected.target, { compact: true }).toUpperCase()} · ${(selected.distance / 1000).toFixed(1)} KM · ${aim.locked ? 'BEFOGVA' : lock.state === 'acquiring' ? 'BEFOGÁS' : 'KIJELÖLVE'}`
+        ? `${targetTypeLabel(selected.target).toUpperCase()} · ${(selected.distance / 1000).toFixed(1)} KM · ${aim.locked ? 'BEFOGVA' : lock.state === 'acquiring' ? 'BEFOGÁS' : 'KIJELÖLVE'}`
         : mission.spec.objective === 'escort' && mission.objectiveComplete
           ? 'CIVIL TÁVOZOTT · RTB'
           : mission.civilIntercepted

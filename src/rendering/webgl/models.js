@@ -1,3 +1,5 @@
+import { GpuShadows } from './shadows.js';
+import { skyTexture } from '../../skyTextures.js';
 import { SurfaceTextures } from './textures.js';
 import { createShaderProgram } from './shaderProgram.js';
 import { GpuFeatures } from './features.js';
@@ -59,8 +61,10 @@ export class GpuModels {
       this.terrain = null;
       this.terrainKey = null;
       this.terrainPainter = null;
+      this.shadowPainter = null;
       this.terrainUnavailable = false;
       this.horizonPainter = null;
+      this.nightPainter = null;
       this.horizonUnavailable = false;
       this.featurePainter = null;
       this.featuresUnavailable = false;
@@ -227,6 +231,16 @@ export class GpuModels {
     g.disable(g.CULL_FACE);
     g.disable(g.POLYGON_OFFSET_FILL);
   }
+  renderNightSky(r) {
+    if (this.lost || this.gl.isContextLost()) return false;
+    const image = skyTexture('night');
+    if (!image) return false;
+    this.nightPainter ??= new GpuHorizon(this.gl, image);
+    this.prepare(r);
+    this.nightPainter.render(r, true);
+    r.ctx.drawImage(this.canvas, 0, 0, r.w, r.h);
+    return true;
+  }
   renderHorizon(r, defer = false) {
     this.deferEnvironment = defer;
     this.pendingHorizon = null;
@@ -382,6 +396,10 @@ export class GpuModels {
       );
       g.bindBuffer(g.ELEMENT_ARRAY_BUFFER, wire ? data.edges : data.details);
       g.drawElements(g.LINES, wire ? data.edgeCount : data.detailCount, g.UNSIGNED_INT, 0);
+    }
+    if (r.aircraftShadowData?.length) {
+      this.shadowPainter ??= new GpuShadows(g);
+      this.shadowPainter.render(r, r.aircraftShadowData);
     }
     g.depthMask(true);
     r.ctx.drawImage(this.canvas, 0, 0, r.w, r.h);

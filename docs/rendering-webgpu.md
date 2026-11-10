@@ -1,6 +1,6 @@
 # WebGPU-megjelenítés
 
-A böngészős alkalmazás alapértelmezett grafikus megvalósítása WebGPU. A 3D világ, a HUD, a műszerfal, a radar, az effektek, a modell-előnézetek és a napló grafikonja ugyanazon eszközt használó GPU-felületekre rajzolódik.
+A böngészős alkalmazás alapértelmezett grafikus megvalósítása WebGPU. A 3D világ, az effektek és a modell-előnézetek WebGPU-felületekre rajzolódnak. A kabint SVG-geometria, a műszerfalat natív SVG/HTML, a radart és a HUD-üveg kijelzését natív Canvas2D jeleníti meg; a böngésző komponálja a rétegeket.
 
 ## Felépítés
 
@@ -8,7 +8,9 @@ A böngészős alkalmazás alapértelmezett grafikus megvalósítása WebGPU. A 
 - `src/rendering/webgl/`: a korábbi WebGL2-megvalósítás összehasonlításhoz.
 - `src/rendering/shared/`: közös geometria-előkészítés, textúrapixelek és 2D alakzatok.
 - `src/rendering/createBackend.js`: megvalósítás- és rajzolófelület-választás.
-- `src/rendering/flightInstrumentLayer.js`: a műszerfal látható GPU-rétege. A HTML-elemek az elrendezést, a bemeneti eseményeket és az akadálymentes szemantikát őrzik; a repülési felület látható képe GPU-n készül. A menük, dialógusok és dokumentumoldalak HTML-felületek maradnak.
+- `src/rendering/flightInstrumentLayer.js`: a műszerfal natív SVG/HTML-rétegének kamerakövetése; nincs DOM-kép visszaolvasás vagy panelenkénti GPU-raszterizálás.
+- `src/rendering/hudGlassLayer.js`: megtartott, átlátszó Canvas2D-kijelző a HUD-üvegével közös térbeli síkon; CSS `matrix3d` és a közös üveggeometria biztosítja a perspektívát és a tartalom levágását.
+- `src/rendering/aircraftShadows.js`: egyszerűsített, talajra vetített gépsziluettek; a WebGPU/WebGL mélységvizsgálata takarja a más objektumok mögötti részeket. 100 m AGL-ig teljes erősségűek, 200 m-ig eltűnnek; éjszaka kikapcsolnak.
 
 A `renderer.js`, a terep-/modelladatok, a fizika és a játékszabályok közösek. A korábbi `gpuModels.js`, `gpuTerrain.js`, `gpuFeatures.js`, `horizon.js` és `graphics/shaderProgram.js` útvonalak kompatibilis exportfelületek, nem második implementációk.
 
@@ -19,7 +21,7 @@ A `renderer.js`, a terep-/modelladatok, a fizika és a játékszabályok közös
 - `/?backend=webgl`: WebGL2 és a korábbi Canvas/DOM-kép összehasonlításhoz.
 - `/?backend=cpu`: a korábbi Canvas2D-megjelenítés.
 
-Ugyanezek a paraméterek használhatók a diagnosztikai HTML-oldalakon. A natív WebGPU-útvonal nem kér Canvas2D- vagy WebGL-kontextust. A 2D rajzolási műveletek közös, szűk felületét a WebGPU-megvalósítás háromszögekké, textúrázott glyph-ekké és GPU-parancsokká alakítja; nincs Canvas-kép átmásolása a GPU-ra. A betűatlaszt SVG-kép dekódolása készíti, Canvas2D nélkül.
+Ugyanezek a paraméterek használhatók a diagnosztikai HTML-oldalakon. A 3D megjelenítő nem kér WebGL-kontextust; a külön HUD- és radarrétegek engedélyezett natív Canvas2D-kontextust használnak. A 2D rajzolási műveletek közös, szűk felületét a WebGPU-megvalósítás háromszögekké, textúrázott glyph-ekké és GPU-parancsokká alakítja; nincs Canvas-kép átmásolása a GPU-ra. A betűatlaszt SVG-kép dekódolása készíti, Canvas2D nélkül.
 
 ## Életciklus
 
@@ -29,16 +31,16 @@ A felületek négymintás élsimítást, külön mélységi textúrát és tart�
 
 A változó modellgeometria korábbi változatai felszabadulnak; a terep- és útpufferek csak kulcsváltáskor épülnek újra. A modellek határolóadatai gyorsítótárazottak, a uniform adatok feltöltése újrahasznált CPU-pufferből történik. A színátmenetek cache-e korlátos.
 
-A műszerfal a fő kép fizikai felbontásán készül, azonos pixelsűrűséggel. Panelenként megtartott GPU-geometriát használ; csak a tényleges DOM-változások érvénytelenítik a panelt. A változatlan értékre ismételt attribútumírások nem okoznak újrafestést. A frissítések képkockák között oszlanak el, körönként 3 ms-os előkészítési kerettel (egy panel előkészítése és a GPU-parancsok kiadása túllépheti ezt). Az első kép teljesen felépül, a későbbi panelek legfeljebb néhány képkockával késhetnek. A változó paneleknél is újrahasználjuk a GPU-puffereket.
+A műszerfal élő HTML/SVG-szöveget használ; a kameratranszformációhoz nem mérjük vissza a DOM pixeleit. A HUD vászon csak átméretezéskor kap új méretet; képkockánként az értékek és a teljes perspektívamátrix frissülnek. A célkeretek és a világban vetített bombacélzó nem kapnak külön szövegpozíció-simítást.
 
-Az üzenetek szöveggeometriája külön gyorsítótárazott. A CSS-átmenetek pozícióját és átlátszóságát minden képkockán követi; a 10 Hz-es műszeradat-frissítés nem korlátozza az animációt. Az üzenetek a saját csatornájuk területére vannak vágva. A beállítás- és nyelvváltásokat a meglévő adatmodell kezeli.
+A feliratok ütközéskezelése stabil célazonosítónként megőrzi a függőleges eltolást, és hiszterézissel, sebességkorlátozással vált sort. Az üzeneteket és az egyéb natív felületeket a böngésző animálja.
 
 ## Ellenőrzés
 
 - `/tests/webgpu-diagnostics.html`: adapter és eszköz ellenőrzése.
 - `/tests/webgpu-shaders.html`: a WGSL-modulok fordítási diagnosztikája.
 - `/tests/graphics-regression.html?backend=webgpu&mission=landing&lang=en`: rögzített, hang és fizikai időlépés nélküli teljes műszerfal. Ugyanez `backend=webgl` paraméterrel referenciakép. Magyarul `lang=hu`. Tengeri próba: `mission=carrier-defense`.
-- A regressziós oldal WebGPU-módban hibát dob, ha a kód `2d` vagy `webgl2` kontextust kér. Az állapotmező megmutatja az API-kat és a GPU-validációs hibákat.
+- A regressziós oldal WebGPU-módban hibát dob, ha a 3D réteg `2d` vagy `webgl2` kontextust kér; csak a kifejezetten natívként jelölt műszervásznak kivételek. Az állapotmező megmutatja az API-kat és a GPU-validációs hibákat.
 - Terhelési mérés: `/tests/graphics-regression.html?mission=carrier-defense&lang=hu&contacts=24&benchmark=1`. A fizika áll, 24 további repülőgép látható; 60 bemelegítő és 240 mért képkocka után CPU-időket és képkockaközöket ír ki (medián, p95, maximum). Nem GPU-időmérés vagy teljes szimulációs FPS-benchmark. A `hostile=1` ellenséges gépsablont választ, a `messages=1` ismétlődő rádióüzenetekkel teszteli a beúszást és elhalványulást. Összevetéskor ezek a paraméterek is egyezzenek.
 - `/tests/surface-preview.html?backend=webgpu`: közel/távol, modellek, város és tájpaletták.
 - `/tests/horizon-conformance.html?backend=webgpu`: önálló horizont, azonos kamerával; WebGL-referenciához `backend=webgl`.

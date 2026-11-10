@@ -102,7 +102,11 @@ Az ütemezések a workflow-fájlok **alapértelmezett ágra történő feltölt�
 - [Vulnerabilitás bejelentése](.github/SECURITY.md)
 - [Archivált fejlesztési feljegyzések](docs/archive/development-notes.md)
 
-A WebGPU böngésző-API; működő adapterhez támogatott böngésző és grafikus illesztőprogram kell. A korábbi WebGL2/Canvas-változat `?backend=webgl`, a Canvas2D-változat `?backend=cpu` paraméterrel érhető el összehasonlításhoz. Az alapértelmezett WebGPU-útvonal nem kér Canvas2D- vagy WebGL-kontextust. Részletek és vizuális tesztoldalak: [WebGPU-megjelenítés](docs/rendering-webgpu.md).
+A WebGPU böngésző-API; működő adapterhez támogatott böngésző és grafikus illesztőprogram kell. A korábbi WebGL2/Canvas-változat `?backend=webgl`, a Canvas2D-változat `?backend=cpu` paraméterrel érhető el összehasonlításhoz. A 3D világ WebGPU-t használ; a térbeli HUD-üveget natív, átlátszó Canvas2D-réteg, a műszerfalat SVG/HTML jeleníti meg. Ezeket a böngésző komponálja össze, pixel-visszaolvasás nélkül. Részletek és vizuális tesztoldalak: [WebGPU-megjelenítés](docs/rendering-webgpu.md).
+
+A szürke vektoros kabin lefelé nézéskor folyamatos, enyhe előre/felfelé hajlást követ: a bombacélzó a műszerfal fölött jobban látható, a padló és oldalfalak továbbra is takarnak. A kabin, a műszerfal és a világ ugyanazt a szemhelyzetet használja.
+
+A felhők helyi, átlátszó PNG-textúrával jelennek meg; az éjszakai WebGPU/WebGL égbolt világirányhoz rögzített Tejút-panorámát használ. A képek egyszer töltődnek be, játék közben nincs képgenerálás vagy külső képszolgáltatás. A textúrák eredete és generálási leírása: [égbolttextúrák](assets/environment/sky-textures.md). Az Aster-sziget belsejében három szürke sziklacsúcs emelkedik; más szárazföldi bevetéseken véletlenszerű sziklatömbök jelenhetnek meg a védett reptéri folyosókon kívül.
 
 ## Nyelvek
 
@@ -413,3 +417,5 @@ használnak, a tényleges rajvezérhez és annak repülési irányához képest.
 rajoknál az oldalak is a saját irányuk szerint tükröződnek. A követők külön
 magassági helyet kapnak; nem kell a szomszéd gépen keresztül átsorolniuk a raj
 másik oldalára. Az ütközések továbbra is valódi sérülést okoznak.
+
+A központi HUD kijelzése és üvegkerete közös térbeli síkot használ, teljes perspektívavetítéssel és a keretnél levágott tartalommal. A fejfordítás nem külön eltolást alkalmaz a sebesség- és magasságskálára. A nappali repülőárnyékok 100 méter talaj feletti magasságig teljes erősségűek, 100–200 méter között folyamatosan elhalványulnak, 200 métertől és éjszaka nem rajzolódnak ki. Ezek egyszerűsített, lágy szélű gépsziluettek, nem teljes jelenetes árnyéktérképek; a WebGPU és WebGL mélységvizsgálata elrejti őket a takaró objektumok mögött.

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.3 — 2026-11-10
+
+- Improved cockpit visibility when looking down, gray cabin surfaces and shared eye-position geometry.
+- Attached HUD flight instruments to their physical glass with a common projective transform and bounded content.
+- Added local cloud and Milky Way textures, smaller night stars, rocky peaks and terrain-colored rock skirts.
+- Added lightweight daylight aircraft shadows: full strength through 100 m AGL, fading out by 200 m.
+- Stabilized overlapping target labels and show recognizable target roles on instruments while retaining catalogue IDs in world markers.
+- Includes the lightweight Docker runtime, multiplayer pilot names and aircraft/ship model repairs merged since 1.0.2.
+- Updated dependency and security tooling, including i18next 27 and CodeQL.
+- Validation: 1,066 automated tests; silent localhost WebGPU/WebGL visual checks.
+
 ## 1.0.2 — 2026-11-09
 
 - Added server-authoritative multiplayer: five pilots per room, ten live rooms, co-op missions and last-survivor arena matches.

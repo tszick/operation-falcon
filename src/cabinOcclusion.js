@@ -1,9 +1,9 @@
-// Static-eye BSP painter ordering. Head rotation changes projection, not which
-// surface is in front of another. Split crossings once instead of re-sorting
+// Cached BSP painter ordering. Head rotation changes projection; a small eye
+// translation traverses the same tree. Split crossings once instead of sorting
 // whole consoles by their camera-space centre each animation frame.
 const epsilon = 1e-6;
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-function planeFor(points) {
+function computePlane(points) {
   const a = points[0];
   for (let i = 1; i < points.length - 1; i++) {
     const u = points[i].map((v, k) => v - a[k]),
@@ -16,6 +16,11 @@ function planeFor(points) {
     }
   }
   return null;
+}
+const planes = new WeakMap();
+function planeFor(points) {
+  if (!planes.has(points)) planes.set(points, computePlane(points));
+  return planes.get(points);
 }
 const distance = (plane, p) => dot(plane.normal, p) - plane.d;
 function side(shape, plane) {
@@ -85,14 +90,21 @@ function choosePlane(shapes) {
   }
   return best;
 }
-export function orderCabinSurfaces(shapes, eye = [0, 0, 0]) {
-  const result = [];
-  const visit = (polygons) => {
-    if (!polygons.length) return;
+// Build/split once. Traversal can then follow a leaning eye without rebuilding
+// polygons or changing their identity on each head movement.
+export function cabinSurfaceVisible(shape, eye = [0, 0, 0]) {
+  if (shape.frontFacing === undefined) return true;
+  const plane = planeFor(shape.points);
+  return !!plane && distance(plane, eye) > epsilon;
+}
+export function prepareCabinSurfaces(shapes, eyes = [[0, 0, 0]]) {
+  const surfaces = [];
+  const build = (polygons) => {
+    if (!polygons.length) return null;
     const plane = choosePlane(polygons);
     if (!plane) {
-      result.push(...polygons);
-      return;
+      surfaces.push(...polygons);
+      return { polygons };
     }
     const front = [],
       back = [],
@@ -107,16 +119,12 @@ export function orderCabinSurfaces(shapes, eye = [0, 0, 0]) {
       else if (s === 'back') back.push(shape);
       else coplanar.push(shape);
     }
-    const eyeInFront = distance(plane, eye) >= 0;
-    visit(eyeInFront ? back : front);
-    result.push(...coplanar);
-    visit(eyeInFront ? front : back);
+    surfaces.push(...coplanar);
+    return { plane, polygons: coplanar, front: build(front), back: build(back) };
   };
   const planar = shapes
-    .filter((s) => s.frontFacing !== false)
+    .filter((s) => eyes.some((eye) => cabinSurfaceVisible(s, eye)))
     .flatMap((shape) => {
-      // An unfilled outline has no interior surface. Partition its original
-      // edges as open segments so BSP cuts never become visible diagonals.
       if (shape.fill === 'none' && !shape.open)
         return shape.points.map((p, i) => ({
           ...shape,
@@ -131,6 +139,23 @@ export function orderCabinSurfaces(shapes, eye = [0, 0, 0]) {
         .slice(1, -1)
         .map((p, i) => ({ ...shape, points: [shape.points[0], p, shape.points[i + 2]] }));
     });
-  visit(planar);
-  return result;
+  const tree = build(planar);
+  return {
+    surfaces,
+    order(eye = [0, 0, 0]) {
+      const result = [];
+      const visit = (node) => {
+        if (!node) return;
+        const front = node.plane && distance(node.plane, eye) >= 0;
+        visit(front ? node.back : node.front);
+        result.push(...node.polygons.filter((shape) => cabinSurfaceVisible(shape, eye)));
+        visit(front ? node.front : node.back);
+      };
+      visit(tree);
+      return result;
+    },
+  };
+}
+export function orderCabinSurfaces(shapes, eye = [0, 0, 0]) {
+  return prepareCabinSurfaces(shapes, [eye]).order(eye);
 }

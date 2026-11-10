@@ -63,28 +63,28 @@ body.flying #overlay {
   pointer-events: none;
 }
 .cockpit-shell {
-  fill: #091713;
-  stroke: #6a8a76;
+  fill: #20252b;
+  stroke: #818c96;
   stroke-width: 2;
 }
 .cockpit-rim {
-  fill: #20362e;
-  stroke: #7b9982;
+  fill: #404952;
+  stroke: #97a2ac;
   stroke-width: 1;
 }
 .cockpit-seams {
   fill: none;
-  stroke: #304b3c;
+  stroke: #4d5863;
   stroke-width: 3;
 }
 .cockpit-trim {
   fill: none;
-  stroke: #a8ce89;
+  stroke: #b4bec7;
   stroke-width: 2;
 }
 .cockpit-fasteners {
-  fill: #07110e;
-  stroke: #627e67;
+  fill: #15191e;
+  stroke: #77828d;
   stroke-width: 1;
 }
 .cockpit-instruments {
@@ -100,12 +100,12 @@ body.flying #overlay {
   min-height: 0;
   position: relative;
   padding: 8px;
-  border: 1px solid #547257;
+  border: 1px solid #737f8b;
   border-radius: 4px;
   background: #03100b;
   box-shadow:
-    0 0 0 4px #14261d,
-    0 0 0 5px #364b3a,
+    0 0 0 4px #293139,
+    0 0 0 5px #52606d,
     inset 0 0 12px #0d2215;
   pointer-events: auto;
   overflow: hidden;
@@ -983,5 +983,20 @@ body.flying.rear-view #radio-message-feed {
 body.flying.wreck-view #cockpit-interior,
 body.flying.rear-view #cockpit-interior,
 body.spectating #cockpit-interior {
+  display: none !important;
+}
+
+/* A single physical HUD-glass plane, shared by all rendering backends. */
+#hud-glass-display {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  pointer-events: none;
+  transform-origin: 0 0;
+}
+body.flying.wreck-view #hud-glass-display,
+body.flying.rear-view #hud-glass-display,
+body.spectating #hud-glass-display {
   display: none !important;
 }

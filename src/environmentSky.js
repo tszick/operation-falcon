@@ -67,6 +67,7 @@ export function renderEnvironmentSky(r) {
   sky.addColorStop(1, p.sky[2]);
   c.fillStyle = sky;
   c.fillRect(0, 0, w, h);
+  r.nightSkyPainted = r.surfaceMode === 'night' && !!r.gpuModels?.renderNightSky?.(r);
   if (p.sun) {
     const bearing = 0.7,
       elevation = 0.045,
@@ -95,6 +96,7 @@ export function renderEnvironmentSky(r) {
       c.fill();
     }
   }
+  r.skyStars?.();
   if (p.clouds && r.cloudsEnabled !== false) {
     const image = overcastSprite();
     if (image)

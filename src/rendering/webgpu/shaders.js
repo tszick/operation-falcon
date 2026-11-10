@@ -63,7 +63,8 @@ struct Out {@builtin(position) position:vec4f,@location(0) tint:vec3f,@location(
  let light=select(clamp((o.tint.g-27.0/255.0)/(18.0/255.0),0.0,1.0),o.tint.g,o.canopyKind>0.0);
  let rock=smoothstep(0.12,0.58,slope)*u.climate.x;
  let snow=u.climate.y*smoothstep(u.climate.z,u.climate.z+u.climate.w,o.world.y)*(1-smoothstep(0.25,0.68,slope));
- var base=mix(mix(u.ground.rgb,u.rock.rgb,rock),vec3f(0.89,0.92,0.95),snow);
+ let granite=smoothstep(0.34,0.65,slope)*smoothstep(650.0,1200.0,o.world.y);
+ var base=mix(mix(mix(u.ground.rgb,u.rock.rgb,rock),vec3f(0.4,0.42,0.44),granite),vec3f(0.89,0.92,0.95),snow);
  let landUV=o.world.xz/farmland.bounds.x+0.5;
  let field=textureSample(farmlandMap,farmlandSampler,clamp(landUV,vec2f(0),vec2f(1)));
  let atlasSize=textureDimensions(farmlandMap);
@@ -119,6 +120,15 @@ export const horizon =
 @fragment fn fs(@builtin(position) position:vec4f)->@location(0) vec4f {
  let pixel=position.xy/u.boundSize.w;let ray=u.rotation*vec3f((pixel.x-u.screen.x*0.5)/u.screen.z,(u.screen.y*0.53-pixel.y)/u.screen.z,1);
  let turn=fract(atan2(ray.x,ray.z)/6.28318530718+1);let uv=1-abs(2*turn-1);
+ if(u.integrity.w>1.5){
+  let direction=normalize(ray);let skyUV=vec2f(turn,0.5-asin(clamp(direction.y,-1.0,1.0))/3.14159265359);let texel=2.0/vec2f(textureDimensions(surfaceMap));
+  var night=textureSample(surfaceMap,surfaceSampler,skyUV).rgb;
+  night=min(night,textureSample(surfaceMap,surfaceSampler,skyUV+vec2f(texel.x,0)).rgb);
+  night=min(night,textureSample(surfaceMap,surfaceSampler,skyUV-vec2f(texel.x,0)).rgb);
+  night=min(night,textureSample(surfaceMap,surfaceSampler,skyUV+vec2f(0,texel.y)).rgb);
+  night=min(night,textureSample(surfaceMap,surfaceSampler,skyUV-vec2f(0,texel.y)).rgb);
+  let alpha=smoothstep(0.0,0.08,direction.y);return vec4f(night*alpha*0.75,alpha);
+ }
  let elevation=atan2(ray.y,length(ray.xz))+u.screen.w;let v=(elevation+0.12)/0.34;
  if(u.integrity.w>0.5){
  let e=elevation;let bearing=atan2(ray.x,ray.z);let shoreAngle=atan2(sin(bearing-3.14159265359),cos(bearing-3.14159265359));
@@ -138,4 +148,14 @@ export const horizon =
  if(u.style.y>0.5){tone=mix(mountain.rgb*0.85*u.style.x,u.haze.rgb,0.45);tone=mix(u.haze.rgb*0.6,tone,smoothstep(-0.08,0.2,v));}
  return vec4f(tone*mountain.a,mountain.a);
 }
+`;
+
+export const aircraftShadows =
+  uniforms +
+  `
+struct Out {@builtin(position) position:vec4f,@location(0) alpha:f32};
+@vertex fn vs(@location(0) position:vec3f,@location(1) opacity:f32)->Out {
+ var o:Out;o.position=project(position);o.alpha=opacity;return o;
+}
+@fragment fn fs(o:Out)->@location(0) vec4f {return vec4f(0,0,0,o.alpha);}
 `;
