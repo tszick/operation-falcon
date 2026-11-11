@@ -210,7 +210,6 @@ export function stepRoomCombat(room, commands, dt) {
     if (controls?.countermeasures) deployCountermeasures(s);
     if (controls?.fire && shared.projectiles.length < PROJECTILE_LIMIT)
       combat.weapons.fire(s, targets, combat.aim);
-    combat.feedback = firingStatus(s, targets, combat.aim, combat.weapons).label;
     transferFire(room, player, time);
     if (s.impactPending) {
       s.impactPending = false;
@@ -274,6 +273,17 @@ export function playerCombatSnapshot(player) {
     kills,
     friendlyHits,
   };
+}
+export function refreshRoomFeedback(room) {
+  const key = `${room.round}:${room.tick}:${room.lobby?.revision}`;
+  if (room.feedbackRevision === key) return;
+  withTerrainSnapshot(room.world, () => {
+    const players = [...room.players.values()];
+    const targets = [...room.combat.targets, ...players.map(playerEntity)];
+    for (const { state, combat } of players)
+      combat.feedback = firingStatus(state, targets, combat.aim, combat.weapons).label;
+  });
+  room.feedbackRevision = key;
 }
 export function roomCombatSnapshot(room, afterEventId = null, { copy = true } = {}) {
   return {

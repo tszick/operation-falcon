@@ -120,7 +120,7 @@ export class Weapons {
     if (s.rearView) return this.fireTail(s);
     if (this.cooldown > 0) return null;
     if (s.bombingPractice && s.onGround) return 'GYAKORLÓBOMBA CSAK REPÜLÉS KÖZBEN OLDHATÓ';
-    const status = firingStatus(s, targets, aim, this);
+    const status = firingStatus(s, targets, aim, this, { presentation: false });
     if (!status.canFire) {
       if (status.status === 'empty') {
         this.cooldown = 0.25;

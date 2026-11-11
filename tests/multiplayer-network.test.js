@@ -8,14 +8,15 @@ import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { createStaticServer } from '../server/static-server.mjs';
+import { MultiplayerRooms } from '../server/multiplayer-rooms.mjs';
 import { attachMultiplayer } from '../server/multiplayer-server.mjs';
 import { MultiplayerClient } from '../src/multiplayer/client.js';
 import { SnapshotInbox } from '../src/multiplayer/snapshotInbox.js';
 import { EVENT_LIMIT, NETWORK_STEP, neutralAxes } from '../src/multiplayer/protocol.js';
 import { LocalNetworkLink, memorySession } from './helpers/local-network.mjs';
-async function fixture(t) {
+async function fixture(t, options = {}) {
   const server = createStaticServer({ root: process.cwd() }),
-    multiplayer = attachMultiplayer(server);
+    multiplayer = attachMultiplayer(server, options);
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   t.after(async () => {
     multiplayer.close();
@@ -585,15 +586,15 @@ test(
   'an orphaned localhost room keeps simulating without encoding packets for absent recipients',
   { timeout: 10000 },
   async (t) => {
-    const f = await fixture(t),
+    const f = await fixture(t, { rooms: new MultiplayerRooms({ maxRooms: 2 }) }),
       a = await connect(t, f, { mode: 'create' }),
       b = await connect(t, f, { mode: 'create' });
     const rooms = f.multiplayer.rooms,
       room = rooms.rooms.get(a.client.code),
       pilot = room.players.get(a.client.id),
       counts = new Map();
-    const serialize = rooms.serialize.bind(rooms);
-    t.mock.method(rooms, 'serialize', (r, ...args) => {
+    const serialize = rooms.wireSnapshot.bind(rooms);
+    t.mock.method(rooms, 'wireSnapshot', (r, ...args) => {
       counts.set(r.code, (counts.get(r.code) || 0) + 1);
       return serialize(r, ...args);
     });

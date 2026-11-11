@@ -1,4 +1,11 @@
 import { decodeWorld } from './worldState.js';
+import { packControlBatch } from './controlWire.js';
+import {
+  SnapshotDecoder,
+  SNAPSHOT_ENCODING,
+  supportsSnapshotCompression,
+  inflateSnapshot,
+} from './snapshotWire.js';
 import {
   PROTOCOL_VERSION,
   MULTIPLAYER_PATH,
@@ -47,6 +54,7 @@ export class MultiplayerClient {
       maxReconcileMs: 0,
       maxCorrectionM: 0,
       maxDecodeMs: 0,
+      maxInflateMs: 0,
       decodeFailures: 0,
       lastDecodeError: '',
       maxSnapshotApplyMs: 0,
@@ -83,6 +91,9 @@ export class MultiplayerClient {
     this.socket = null;
     previous?.close();
     this.inbox.clear();
+    this.snapshotDecoder = new SnapshotDecoder();
+    this.worldDecoderCache = new WeakMap();
+    this.decodeQueue = Promise.resolve();
     this.prediction = new FlightPrediction();
     this.history = new SnapshotBuffer({ maxFrames: 8 });
     this.combat = new NetworkCombatView();
@@ -93,6 +104,7 @@ export class MultiplayerClient {
     const url = new URL(MULTIPLAYER_PATH, this.baseUrl);
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = (this.socket = this.socketFactory(url));
+    ws.binaryType = 'arraybuffer';
     this.connectionTimer = setTimeout(() => {
       if (this.socket !== ws || this.id) return;
       if (!this.recovering) this.onStatus('connection-timeout');
@@ -110,6 +122,8 @@ export class MultiplayerClient {
       this.handshake = {
         type: 'hello',
         version: PROTOCOL_VERSION,
+        snapshotEncoding: SNAPSHOT_ENCODING,
+        ...(supportsSnapshotCompression() ? { snapshotCompression: 'deflate-raw' } : {}),
         mode,
         code,
         aircraftId,
@@ -121,18 +135,28 @@ export class MultiplayerClient {
       this.flushTimer = setInterval(() => this.flush(), 50);
       this.pingTimer = setInterval(() => this.send({ type: 'ping', sent: this.now() }), 2000);
     });
-    ws.addEventListener('message', (event) => {
+    const receivePacket = (event) => {
       if (this.socket !== ws) return;
-      if (typeof event.data !== 'string' || event.data.length > SNAPSHOT_BYTES_LIMIT) {
+      const bytes = typeof event.data === 'string' ? event.data.length : event.data?.byteLength;
+      if (!Number.isFinite(bytes) || bytes > SNAPSHOT_BYTES_LIMIT) {
         ws.close();
         return;
       }
-      this.metrics.receivedCharacters += event.data.length;
       let msg;
       const decodeStart = this.now();
       try {
-        msg = JSON.parse(event.data);
-        if (msg?.world) msg.world = decodeWorld(msg.world);
+        msg =
+          typeof event.data === 'string'
+            ? JSON.parse(event.data)
+            : this.snapshotDecoder.decode(event.data);
+        if (msg?.world) {
+          let world = this.worldDecoderCache.get(msg.world);
+          if (!world) {
+            world = decodeWorld(msg.world);
+            this.worldDecoderCache.set(msg.world, world);
+          }
+          msg = { ...msg, world };
+        }
       } catch (error) {
         this.metrics.decodeFailures++;
         this.metrics.lastDecodeError = error.message;
@@ -151,6 +175,43 @@ export class MultiplayerClient {
         this.transportReceivedAt = receivedAt;
         this.inbox.offer(msg, receivedAt);
       } else this.receive(msg, receivedAt);
+    };
+    let pendingDecodes = 0;
+    ws.addEventListener('message', (event) => {
+      if (this.socket !== ws) return;
+      const bytes =
+        typeof event.data === 'string'
+          ? new TextEncoder().encode(event.data).byteLength
+          : event.data?.byteLength;
+      if (!Number.isFinite(bytes) || bytes > SNAPSHOT_BYTES_LIMIT) {
+        ws.close();
+        return;
+      }
+      this.metrics.receivedCharacters += bytes;
+      if (typeof event.data === 'string') receivePacket(event);
+      else {
+        if (++pendingDecodes > 64) {
+          ws.close();
+          return;
+        }
+        this.decodeQueue = this.decodeQueue
+          .then(async () => {
+            if (this.socket !== ws || ws.readyState !== WebSocket.OPEN) return;
+            const start = this.now();
+            const data = await inflateSnapshot(event.data);
+            this.metrics.maxInflateMs = Math.max(this.metrics.maxInflateMs, this.now() - start);
+            if (this.socket === ws) receivePacket({ data });
+          })
+          .catch((error) => {
+            if (this.socket !== ws) return;
+            this.metrics.decodeFailures++;
+            this.metrics.lastDecodeError = error.message;
+            ws.close();
+          })
+          .finally(() => {
+            pendingDecodes--;
+          });
+      }
     });
     ws.addEventListener('close', (event) => {
       if (this.socket !== ws) return;
@@ -319,7 +380,9 @@ export class MultiplayerClient {
       this.send({
         type: 'input',
         round: this.round,
-        commands: this.prediction.outgoing.splice(0, Math.min(INPUT_BATCH_LIMIT, available)),
+        packed: packControlBatch(
+          this.prediction.outgoing.splice(0, Math.min(INPUT_BATCH_LIMIT, available)),
+        ),
       });
     }
   }

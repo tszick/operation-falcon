@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { unpackControlBatch } from '../src/multiplayer/controlWire.js';
 import assert from 'node:assert/strict';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { MultiplayerClient } from '../src/multiplayer/client.js';
@@ -235,14 +236,18 @@ test('a control backlog preserves ordered unsent inputs until acknowledgements f
   assert.equal(f.client.prediction.outgoing.length, 120);
   socket.bufferedAmount = 0;
   f.client.flush();
-  let commands = socket.messages.filter((m) => m.type === 'input').flatMap((m) => m.commands);
+  let commands = socket.messages
+    .filter((m) => m.type === 'input')
+    .flatMap((m) => unpackControlBatch(m.packed));
   assert.equal(commands.length, INPUT_QUEUE_LIMIT);
   assert.equal(f.client.prediction.outgoing[0].seq, INPUT_QUEUE_LIMIT + 1);
   f.client.prediction.acknowledged = INPUT_QUEUE_LIMIT;
   f.client.flush();
   f.client.prediction.acknowledged = INPUT_QUEUE_LIMIT * 2;
   f.client.flush();
-  commands = socket.messages.filter((m) => m.type === 'input').flatMap((m) => m.commands);
+  commands = socket.messages
+    .filter((m) => m.type === 'input')
+    .flatMap((m) => unpackControlBatch(m.packed));
   assert.deepEqual(
     commands.map((c) => c.seq),
     Array.from({ length: 120 }, (_, i) => i + 1),

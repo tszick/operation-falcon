@@ -84,8 +84,11 @@ async function run(scenario, seconds) {
         baseUrl: origin,
         getStorage: () => (p.storage ||= memorySession()),
         reconnectDelays: [200, 500, 1000],
-        socketFactory: (url) =>
-          new LocalNetworkLink(url, origin, { latency: i * 10, jitter: i * 2 }),
+        socketFactory: (url) => {
+          const link = new LocalNetworkLink(url, origin, { latency: i * 10, jitter: i * 2 });
+          (p.links ||= []).push(link);
+          return link;
+        },
         onWelcome: (msg) => {
           welcomed = true;
           p.welcomes = (p.welcomes || 0) + 1;
@@ -283,8 +286,16 @@ async function run(scenario, seconds) {
       clientHeapStartMB,
       clientHeapEndMB: mb(),
       maxParentDelayMs: Math.round(maxParentDelayMs),
+      transport: {
+        receivedBytes: peers.reduce((n, p) => n + p.links.reduce((a, link) => a + link.receivedBytes, 0), 0),
+        sentBytes: peers.reduce((n, p) => n + p.links.reduce((a, link) => a + link.sentBytes, 0), 0),
+        decodeFailures: peers.reduce((n, p) => n + p.client.metrics.decodeFailures, 0),
+        maxInflateMs: Math.max(...peers.map((p) => p.client.metrics.maxInflateMs || 0)),
+      },
       server: {
         samples: samples.length,
+        meanCPUPercent: samples.reduce((n, s) => n + s.serverCPUPercent * s.windowMs, 0) / samples.reduce((n, s) => n + s.windowMs, 0),
+        maxCPUPercent: Math.max(...samples.map((s) => s.serverCPUPercent)),
         minSimulationHz: Math.min(...samples.map((s) => s.simulationHz)),
         maxPhysicsP99Ms: Math.max(...samples.map((s) => s.physicsP99Ms)),
         maxSnapshotP95Ms: Math.max(...samples.map((s) => s.snapshotP95Ms)),

@@ -2,6 +2,9 @@ import { MultiplayerPump } from './multiplayer-pump.mjs';
 import { MultiplayerPerformance } from './multiplayer-performance.mjs';
 import { WebSocketServer, WebSocket } from 'ws';
 import { MultiplayerRooms } from './multiplayer-rooms.mjs';
+import { SNAPSHOT_ENCODING } from '../src/multiplayer/snapshotWire.js';
+import { compressSnapshot } from './snapshot-transport.mjs';
+import { unpackControlBatch } from '../src/multiplayer/controlWire.js';
 import { sameOriginRequest, parsePublicOrigin } from './request-policy.mjs';
 import {
   PROTOCOL_VERSION,
@@ -37,12 +40,38 @@ export function attachMultiplayer(
       ws.terminate();
       return;
     }
-    ws.send(typeof message === 'string' ? message : JSON.stringify(message));
+    ws.send(
+      typeof message === 'string' || message instanceof Uint8Array
+        ? message
+        : JSON.stringify(message),
+    );
   }
   function hasRecipient(room) {
     for (const ws of wss.clients)
       if (ws.session?.room === room && ws.readyState === WebSocket.OPEN) return true;
     return false;
+  }
+  function broadcastRoom(room, afterEventId = null) {
+    let json,
+      wire,
+      compressed,
+      bytes = 0,
+      recipients = 0;
+    const start = metrics && performance.now();
+    for (const ws of wss.clients) {
+      if (ws.session?.room !== room || ws.readyState !== WebSocket.OPEN) continue;
+      let packet =
+        ws.snapshotEncoding === SNAPSHOT_ENCODING
+          ? (wire ??= rooms.wireSnapshot(room, afterEventId, { reset: !!room.wireReset }))
+          : (json ??= rooms.serialize(room, afterEventId));
+      if (ws.snapshotCompression && packet === wire) packet = compressed ??= compressSnapshot(wire);
+      send(ws, packet);
+      bytes += typeof packet === 'string' ? Buffer.byteLength(packet) : packet.byteLength;
+      recipients++;
+    }
+    if (wire) room.wireReset = false;
+    if (metrics && recipients)
+      metrics.snapshot(performance.now() - start, bytes / recipients, recipients);
   }
   const pump = new MultiplayerPump({
     step: () => {
@@ -53,17 +82,8 @@ export function attachMultiplayer(
     broadcast: () => {
       for (const room of rooms.rooms.values()) {
         if (!hasRecipient(room)) continue;
-        const start = metrics && performance.now(),
-          snapshot = rooms.serialize(room, room.broadcastEventId || 0);
+        broadcastRoom(room, room.broadcastEventId || 0);
         room.broadcastEventId = room.combat.eventSequence;
-        let recipients = 0;
-        for (const ws of wss.clients)
-          if (ws.session?.room === room && ws.readyState === WebSocket.OPEN) {
-            send(ws, snapshot);
-            recipients++;
-          }
-        if (metrics)
-          metrics.snapshot(performance.now() - start, Buffer.byteLength(snapshot), recipients);
       }
     },
   });
@@ -148,6 +168,15 @@ export function attachMultiplayer(
         ws.close(1008, 'Invalid message');
         return;
       }
+      if (msg.type === 'input' && msg.packed !== undefined) {
+        try {
+          if (msg.commands !== undefined) throw new Error('Ambiguous controls');
+          msg.commands = unpackControlBatch(msg.packed);
+        } catch {
+          ws.close(1008, 'Invalid controls');
+          return;
+        }
+      }
       if (msg.type === 'hello' && !ws.session) {
         if (
           msg.version !== PROTOCOL_VERSION ||
@@ -196,6 +225,9 @@ export function attachMultiplayer(
           }
         }
         ws.session = { room, player };
+        ws.snapshotEncoding = msg.snapshotEncoding === SNAPSHOT_ENCODING ? SNAPSHOT_ENCODING : null;
+        ws.snapshotCompression = msg.snapshotCompression === 'deflate-raw';
+        room.wireReset = true;
         send(ws, {
           sessionToken: player.sessionToken,
           resumed: msg.resumeToken !== undefined,
@@ -213,9 +245,7 @@ export function attachMultiplayer(
         const error = rooms.preflight(ws.session.room, ws.session.player, msg);
         if (error) send(ws, { type: 'error', code: error });
         else {
-          const snapshot = rooms.serialize(ws.session.room);
-          for (const peer of wss.clients)
-            if (peer.session?.room === ws.session.room) send(peer, snapshot);
+          broadcastRoom(ws.session.room);
         }
       } else if (
         msg.type === 'input' &&

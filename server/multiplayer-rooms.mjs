@@ -18,8 +18,10 @@ import {
   stepRoomAftermath,
   playerCombatSnapshot,
   roomCombatSnapshot,
+  refreshRoomFeedback,
 } from './multiplayer-combat.mjs';
 import { randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
+import { SnapshotEncoder } from '../src/multiplayer/snapshotWire.js';
 import { Targeting } from '../src/targeting.js';
 import { playerEntity } from './multiplayer-combat.mjs';
 import { stepTakenOverAircraft } from './multiplayer-takeover.mjs';
@@ -35,11 +37,12 @@ import {
   normalizePlayerName,
 } from '../src/multiplayer/protocol.js';
 const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const wireEncoders = new WeakMap();
 function roomCode() {
   return Array.from({ length: 6 }, () => alphabet[randomInt(alphabet.length)]).join('');
 }
 export class MultiplayerRooms {
-  constructor({ maxRooms = 10, now = () => Date.now(), orphanTimeout = 120000 } = {}) {
+  constructor({ maxRooms = 1, now = () => Date.now(), orphanTimeout = 120000 } = {}) {
     this.rooms = new Map();
     this.maxRooms = maxRooms;
     this.now = now;
@@ -194,7 +197,14 @@ export class MultiplayerRooms {
     // Serialize synchronously: borrowed nested state never escapes as objects.
     return JSON.stringify(this.#snapshot(room, afterEventId, false));
   }
+  wireSnapshot(room, afterEventId = null, { reset = false } = {}) {
+    let encoder = wireEncoders.get(room);
+    if (!encoder) wireEncoders.set(room, (encoder = new SnapshotEncoder()));
+    if (reset) encoder.reset();
+    return encoder.encode(this.#snapshot(room, afterEventId, false));
+  }
   #snapshot(room, afterEventId, copy) {
+    refreshRoomFeedback(room);
     return {
       type: 'snapshot',
       round: room.round,

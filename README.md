@@ -35,7 +35,7 @@ docker compose down                # leállítás
 
 A kép rögzített hivatalos **Node 24 LTS + Alpine Linux** alapot használ. Csak a futáshoz szükséges fájlokat és production függőségeket tartalmazza; fejlesztői eszközök, tesztek, Git és helyi beállítások nem kerülnek bele. Nem root felhasználóként, csak olvasható fájlrendszerrel fut. Nincs adatbázis, háttérböngésző vagy szerveroldali GPU. A grafika és az egyjátékos szimuláció a játékos böngészőjét terheli; a multiplayer szimuláció a konténerben fut. A szobák memóriában élnek, konténer-újraindításkor megszűnnek.
 
-Alapértelmezett felső korlát **512 MiB RAM és 1 CPU**; ez nem lefoglalt vagy folyamatosan elfogyasztott erőforrás. Sok aktív multis szobához mérés alapján emeld a korlátokat. A meglévő maximum 10 szoba és szobánként 5 pilóta marad. A részletes napló mérete korlátozott, a healthcheck rendszeresen ellenőrzi a HTTP-kiszolgálást.
+Alapértelmezett felső korlát **512 MiB RAM és 1 CPU**; ez nem lefoglalt vagy folyamatosan elfogyasztott erőforrás. Egyszerre egy szoba nyitható, benne legfeljebb öt pilótával. A részletes napló mérete korlátozott, a healthcheck rendszeresen ellenőrzi a HTTP-kiszolgálást.
 
 Opcionális beállítások: másold a `.env.docker.example` fájlt `.env` néven a repó gyökerébe. A `FALCON_PORT` a külső portot, a `FALCON_MEMORY_LIMIT` és `FALCON_CPUS` a korlátokat állítja. A konténeren belüli port mindig 5173. Módosítás után futtasd újra a `docker compose up -d --build` parancsot.
 
@@ -222,14 +222,14 @@ Az állapotot szobánként egyszer állítja elő és kódolja JSON-ná a szerve
 A távoli repülőgép-állapotok dekódolása hálózati frissítéskor történik, nem minden képkockánál;
 a célinterpoláció azonosító szerinti gyors keresést használ. A HUD ritkított gyakorisággal frissül.
 Szobánként legfeljebb 192 lövedék és 128 harci esemény marad. A kapcsolatonkénti küldési sor,
-csomagméret (állapotnál 256 KiB), üzenetsebesség és vezérlési sor is korlátozott. Legfeljebb 10 szoba / 50 pilótahely.
-A 8-as protokollverzió régebbi nyitott lap frissítését igényli.
+csomagméret (állapotnál 256 KiB), üzenetsebesség és vezérlési sor is korlátozott. Legfeljebb 1 szoba / 5 pilótahely.
+A 9-es protokollverzió régebbi nyitott lap frissítését igényli.
 
 Az egyjátékos repülés fizikája, AI-ja, harca, grafikája és helyi IndexedDB-naplója a
 böngészőben fut. Ilyenkor a szerver statikus program- és médiafájlokat szolgál ki,
 folyamatos repülésszimulációt nem végez a játékosnak. A többjátékos közös világ viszont
-szerveroldali szimulációt használ. Alapértelmezésben legfeljebb **10 szoba**, szobánként
-**5 pilótahely** foglalható (összesen 50 hely). A korlátot a szerver ellenőrzi; telítettségnél
+szerveroldali szimulációt használ. Alapértelmezésben legfeljebb **1 szoba**, szobánként
+**5 pilótahely** foglalható (összesen 5 hely). A korlátot a szerver ellenőrzi; telítettségnél
 új szoba nem nyitható, meglévő szabad helyhez csatlakozás és munkamenet-visszaállítás igen.
 Az előszobák és a visszacsatlakozásra még fenntartott szobák is beleszámítanak. Az üres
 előszoba azonnal felszabadul; a teljesen leszakadt aktív szoba két perc után törlődik.

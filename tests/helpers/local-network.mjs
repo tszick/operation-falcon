@@ -24,6 +24,9 @@ export class LocalNetworkLink {
   get readyState() {
     return this.raw.readyState;
   }
+  set binaryType(value) {
+    this.raw.binaryType = value;
+  }
   get bufferedAmount() {
     return this.raw.bufferedAmount + this.pendingUp;
   }

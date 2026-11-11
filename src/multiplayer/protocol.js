@@ -1,4 +1,4 @@
-export const PROTOCOL_VERSION = 8;
+export const PROTOCOL_VERSION = 9;
 export const MULTIPLAYER_PATH = '/multiplayer';
 export const roomScenarios = ['range', 'combat', 'cooperative', 'arena'];
 export const ROOM_CAPACITY = 5;

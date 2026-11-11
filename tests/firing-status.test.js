@@ -38,6 +38,24 @@ function setup() {
   aim.progress = 2;
   return { s, t, aim, w };
 }
+
+test('trigger-only evaluation preserves unguided and guided firing permission without requiring HUD predictions', () => {
+  for (const type of ['gun', 'bomb', 'aam', 'agm'])
+    for (const distance of [800, 8000, 30000])
+      for (const cooldown of [0, 0.5]) {
+        const { s, t, aim, w } = setup();
+        t.position = new Vec3(0, 1500, distance);
+        t.kind = type === 'aam' ? 'air' : 'ground';
+        t.type = type === 'aam' ? 'fighter' : 'truck';
+        delete t.jamRadius;
+        w.selected = type;
+        w.cooldown = cooldown;
+        const full = firingStatus(s, [t], aim, w);
+        const trigger = firingStatus(s, [t], aim, w, { presentation: false });
+        assert.equal(trigger.canFire, full.canFire, `${type} at ${distance} m`);
+        if (['aam', 'agm'].includes(type)) assert.deepEqual(trigger, full);
+      }
+});
 test('Maverick in range but outside its launch angle cannot claim an available launch on either cockpit line', () => {
   const { s, t, aim, w } = setup();
   t.position = new Vec3(Math.sin(55 * DEG) * 8000, 1500, Math.cos(55 * DEG) * 8000);

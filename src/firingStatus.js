@@ -4,7 +4,7 @@ import { damageResponse } from './damage.js';
 import { navigationJammed, sensorTargets } from './electronicWarfare.js';
 import { fireSolution } from './weaponDynamics.js';
 // The cockpit and trigger use the same permission decision, not just the range.
-export function firingStatus(s, targets, aim, weapons) {
+export function firingStatus(s, targets, aim, weapons, { presentation = true } = {}) {
   if (s.rearView) {
     const status = tailGunStatus(s);
     return weapons.tailCooldown > 0 && status.canFire
@@ -27,7 +27,12 @@ export function firingStatus(s, targets, aim, weapons) {
   if (guided && (!aim?.locked || !target)) return blocked('lock', 'ELŐBB FOGD BE A CÉLT — T');
   if (guided && (type === 'aam') !== (target.kind === 'air'))
     return blocked('wrong-type', 'A FEGYVER NEM EHHEZ A CÉLHOZ VALÓ');
-  const solution = target ? fireSolution(s, target, type, { heat: weapons.gunHeat || 0 }) : null;
+  // Guided launch permission needs the full solution. Unguided trigger permission
+  // does not need to integrate a cosmetic lead/CCIP prediction on every trigger tick.
+  const solution =
+    target && (guided || presentation)
+      ? fireSolution(s, target, type, { heat: weapons.gunHeat || 0 })
+      : null;
   if (guided && !solution?.canLaunch)
     return blocked(
       solution?.status || 'lock',

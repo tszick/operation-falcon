@@ -594,17 +594,17 @@ export function groundHit(t, from, to, padding = 0) {
   return false;
 }
 
-let homeCollisionMesh;
+let homeCollisionInstance;
 // Triangle-level aircraft contact avoids treating empty space between airport buildings as solid.
 export function groundAircraftHit(target, from, to) {
   let instances;
   if (target.type === 'airbase' && target.home && !target.remoteHome) {
-    if (!homeCollisionMesh) {
+    if (!homeCollisionInstance) {
       const builder = new Builder();
       for (const h of homeHangars) builder.box(h.x, 0, h.z, h.halfWidth, h.height, h.halfLength);
-      homeCollisionMesh = builder.finish();
+      homeCollisionInstance = preparedInstance(new Vec3(), 0, builder.finish());
     }
-    instances = [preparedInstance(new Vec3(), 0, homeCollisionMesh)];
+    instances = [homeCollisionInstance];
   } else instances = groundInstances(target);
   let best = null;
   for (const instance of instances) {

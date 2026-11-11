@@ -707,10 +707,10 @@ test(
   },
 );
 
-test('default server limits admit ten rooms of five pilots, reject overflow and reuse released capacity', () => {
+test('default server limits admit one room of five pilots, reject overflow and reuse released capacity', () => {
   let now = 0;
   const rooms = new MultiplayerRooms({ now: () => now });
-  const created = Array.from({ length: 10 }, () => rooms.create());
+  const created = Array.from({ length: 1 }, () => rooms.create());
   assert.ok(created.every(Boolean));
   assert.equal(rooms.create(), null);
   for (const room of created) {
@@ -719,39 +719,39 @@ test('default server limits admit ten rooms of five pilots, reject overflow and 
   }
   assert.equal(
     [...rooms.rooms.values()].reduce((n, r) => n + r.players.size, 0),
-    50,
+    5,
   );
   const room = created[0],
     pilot = room.players.values().next().value;
   assert.equal(rooms.resume(room, pilot.sessionToken), pilot);
   for (const p of [...room.players.values()]) rooms.leave(room, p);
-  assert.equal(rooms.rooms.size, 10);
+  assert.equal(rooms.rooms.size, 1);
   assert.equal(rooms.create(), null);
   now = 120000;
   rooms.step();
-  assert.equal(rooms.rooms.size, 9);
+  assert.equal(rooms.rooms.size, 0);
   assert.ok(rooms.create());
-  assert.equal(rooms.rooms.size, 10);
+  assert.equal(rooms.rooms.size, 1);
   assert.equal(rooms.create(), null);
 });
 
 test(
-  'real localhost clients cannot create an eleventh room but can join an existing room at capacity',
+  'real localhost clients cannot create a second room but can join an existing room at capacity',
   { timeout: 15000 },
   async (t) => {
     const f = await fixture(t);
     let first;
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 1; i++) {
       const client = await connect(t, f, { mode: 'create' });
       const welcome = await client.next((m) => m.type === 'welcome');
       first ||= welcome;
     }
     const overflow = await connect(t, f, { mode: 'create' });
     assert.equal((await overflow.next((m) => m.type === 'error')).code, 'server-full');
-    assert.equal(f.multiplayer.rooms.rooms.size, 10);
+    assert.equal(f.multiplayer.rooms.rooms.size, 1);
     const joining = await connect(t, f, { mode: 'join', code: first.code });
     assert.equal((await joining.next((m) => m.type === 'welcome')).players.length, 2);
-    assert.equal(f.multiplayer.rooms.rooms.size, 10);
+    assert.equal(f.multiplayer.rooms.rooms.size, 1);
   },
 );
 
