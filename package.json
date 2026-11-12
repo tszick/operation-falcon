@@ -29,7 +29,7 @@
   "dependencies": {
     "dompurify": "3.4.17",
     "i18next": "27.0.1",
-    "ws": "8.22.1"
+    "ws": "8.22.2"
   },
   "overrides": {
     "minimatch": "11.0.1"
