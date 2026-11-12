@@ -79,6 +79,14 @@ A `coalitionRoster` küldetésenként szovjet, orosz, kínai vagy vegyes keleti 
 
 A repülési napló csak az aktuális küldetést tárolja a böngésző IndexedDB-adatbázisában. Új küldetés lecseréli; a JSON-export a `/flight-log.html` oldalon tölthető le. A napló és a kiértékelés helyben marad. Ne tegyél személyes adatot vagy naplót nyilvános hibajegybe.
 
+## HTTPS proxy mögötti tesztkörnyezet
+
+A konténer HTTP-n figyelhet, miközben a felhős belépési pont HTTPS/WSS-t biztosít. Ilyenkor állítsd be a `PUBLIC_ORIGIN` értékét a böngészőben használt pontos HTTPS-originre (például `https://falcon.example.com`), és az `ALLOWED_HOSTS` értékét ugyanarra a hostnévre (`falcon.example.com`). Nem szabványos port esetén mindkettőben add meg a portot is. A proxy őrizze meg a böngésző eredeti Host fejlécét.
+
+A `PUBLIC_ORIGIN` csak HTTPS-origint fogad el, útvonal, query és bejelentkezési adatok nélkül. Üres értékkel a korábbi közvetlen HTTP/HTTPS-ellenőrzés marad érvényben, így a helyi futtatáshoz nem kell módosítás. A szerver nem bízik meg az `X-Forwarded-*` vagy `Forwarded` fejlécekben; a megadott origin és az engedélyezett Host együtt szükséges a WebSocket-kapcsolathoz.
+
+A multiplayer szobák memóriában élnek; az első teszttelepítést egyetlen példánnyal és egy aktív revízióval futtasd. Újraindításkor a szobák megszűnnek.
+
 ## Automatikus ellenőrzések GitHubon
 
 A workflow-k pushra, pull requestre és kézi indításra is futnak. Esti ütemezés **Europe/Budapest** időzónában, a nyári/téli időszámítást követve:

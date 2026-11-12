@@ -13,6 +13,7 @@ const allowedHosts = (process.env.ALLOWED_HOSTS || '')
 const server = createStaticServer({ root, allowedHosts });
 attachMultiplayer(server, {
   allowedHosts,
+  publicOrigin: process.env.PUBLIC_ORIGIN,
   onPerformance:
     process.env.MULTIPLAYER_DIAGNOSTICS === '1'
       ? (sample) => console.log(JSON.stringify({ multiplayerPerformance: sample }))

@@ -2,7 +2,7 @@ import { MultiplayerPump } from './multiplayer-pump.mjs';
 import { MultiplayerPerformance } from './multiplayer-performance.mjs';
 import { WebSocketServer, WebSocket } from 'ws';
 import { MultiplayerRooms } from './multiplayer-rooms.mjs';
-import { sameOriginRequest } from './request-policy.mjs';
+import { sameOriginRequest, parsePublicOrigin } from './request-policy.mjs';
 import {
   PROTOCOL_VERSION,
   SNAPSHOT_BYTES_LIMIT,
@@ -15,8 +15,15 @@ import {
 } from '../src/multiplayer/protocol.js';
 export function attachMultiplayer(
   server,
-  { allowedHosts = [], maxConnections = 80, rooms = new MultiplayerRooms(), onPerformance } = {},
+  {
+    allowedHosts = [],
+    publicOrigin = null,
+    maxConnections = 80,
+    rooms = new MultiplayerRooms(),
+    onPerformance,
+  } = {},
 ) {
+  const expectedOrigin = parsePublicOrigin(publicOrigin ?? undefined);
   const metrics = onPerformance
     ? new MultiplayerPerformance(onPerformance, { observeGC: true })
     : null;
@@ -100,7 +107,7 @@ export function attachMultiplayer(
   function upgrade(req, socket, head) {
     if (
       req.url !== MULTIPLAYER_PATH ||
-      !sameOriginRequest(req, allowedHosts) ||
+      !sameOriginRequest(req, allowedHosts, expectedOrigin) ||
       wss.clients.size >= maxConnections
     ) {
       socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\nContent-Length: 0\r\n\r\n');
