@@ -1,3 +1,4 @@
+import { decodeSnapshot } from '../src/multiplayer/binarySnapshot.js';
 import { WebSocket } from 'ws';
 import { PROTOCOL_VERSION, validRoomCode, neutralAxes } from '../src/multiplayer/protocol.js';
 import { unpackFlight } from '../src/multiplayer/flightState.js';
@@ -31,9 +32,9 @@ for (let i = 0; i < 4; i++) {
     console.error(error.message);
     process.exitCode = 1;
   });
-  p.ws.on('message', (data) => {
+  p.ws.on('message', (data, binary) => {
     receivedBytes += data.byteLength;
-    const msg = JSON.parse(data.toString());
+    const msg = decodeSnapshot(binary ? data : data.toString());
     if (msg.type === 'error' && msg.code === 'lobby-changed') {
       p.readyRevision = null;
       return;

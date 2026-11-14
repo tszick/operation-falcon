@@ -1,3 +1,4 @@
+import { decodeSnapshot } from '../src/multiplayer/binarySnapshot.js';
 import { Spectator } from '../src/multiplayer/spectator.js';
 import { MultiplayerNotices } from '../src/multiplayer/notices.js';
 import { Vec3, Quat } from '../src/math.js';
@@ -592,8 +593,8 @@ test(
       room = rooms.rooms.get(a.client.code),
       pilot = room.players.get(a.client.id),
       counts = new Map();
-    const serialize = rooms.serialize.bind(rooms);
-    t.mock.method(rooms, 'serialize', (r, ...args) => {
+    const serialize = rooms.packet.bind(rooms);
+    t.mock.method(rooms, 'packet', (r, ...args) => {
       counts.set(r.code, (counts.get(r.code) || 0) + 1);
       return serialize(r, ...args);
     });
@@ -779,5 +780,114 @@ test(
       assert.deepEqual([...room.players.keys()], identities);
       assert.ok(entries.every((e) => e.errors.length === 0));
     }
+  },
+);
+
+test('coalesced snapshots retain changed terrain until painting and discard it across rounds and reconnects', () => {
+  const tasks = [],
+    applied = [],
+    inbox = new SnapshotInbox(
+      (s) => applied.push(s),
+      (f) => tasks.push(f),
+    );
+  const world = { revision: 2, skySeed: 10, surface: 'winter', peaks: [] };
+  const packet = { round: 1, tick: 1, world };
+  inbox.offer(packet, 1);
+  inbox.offer({ round: 1, tick: 2 }, 2);
+  tasks.shift()();
+  assert.equal(applied[0].world, world);
+  assert.equal(applied[0].tick, 2);
+  assert.equal(packet.tick, 1);
+  inbox.offer({ round: 1, tick: 3, world }, 3);
+  inbox.offer({ round: 2, tick: 0 }, 4);
+  inbox.offer({ round: 1, tick: 4, world }, 5);
+  tasks.shift()();
+  assert.equal(applied[1].round, 2);
+  assert.equal(applied[1].world, undefined);
+  inbox.offer({ round: 2, tick: 1, world }, 6);
+  inbox.clear();
+  inbox.offer({ round: 1, tick: 0 }, 7);
+  tasks.shift()();
+  assert.equal(applied[2].world, undefined);
+});
+
+test(
+  'localhost terrain is sent on change and welcome, preserved in sparse snapshots and refreshed for bridge changes',
+  { timeout: 10000 },
+  async (t) => {
+    const f = await fixture(t),
+      a = await connect(t, f, { mode: 'create', scenario: 'cooperative' });
+    const rooms = f.multiplayer.rooms,
+      room = rooms.rooms.get(a.client.code),
+      host = room.players.get(a.client.id),
+      packets = [];
+    const serialize = rooms.packet.bind(rooms);
+    t.mock.method(rooms, 'packet', (r, ...args) => {
+      const text = serialize(r, ...args);
+      if (r === room) packets.push(decodeSnapshot(text));
+      return text;
+    });
+    await until(() => packets.some((p) => !p.world));
+    assert.ok(a.client.latest.world);
+    assert.equal(
+      rooms.preflight(room, host, {
+        type: 'mission',
+        missionId: 'defend-base',
+        revision: room.lobby.revision,
+      }),
+      null,
+    );
+    await until(() => a.client.latest.world?.surface === 'winter');
+    const changed = packets.find((p) => p.world?.surface === 'winter');
+    assert.ok(changed);
+    await until(() => a.client.latest.tick > changed.tick);
+    assert.equal(a.client.latest.world.surface, 'winter');
+    const b = await connect(t, f, { mode: 'join', code: room.code });
+    assert.equal(b.client.latest.world.surface, 'winter');
+    await until(() => b.client.latest.tick > changed.tick);
+    assert.equal(b.client.latest.world.surface, 'winter');
+    room.world.bridgeRevision = (room.world.bridgeRevision || 0) + 1;
+    await until(() =>
+      [a, b].every(
+        ({ client }) => client.latest.world?.bridgeRevision === room.world.bridgeRevision,
+      ),
+    );
+    assert.ok(packets.some((p) => p.world?.bridgeRevision === room.world.bridgeRevision));
+    assert.deepEqual(a.errors, []);
+    assert.deepEqual(b.errors, []);
+  },
+);
+
+test(
+  'waiting localhost rooms encode at 5 Hz while lobby changes and combat start reach every pilot immediately',
+  { timeout: 10000 },
+  async (t) => {
+    const f = await fixture(t),
+      a = await connect(t, f, { mode: 'create', scenario: 'cooperative' }),
+      b = await connect(t, f, { mode: 'join', code: a.client.code });
+    const rooms = f.multiplayer.rooms,
+      room = rooms.rooms.get(a.client.code),
+      samples = [];
+    const serialize = rooms.packet.bind(rooms);
+    t.mock.method(rooms, 'packet', (r, ...args) => {
+      const text = serialize(r, ...args);
+      if (r === room) samples.push(decodeSnapshot(text));
+      return text;
+    });
+    await until(() => samples.filter((s) => s.mission.phase === 'waiting').length >= 4);
+    const waiting = samples.filter((s) => s.mission.phase === 'waiting');
+    for (let i = 1; i < waiting.length; i++) assert.ok(waiting[i].tick - waiting[i - 1].tick >= 24);
+    for (const p of [a, b])
+      p.client.send({ type: 'ready', revision: room.lobby.revision, ready: true });
+    await until(() =>
+      [a, b].every(({ client }) => client.latest.lobby.players.every((p) => p.ready)),
+    );
+    a.client.send({ type: 'start', revision: room.lobby.revision });
+    await until(() => [a, b].every(({ client }) => client.latest.mission.phase === 'active'));
+    await until(() => samples.filter((s) => s.mission.phase === 'active').length >= 4);
+    const active = samples.filter((s) => s.mission.phase === 'active');
+    assert.ok(active.slice(1).some((s, i) => s.tick - active[i].tick < 24));
+    assert.deepEqual(a.errors, []);
+    assert.deepEqual(b.errors, []);
   },
 );

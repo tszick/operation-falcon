@@ -1,4 +1,5 @@
 import { decodeWorld } from './worldState.js';
+import { decodeSnapshot } from './binarySnapshot.js';
 import {
   PROTOCOL_VERSION,
   MULTIPLAYER_PATH,
@@ -43,6 +44,7 @@ export class MultiplayerClient {
     );
     this.metrics = {
       receivedCharacters: 0,
+      receivedBinarySnapshots: 0,
       appliedSnapshots: 0,
       maxReconcileMs: 0,
       maxCorrectionM: 0,
@@ -87,12 +89,13 @@ export class MultiplayerClient {
     this.history = new SnapshotBuffer({ maxFrames: 8 });
     this.combat = new NetworkCombatView();
     this.id = this.code = this.round = this.latest = this.handshake = null;
-    this.worldRevision = null;
+    this.worldRevision = this.worldBridgeRevision = null;
     this.receivedAt = this.transportReceivedAt = 0;
     this.rtt = null;
     const url = new URL(MULTIPLAYER_PATH, this.baseUrl);
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = (this.socket = this.socketFactory(url));
+    ws.binaryType = 'arraybuffer';
     this.connectionTimer = setTimeout(() => {
       if (this.socket !== ws || this.id) return;
       if (!this.recovering) this.onStatus('connection-timeout');
@@ -123,15 +126,22 @@ export class MultiplayerClient {
     });
     ws.addEventListener('message', (event) => {
       if (this.socket !== ws) return;
-      if (typeof event.data !== 'string' || event.data.length > SNAPSHOT_BYTES_LIMIT) {
+      const size =
+        typeof event.data === 'string'
+          ? event.data.length
+          : event.data instanceof ArrayBuffer || ArrayBuffer.isView(event.data)
+            ? event.data.byteLength
+            : Infinity;
+      if (size > SNAPSHOT_BYTES_LIMIT) {
         ws.close();
         return;
       }
-      this.metrics.receivedCharacters += event.data.length;
+      this.metrics.receivedCharacters += size;
       let msg;
       const decodeStart = this.now();
       try {
-        msg = JSON.parse(event.data);
+        msg = decodeSnapshot(event.data);
+        if (typeof event.data !== 'string') this.metrics.receivedBinarySnapshots++;
         if (msg?.world) msg.world = decodeWorld(msg.world);
       } catch (error) {
         this.metrics.decodeFailures++;
@@ -217,7 +227,6 @@ export class MultiplayerClient {
       } catch {
         /* Flight does not require browser storage. */
       }
-      configureTerrain({ battlefield: { environment: decodeWorld(msg.world) } });
       const own = msg.players.find((p) => p.id === this.id);
       this.prediction.reset(own);
       this.acceptSnapshot(msg, false, receivedAt);
@@ -260,14 +269,24 @@ export class MultiplayerClient {
       reconcile = false;
     }
     this.round = round;
+    // Terrain is revisioned, not a per-tick payload. Keep it available to UI
+    // consumers without copying its geometry into every network packet.
+    if (!msg.world && !changedRound && this.latest?.world)
+      msg = { ...msg, world: this.latest.world };
     const historyStarted = this.now();
     if (!this.history.add(msg, this.id)) return;
     this.metrics.maxHistoryMs = Math.max(this.metrics.maxHistoryMs, this.now() - historyStarted);
     const own = msg.players.find((p) => p.id === this.id);
     if (!own) return;
-    if (msg.world && this.worldRevision !== msg.world.revision) {
+    if (
+      msg.world &&
+      (changedRound ||
+        this.worldRevision !== msg.world.revision ||
+        this.worldBridgeRevision !== msg.world.bridgeRevision)
+    ) {
       configureTerrain({ battlefield: { environment: decodeWorld(msg.world) } });
       this.worldRevision = msg.world.revision;
+      this.worldBridgeRevision = msg.world.bridgeRevision;
     }
     this.prediction.simulating = !msg.mission || msg.mission.phase === 'active';
     if (reconcile) {

@@ -68,12 +68,14 @@ export class MultiplayerPerformance {
     }
     const duration = now - this.start;
     if (duration < this.intervalMs) return;
-    const cpu = this.readCPU();
+    const cpu = this.readCPU(),
+      memory = process.memoryUsage();
     const report = {
       gcCount: this.gcCount,
       maxGCPauseMs: rounded(Math.max(0, ...this.gc)),
       gcP95Ms: rounded(percentile(this.gc, 0.95)),
-      heapUsedMB: rounded(process.memoryUsage().heapUsed / 1048576),
+      heapUsedMB: rounded(memory.heapUsed / 1048576),
+      rssMB: rounded(memory.rss / 1048576),
       rooms: context.rooms ?? 0,
       connections: context.connections ?? 0,
       windowMs: rounded(duration),

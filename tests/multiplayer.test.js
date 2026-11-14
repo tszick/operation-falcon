@@ -1,3 +1,5 @@
+import { decodeSnapshot } from '../src/multiplayer/binarySnapshot.js';
+import { expandSnapshot } from '../src/multiplayer/snapshotWire.js';
 import { defaultSelection } from '../src/multiplayer/preflight.js';
 import { applyDamage } from '../src/damage.js';
 import test from 'node:test';
@@ -182,8 +184,8 @@ async function connect(t, f, hello) {
   const ws = new WebSocket(f.url, { origin: f.origin }),
     messages = [],
     waiting = [];
-  ws.on('message', (data) => {
-    const msg = JSON.parse(data);
+  ws.on('message', (data, binary) => {
+    const msg = decodeSnapshot(binary ? data : data.toString());
     messages.push(msg);
     for (const notify of [...waiting]) notify();
   });
@@ -414,8 +416,8 @@ test(
       b.combat.events.find((e) => e.id === shot.id),
     );
     assert.ok([welcome.id, joined.id].includes(shot.targetId));
-    assert.ok(a.combat.projectiles.some((p) => p.sourceId === enemy.id));
-    assert.ok(b.combat.projectiles.some((p) => p.sourceId === enemy.id));
+    assert.ok(expandSnapshot(a).combat.projectiles.some((p) => p.sourceId === enemy.id));
+    assert.ok(expandSnapshot(b).combat.projectiles.some((p) => p.sourceId === enemy.id));
     assert.ok(a.combat.targets.find((t) => t.id === enemy.id).flight.ammo.aam < 4);
     assert.equal(a.combat.ai.active, true);
   },

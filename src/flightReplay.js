@@ -1,3 +1,5 @@
+import { selectHighlights } from './replayHighlights.js';
+export { selectHighlights } from './replayHighlights.js';
 import { aircraftFlightSpec } from './aiAircraftSpec.js';
 import { Vec3, Quat, DEG, clamp, forward, right } from './math.js';
 import { createAircraft } from './physics.js';
@@ -53,83 +55,6 @@ export function replayBracket(entries, time) {
     mix: a === b ? 0 : clamp((time - a.t) / Math.max(0.0001, b.t - a.t), 0, 1),
   };
 }
-export function selectHighlights(log, limit = 6) {
-  const entries = log?.entries || [],
-    samples = entries.filter((e) => e.kind === 'sample' && e.data.player?.position);
-  if (!samples.length) return [];
-  const start = samples[0].t,
-    end = samples.at(-1).t,
-    candidates = [];
-  if (end - start < 10) return [];
-  const duration = Math.min(15, end - start);
-  const add = (time, label, priority, before = 8, focusId = null) => {
-    // Shift the full window at mission boundaries instead of truncating the clip.
-    const from = clamp(time - before, start, end - duration);
-    candidates.push({
-      start: from,
-      end: from + duration,
-      label,
-      priority,
-      focusId,
-      eventTime: time,
-    });
-  };
-  for (let i = 1; i < samples.length; i++)
-    if (samples[i - 1].data.player.onGround && !samples[i].data.player.onGround)
-      add(samples[i].t, 'FELSZÁLLÁS', 95, 4);
-  for (const event of entries) {
-    if (event.kind === 'touchdown') add(event.t, 'LESZÁLLÁS', 100, 10);
-    if (event.kind !== 'combat') continue;
-    const data = event.data || {};
-    if (data.sourceId !== 'PLAYER' && data.targetId !== 'PLAYER') continue;
-    if (
-      ['target-destroyed', 'target-hit', 'missile-launch', 'gun', 'damage-hit'].includes(data.type)
-    )
-      add(
-        event.t,
-        'HARCI JELENET',
-        data.type === 'target-destroyed' || data.destroyed
-          ? 90
-          : data.type === 'target-hit'
-            ? 85
-            : 70,
-        8,
-        data.sourceId === 'PLAYER' ? data.targetId : data.sourceId,
-      );
-    if (['bomb-release', 'practice-bomb-impact'].includes(data.type))
-      add(event.t, 'FÖLDI CSAPÁS', 80);
-  }
-  if (!candidates.length) {
-    const best = samples.reduce(
-      (best, sample) =>
-        Math.abs(sample.data.player.bankDeg || 0) > Math.abs(best.data.player.bankDeg || 0)
-          ? sample
-          : best,
-      samples[Math.floor(samples.length / 2)],
-    );
-    add(best.t, 'REPÜLÉS RÉSZLETE', 1);
-  }
-  const selected = [];
-  const ordered = candidates.sort((a, b) => b.priority - a.priority),
-    variety = ordered.filter(
-      (candidate, index) => ordered.findIndex((other) => other.label === candidate.label) === index,
-    );
-  for (const candidate of [...variety, ...ordered]) {
-    if (selected.includes(candidate)) continue;
-    if (
-      selected.some(
-        (clip) =>
-          Math.min(clip.end, candidate.end) - Math.max(clip.start, candidate.start) >
-          Math.min(clip.end - clip.start, candidate.end - candidate.start) * 0.6,
-      )
-    )
-      continue;
-    selected.push(candidate);
-    if (selected.length >= limit) break;
-  }
-  return selected.sort((a, b) => a.start - b.start);
-}
-
 export class FlightReplay {
   constructor(log) {
     this.log = log;
@@ -317,9 +242,55 @@ export class FlightReplay {
   }
 }
 
-export function highlightCamera(state, focus = null) {
-  // Long-range combat is filmed beside its recorded aircraft target, not kilometres away
-  // behind the player. The same subject stays in focus throughout the 15-second clip.
+export function highlightCamera(
+  state,
+  focus = null,
+  { clip = null, time = 0, projectiles = [] } = {},
+) {
+  if (!focus && clip?.focusPosition)
+    focus = {
+      kind: clip.focusKind || 'ground',
+      position: vec(clip.focusPosition),
+      radius: clip.focusRadius,
+    };
+  const following =
+    clip?.projectileId != null && time > clip.launchTime + 2.5 && time < clip.eventTime - 4
+      ? projectiles.find((p) => p.id === clip.projectileId)
+      : null;
+  if (following && following.velocity.length() > 1) {
+    const direction = following.velocity.clone().normalize(),
+      side = right(Quat.euler(Math.atan2(direction.x, direction.z), 0, 0)),
+      position = following.position
+        .clone()
+        .add(direction.clone().scale(-45))
+        .add(side.scale(24))
+        .add(new Vec3(0, 16, 0));
+    position.y = Math.max(position.y, terrainHeight(position.x, position.z) + 8);
+    return cameraLookingAt(position, following.position.clone().add(direction.scale(35)));
+  }
+  if (clip?.launchTime != null && time < clip.launchTime + 2.5) focus = null;
+  if (focus?.kind !== 'air' && focus?.position) {
+    const radius = Math.max(25, Math.min(focus.radius || 60, 350)),
+      distance = Math.max(140, radius * 3.5),
+      from = vec(clip?.attackPosition || state.position).sub(focus.position);
+    from.y = 0;
+    if (from.length() < 1) from.z = -1;
+    from.normalize();
+    const side = new Vec3(-from.z, 0, from.x),
+      position = focus.position
+        .clone()
+        .add(from.scale(distance))
+        .add(side.scale(distance * 0.55))
+        .add(new Vec3(0, distance * 0.55, 0));
+    position.y = Math.max(position.y, terrainHeight(position.x, position.z) + 20);
+    return cameraLookingAt(
+      position,
+      focus.position.clone().add(new Vec3(0, Math.min(radius * 0.3, 40), 0)),
+    );
+  }
+
+  // The terminal view stays beside the recorded aircraft target, rather than
+  // kilometres away behind the player.
   if (focus?.kind === 'air' && focus.flight) state = focus.flight;
   const heading = forward(state.orientation);
   heading.y = 0;
@@ -337,6 +308,18 @@ export function highlightCamera(state, focus = null) {
     .sub(side.scale(distance * 0.25))
     .add(new Vec3(0, 3, 0))
     .sub(position);
+  return {
+    position,
+    orientation: Quat.euler(
+      Math.atan2(look.x, look.z),
+      Math.atan2(look.y, Math.hypot(look.x, look.z)),
+      0,
+    ),
+  };
+}
+
+function cameraLookingAt(position, target) {
+  const look = target.sub(position);
   return {
     position,
     orientation: Quat.euler(

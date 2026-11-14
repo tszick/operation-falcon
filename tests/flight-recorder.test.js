@@ -140,3 +140,23 @@ test('projectile start records the existing age when capture follows a physics s
     .entries.find((e) => e.kind === 'projectile-start' && e.data.id === 99);
   assert.equal(entry.data.age, 0.025);
 });
+
+test('completed replay logs borrow finished data without copying and survive a new mission; downloads remain isolated', () => {
+  const x = setup();
+  assert.throws(() => x.rec.completedLog(), /still recording/);
+  x.rec.finish({ result: 'success' });
+  const completed = x.rec.completedLog(),
+    exported = x.rec.export();
+  assert.equal(completed.entries, x.rec.entries);
+  assert.equal(completed.metadata, x.rec.metadata);
+  const count = completed.entries.length;
+  x.rec.event('ignored', {});
+  assert.equal(completed.entries.length, count);
+  exported.entries.length = 0;
+  assert.equal(completed.entries.length, count);
+  x.rec.start(x.s, x.mission, [], x.w, x.aim);
+  assert.notEqual(completed.entries, x.rec.entries);
+  assert.notEqual(completed.metadata, x.rec.metadata);
+  assert.equal(completed.entries.length, count);
+  assert.equal(completed.metadata.result.result, 'success');
+});

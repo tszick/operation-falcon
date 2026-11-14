@@ -1,3 +1,4 @@
+import { replayPlaybackSpeed } from '../replayHighlights.js';
 import { missionRating } from '../missionRating.js';
 import { evaluateFlight, debriefMarkup } from '../flightDebrief.js';
 import { FlightReplay, highlightCamera } from '../flightReplay.js';
@@ -73,16 +74,20 @@ export class MissionResultView {
     this.toggle.setAttribute('aria-pressed', String(this.moving));
   }
   render(delta) {
-    const clip = this.replay?.clips[this.clipIndex];
+    let clip = this.replay?.clips[this.clipIndex];
     if (!clip) {
       this.caption.textContent = tr('Nincs elegendő adat a visszajátszáshoz.');
       return;
     }
-    if (this.moving) this.clipTime += delta;
-    if (this.clipTime > Math.max(1, clip.end - clip.start)) {
-      this.clipIndex = (this.clipIndex + 1) % this.replay.clips.length;
-      this.clipTime = 0;
-      return this.render(0);
+    if (this.moving && Number.isFinite(delta) && delta > 0) {
+      this.clipTime += delta * replayPlaybackSpeed(clip, clip.start + this.clipTime);
+      const total = this.replay.clips.reduce((sum, c) => sum + c.end - c.start, 0);
+      if (total > 0) this.clipTime %= total;
+      while (this.clipTime >= clip.end - clip.start) {
+        this.clipTime -= clip.end - clip.start;
+        this.clipIndex = (this.clipIndex + 1) % this.replay.clips.length;
+        clip = this.replay.clips[this.clipIndex];
+      }
     }
     const time = Math.min(clip.end, clip.start + this.clipTime),
       key = `${this.clipIndex}:${time}:${this.renderer.w}:${this.renderer.h}`;
@@ -92,9 +97,13 @@ export class MissionResultView {
     if (!frame) return;
     this.renderer.cinematic = true;
     const focus = clip.focusId ? frame.targets.find((target) => target.id === clip.focusId) : null;
-    this.renderer.replayCamera = highlightCamera(frame.state, focus);
+    this.renderer.replayCamera = highlightCamera(frame.state, focus, {
+      clip,
+      time,
+      projectiles: frame.weapons.projectiles,
+    });
     this.renderer.render(frame.state, frame.targets, frame.weapons, frame.aim);
-    const text = `${tr('BEVETÉSI PILLANATOK')} / ${tr(clip.label)} · ${clock(time)}`;
+    const text = `${tr('BEVETÉSI PILLANATOK')} / ${tr(clip.label)}${clip.targetLabel ? ' / ' + tr(clip.targetLabel) : ''} · ${clock(time)}`;
     if (this.caption.textContent !== text) this.caption.textContent = text;
   }
   hide() {

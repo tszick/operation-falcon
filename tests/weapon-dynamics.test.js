@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { defenseState } from '../src/aiDefense.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -322,4 +323,29 @@ test('an enemy fighter cannon follows its actual nose, while turret fire uses le
   assert.ok(w.projectiles[0].velocity.z > 700, 'round leaves the nose even when target is behind');
   assert.ok(Math.abs(w.projectiles[0].velocity.x) < 20);
   assert.equal(w.projectiles[0].profile.id, 'gsh30');
+});
+
+test('allocation-free lead integration retains the established numerical solutions at near, long and high-altitude ranges', () => {
+  const cases = JSON.parse(
+    readFileSync(new URL('./fixtures/gun-lead-reference.json', import.meta.url), 'utf8'),
+  );
+  for (const { height, distance, expected } of cases) {
+    const shooter = {
+        position: new Vec3(0, height, 0),
+        velocity: new Vec3(12, -2, 200),
+        orientation: Quat.euler(0.2, 0.1, 0.03),
+      },
+      target = {
+        position: new Vec3(distance * 0.2, height + 250, distance),
+        velocity: new Vec3(45, 4, -170),
+      },
+      actual = gunLead(shooter, target, weaponProfiles.m61);
+    assert.equal(actual.reachable, expected.reachable);
+    assert.ok(Math.abs(actual.time - expected.time) < 1e-9);
+    assert.ok(Math.abs(actual.miss - expected.miss) < 1e-6);
+    for (const axis of ['x', 'y', 'z']) {
+      assert.ok(Math.abs(actual.direction[axis] - expected.direction[axis]) < 1e-9);
+      assert.ok(Math.abs(actual.point[axis] - expected.point[axis]) < 1e-6);
+    }
+  }
 });

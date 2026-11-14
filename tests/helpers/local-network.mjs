@@ -21,6 +21,12 @@ export class LocalNetworkLink {
       this.queues.up.length = this.queues.down.length = 0;
     });
   }
+  set binaryType(value) {
+    this.raw.binaryType = value;
+  }
+  get binaryType() {
+    return this.raw.binaryType;
+  }
   get readyState() {
     return this.raw.readyState;
   }

@@ -840,7 +840,7 @@ function showOverlay(kind) {
   if (kind === 'pause') {
     missionResult.hide();
     $('mission-debrief').innerHTML = '';
-  } else missionResult.show(recorder.export());
+  } else missionResult.show(recorder.completedLog());
   if (kind === 'pause') $('resume').focus();
   else {
     $('overlay-title').focus({ preventScroll: true });

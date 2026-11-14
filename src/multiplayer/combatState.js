@@ -2,11 +2,29 @@ import { Vec3 } from '../math.js';
 import { packFlight, unpackFlight } from './flightState.js';
 import { weaponProfiles } from '../weaponDynamics.js';
 const vector = (v) => new Vec3(v.x, v.y, v.z);
-export function packProjectile(p) {
+export function packProjectile(p, { compact = false } = {}) {
+  if (compact)
+    return [
+      p.id,
+      p.type,
+      p.profile?.id ?? null,
+      p.sourceId ?? null,
+      p.owner ?? null,
+      p.targetEntityId || p.targetId || null,
+      p.position.x,
+      p.position.y,
+      p.position.z,
+      p.velocity.x,
+      p.velocity.y,
+      p.velocity.z,
+      p.age,
+      !!p.armed,
+      !!p.seekerLost,
+    ];
   return {
     id: p.id,
     type: p.type,
-    profile: p.profile.id,
+    profile: p.profile?.id,
     sourceId: p.sourceId,
     owner: p.owner,
     targetId: p.targetEntityId || p.targetId,

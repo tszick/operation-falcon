@@ -6,6 +6,7 @@ import { sameOriginRequest, parsePublicOrigin } from './request-policy.mjs';
 import {
   PROTOCOL_VERSION,
   SNAPSHOT_BYTES_LIMIT,
+  LOBBY_SNAPSHOT_INTERVAL,
   MULTIPLAYER_PATH,
   INPUT_BATCH_LIMIT,
   aircraftChoices,
@@ -37,7 +38,11 @@ export function attachMultiplayer(
       ws.terminate();
       return;
     }
-    ws.send(typeof message === 'string' ? message : JSON.stringify(message));
+    ws.send(
+      typeof message === 'string' || ArrayBuffer.isView(message)
+        ? message
+        : JSON.stringify(message),
+    );
   }
   function hasRecipient(room) {
     for (const ws of wss.clients)
@@ -53,8 +58,25 @@ export function attachMultiplayer(
     broadcast: () => {
       for (const room of rooms.rooms.values()) {
         if (!hasRecipient(room)) continue;
+        // The lobby has no moving aircraft. UI changes are sent immediately
+        // below; its periodic refresh only needs 5 Hz, combat keeps 20 Hz.
+        if (
+          room.mission?.phase === 'waiting' &&
+          room.broadcastTick != null &&
+          room.tick >= room.broadcastTick &&
+          room.tick - room.broadcastTick < LOBBY_SNAPSHOT_INTERVAL
+        )
+          continue;
         const start = metrics && performance.now(),
-          snapshot = rooms.serialize(room, room.broadcastEventId || 0);
+          includeWorld =
+            room.broadcastWorld !== room.world ||
+            room.broadcastWorldRevision !== room.world.revision ||
+            room.broadcastBridgeRevision !== room.world.bridgeRevision,
+          snapshot = rooms.packet(room, room.broadcastEventId || 0, { includeWorld });
+        room.broadcastTick = room.tick;
+        room.broadcastWorld = room.world;
+        room.broadcastWorldRevision = room.world.revision;
+        room.broadcastBridgeRevision = room.world.bridgeRevision;
         room.broadcastEventId = room.combat.eventSequence;
         let recipients = 0;
         for (const ws of wss.clients)

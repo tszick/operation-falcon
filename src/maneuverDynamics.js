@@ -26,7 +26,7 @@ export function departureMotion(s, input, flow, dt) {
   const severity = flow.stalled ? clamp((Math.abs(flow.alpha) - s.spec.stallAlpha) / 0.3, 0, 1) : 0;
   const rudder = input.yaw || 0,
     opposite = spin.rate * rudder < -0.03,
-    unloaded = (input.pitch || 0) < -0.1;
+    unloaded = (input.pitch || 0) * Math.sign(flow.alpha) < -0.1;
   const recovery = unloaded && opposite;
   const asym = (s.condition.parts.rightWing - s.condition.parts.leftWing) * 0.3;
   const excitation = rudder * 0.8 + flow.beta * 0.6 + asym;

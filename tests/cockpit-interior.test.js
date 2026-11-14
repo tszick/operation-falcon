@@ -28,7 +28,7 @@ test('near-plane clipping preserves the visible part instead of dropping a whole
     0,
   );
 });
-test('interior includes solid walls, floor and structure, with only the HUD glass transparent', () => {
+test('interior includes solid walls, floor and structure, with transparency restricted to HUD glass and two floor windows', () => {
   const geometry = cockpitInteriorGeometry();
   for (const part of [
     'floor',
@@ -44,7 +44,12 @@ test('interior includes solid walls, floor and structure, with only the HUD glas
     assert.ok(shapes.length > 0, part);
     assert.ok(shapes.every((s) => s.fill !== 'none'));
   }
-  assert.ok(geometry.filter((s) => s.fill === 'none').every((s) => s.part === 'hud-glass'));
+  assert.equal(geometry.filter((s) => s.part === 'floor-window-glass').length, 2);
+  assert.ok(
+    geometry
+      .filter((s) => s.fill === 'none')
+      .every((s) => ['hud-glass', 'floor-window-glass'].includes(s.part)),
+  );
   assert.ok(geometry.every((s) => s.points.every((p) => p.every(Number.isFinite))));
 });
 test('look-down and side views keep finite visible occluding surfaces through the complete head range', () => {

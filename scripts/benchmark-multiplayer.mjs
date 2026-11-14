@@ -1,4 +1,6 @@
 import { performance } from 'node:perf_hooks';
+import assert from 'node:assert/strict';
+import { decodeSnapshot } from '../src/multiplayer/binarySnapshot.js';
 import { MultiplayerRooms } from '../server/multiplayer-rooms.mjs';
 import { Vec3 } from '../src/math.js';
 import { neutralAxes, SNAPSHOT_BYTES_LIMIT } from '../src/multiplayer/protocol.js';
@@ -29,10 +31,16 @@ for (const mode of ['arena', 'defend-base']) {
       p.state.flapPosition = 0;
     });
   const step = [],
-    encoding = [];
+    encoding = [],
+    objectEncoding = [],
+    decoding = [],
+    objectDecoding = [];
   let maxFullBytes = 0;
   let maxBytes = 0,
-    cursor = 0;
+    cursor = 0,
+    fullPayloadBytes = 0,
+    steadyPayloadBytes = 0,
+    objectPayloadBytes = 0;
   for (let i = 0; i < 4800; i++) {
     for (const p of pilots)
       rooms.inputs(p, [
@@ -53,9 +61,35 @@ for (const mode of ['arena', 'defend-base']) {
     const end = performance.now();
     if (i >= 120) step.push(end - begin);
     if (i % 6 === 0) {
-      const before = performance.now(),
-        json = rooms.serialize(room, cursor);
-      if (i >= 120) encoding.push(performance.now() - before);
+      const encode = (compactProjectiles) => {
+        const begin = performance.now(),
+          text = compactProjectiles
+            ? rooms.packet(room, cursor, { includeWorld: i === 0 })
+            : rooms.serialize(room, cursor, { includeWorld: i === 0, compactProjectiles: true });
+        if (i >= 120)
+          (compactProjectiles ? encoding : objectEncoding).push(performance.now() - begin);
+        return text;
+      };
+      // Alternate order to avoid giving the second encoder all warm-cache runs.
+      let json, reference;
+      if (i % 12 === 0) {
+        reference = encode(false);
+        json = encode(true);
+      } else {
+        json = encode(true);
+        reference = encode(false);
+      }
+      objectPayloadBytes += Buffer.byteLength(reference);
+      const decodeStart = performance.now(),
+        expanded = decodeSnapshot(json);
+      if (i >= 120) decoding.push(performance.now() - decodeStart);
+      assert.deepEqual(expanded, decodeSnapshot(reference));
+      const objectDecodeStart = performance.now();
+      decodeSnapshot(reference);
+      if (i >= 120) objectDecoding.push(performance.now() - objectDecodeStart);
+      const fullBytes = Buffer.byteLength(rooms.serialize(room, cursor));
+      fullPayloadBytes += fullBytes;
+      steadyPayloadBytes += Buffer.byteLength(json);
       maxFullBytes = Math.max(maxFullBytes, Buffer.byteLength(rooms.serialize(room)));
       cursor = room.combat.eventSequence;
       maxBytes = Math.max(maxBytes, Buffer.byteLength(json));
@@ -90,6 +124,11 @@ for (const mode of ['arena', 'defend-base']) {
       directSnapshotP95Ms: percentile(wire, 0.95),
       maxSnapshotBytes: maxBytes,
       maxFullSnapshotBytes: maxFullBytes,
+      totalPayloadSavedPercent: 100 * (1 - steadyPayloadBytes / fullPayloadBytes),
+      projectilePayloadSavedPercent: 100 * (1 - steadyPayloadBytes / objectPayloadBytes),
+      jsonTupleSnapshotP95Ms: percentile(objectEncoding, 0.95),
+      binaryDecodeP95Ms: percentile(decoding, 0.95),
+      jsonTupleDecodeP95Ms: percentile(objectDecoding, 0.95),
       perClientMaxKBps: Math.round((maxBytes * 20) / 1024),
       note: 'Server simulation and serialization only; not browser FPS.',
     }),

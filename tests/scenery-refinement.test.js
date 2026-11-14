@@ -179,3 +179,21 @@ test('HUD value boxes stay inside the glass on compact and wide displays', async
     assert.ok(cockpitHudFooterY(w, h) + 20 < glass[2][1]);
   }
 });
+
+test('cloud quads behind or crossing the camera plane never produce giant cockpit-sized sprites', () => {
+  const r = Object.assign(Object.create(Renderer.prototype), { w: 1280, h: 720, focal: 576 });
+  r.setup(new Vec3(), new Quat());
+  assert.equal(
+    cloudViewTransform(r, { bearing: Math.PI / 2 - 0.04, elevation: 0.02, size: 0.33 }),
+    null,
+  );
+  assert.equal(cloudViewTransform(r, { bearing: Math.PI, elevation: 0.3, size: 0.3 }), null);
+  const cloud = { bearing: 0.3, elevation: 0.25, size: 0.3 };
+  for (let yaw = -1.75; yaw < 1.76; yaw += 0.025)
+    for (const pitch of [-0.75, 0, 0.7]) {
+      r.setup(new Vec3(0, 1000, 0), Quat.euler(yaw, pitch, 0.6));
+      const m = cloudViewTransform(r, cloud);
+      if (m)
+        assert.ok(m.every(Number.isFinite) && Math.max(...m.slice(0, 4).map(Math.abs)) < 1280 * 3);
+    }
+});

@@ -46,3 +46,31 @@ A mérőscript valódi FlightRecorder-naplókat ír, köztük nyolc felszállás
 - NASA: [indukált és hullámellenállás](https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/what-is-drag/).
 - FAA: [Pilot's Handbook – talajhatás](https://www.faa.gov/sites/faa.gov/files/pilot_handbook_1.pdf).
 - FAA: [Airplane Flying Handbook – sugárhajtóműves átmenet](https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/airplane_handbook).
+
+## Fizika- és irányításellenőrzés, 2026-11-14
+
+A bedöntött forduló koordinált elfordulása is a levegőhöz viszonyított
+sebességből számolódik. Azonos relatív légmozgás mellett az egyenletes szél
+csak a talaj feletti nyomvonalat tolja el; nem gyorsíthatja vagy lassíthatja
+magát a fordulást. A földi kormányzás ezzel szemben a gurulási sebességtől
+függ, ezért szélben sem fordul helyben egy fékezett, álló gép.
+
+A dugóhúzó-modellben a tehermentesítő botirány az állásszög előjelét követi:
+pozitív állásszögnél előretolás, negatívnál finom húzás. A képernyős
+figyelmeztetés a negatív állásszögű esetben az S gombot jelzi. Ez továbbra
+is a játék csökkentett rendű modelljének helyreállítása, nem hitelesített
+repülőgép-eljárás. A földetérési esemény külön rögzíti a szélvektort és a
+szélre korrigált IAS-t; a ground speed külön mező marad.
+
+A gyors tömegszámítás nem épít fel részletes kimutatásobjektumot minden
+fizikai lépésben. A fegyverprofil keresése az adott fegyverobjektumra cache-elt,
+névváltozáskor érvénytelenedik; a fegyverzet és az üzemanyag tömege élő adat.
+A részletes tömegkimutatással egyező eredményeket regressziós teszt ellenőrzi.
+
+Reprodukálható néma próba: `node scripts/audit-flight-physics.mjs [eredmeny.json]`.
+A [rögzített mérés](benchmarks/flight-physics-audit-2026-11-14.json) 42 géptípust
+és 168, egyenként hatmásodperces, 45/75 fokos bedöntésből induló húzást tartalmaz,
+fél üzemanyaggal és üres fegyverzettel. Nem jelentkezett nem véges állapot,
+becsapódás vagy sérülés. A próba a numerikus stabilitást és ezt a kezdeti
+manővertartományt ellenőrzi, nem minden terhelést, sérülést és repülési helyzetet.
+A 100 000 hívásos tömegszámítási mikromérés nem általános FPS- vagy szerverterhelési mérés.
