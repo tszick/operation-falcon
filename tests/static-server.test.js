@@ -91,3 +91,44 @@ test('symlinks cannot expose files outside the static root', async (t) => {
   assert.equal(r.status, 403);
   assert.doesNotMatch(await r.text(), /secret/);
 });
+
+test('unchanged assets revalidate without a body while edits, missing files and forbidden paths never reuse stale responses', async (t) => {
+  const { root, url } = await fixture(t),
+    asset = url + '/src/app.js';
+  const first = await fetch(asset),
+    etag = first.headers.get('etag');
+  assert.equal(first.status, 200);
+  assert.match(first.headers.get('cache-control'), /must-revalidate/);
+  assert.ok(etag);
+  for (const method of ['GET', 'HEAD']) {
+    const cached = await fetch(asset, { method, headers: { 'If-None-Match': '"other", ' + etag } });
+    assert.equal(cached.status, 304);
+    assert.equal(await cached.text(), '');
+    assert.equal(cached.headers.get('etag'), etag);
+    assert.equal(cached.headers.get('content-length'), null);
+  }
+  const since = await fetch(asset, {
+    headers: { 'If-Modified-Since': first.headers.get('last-modified') },
+  });
+  assert.equal(since.status, 304);
+  const mismatch = await fetch(asset, {
+    headers: {
+      'If-None-Match': '"wrong"',
+      'If-Modified-Since': first.headers.get('last-modified'),
+    },
+  });
+  assert.equal(mismatch.status, 200);
+  await writeFile(path.join(root, 'src', 'app.js'), 'export const ready=false; // updated');
+  const changed = await fetch(asset, { headers: { 'If-None-Match': etag } });
+  assert.equal(changed.status, 200);
+  assert.notEqual(changed.headers.get('etag'), etag);
+  assert.match(await changed.text(), /updated/);
+  for (const [pathname, status] of [
+    ['/src/missing.js', 404],
+    ['/.git/config', 403],
+  ]) {
+    const response = await fetch(url + pathname, { headers: { 'If-None-Match': '*' } });
+    assert.equal(response.status, status);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+  }
+});

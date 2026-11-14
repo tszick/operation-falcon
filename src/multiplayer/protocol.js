@@ -1,10 +1,11 @@
-export const PROTOCOL_VERSION = 8;
+export const PROTOCOL_VERSION = 11;
 export const MULTIPLAYER_PATH = '/multiplayer';
 export const roomScenarios = ['range', 'combat', 'cooperative', 'arena'];
 export const ROOM_CAPACITY = 5;
 export const SNAPSHOT_BYTES_LIMIT = 256 * 1024;
 export const NETWORK_STEP = 1 / 120;
 export const SNAPSHOT_INTERVAL = 6;
+export const LOBBY_SNAPSHOT_INTERVAL = SNAPSHOT_INTERVAL * 4;
 export const INPUT_BATCH_LIMIT = 12;
 export const INPUT_QUEUE_LIMIT = 48;
 export const weaponChoices = ['gun', 'aam', 'agm', 'bomb'];

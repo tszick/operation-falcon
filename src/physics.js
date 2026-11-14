@@ -105,12 +105,12 @@ export function stepAircraft(s, input, dt = STEP) {
   const airMotion = relativeAirVelocity(s, terrainHeight(s.position.x, s.position.z));
   s.wind = airMotion.wind;
   s.airVelocity = airMotion.velocity;
-  s.trueAirspeed = airMotion.velocity.length();
   const v = airMotion.velocity.length(),
     groundSpeed = s.velocity.length(),
     m = mass(s),
     air = atmosphere(s.position.y),
     q = 0.5 * air.density * v * v;
+  s.trueAirspeed = v;
   let a = attitude(s.orientation),
     f = forward(s.orientation),
     u = up(s.orientation);
@@ -155,7 +155,7 @@ export function stepAircraft(s, input, dt = STEP) {
         : clamp(
             (((q * spec.wingArea * flow.cl * response.lift) / m / Math.max(v, 45)) *
               Math.sin(a.bank) *
-              Math.hypot(s.velocity.x, s.velocity.z)) /
+              Math.hypot(airMotion.velocity.x, airMotion.velocity.z)) /
               Math.max(v, 1),
             -0.6,
             0.6,
@@ -163,7 +163,9 @@ export function stepAircraft(s, input, dt = STEP) {
     yawTarget =
       (input.yaw || 0) *
       (navalControlAuthority(s) && !s.onGround ? 0.3 : s.onGround ? 0.2 : 0.07) *
-      Math.max(navalControlAuthority(s) ? 0.85 : 0, clamp(v / 15, 0, 1)) *
+      (s.onGround
+        ? clamp(groundSpeed / 15, 0, 1)
+        : Math.max(navalControlAuthority(s) ? 0.85 : 0, clamp(v / 15, 0, 1))) *
       response.control;
   const rates = stepBodyRates(s, { pitch: pitchRate, roll: rollRate, yaw: yawTarget }, dt);
   pitchRate = rates.pitch;
@@ -373,7 +375,11 @@ export function stepAircraft(s, input, dt = STEP) {
         position: { ...s.position },
         velocity: { ...s.velocity },
         speedKmh: touchSpeed * 3.6,
-        iasKmh: touchSpeed * Math.sqrt(atmosphere(s.position.y).density / 1.225) * 3.6,
+        windMps: { ...s.wind },
+        iasKmh:
+          Math.hypot(s.velocity.x - s.wind.x, s.velocity.y - s.wind.y, s.velocity.z - s.wind.z) *
+          Math.sqrt(atmosphere(s.position.y).density / 1.225) *
+          3.6,
         sinkMps: descent,
         pitchDeg: contact.pitch / DEG,
         bankDeg: contact.bank / DEG,
@@ -466,7 +472,9 @@ export function stepAircraft(s, input, dt = STEP) {
   const low =
     s.agl < Math.max(35, -s.velocity.y * 5) && !s.onGround && !s.approach.protectedCorridor;
   s.warning = s.spin?.active
-    ? 'DUGÓHÚZÓ — OLDALKORMÁNY ELLEN, ORR LE'
+    ? alpha < 0
+      ? 'DUGÓHÚZÓ — OLDALKORMÁNY ELLEN, S: TEHERMENTESÍTS'
+      : 'DUGÓHÚZÓ — OLDALKORMÁNY ELLEN, ORR LE'
     : low && !s.approach.runwayCorridor
       ? 'TALAJKÖZELSÉG — EMELKEDJ!'
       : stall && !s.onGround

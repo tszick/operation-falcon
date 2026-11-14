@@ -207,11 +207,16 @@ const names = [
   [/Mk 82/, 'mk82'],
   [/FAB-250/, 'fab250'],
 ];
+const profileByWeapon = new WeakMap();
 export function weaponProfile(spec, type) {
-  const name = armament(spec).weapons[type]?.name;
+  const weapon = armament(spec).weapons[type],
+    name = weapon?.name;
   if (!name) return null;
+  const cached = profileByWeapon.get(weapon);
+  if (cached?.name === name) return weaponProfiles[cached.id];
   const match = names.find(([re]) => re.test(name));
   if (!match) throw new Error(`Missing weapon dynamics: ${name}`);
+  profileByWeapon.set(weapon, { name, id: match[1] });
   return weaponProfiles[match[1]];
 }
 export function enemyProfile(t, type) {
@@ -380,7 +385,9 @@ export function predictBombImpact(s) {
   };
   for (let i = 0; i < 5000; i++) {
     stepBallistic(p, 0.04);
-    p.position.add(p.velocity.clone().scale(0.04));
+    p.position.x += p.velocity.x * 0.04;
+    p.position.y += p.velocity.y * 0.04;
+    p.position.z += p.velocity.z * 0.04;
     if (p.position.y <= terrainHeight(p.position.x, p.position.z)) return p.position;
   }
   return p.position;
@@ -530,7 +537,9 @@ export function gunLead(s, target, profile) {
     while (elapsed < time && elapsed < profile.life) {
       const dt = Math.min(0.03, time - elapsed);
       stepBallistic(p, dt);
-      p.position.add(p.velocity.clone().scale(dt));
+      p.position.x += p.velocity.x * dt;
+      p.position.y += p.velocity.y * dt;
+      p.position.z += p.velocity.z * dt;
       elapsed += dt;
     }
     const error = future.sub(p.position);

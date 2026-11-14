@@ -15,7 +15,7 @@ import { spawnAircraft } from '../src/multiplayer/flightState.js';
 import { armament } from '../src/armament.js';
 import { firingStatus } from '../src/firingStatus.js';
 import { deployCountermeasures, updateCountermeasures } from '../src/countermeasures.js';
-import { PROJECTILE_LIMIT, EVENT_LIMIT } from '../src/multiplayer/protocol.js';
+import { PROJECTILE_LIMIT, EVENT_LIMIT, SNAPSHOT_INTERVAL } from '../src/multiplayer/protocol.js';
 import { packProjectile, packTarget } from '../src/multiplayer/combatState.js';
 export function playerEntity(p) {
   const s = p.state;
@@ -209,8 +209,11 @@ export function stepRoomCombat(room, commands, dt) {
     combat.aim.update(s, targets, dt);
     if (controls?.countermeasures) deployCountermeasures(s);
     if (controls?.fire && shared.projectiles.length < PROJECTILE_LIMIT)
-      combat.weapons.fire(s, targets, combat.aim);
-    combat.feedback = firingStatus(s, targets, combat.aim, combat.weapons).label;
+      combat.feedback = combat.weapons.fire(s, targets, combat.aim) || combat.feedback;
+    // This label is presentation only. Trigger permission is still checked on
+    // every shot; expensive lead calculations for the label run at wire cadence.
+    if ((room.tick + 1) % SNAPSHOT_INTERVAL === 0)
+      combat.feedback = firingStatus(s, targets, combat.aim, combat.weapons).label;
     transferFire(room, player, time);
     if (s.impactPending) {
       s.impactPending = false;
@@ -275,11 +278,18 @@ export function playerCombatSnapshot(player) {
     friendlyHits,
   };
 }
-export function roomCombatSnapshot(room, afterEventId = null, { copy = true } = {}) {
+export function roomCombatSnapshot(
+  room,
+  afterEventId = null,
+  { copy = true, compactProjectiles = false } = {},
+) {
   return {
     ai: roomAIStatus(room),
     targets: room.combat.targets.map((t) => packTarget(t, { copy })),
-    projectiles: room.combat.weapons.projectiles.map(packProjectile),
+    ...(compactProjectiles ? { projectileFormat: 1 } : {}),
+    projectiles: room.combat.weapons.projectiles.map((p) =>
+      packProjectile(p, { compact: compactProjectiles }),
+    ),
     events:
       afterEventId === null
         ? room.combat.events.slice()

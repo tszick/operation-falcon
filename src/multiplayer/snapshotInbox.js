@@ -17,7 +17,9 @@ export class SnapshotInbox {
   }
   offer(snapshot, receivedAt) {
     if ((snapshot.round || 1) < (this.round || 1)) return;
+    if (this.round !== (snapshot.round || 1)) this.world = null;
     this.round = snapshot.round || 1;
+    if (snapshot.world) this.world = snapshot.world;
     this.received++;
     if (this.pending && (snapshot.round || 1) !== (this.pending.snapshot.round || 1))
       this.events.clear();
@@ -34,9 +36,9 @@ export class SnapshotInbox {
       const events = [...this.events.values()];
       this.events.clear();
       if (!pending) return;
-      const snapshot = pending.snapshot.combat
-        ? { ...pending.snapshot, combat: { ...pending.snapshot.combat, events } }
-        : pending.snapshot;
+      const latest = this.world ? { ...pending.snapshot, world: this.world } : pending.snapshot;
+      this.world = null;
+      const snapshot = latest.combat ? { ...latest, combat: { ...latest.combat, events } } : latest;
       this.apply(snapshot, pending.receivedAt);
     });
   }
@@ -44,5 +46,6 @@ export class SnapshotInbox {
     this.pending = null;
     this.events.clear();
     this.round = null;
+    this.world = null;
   }
 }

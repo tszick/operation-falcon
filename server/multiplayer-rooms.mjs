@@ -1,3 +1,4 @@
+import { encodeSnapshot } from '../src/multiplayer/binarySnapshot.js';
 import {
   createRoomLobby,
   joinRoomLobby,
@@ -188,23 +189,34 @@ export class MultiplayerRooms {
     }
   }
   snapshot(room, afterEventId = null) {
-    return this.#snapshot(room, afterEventId, true);
+    return this.#snapshot(room, afterEventId);
   }
-  serialize(room, afterEventId = null) {
+  serialize(room, afterEventId = null, { includeWorld = true, compactProjectiles = false } = {}) {
     // Serialize synchronously: borrowed nested state never escapes as objects.
-    return JSON.stringify(this.#snapshot(room, afterEventId, false));
+    return JSON.stringify(
+      this.#snapshot(room, afterEventId, { copy: false, includeWorld, compactProjectiles }),
+    );
   }
-  #snapshot(room, afterEventId, copy) {
+  packet(room, afterEventId = 0, { includeWorld = true } = {}) {
+    return encodeSnapshot(
+      this.#snapshot(room, afterEventId, { copy: false, includeWorld, compactProjectiles: true }),
+    );
+  }
+  #snapshot(
+    room,
+    afterEventId,
+    { copy = true, includeWorld = true, compactProjectiles = false } = {},
+  ) {
     return {
       type: 'snapshot',
       round: room.round,
-      world: copy ? structuredClone(room.world) : room.world,
+      ...(includeWorld ? { world: copy ? structuredClone(room.world) : room.world } : {}),
       scenario: room.scenario,
       mission: roomMissionSnapshot(room),
-      lobby: roomLobbySnapshot(room),
+      lobby: roomLobbySnapshot(room, { copy }),
       tick: room.tick,
       time: room.tick * NETWORK_STEP,
-      combat: roomCombatSnapshot(room, afterEventId, { copy }),
+      combat: roomCombatSnapshot(room, afterEventId, { copy, compactProjectiles }),
       players: [...room.players.values()].map((p) => ({
         connected: p.connected,
         id: p.id,

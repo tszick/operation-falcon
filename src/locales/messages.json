@@ -10870,5 +10870,29 @@
   "Földi cél": {
     "hu": "Földi cél",
     "en": "Ground target"
+  },
+  "LÉGI CÉL MEGSEMMISÍTVE": {
+    "hu": "LÉGI CÉL MEGSEMMISÍTVE",
+    "en": "AIR TARGET DESTROYED"
+  },
+  "FÖLDI CÉL MEGSEMMISÍTVE": {
+    "hu": "FÖLDI CÉL MEGSEMMISÍTVE",
+    "en": "GROUND TARGET DESTROYED"
+  },
+  "RAKÉTATALÁLAT": {
+    "hu": "RAKÉTATALÁLAT",
+    "en": "MISSILE HIT"
+  },
+  "TALÁLATOT KAPTUNK": {
+    "hu": "TALÁLATOT KAPTUNK",
+    "en": "TAKING DAMAGE"
+  },
+  "GYAKORLÓBOMBA TALÁLAT": {
+    "hu": "GYAKORLÓBOMBA TALÁLAT",
+    "en": "PRACTICE BOMB HIT"
+  },
+  "DUGÓHÚZÓ — OLDALKORMÁNY ELLEN, S: TEHERMENTESÍTS": {
+    "hu": "DUGÓHÚZÓ — OLDALKORMÁNY ELLEN, S: TEHERMENTESÍTS",
+    "en": "SPIN — OPPOSITE RUDDER, S: GENTLY PULL TO UNLOAD"
   }
 }

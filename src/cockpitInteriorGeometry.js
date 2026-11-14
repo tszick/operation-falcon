@@ -1,7 +1,7 @@
 import { hudGlassPoints } from './hudGlassGeometry.js';
 import { cabinSurfaceVisible } from './cabinOcclusion.js';
 // Eye-centred airframe coordinates: +X right, +Y up, +Z forward.
-// Solid panels occlude the world; only the canopy and combiner glass are open.
+// Solid panels occlude the world; canopy, combiner and floor windows remain open.
 const palette = {
   hull: '#1c2025',
   wall: '#292e34',
@@ -10,6 +10,29 @@ const palette = {
   trim: '#a4adb5',
   control: '#343b43',
 };
+export function cockpitFloorWindows(half) {
+  const inner = Math.max(0.3, half - 0.655),
+    outer = half - 0.04;
+  return [-1, 1].map((side) => ({
+    x0: Math.min(side * inner, side * outer),
+    x1: Math.max(side * inner, side * outer),
+    z0: 0.13,
+    z1: 1.17,
+  }));
+}
+function cutFloor(rect, hole) {
+  const x0 = Math.max(rect.x0, hole.x0),
+    x1 = Math.min(rect.x1, hole.x1),
+    z0 = Math.max(rect.z0, hole.z0),
+    z1 = Math.min(rect.z1, hole.z1);
+  if (x0 >= x1 || z0 >= z1) return [rect];
+  return [
+    { x0: rect.x0, x1: x0, z0: rect.z0, z1: rect.z1 },
+    { x0: x1, x1: rect.x1, z0: rect.z0, z1: rect.z1 },
+    { x0, x1, z0: rect.z0, z1: z0 },
+    { x0, x1, z0: z1, z1: rect.z1 },
+  ].filter((r) => r.x1 - r.x0 > 1e-8 && r.z1 - r.z0 > 1e-8);
+}
 export function cockpitInteriorGeometry(aspect = 16 / 9) {
   const shapes = [];
   const face = (part, points, fill = palette.hull, stroke = palette.edge, width = 1) =>
@@ -89,6 +112,7 @@ export function cockpitInteriorGeometry(aspect = 16 / 9) {
       );
   };
   const half = Math.max(0.82, Math.min(1.2, aspect / 1.6));
+  const floorWindows = cockpitFloorWindows(half);
   // Short plates keep painter-order occlusion local: a single eye-crossing
   // floor polygon could otherwise paint over the more distant rudder pedals.
   for (let iz = 0; iz < 16; iz++)
@@ -97,17 +121,32 @@ export function cockpitInteriorGeometry(aspect = 16 / 9) {
         x1 = x0 + half / 2;
       const z0 = -1.4 + (iz * 2.65) / 16,
         z1 = z0 + 2.65 / 16;
-      face(
-        'floor',
-        [
-          [x0, -0.95, z0],
-          [x1, -0.95, z0],
-          [x1, -0.95, z1],
-          [x0, -0.95, z1],
-        ],
-        palette.hull,
-      );
+      let plates = [{ x0, x1, z0, z1 }];
+      for (const hole of floorWindows) plates = plates.flatMap((r) => cutFloor(r, hole));
+      for (const r of plates)
+        face(
+          'floor',
+          [
+            [r.x0, -0.95, r.z0],
+            [r.x1, -0.95, r.z0],
+            [r.x1, -0.95, r.z1],
+            [r.x0, -0.95, r.z1],
+          ],
+          palette.hull,
+        );
     }
+  for (const hole of floorWindows) {
+    const { x0, x1, z0, z1 } = hole;
+    const corners = [
+      [x0, -0.944, z0],
+      [x1, -0.944, z0],
+      [x1, -0.944, z1],
+      [x0, -0.944, z1],
+    ];
+    face('floor-window-glass', corners, 'none', '#a9c1cc99', 0.8);
+    for (let i = 0; i < 4; i++)
+      beam('floor-window-frame', corners[i], corners[(i + 1) % 4], 0.009, palette.trim);
+  }
   face(
     'forward-bulkhead',
     [
@@ -180,13 +219,16 @@ export function cockpitInteriorGeometry(aspect = 16 / 9) {
           palette.trim,
         );
     }
-    beam(
-      'floor-seam',
-      [side * 0.38, -0.943, -0.9],
-      [side * 0.38, -0.943, 1.2],
-      0.0025,
-      palette.edge,
-    );
+    const seamX = side * 0.38,
+      opening = floorWindows.find((hole) => seamX > hole.x0 && seamX < hole.x1),
+      segments = opening
+        ? [
+            [-0.9, opening.z0],
+            [opening.z1, 1.2],
+          ]
+        : [[-0.9, 1.2]];
+    for (const [from, to] of segments)
+      beam('floor-seam', [seamX, -0.943, from], [seamX, -0.943, to], 0.0025, palette.edge);
   }
   const arch = [
     [-half * 0.72, 0.66, 1.08],

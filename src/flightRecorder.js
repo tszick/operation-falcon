@@ -479,6 +479,12 @@ export class FlightRecorder {
       this.onBatch(copy(this.metadata), batch);
     }
   }
+  // Internal read-only handoff after finish: start() replaces both objects,
+  // so a replay can retain the completed mission without cloning a large log.
+  completedLog() {
+    if (!this.ended) throw new Error('Mission log is still recording');
+    return { metadata: this.metadata, entries: this.entries };
+  }
   export() {
     return { metadata: copy(this.metadata), entries: copy(this.entries) };
   }

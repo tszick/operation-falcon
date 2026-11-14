@@ -10,6 +10,7 @@ export class NetworkCombatView {
   constructor() {
     this.frames = [];
     this.decoded = new WeakMap();
+    this.projectileIndex = new WeakMap();
     this.cursor = 0;
     this.effects = [];
     this.trails = [];
@@ -17,12 +18,13 @@ export class NetworkCombatView {
   accept(snapshot, initial = false) {
     if (!snapshot.combat || (this.frames.length && snapshot.tick < this.frames.at(-1).tick)) return;
     const old = this.frames.at(-1),
-      previous = new Map((old?.combat.projectiles || []).map((p) => [p.id, p]));
+      previous = old && this.projectileIndex.get(old);
     if (old?.tick === snapshot.tick) this.frames.pop();
     this.decoded.set(
       snapshot,
       new Map(snapshot.combat.targets.map((t) => [t.id, unpackTarget(t)])),
     );
+    this.projectileIndex.set(snapshot, new Map(snapshot.combat.projectiles.map((p) => [p.id, p])));
     this.frames.push(snapshot);
     if (this.frames.length > 8) this.frames.shift();
     if (initial) {
@@ -31,7 +33,7 @@ export class NetworkCombatView {
       this.trails = [];
     }
     for (const p of snapshot.combat.projectiles) {
-      const before = previous.get(p.id);
+      const before = previous?.get(p.id);
       if (before && ['aam', 'agm'].includes(p.type) && p.age < weaponProfiles[p.profile].burn) {
         this.trails.push({
           from: vector(before.position),
@@ -78,15 +80,16 @@ export class NetworkCombatView {
       a = frame;
     }
     const t = Math.max(0, Math.min(1, (time - a.time) / Math.max(0.0001, b.time - a.time)));
-    const next = new Map(b.combat.projectiles.map((p) => [p.id, p]));
+    const next = this.projectileIndex.get(b),
+      previous = this.projectileIndex.get(a);
     const projectiles = [];
     for (const p of a.combat.projectiles) {
       const q = next.get(p.id),
         out = unpackProjectile(q || p, q ? p : null, t);
       if (q || t < 1 || a === b) projectiles.push(out);
-      next.delete(p.id);
     }
-    if (t >= 1) for (const p of next.values()) projectiles.push(unpackProjectile(p));
+    if (t >= 1)
+      for (const p of next.values()) if (!previous.has(p.id)) projectiles.push(unpackProjectile(p));
     const previousTargets = this.decoded.get(a),
       currentTargets = this.decoded.get(b);
     const targets = [...currentTargets.values()].map((q) => {

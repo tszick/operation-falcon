@@ -273,3 +273,22 @@ test('the handshake carries the chosen pilot name separately from the private id
   assert.equal(f.sockets[0].messages[0].playerName, 'Ace');
   assert.equal(f.sockets[0].messages[0].resumeToken, undefined);
 });
+
+test('a malformed compact projectile packet closes without applying partial flight or weapon state', (t) => {
+  const f = setup(t),
+    msg = welcome();
+  f.client.connect({ mode: 'create', aircraftId: 'f16' });
+  const socket = f.sockets[0];
+  socket.open();
+  socket.message(msg);
+  const previous = f.client.latest;
+  socket.message({
+    ...msg,
+    type: 'snapshot',
+    combat: { ...msg.combat, projectileFormat: 1, projectiles: [[1]] },
+  });
+  assert.equal(socket.readyState, 3);
+  assert.equal(f.client.metrics.decodeFailures, 1);
+  assert.equal(f.client.latest, previous);
+  assert.equal(f.client.metrics.lastDecodeError, 'Invalid projectile tuple');
+});

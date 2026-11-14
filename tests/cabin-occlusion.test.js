@@ -121,3 +121,49 @@ test('cached cabin ordering stays depth-correct throughout forward leaning and s
     }
   }
 });
+
+test('two small floor windows really expose the world without removing the surrounding solid deck', () => {
+  for (const aspect of [4 / 3, 16 / 9, 21 / 9]) {
+    const shapes = cockpitInteriorGeometry(aspect),
+      panes = shapes.filter((s) => s.part === 'floor-window-glass'),
+      eye = cabinEyeOffset(-0.78);
+    assert.equal(panes.length, 2);
+    for (const pane of panes) {
+      const center = [0, 1, 2].map((k) => pane.points.reduce((n, p) => n + p[k], 0) / 4),
+        ray = center.map((v, i) => v - eye[i]);
+      assert.ok(Math.abs(center[0]) > 0.3);
+      assert.ok(Math.abs(pane.points[2][2] - pane.points[0][2] - 1.04) < 1e-8);
+      if (aspect >= 16 / 9)
+        assert.ok(Math.abs(pane.points[1][0] - pane.points[0][0] - 0.615) < 1e-8);
+      assert.ok(pane.points[1][0] - pane.points[0][0] < 0.7);
+      assert.ok(
+        !shapes
+          .filter((s) => s.fill !== 'none')
+          .some((s) => {
+            const hit = rayHit(
+              { ...s, points: s.points.map((p) => p.map((v, i) => v - eye[i])) },
+              ray,
+            );
+            return hit !== null && hit <= 1.00001;
+          }),
+      );
+      const beyond = [
+          center[0] + Math.sign(center[0]) * ((pane.points[1][0] - pane.points[0][0]) / 2 + 0.02),
+          -0.95,
+          center[2],
+        ],
+        outside = beyond.map((v, i) => v - eye[i]);
+      assert.ok(
+        shapes
+          .filter((s) => s.fill !== 'none')
+          .some((s) => {
+            const hit = rayHit(
+              { ...s, points: s.points.map((p) => p.map((v, i) => v - eye[i])) },
+              outside,
+            );
+            return hit !== null && hit <= 1.00001;
+          }),
+      );
+    }
+  }
+});

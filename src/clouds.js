@@ -86,18 +86,55 @@ function cloudSprite(mode, variant) {
 export function cloudScreenAngle(r) {
   return Math.atan2(r.r.y, r.u.y);
 }
-// World-fixed tangent planes: centre, apparent size and tilt all use the same
-// projection. A screen-aligned sprite would slide/rotate oddly during head turns.
-export function cloudViewTransform(r, cloud) {
+const cloudPlanes = new WeakMap();
+function cloudPlane(cloud) {
+  if (cloudPlanes.has(cloud)) return cloudPlanes.get(cloud);
   const b = cloud.bearing,
-    e = cloud.elevation;
-  const direction = new Vec3(Math.sin(b) * Math.cos(e), Math.sin(e), Math.cos(b) * Math.cos(e));
-  const horizontal = new Vec3(Math.cos(b), 0, -Math.sin(b));
-  const vertical = direction.cross(horizontal);
-  const project = (dir) => r.project(r.camera.clone().add(dir.scale(100000)));
-  const c = project(direction.clone()),
-    right = project(direction.clone().add(horizontal.scale(cloud.size * 0.5))),
-    top = project(direction.clone().add(vertical.scale(cloud.size * 0.25)));
+    e = cloud.elevation,
+    direction = new Vec3(Math.sin(b) * Math.cos(e), Math.sin(e), Math.cos(b) * Math.cos(e)),
+    horizontal = new Vec3(Math.cos(b), 0, -Math.sin(b)),
+    vertical = direction.cross(horizontal),
+    right = direction.clone().add(horizontal.clone().scale(cloud.size * 0.5)),
+    top = direction.clone().add(vertical.clone().scale(cloud.size * 0.25)),
+    corners = [
+      [-0.5, -0.25],
+      [0.5, -0.25],
+      [0.5, 0.25],
+      [-0.5, 0.25],
+    ].map(([x, y]) =>
+      direction
+        .clone()
+        .add(horizontal.clone().scale(x * cloud.size))
+        .add(vertical.clone().scale(-y * cloud.size)),
+    );
+  const plane = { direction, right, top, corners };
+  cloudPlanes.set(cloud, plane);
+  return plane;
+}
+// Cull the actual quad before building an affine sprite. Checking only its
+// centre allowed a near/behind-eye edge to expand across the entire cockpit.
+export function cloudViewTransform(r, cloud) {
+  const plane = cloudPlane(cloud),
+    project = (v) => {
+      const z = v.dot(r.f);
+      if (z <= 0.0001) return null;
+      return {
+        x: r.w * 0.5 + (r.focal * v.dot(r.r)) / z,
+        y: r.h * 0.53 - (r.focal * v.dot(r.u)) / z,
+      };
+    },
+    quad = plane.corners.map(project);
+  if (
+    quad.some((p) => !p) ||
+    quad.every((p) => p.x < 0) ||
+    quad.every((p) => p.x > r.w) ||
+    quad.every((p) => p.y < 0) ||
+    quad.every((p) => p.y > r.h)
+  )
+    return null;
+  const c = project(plane.direction),
+    right = project(plane.right),
+    top = project(plane.top);
   if (!c || !right || !top) return null;
   return [
     2 * (right.x - c.x),

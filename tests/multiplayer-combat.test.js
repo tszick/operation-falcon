@@ -410,3 +410,51 @@ test('live projectile history reuses its private vector while published packets 
   assert.deepEqual(packet.combat.projectiles[0].position, { ...position });
   assert.notDeepEqual(p.position, position);
 });
+
+test('cached projectile indexes handle births, deaths and repeated interpolation without mutating prior frames', () => {
+  const view = new NetworkCombatView();
+  const projectile = (id, x) => ({
+    id,
+    type: 'gun',
+    profile: 'm61',
+    position: { x, y: 0, z: 0 },
+    velocity: { x: 10, y: 0, z: 0 },
+    age: 0,
+  });
+  const packet = (time, projectiles) => ({
+    tick: time * 120,
+    time,
+    combat: { targets: [], projectiles, events: [], eventSequence: 0 },
+  });
+  view.accept(packet(0, [projectile(1, 0), projectile(2, 10)]), true);
+  view.accept(packet(1, [projectile(2, 20), projectile(3, 30)]));
+  for (let i = 0; i < 3; i++) {
+    const middle = view.sample(0.5),
+      end = view.sample(1);
+    assert.deepEqual(
+      middle.projectiles.map((p) => p.id),
+      [1, 2],
+    );
+    assert.equal(middle.projectiles[1].position.x, 15);
+    assert.deepEqual(
+      end.projectiles.map((p) => p.id),
+      [2, 3],
+    );
+    end.projectiles[0].position.x = 999;
+  }
+  assert.equal(view.sample(1).projectiles[0].position.x, 20);
+});
+
+test('presentation-only weapon feedback runs at snapshot cadence while trigger permission remains immediate', () => {
+  const { rooms, room, one } = fixture();
+  one.combat.feedback = 'unchanged';
+  for (let i = 0; i < 5; i++) rooms.step();
+  assert.equal(one.combat.feedback, 'unchanged');
+  rooms.step();
+  assert.notEqual(one.combat.feedback, 'unchanged');
+  one.state.ammo.gun = 0;
+  control(rooms, one, { weapon: 'gun', fire: true });
+  rooms.step();
+  assert.match(one.combat.feedback, /LŐSZER/);
+  assert.equal(room.combat.weapons.projectiles.length, 0);
+});

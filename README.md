@@ -253,6 +253,90 @@ adatok ismételt mélymásolása nem terheli a küldési útvonalat. A programb�
 lekért `snapshot()` továbbra is elkülönített adatokat ad, a `serialize()` pedig
 kizárólag kész szöveget ad vissza, megosztott állapotobjektumot nem.
 
+A változatlan terepleírás a belépési csomagban és terep-/hídrevízió-váltáskor
+érkezik, nem minden 20 Hz-es frissítésben. A kliens megőrzi az aktuális terepet;
+a csomagok összevonása, az új kör és az újracsatlakozás külön tesztelt útvonal.
+A protokoll verziója 11: a régi klienseknek frissíteniük kell az oldalt.
+A lövedékazonosítók keresőindexe csomagonként egyszer készül, nem képkockánként.
+A szerver továbbra is egyedül dönt a fizikáról, találatokról és készletekről.
+
+A lövedékeket tartalmazó rendszeres csomagok bináris keretben érkeznek: a
+metaadatok UTF-8 JSON-ként, a lövedékek saját, csomagon belüli szótárral és
+75 bájtos rekordokkal. Az azonosítók és koordináták Float64 pontosságúak;
+a bináris formátum nem kerekít. A keret önmagában dekódolható, nem függ az
+előző csomagtól. A lövedék nélküli frissítések és a belépési üzenetek JSON-ok.
+A `packet()` adja a szöveges vagy bináris küldési csomagot; a `serialize()`
+és a `snapshot()` korábbi programozói felülete változatlan. A kliens méret-,
+formátum-, szótárindex- és numerikus ellenőrzés után alkalmazza az adatot.
+
+A fegyverállapot szövegének előretartás-számítása a 20 Hz-es kijelzési
+ütemhez igazodik. Ez nem tüzelési engedély: minden valódi lövés a szokásos
+ellenőrzéseken megy át. A fizika továbbra is 120 Hz-es. Az előretartás és
+bombapálya belső integrációja már nem hoz létre vektormásolatot minden
+részlépésben; a korábbi numerikus eredményeket külön referenciaesetek őrzik.
+
+Az előszoba periodikus frissítése 5 Hz, a harcé változatlanul 20 Hz.
+A készre jelentés, felszerelésváltás, küldetésválasztás és indulás azonnal
+külön frissítést küld, így ezek nem várnak az előszoba következő ciklusára.
+A fizika továbbra is 120 Hz-es és szerveroldalon hitelesített; a maximum
+5 pilóta/szoba és 10 szoba nem változott.
+
+A fenti helyi környezetben öt pilótás, 40 másodperces aréna- és bázisvédelmi
+lövési próbában a rövidebb lövedékformátum kb. 28%-kal csökkentette az
+összes állapotcsomag-választest méretét az azonos állapotú objektumformához képest.
+A kódolás P95 ideje arénában 0,509 → 0,362 ms, bázisvédelemben
+0,469 → 0,380 ms volt. Ez a csomagkódolás javulása, nem a teljes szerver
+CPU-terhelésének vagy a böngésző FPS-ének ugyanekkora változása.
+A mérőscript minden rövidített csomag visszaállítását összehasonlítja az
+ugyanabból az állapotból előállított eredeti formával.
+
+Kapacitáspróba: `node --expose-gc scripts/load-multiplayer-capacity.mjs 60 [eredmeny.json]`.
+Egy szerverfolyamat és tíz külön, egyenként öt normál klienses folyamat fut
+kizárólag loopbacken, grafika és hang nélkül. Öt co-op és öt aréna szobát
+indít; a 11. szoba és a 6. pilóta elutasítását is ellenőrzi. A bemelegítés és
+a szobák felépítése nem része a harci mérési ablakoknak.
+
+A 2026-11-14-i Windows/Node 24.19 mérésben 60 másodpercig mind a 10 szoba
+aktív és mind az 50 kliens csatlakozva maradt, hibás csomag vagy leszakadás
+nélkül. Várakozáskor egy mag idejének 5,34%-át, harcban átlagosan 89,94%-át
+használta a szerver (öt másodperces ablakcsúcs: 104,46%, a folyamat összes
+CPU-szálával együtt). A teljes folyamatmemória RSS-csúcsa 231,27 MiB,
+a szimuláció minimuma 119,71 Hz, az eldobott szimulációs idő 0 ms volt.
+Az összes kliens felé átlagosan 23,59 MiB/s állapotcsomag-adat ment;
+a TCP/WebSocket fejlécek ezen felül jönnek. Ez intenzív harci terhelés,
+nem egy általános internetes átlag. Az 1 CPU-s keretben itt már kevés a
+tartalék; a mérés nem igazolja egy olcsó VPS azonos teljesítményét.
+A nyers, játékosazonosítókat nem tartalmazó eredmények:
+[10×5 helyi mérés](docs/benchmarks/multiplayer-capacity-2026-11-14.json).
+
+A következő 60 másodperces, szintén 10 aktív szobás és 50 klienses
+mérésben az átlagos CPU 66,88%, a maximum 94,64%, az RSS-csúcs 223,75 MiB,
+a minimum szimulációs ütem 119,45 Hz volt, eldobott szimulációs idő nélkül.
+Az átlagos kimenő játékadat 20,26 MiB/s lett. A korábbi 89,94% CPU-hoz és
+23,59 MiB/s-hoz képest ez kb. 26% CPU- és 14% adatforgalmi csökkenés.
+Ezek külön, véletlen indulási magokat használó harci futások, nem azonos
+repülések visszajátszásai. Az azonos állapoton végzett kódolóteszt a JSON-tömbös
+formához képest 39–50% további csomagméret-csökkenést mért, minden csomag
+pontos visszaállításának ellenőrzésével. Egy köztes próbában még 212 ms
+eldobott szimulációs idő jelentkezett; ez az eredmény is megmaradt:
+[köztes próba](docs/benchmarks/multiplayer-capacity-2026-11-14-binary-trial.json),
+[javított futás](docs/benchmarks/multiplayer-capacity-2026-11-14-optimized.json).
+
+A statikus fájlokat ETag/Last-Modified ellenőrzéssel szolgáljuk ki. Változatlan
+fájlra a szerver törzs nélküli 304 választ küld; frissítéskor újraellenőrzi a
+fájlt, ezért telepítés után nem marad hosszú ideig elavult kód a gyorsítótárban.
+A hibaválaszok továbbra sem tárolhatók. Ez különösen a hangok és textúrák ismételt
+letöltését takarítja meg; az első látogatás adatforgalmát nem csökkenti.
+
+Helyi összehasonlítás (2026-11-14, Node 24.19, Windows; nem VPS-kapacitásmérés):
+öt pilótával és nyolc célponttal azonos állapoton a csomag előállítása
+0,194 → 0,175 ms, mérete 21 077 → 20 777 bájt volt. 192 lövedék kliensoldali
+interpolációja 0,0241 → 0,0119 ms. Ezek külön, bemelegített összehasonlító
+mérések, nem böngésző-FPS-adatok. A terep kihagyása kis megtakarítás;
+a nagyobb harci csomagok továbbra is a mozgó állapotokat hordozzák.
+Az 575 400 bájtos szótár öt változatlan ismételt lekérése 2 877 000 bájt
+helyett 0 bájt választestet küldött (a HTTP-fejlécek forgalma megmarad).
+
 Opcionális szerverprofil: `MULTIPLAYER_DIAGNOSTICS=1` környezeti változóval
 indítva a helyi szerver öt másodpercenként időzítési JSON-t ír a konzoljára.
 Külön mérhető a fizika, a csomagkódolás és küldés, a folyamat CPU-ideje,

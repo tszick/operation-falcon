@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="hu">
+  <meta charset="utf-8" /><title>Silent replay regression</title>
+  <body>
+    <script type="module">
+      const params = new URLSearchParams(location.search),
+        template = new DOMParser().parseFromString(
+          await (await fetch('/index.html')).text(),
+          'text/html',
+        );
+      for (const link of template.querySelectorAll('link[rel="stylesheet"]'))
+        document.head.append(link.cloneNode(true));
+      for (const script of template.querySelectorAll('script')) script.remove();
+      document.body.replaceChildren(...template.body.childNodes);
+      const [
+        { Renderer },
+        { MissionResultView },
+        { configureTerrain },
+        { readTerrainSnapshot },
+        { setLanguage },
+      ] = await Promise.all([
+        import('/src/renderer.js'),
+        import('/src/ui/missionResult.js'),
+        import('/src/terrain.js'),
+        import('/src/terrainSnapshot.js'),
+        import('/src/i18n.js'),
+      ]);
+      const log = await (await fetch('/tests/fixtures/strike-highlights.json')).json();
+      configureTerrain({ battlefield: { environment: readTerrainSnapshot(log.metadata.terrain) } });
+      setLanguage('hu', { persist: false });
+      for (const id of ['hangar', 'hangar-footer', 'help'])
+        document.getElementById(id).hidden = true;
+      document.getElementById('flight-ui').hidden = false;
+      document.getElementById('overlay').hidden = false;
+      document.body.classList.add('flying');
+      const renderer = new Renderer(document.getElementById('world'));
+      renderer.surfaceMode = params.get('surface') || 'grass';
+      renderer.surfaceLines = false;
+      await renderer.ready;
+      const view = new MissionResultView(renderer);
+      view.show(log);
+      const index = view.replay.clips.findIndex((c) => c.focusId === params.get('focus'));
+      view.clipIndex = Math.max(0, index);
+      const clip = view.replay.clips[view.clipIndex];
+      view.clipTime = Math.max(
+        0,
+        Math.min(
+          clip.end - clip.start,
+          clip.eventTime - clip.start + Number(params.get('offset') || '.2'),
+        ),
+      );
+      view.moving = params.has('play');
+      const status = document.createElement('output');
+      status.style.cssText =
+        'position:fixed;top:45px;left:8px;z-index:1000;background:#071511;color:#baf37d;font:12px monospace;padding:4px';
+      document.body.append(status);
+      let previous,
+        loops = 0,
+        last = view.clipIndex;
+      const visited = new Set();
+      function frame(time) {
+        try {
+          const dt = previous === undefined ? 0 : Math.min(0.1, (time - previous) / 1000);
+          previous = time;
+          view.render(params.has('fast') ? dt * 8 : dt);
+          visited.add(view.clipIndex);
+          if (view.clipIndex < last) loops++;
+          last = view.clipIndex;
+          status.textContent = JSON.stringify({
+            clip: view.clipIndex,
+            clips: view.replay.clips.length,
+            visited: [...visited],
+            loops,
+            errors: renderer.ctx.surface?.runtime?.errors || [],
+          });
+          requestAnimationFrame(frame);
+        } catch (error) {
+          status.textContent = error.stack;
+          throw error;
+        }
+      }
+      requestAnimationFrame(frame);
+    </script>
+  </body>
+</html>

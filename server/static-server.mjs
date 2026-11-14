@@ -96,11 +96,31 @@ export function createStaticServer({ root, allowedHosts = [] }) {
         reply(404, 'Not found');
         return;
       }
-      res.writeHead(200, {
-        ...headers(relative.startsWith('tests/')),
-        'Content-Type': mime[path.extname(file)] || 'application/octet-stream',
-        'Content-Length': info.size,
-      });
+      // Revalidate every visit so a deployment never leaves stale code behind,
+      // but reuse unchanged textures/audio instead of downloading them again.
+      const etag = `W/"${info.size.toString(16)}-${info.mtimeMs.toString(16)}"`,
+        responseHeaders = {
+          ...headers(relative.startsWith('tests/')),
+          'Cache-Control': 'public, max-age=0, must-revalidate',
+          ETag: etag,
+          'Last-Modified': info.mtime.toUTCString(),
+          'Content-Type': mime[path.extname(file)] || 'application/octet-stream',
+        },
+        condition = req.headers['if-none-match'],
+        modifiedSince = Date.parse(req.headers['if-modified-since']);
+      const unchanged =
+        condition !== undefined
+          ? condition
+              .split(',')
+              .some((tag) => tag.trim() === '*' || tag.trim().replace(/^W\//, '') === etag.slice(2))
+          : Number.isFinite(modifiedSince) &&
+            Math.floor(info.mtimeMs / 1000) * 1000 <= modifiedSince;
+      if (unchanged) {
+        res.writeHead(304, responseHeaders);
+        res.end();
+        return;
+      }
+      res.writeHead(200, { ...responseHeaders, 'Content-Length': info.size });
       if (req.method === 'HEAD') {
         res.end();
         return;

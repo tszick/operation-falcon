@@ -139,6 +139,8 @@ async function mountLoadTest() {
         shots: state.shots,
         hits: state.hits,
         peakProjectiles: state.peakProjectiles,
+        binarySnapshots: this.metrics.receivedBinarySnapshots,
+        decodeFailures: this.metrics.decodeFailures,
       },
       null,
       2,

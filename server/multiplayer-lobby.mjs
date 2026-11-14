@@ -67,7 +67,7 @@ export function updateRoomLobby(room, p, message) {
   }
   return null;
 }
-export function roomLobbySnapshot(room) {
+export function roomLobbySnapshot(room, { copy = true } = {}) {
   return room.lobby
     ? {
         ...room.lobby,
@@ -75,7 +75,7 @@ export function roomLobbySnapshot(room) {
           id: p.id,
           callSign: p.callSign,
           ready: p.ready,
-          selection: structuredClone(p.selection),
+          selection: copy ? structuredClone(p.selection) : p.selection,
         })),
       }
     : null;

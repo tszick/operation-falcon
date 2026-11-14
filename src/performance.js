@@ -34,7 +34,19 @@ export function massBreakdown(s) {
   };
 }
 export function mass(s) {
-  return massBreakdown(s).totalKg;
+  // Same grouping as the detailed readout, without a temporary object in
+  // the physics loop. Ammunition and fuel are read live on every call.
+  const stores =
+    ammoMass(s.spec, 'aam', s.ammo.aam || 0) +
+    ammoMass(s.spec, 'agm', s.ammo.agm || 0) +
+    ammoMass(s.spec, 'bomb', s.ammo.bomb || 0);
+  return (
+    s.spec.emptyMass +
+    s.fuel +
+    ammoMass(s.spec, 'gun', s.ammo.gun || 0) +
+    ammoMass(s.spec, 'tailGun', s.ammo.tailGun || 0) +
+    stores
+  );
 }
 // Reference speeds are indicated airspeeds, using the landing flap configuration.
 // A loaded aircraft needs a larger margin above the lift-limited stall speed.
